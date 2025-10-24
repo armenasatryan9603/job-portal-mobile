@@ -24,6 +24,48 @@ const MAPPING = {
   "gearshape.fill": "settings",
   "list.bullet": "list",
   "person.2.fill": "group",
+  // Header and navigation icons
+  "line.3.horizontal": "menu",
+  "bell": "notifications",
+  "bell.fill": "notifications",
+  "message": "message",
+  "xmark": "close",
+  "xmark.circle": "cancel",
+  "chevron.left": "chevron-left",
+  // User and profile icons
+  "person.fill": "person",
+  "person.badge.plus": "person-add",
+  // Menu and action icons
+  "doc.text.fill": "description",
+  "briefcase.fill": "work",
+  "questionmark.circle.fill": "help",
+  "rectangle.portrait.and.arrow.right": "logout",
+  // Location and map icons
+  "location.fill": "location-on",
+  "map": "map",
+  "magnifyingglass": "search",
+  // Star rating icons
+  "star.fill": "star",
+  "star": "star-border",
+  // Action icons
+  "plus.circle.fill": "add-circle",
+  "plus": "add",
+  "checkmark": "check",
+  "trash": "delete",
+  "trash.fill": "delete",
+  "camera.fill": "camera-alt",
+  "calendar": "event",
+  "clock.fill": "schedule",
+  "phone.fill": "phone",
+  "pencil": "edit",
+  "arrow.right": "arrow-forward",
+  "doc.on.doc": "content-copy",
+  // Settings icons
+  "moon.fill": "dark-mode",
+  "globe": "language",
+  "gift.fill": "card-giftcard",
+  "lock.fill": "lock",
+  "creditcard.fill": "credit-card",
 } as IconMapping;
 
 /**
