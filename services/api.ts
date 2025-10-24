@@ -12,8 +12,8 @@ export interface Service {
   averagePrice?: number;
   minPrice?: number;
   maxPrice?: number;
-  features: string[];
-  technologies: string[];
+  features: { id: number; name: string; description?: string }[];
+  technologies: { id: number; name: string; description?: string }[];
   completionRate?: number;
   isActive: boolean;
   createdAt: string;

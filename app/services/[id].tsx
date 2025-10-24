@@ -233,7 +233,7 @@ export default function ServiceDetailScreen() {
                     color={colors.tint}
                   />
                   <Text style={[styles.featureText, { color: colors.text }]}>
-                    {feature}
+                    {feature.name}
                   </Text>
                 </View>
               ))}
@@ -263,7 +263,7 @@ export default function ServiceDetailScreen() {
                   ]}
                 >
                   <Text style={[styles.techText, { color: colors.text }]}>
-                    {tech}
+                    {tech.name}
                   </Text>
                 </View>
               ))}
