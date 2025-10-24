@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Service } from "@/services/api";
@@ -123,6 +124,13 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 },
               ]}
             >
+              {service.imageUrl && (
+                <Image
+                  source={{ uri: service.imageUrl }}
+                  style={styles.skillImage}
+                  resizeMode="cover"
+                />
+              )}
               <View style={styles.skillInfo}>
                 <Text style={[styles.skillName, { color: colors.text }]}>
                   {service.name}
@@ -292,6 +300,12 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
+  },
+  skillImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 12,
   },
   skillInfo: {
     flex: 1,

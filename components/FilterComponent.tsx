@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -62,13 +62,20 @@ export const Filter: React.FC<FilterProps> = ({
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({});
-  const [sectionAnimations] = useState<Record<string, Animated.Value>>(
-    filterSections.reduce((acc, section) => {
-      acc[section.title] = new Animated.Value(0);
-      return acc;
-    }, {} as Record<string, Animated.Value>)
-  );
+  const [sectionAnimations, setSectionAnimations] = useState<
+    Record<string, Animated.Value>
+  >({});
   const [filterAnimation] = useState(new Animated.Value(0));
+
+  // Initialize animations when filterSections change
+  useEffect(() => {
+    const newAnimations: Record<string, Animated.Value> = {};
+    filterSections.forEach((section) => {
+      newAnimations[section.title] =
+        sectionAnimations[section.title] || new Animated.Value(0);
+    });
+    setSectionAnimations(newAnimations);
+  }, [filterSections]);
 
   // Helper function to get range values
   const getRangeValues = (
@@ -108,12 +115,14 @@ export const Filter: React.FC<FilterProps> = ({
       [sectionTitle]: newExpandedState,
     }));
 
-    // Animate the section
-    Animated.timing(sectionAnimations[sectionTitle], {
-      toValue: newExpandedState ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    // Animate the section if animation exists
+    if (sectionAnimations[sectionTitle]) {
+      Animated.timing(sectionAnimations[sectionTitle], {
+        toValue: newExpandedState ? 1 : 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
   };
 
   const handleFilterSelect = (
@@ -343,7 +352,7 @@ export const Filter: React.FC<FilterProps> = ({
                 <Animated.View
                   style={[
                     styles.sectionContent,
-                    {
+                    sectionAnimations[section.title] && {
                       maxHeight: sectionAnimations[section.title].interpolate({
                         inputRange: [0, 1],
                         outputRange: [0, 300], // Increased height for better scrolling

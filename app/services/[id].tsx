@@ -21,6 +21,7 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { apiService, Service } from "@/services/api";
 
@@ -171,6 +172,13 @@ export default function ServiceDetailScreen() {
         <ResponsiveContainer>
           {/* Service Overview */}
           <ResponsiveCard>
+            {service.imageUrl && (
+              <Image
+                source={{ uri: service.imageUrl }}
+                style={styles.serviceImage}
+                resizeMode="cover"
+              />
+            )}
             <View style={styles.overviewSection}>
               <Text style={[styles.serviceName, { color: colors.text }]}>
                 {service.name}
@@ -401,6 +409,12 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  serviceImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 16,
   },
   overviewSection: {
     marginBottom: 20,

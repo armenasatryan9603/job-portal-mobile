@@ -8,6 +8,7 @@ export interface Service {
   id: number;
   name: string;
   description?: string;
+  imageUrl?: string;
   parentId?: number;
   averagePrice?: number;
   minPrice?: number;

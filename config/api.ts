@@ -1,5 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
+  // Use environment variable if set, otherwise fallback to localhost
+  // For production, set EXPO_PUBLIC_API_URL to your Cloud Run URL
   BASE_URL: process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080",
 
   // Request timeouts

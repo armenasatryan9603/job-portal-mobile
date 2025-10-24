@@ -20,6 +20,7 @@ import {
   Alert,
   RefreshControl,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { Service } from "@/services/api";
 import { useServices, useRootServices } from "@/hooks/useApi";
@@ -176,6 +177,13 @@ const ServicesScreen = () => {
   const renderServiceItem = ({ item: service }: { item: Service }) => (
     <TouchableOpacity onPress={() => handleServicePress(service.id)}>
       <ResponsiveCard padding={16}>
+        {service.imageUrl && (
+          <Image
+            source={{ uri: service.imageUrl }}
+            style={styles.serviceImage}
+            resizeMode="cover"
+          />
+        )}
         <View style={styles.serviceHeader}>
           <Text style={[styles.serviceName, { color: colors.text }]}>
             {service.name}
@@ -317,6 +325,12 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 14,
     opacity: 0.7,
+  },
+  serviceImage: {
+    width: "100%",
+    height: 120,
+    borderRadius: 8,
+    marginBottom: 12,
   },
   serviceHeader: {
     ...ViewStyles.rowBetween,

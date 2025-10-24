@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
   StyleSheet,
+  Image,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Service } from "@/services/api";
@@ -102,6 +103,13 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
                 ]}
                 onPress={() => onToggleService(service)}
               >
+                {service.imageUrl && (
+                  <Image
+                    source={{ uri: service.imageUrl }}
+                    style={styles.serviceImage}
+                    resizeMode="cover"
+                  />
+                )}
                 <View style={styles.serviceInfo}>
                   <Text style={[styles.serviceName, { color: colors.text }]}>
                     {service.name}
@@ -203,6 +211,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 8,
+  },
+  serviceImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
   },
   serviceInfo: {
     flex: 1,

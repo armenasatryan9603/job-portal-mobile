@@ -9,6 +9,7 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Image,
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -308,6 +309,13 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                     ]}
                     onPress={() => handleServiceSelect(service)}
                   >
+                    {service.imageUrl && (
+                      <Image
+                        source={{ uri: service.imageUrl }}
+                        style={styles.serviceCardImage}
+                        resizeMode="cover"
+                      />
+                    )}
                     <Text
                       style={[
                         styles.serviceCardName,
@@ -637,6 +645,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  serviceCardImage: {
+    width: "100%",
+    height: 60,
+    borderRadius: 8,
+    marginBottom: 8,
   },
   serviceCardName: {
     fontSize: 13,
