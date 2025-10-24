@@ -9,6 +9,7 @@ import { ThemeColors } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -28,6 +29,7 @@ export default function ServiceDetailScreen() {
   const { t } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { isAuthenticated } = useAuth();
+  const { showLoginModal } = useModal();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
@@ -130,6 +132,10 @@ export default function ServiceDetailScreen() {
   }
 
   const handleCreateOrder = () => {
+    if (!isAuthenticated) {
+      showLoginModal();
+      return;
+    }
     router.push(`/orders/create?serviceId=${serviceId}`);
   };
 

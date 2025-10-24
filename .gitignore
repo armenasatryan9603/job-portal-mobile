@@ -27,15 +27,16 @@ expo-env.d.ts
 *.aab
 
 # Android
-android/app/build/
-android/build/
-android/.gradle/
-android/gradle/
-android/gradlew
-android/gradlew.bat
-android/local.properties
-android/app/google-services.json
-android/app/src/main/assets/
+android/*
+# android/app/build/
+# android/build/
+# android/.gradle/
+# android/gradle/
+# android/gradlew
+# android/gradlew.bat
+# android/local.properties
+# android/app/google-services.json
+# android/app/src/main/assets/
 
 # iOS
 ios/build/

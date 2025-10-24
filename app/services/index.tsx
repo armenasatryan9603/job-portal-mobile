@@ -37,15 +37,28 @@ const ServicesScreen = () => {
 
   // Use TanStack Query for data fetching
   const [currentPage, setCurrentPage] = useState(1);
+  const [allServices, setAllServices] = useState<Service[]>([]);
   const {
     data: servicesData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useServices(currentPage, 20);
   const { data: rootServices } = useRootServices();
 
-  const services = servicesData?.services || [];
+  // Accumulate services from all pages
+  useEffect(() => {
+    if (servicesData?.services) {
+      if (currentPage === 1) {
+        setAllServices(servicesData.services);
+      } else {
+        setAllServices((prev) => [...prev, ...servicesData.services]);
+      }
+    }
+  }, [servicesData, currentPage]);
+
+  const services = allServices;
   const mainServices = rootServices || [];
   const pagination = servicesData?.pagination || {
     page: 1,
@@ -55,6 +68,10 @@ const ServicesScreen = () => {
     hasNextPage: false,
     hasPrevPage: false,
   };
+
+  // Show loading only on initial load (page 1)
+  const isInitialLoading = isLoading && currentPage === 1;
+  const isLoadingMore = isFetching && currentPage > 1;
 
   const loadMoreServices = useCallback(() => {
     if (pagination.hasNextPage) {
@@ -133,8 +150,8 @@ const ServicesScreen = () => {
     />
   );
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state only on initial load
+  if (isInitialLoading) {
     return (
       <Layout header={header}>
         <EmptyPage type="loading" title={t("loadingServices")} />
@@ -207,15 +224,17 @@ const ServicesScreen = () => {
   );
 
   const renderFooter = () => {
-    if (!pagination.hasNextPage) return null;
-    return (
-      <View style={styles.loadingMoreContainer}>
-        <ActivityIndicator size="small" color={colors.tint} />
-        <Text style={[styles.loadingMoreText, { color: colors.text }]}>
-          {t("loadingMoreServices")}
-        </Text>
-      </View>
-    );
+    if (isLoadingMore) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={colors.tint} />
+          <Text style={[styles.loadingMoreText, { color: colors.text }]}>
+            {t("loadingMoreServices")}
+          </Text>
+        </View>
+      );
+    }
+    return null;
   };
 
   const renderEmptyComponent = () => {

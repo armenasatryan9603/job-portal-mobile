@@ -8,7 +8,7 @@ import { ThemeColors, Spacing } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   Image,
   FlatList,
@@ -23,9 +23,9 @@ import {
 import { apiService, SpecialistProfile } from "@/services/api";
 import { useSpecialists, useServices, useMyOrders } from "@/hooks/useApi";
 import { HiringDialog } from "@/components/HiringDialog";
-import { LoginModal } from "@/components/LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { useModal } from "@/contexts/ModalContext";
 
 export default function SpecialistsScreen() {
   const colorScheme = useColorScheme();
@@ -33,6 +33,7 @@ export default function SpecialistsScreen() {
   const { t, language } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const { showLoginModal } = useModal();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string | string[] | { min: number; max: number }>
@@ -48,21 +49,31 @@ export default function SpecialistsScreen() {
     useState<SpecialistProfile | null>(null);
   const [hiringLoading, setHiringLoading] = useState(false);
 
-  // Login modal state
-  const [loginModalVisible, setLoginModalVisible] = useState(false);
-
   // Use TanStack Query for data fetching
   const [currentPage, setCurrentPage] = useState(1);
+  const [allSpecialists, setAllSpecialists] = useState<SpecialistProfile[]>([]);
   const {
     data: specialistsData,
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useSpecialists(currentPage, 20);
   const { data: servicesData } = useServices(1, 100); // Get all services for filtering
   const { data: ordersData } = useMyOrders();
 
-  const specialists = specialistsData?.data || [];
+  // Accumulate specialists from all pages
+  useEffect(() => {
+    if (specialistsData?.data) {
+      if (currentPage === 1) {
+        setAllSpecialists(specialistsData.data);
+      } else {
+        setAllSpecialists((prev) => [...prev, ...specialistsData.data]);
+      }
+    }
+  }, [specialistsData, currentPage]);
+
+  const specialists = allSpecialists;
   const services = servicesData?.services || [];
   const userOrders = ordersData?.orders || [];
   const pagination = specialistsData?.pagination || {
@@ -73,6 +84,10 @@ export default function SpecialistsScreen() {
     hasNextPage: false,
     hasPrevPage: false,
   };
+
+  // Show loading only on initial load (page 1)
+  const isInitialLoading = isLoading && currentPage === 1;
+  const isLoadingMore = isFetching && currentPage > 1;
 
   const loadMoreSpecialists = useCallback(() => {
     if (pagination.hasNextPage) {
@@ -176,8 +191,7 @@ export default function SpecialistsScreen() {
     // Check if user is authenticated
     if (!isAuthenticated) {
       // User is not logged in, show login modal
-      setSelectedSpecialist(specialist);
-      setLoginModalVisible(true);
+      showLoginModal();
       return;
     }
 
@@ -223,25 +237,6 @@ export default function SpecialistsScreen() {
   const handleHiringClose = () => {
     setHiringDialogVisible(false);
     setSelectedSpecialist(null);
-  };
-
-  const handleLoginModalClose = () => {
-    setLoginModalVisible(false);
-    setSelectedSpecialist(null);
-  };
-
-  const handleLoginSuccess = async () => {
-    setLoginModalVisible(false);
-    // After successful login, proceed with hiring logic
-    if (selectedSpecialist) {
-      // TanStack Query will automatically refetch userOrders after login
-      // Check if we have orders from the cached data
-      if (userOrders.length > 0) {
-        setHiringDialogVisible(true);
-      } else {
-        router.push(`/orders/create?specialistId=${selectedSpecialist.id}`);
-      }
-    }
   };
 
   const handleImageError = (specialistId: number) => {
@@ -490,16 +485,18 @@ export default function SpecialistsScreen() {
   );
 
   const renderFooter = useCallback(() => {
-    if (!pagination.hasNextPage) return null;
-    return (
-      <View style={styles.loadingMoreContainer}>
-        <ActivityIndicator size="small" color={colors.tint} />
-        <Text style={[styles.loadingMoreText, { color: colors.text }]}>
-          {t("loadingMoreSpecialists")}
-        </Text>
-      </View>
-    );
-  }, [pagination.hasNextPage, colors, t]);
+    if (isLoadingMore) {
+      return (
+        <View style={styles.loadingMoreContainer}>
+          <ActivityIndicator size="small" color={colors.tint} />
+          <Text style={[styles.loadingMoreText, { color: colors.text }]}>
+            {t("loadingMoreSpecialists")}
+          </Text>
+        </View>
+      );
+    }
+    return null;
+  }, [isLoadingMore, colors, t]);
 
   const renderHeader = () => null;
 
@@ -522,7 +519,7 @@ export default function SpecialistsScreen() {
   }, [filteredSpecialists.length, searchQuery, t]);
 
   // Show loading state
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <Layout header={header}>
         <EmptyPage type="loading" title={t("loadingSpecialists")} />
@@ -587,16 +584,6 @@ export default function SpecialistsScreen() {
         specialistId={selectedSpecialist?.id || 0}
         userOrders={userOrders}
         loading={hiringLoading}
-      />
-
-      <LoginModal
-        visible={loginModalVisible}
-        onClose={handleLoginModalClose}
-        onSwitchToSignup={() => {
-          // For now, just close the modal
-          setLoginModalVisible(false);
-        }}
-        onSuccess={handleLoginSuccess}
       />
     </Layout>
   );
