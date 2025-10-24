@@ -1,0 +1,20 @@
+# Translation file for Google Cloud Shell
+# Format: key: value
+# Lines starting with # or // are comments
+
+# Example translations:
+welcome: Welcome to our app
+login: Login
+logout: Logout
+helpAndSupport: Help & Support
+
+# You can also use = format:
+# welcome = Welcome to our app
+# login = Login
+
+# Comments are supported:
+# This is a comment
+// This is also a comment
+
+# Multi-line values (use \n for line breaks):
+description: This is a multi-line\ndescription with\nline breaks

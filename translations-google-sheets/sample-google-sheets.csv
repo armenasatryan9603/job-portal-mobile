@@ -1,0 +1,8 @@
+key,value
+welcome,"Welcome to our app"
+login,Login
+logout,Logout
+helpAndSupport,"Help & Support"
+description,"This is a multi-line
+description with
+line breaks"
