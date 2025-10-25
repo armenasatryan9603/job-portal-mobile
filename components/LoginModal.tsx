@@ -254,7 +254,7 @@ export function LoginModal({
                 {step === "phone"
                   ? t("login")
                   : step === "otp"
-                  ? t("verifyPhone")
+                  ? t("verify")
                   : t("completeProfile")}
               </Text>
               <Text style={styles.headerSubtitle}>

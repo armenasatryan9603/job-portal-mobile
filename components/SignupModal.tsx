@@ -195,7 +195,7 @@ export function SignupModal({
                   ? t("signUp")
                   : step === "name"
                   ? t("yourName")
-                  : t("verifyPhone")}
+                  : t("verify")}
               </Text>
               <Text style={styles.headerSubtitle}>
                 {step === "phone"
