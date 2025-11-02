@@ -1,3 +1,7 @@
+# GorcKa – Mobile app to help people find small jobs in Armenia
+
+<!--  -->
+
 # #################### ANDROID Build Scripts
 
 cd /Users/armenasatryan/Desktop/marketplace/mobile
