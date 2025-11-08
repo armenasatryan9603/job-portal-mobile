@@ -24,12 +24,16 @@ import {
 } from "react-native";
 import { apiService, Service } from "@/services/api";
 import { fileUploadService, MediaFile } from "@/services/fileUpload";
+import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
 
 export default function CreateOrderScreen() {
   const { serviceId } = useLocalSearchParams();
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { isAuthenticated, user } = useAuth();
+  const { showLoginModal } = useModal();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -162,8 +166,23 @@ export default function CreateOrderScreen() {
   };
 
   const handleSubmit = async () => {
+    // Validate all required fields before submission
+    const validationErrors = {
+      title: validateField("title", formData.title),
+      description: validateField("description", formData.description),
+      budget: validateField("budget", formData.budget),
+      location: validateField("location", formData.location),
+      skills: validateField("skills", formData.skills),
+      availableDates: validateField("availableDates", formData.availableDates),
+      serviceId: validateField("serviceId", formData.serviceId || ""),
+    };
+
+    setErrors(validationErrors);
+
     // Check if there are any validation errors
-    const hasErrors = Object.values(errors).some((error) => error !== "");
+    const hasErrors = Object.values(validationErrors).some(
+      (error) => error !== ""
+    );
     if (hasErrors) {
       Alert.alert(t("error"), t("pleaseFixValidationErrors"));
       return;
@@ -194,9 +213,7 @@ export default function CreateOrderScreen() {
       };
 
       // Call the API to create the order
-      const response = await apiService.createOrder(orderData);
-
-      console.log("Order posted successfully:", response);
+      await apiService.createOrder(orderData);
 
       // Order posted successfully
       router.replace("/orders");
@@ -213,8 +230,40 @@ export default function CreateOrderScreen() {
   };
 
   const handleApply = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      Alert.alert(
+        t("error") || "Error",
+        t("authenticationRequired") || "Please log in to create an order.",
+        [
+          {
+            text: t("ok") || "OK",
+            onPress: () => {
+              showLoginModal();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    // Validate all required fields before submission
+    const validationErrors = {
+      title: validateField("title", formData.title),
+      description: validateField("description", formData.description),
+      budget: validateField("budget", formData.budget),
+      location: validateField("location", formData.location),
+      skills: validateField("skills", formData.skills),
+      availableDates: validateField("availableDates", formData.availableDates),
+      serviceId: validateField("serviceId", formData.serviceId || ""),
+    };
+
+    setErrors(validationErrors);
+
     // Check if there are any validation errors
-    const hasErrors = Object.values(errors).some((error) => error !== "");
+    const hasErrors = Object.values(validationErrors).some(
+      (error) => error !== ""
+    );
     if (hasErrors) {
       Alert.alert(t("error"), t("pleaseFixValidationErrors"));
       return;
@@ -246,50 +295,63 @@ export default function CreateOrderScreen() {
 
       // Use transactional order creation with media files
       if (mediaFiles.length > 0) {
-        console.log("Creating order with media files in transaction...");
+        const { order } = await fileUploadService.createOrderWithMedia(
+          orderData,
+          mediaFiles
+        );
 
-        try {
-          const { order, mediaFiles: uploadedMediaFiles } =
-            await fileUploadService.createOrderWithMedia(
-              orderData,
-              mediaFiles,
-              (completed, total) => {
-                console.log(`Upload progress: ${completed}/${total}`);
-              }
-            );
-
-          console.log("Order created successfully with media files:", order);
-          console.log(
-            "All media files uploaded successfully:",
-            uploadedMediaFiles
-          );
-
-          // Application submitted successfully
-          router.replace("/orders");
-        } catch (error) {
-          console.error("Error creating order with media files:", error);
-          Alert.alert(
-            t("error"),
-            t("failedToSubmitApplication") +
-              ": " +
-              (error instanceof Error ? error.message : "Unknown error")
-          );
-        }
+        // Application submitted successfully
+        router.replace("/orders");
       } else {
         // No media files, use regular order creation
-        const response = await apiService.createOrder(orderData);
-        console.log("Order created successfully:", response);
+        await apiService.createOrder(orderData);
 
         // Application submitted successfully
         router.replace("/orders");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating order:", error);
-      Alert.alert(t("error"), t("failedToSubmitApplication"));
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "Unknown error";
+
+      // Check if it's an authentication error
+      if (
+        errorMessage.includes("Authentication required") ||
+        errorMessage.includes("Unauthorized") ||
+        errorMessage.includes("Invalid token") ||
+        errorMessage.includes("expired") ||
+        error?.response?.status === 401
+      ) {
+        Alert.alert(
+          t("error") || "Error",
+          t("authenticationRequired") || "Please log in again to continue.",
+          [
+            {
+              text: t("ok") || "OK",
+              onPress: () => {
+                // Optionally redirect to login
+                router.replace("/");
+              },
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          t("error") || "Error",
+          t("failedToSubmitApplication") + ": " + errorMessage
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // console.log("mediaFilesssssssss", JSON.stringify(mediaFiles, null, 2));
 
   const footer = (
     <Footer>

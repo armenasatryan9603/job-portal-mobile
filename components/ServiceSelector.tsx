@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,7 +14,8 @@ import {
 import { ThemeColors } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { apiService, Service } from "@/services/api";
+import { Service } from "@/services/api";
+import { useServices } from "@/hooks/useApi";
 
 interface ServiceSelectorProps {
   selectedService: Service | null;
@@ -31,9 +32,23 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
-  const [services, setServices] = useState<Service[]>([]);
-  const [isLoadingServices, setIsLoadingServices] = useState(true);
-  const [servicesError, setServicesError] = useState<string | null>(null);
+  const { language } = useLanguage();
+
+  // Use cached services hook - fetches with high limit to get all services
+  const {
+    data: servicesData,
+    isLoading: isLoadingServices,
+    error: servicesErrorData,
+    refetch: refetchServices,
+  } = useServices(1, 100, undefined, language);
+
+  // Extract services from the cached response
+  const services = useMemo(() => {
+    return servicesData?.services || [];
+  }, [servicesData]);
+
+  const servicesError = servicesErrorData ? t("failedToLoadServices") : null;
+
   const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAllServices, setShowAllServices] = useState(false);
@@ -46,25 +61,6 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
       UIManager.setLayoutAnimationEnabledExperimental?.(true);
     }
   }, []);
-
-  // Fetch services from backend
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setIsLoadingServices(true);
-        setServicesError(null);
-        const allServicesResponse = await apiService.getAllServices(1, 100);
-        setServices(allServicesResponse.services);
-      } catch (error) {
-        console.error("Error fetching services:", error);
-        setServicesError(t("failedToLoadServices"));
-      } finally {
-        setIsLoadingServices(false);
-      }
-    };
-
-    fetchServices();
-  }, [t]);
 
   // Organize services by categories with search and filter
   const organizeServicesByCategory = () => {
@@ -269,16 +265,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                 <TouchableOpacity
                   style={[styles.retryButton, { borderColor: colors.border }]}
                   onPress={() => {
-                    setServicesError(null);
-                    setIsLoadingServices(true);
-                    apiService
-                      .getAllServices(1, 100)
-                      .then((response) => setServices(response.services))
-                      .catch((error) => {
-                        console.error("Error fetching services:", error);
-                        setServicesError(t("failedToLoadServices"));
-                      })
-                      .finally(() => setIsLoadingServices(false));
+                    refetchServices();
                   }}
                 >
                   <Text
@@ -468,15 +455,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
       {/* Selected Service Info */}
       {selectedService && (
-        <View
-          style={[
-            styles.selectedServiceInfo,
-            {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <View style={styles.selectedServiceInfo}>
           <Text style={[styles.selectedServiceTitle, { color: colors.text }]}>
             {t("selectedService")}: {selectedService.name}
           </Text>

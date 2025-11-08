@@ -396,6 +396,100 @@ export default function EditOrderScreen() {
     }
   }, [user?.id, pendingApply, order, userLoading, id]);
 
+  console.log("ssssssss", JSON.stringify(order?.MediaFiles, null, 2));
+
+  // Reusable Media Files Display Component
+  const renderMediaFiles = (mediaFiles: any[], canDelete: boolean = false) => {
+    if (!mediaFiles || mediaFiles.length === 0) return null;
+
+    const handleDeleteMedia = async (mediaFileId: number) => {
+      Alert.alert(
+        t("delete"),
+        "Are you sure you want to delete this media file?",
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("delete"),
+            style: "destructive",
+            onPress: async () => {
+              try {
+                console.log("Deleting media file:", mediaFileId);
+                await apiService.deleteMediaFile(mediaFileId);
+                console.log("Media file deleted successfully");
+
+                // Reload order to refresh media files
+                const orderData = await apiService.getOrderById(
+                  parseInt(id as string)
+                );
+                setOrder(orderData);
+                Alert.alert(
+                  t("success") || "Success",
+                  "Media file deleted successfully"
+                );
+              } catch (error: any) {
+                console.error("Error deleting media file:", error);
+                const errorMessage =
+                  error?.message || "Failed to delete media file";
+                Alert.alert(t("error") || "Error", errorMessage);
+              }
+            },
+          },
+        ]
+      );
+    };
+
+    return (
+      <ResponsiveCard>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {t("mediaFiles")} ({mediaFiles.length})
+        </Text>
+        <View style={styles.mediaGrid}>
+          {mediaFiles.map((mediaFile) => (
+            <View key={mediaFile.id} style={styles.mediaGridItemContainer}>
+              <TouchableOpacity
+                style={styles.mediaGridItem}
+                onPress={() => setSelectedImage(mediaFile.fileUrl)}
+              >
+                {mediaFile.fileType === "image" ? (
+                  <Image
+                    source={{ uri: mediaFile.fileUrl }}
+                    style={styles.mediaGridImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View
+                    style={[
+                      styles.mediaGridPlaceholder,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="play.circle.fill"
+                      size={24}
+                      color={colors.tint}
+                    />
+                  </View>
+                )}
+              </TouchableOpacity>
+              {canDelete && (
+                <TouchableOpacity
+                  style={styles.deleteMediaButton}
+                  onPress={() => handleDeleteMedia(mediaFile.id)}
+                >
+                  <IconSymbol
+                    name="xmark.circle.fill"
+                    size={20}
+                    color="#FF3B30"
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+        </View>
+      </ResponsiveCard>
+    );
+  };
+
   if (loading || userLoading) {
     return (
       <Layout>
@@ -514,6 +608,9 @@ export default function EditOrderScreen() {
               <ResponsiveCard>
                 <MediaUploader onMediaChange={handleMediaChange} maxFiles={5} />
               </ResponsiveCard>
+
+              {/* Existing Media Files */}
+              {renderMediaFiles(order?.MediaFiles || [], true)}
             </>
           ) : (
             // View Mode - Show read-only details
@@ -831,43 +928,7 @@ export default function EditOrderScreen() {
                 })()}
 
               {/* Media Files */}
-              {order?.MediaFiles && order.MediaFiles.length > 0 && (
-                <ResponsiveCard>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("mediaFiles")}
-                  </Text>
-                  <View style={styles.mediaGrid}>
-                    {order.MediaFiles.map((mediaFile) => (
-                      <TouchableOpacity
-                        key={mediaFile.id}
-                        style={styles.mediaGridItem}
-                        onPress={() => setSelectedImage(mediaFile.fileUrl)}
-                      >
-                        {mediaFile.fileType === "image" ? (
-                          <Image
-                            source={{ uri: mediaFile.fileUrl }}
-                            style={styles.mediaGridImage}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.mediaGridPlaceholder,
-                              { backgroundColor: colors.background },
-                            ]}
-                          >
-                            <IconSymbol
-                              name="play.circle.fill"
-                              size={24}
-                              color={colors.tint}
-                            />
-                          </View>
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ResponsiveCard>
-              )}
+              {renderMediaFiles(order?.MediaFiles || [], false)}
 
               {/* Client Information */}
               {order?.Client && (
@@ -1258,8 +1319,12 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
-  mediaGridItem: {
+  mediaGridItemContainer: {
     width: "30%",
+    position: "relative",
+  },
+  mediaGridItem: {
+    width: "100%",
     aspectRatio: 1,
     borderRadius: 8,
     overflow: "hidden",
@@ -1275,6 +1340,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.1)",
+  },
+  deleteMediaButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "white",
+    borderRadius: 12,
+    zIndex: 10,
   },
   // Modal Styles
   modalOverlay: {

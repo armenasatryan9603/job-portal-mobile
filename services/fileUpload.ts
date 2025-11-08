@@ -230,6 +230,13 @@ class FileUploadService {
 
       // Step 2: Create order with media files in a single transaction
       const token = await this.getAuthToken();
+
+      if (!token) {
+        throw new Error(
+          "Authentication required. Please log in and try again."
+        );
+      }
+
       const response = await fetch(`${this.baseUrl}/orders/create-with-media`, {
         method: "POST",
         headers: {

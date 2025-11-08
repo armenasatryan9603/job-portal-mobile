@@ -266,25 +266,41 @@ class ApiService {
     // Get auth token only if authentication is required
     const token = requireAuth ? await this.getAuthToken() : null;
 
+    // If auth is required but no token, throw immediately
+    if (requireAuth && !token) {
+      throw new Error("Authentication required. Please log in and try again.");
+    }
+
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
     };
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
-    } else if (requireAuth) {
-      console.error(
-        "❌ Authentication required but no token found for request to:",
-        url
-      );
+    }
+
+    // Merge headers properly - ensure Authorization is not overridden
+    const mergedHeaders: Record<string, string> = {
+      ...headers, // Our headers (including Authorization if set)
+    };
+
+    // Merge in options.headers, but don't let them override Authorization
+    if (options.headers) {
+      Object.entries(options.headers).forEach(([key, value]) => {
+        // Don't override Authorization if it's already set
+        if (
+          key.toLowerCase() === "authorization" &&
+          mergedHeaders.Authorization
+        ) {
+          return;
+        }
+        mergedHeaders[key] = value as string;
+      });
     }
 
     const config: RequestInit = {
-      headers: {
-        ...headers,
-        ...options.headers,
-      },
       ...options,
+      headers: mergedHeaders,
     };
 
     try {
@@ -803,6 +819,16 @@ class ApiService {
       },
       body: JSON.stringify(mediaData),
     });
+  }
+
+  async deleteMediaFile(mediaFileId: number): Promise<any> {
+    return this.request(
+      `/media-files/${mediaFileId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
   }
 
   // User Services API methods
