@@ -250,7 +250,7 @@ export default function ProfileScreen() {
         setProfilePicture(asset.uri);
         setSelectedImageFile(mediaFile);
 
-        // Upload to GCS and update profile immediately
+        // Upload to storage and update profile immediately
         setUploadingPicture(true);
 
         try {

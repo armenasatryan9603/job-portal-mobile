@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -28,6 +28,10 @@ interface MediaUploaderProps {
   onMediaChange: (mediaFiles: MediaFile[]) => void;
   maxFiles?: number;
   onUploadProgress?: (completed: number, total: number) => void;
+  value?: MediaFile[]; // Controlled component: accept initial/external mediaFiles
+  selectedBannerIndex?: number; // Index of the selected banner image
+  onBannerSelect?: (index: number | null) => void; // Callback when banner is selected
+  existingBannerId?: number; // ID of existing banner image (for editing)
 }
 
 const { width } = Dimensions.get("window");
@@ -37,11 +41,22 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   onMediaChange,
   maxFiles = 10,
   onUploadProgress,
+  value,
+  selectedBannerIndex,
+  onBannerSelect,
+  existingBannerId,
 }) => {
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(value || []);
+
+  // Sync with external value prop (controlled component)
+  useEffect(() => {
+    if (value !== undefined) {
+      setMediaFiles(value);
+    }
+  }, [value]);
 
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -205,51 +220,86 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         )}
 
         {/* Media Files */}
-        {mediaFiles.map((media, index) => (
-          <View key={index} style={styles.mediaItem}>
-            <View style={styles.mediaWrapper}>
-              {media.type === "image" ? (
-                <Image
-                  source={{ uri: media.uri }}
-                  style={styles.mediaImage}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View
+        {mediaFiles.map((media, index) => {
+          const isBanner = selectedBannerIndex === index;
+          const isExistingBanner =
+            existingBannerId && (media as any).id === existingBannerId;
+          const showBannerBadge = isBanner || isExistingBanner;
+
+          return (
+            <View key={index} style={styles.mediaItem}>
+              <View style={styles.mediaWrapper}>
+                {media.type === "image" ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (onBannerSelect) {
+                        onBannerSelect(isBanner ? null : index);
+                      }
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: media.uri }}
+                      style={[
+                        styles.mediaImage,
+                        showBannerBadge ? styles.bannerImage : undefined,
+                      ]}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                ) : (
+                  <View
+                    style={[
+                      styles.videoPlaceholder,
+                      { backgroundColor: colors.border },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="play.circle.fill"
+                      size={32}
+                      color={colors.tint}
+                    />
+                  </View>
+                )}
+
+                {/* Remove Button */}
+                <TouchableOpacity
                   style={[
-                    styles.videoPlaceholder,
-                    { backgroundColor: colors.border },
+                    styles.removeButton,
+                    { backgroundColor: colors.error },
                   ]}
+                  onPress={() => removeMedia(index)}
+                >
+                  <IconSymbol name="xmark" size={12} color="white" />
+                </TouchableOpacity>
+
+                {/* Banner Badge - Show on selected banner image */}
+                {showBannerBadge && media.type === "image" && (
+                  <View
+                    style={[
+                      styles.bannerBadge,
+                      { backgroundColor: colors.tint },
+                    ]}
+                  >
+                    <IconSymbol name="star.fill" size={14} color="white" />
+                    <Text style={styles.bannerBadgeText}>Banner</Text>
+                  </View>
+                )}
+
+                {/* Media Type Badge */}
+                <View
+                  style={[styles.typeBadge, { backgroundColor: colors.tint }]}
                 >
                   <IconSymbol
-                    name="play.circle.fill"
-                    size={32}
-                    color={colors.tint}
+                    name={media.type === "image" ? "photo" : "video"}
+                    size={10}
+                    color="white"
                   />
                 </View>
-              )}
-
-              {/* Remove Button */}
-              <TouchableOpacity
-                style={[styles.removeButton, { backgroundColor: colors.error }]}
-                onPress={() => removeMedia(index)}
-              >
-                <IconSymbol name="xmark" size={12} color="white" />
-              </TouchableOpacity>
-
-              {/* Media Type Badge */}
-              <View
-                style={[styles.typeBadge, { backgroundColor: colors.tint }]}
-              >
-                <IconSymbol
-                  name={media.type === "image" ? "photo" : "video"}
-                  size={10}
-                  color="white"
-                />
               </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
 
       {mediaFiles.length > 0 && (
@@ -344,5 +394,25 @@ const styles = StyleSheet.create({
   mediaInfoText: {
     fontSize: 12,
     fontStyle: "italic",
+  },
+  bannerImage: {
+    borderWidth: 3,
+    borderColor: "#FFD700",
+  },
+  bannerBadge: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 12,
+    gap: 4,
+  },
+  bannerBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "white",
   },
 });

@@ -25,37 +25,12 @@ class FileUploadService {
   }
 
   /**
-   * Upload a single file directly to Google Cloud Storage
+   * Upload a single file (e.g., profile picture) through backend
    */
   async uploadProfilePicture(file: MediaFile): Promise<UploadResponse> {
     try {
-      // Step 1: Get presigned URL from backend for profile picture
-      const presignedResponse = await this.getPresignedUrl(
-        file.fileName,
-        file.type,
-        file.mimeType,
-        0 // Use 0 as orderId for profile pictures
-      );
-
-      if (!presignedResponse) {
-        throw new Error("Failed to get presigned URL");
-      }
-
-      // Step 2: Upload file directly to Google Cloud Storage
-      const uploadSuccess = await this.uploadToCloudStorage(
-        file,
-        presignedResponse.uploadUrl
-      );
-
-      if (!uploadSuccess) {
-        throw new Error("Failed to upload to cloud storage");
-      }
-
-      return {
-        success: true,
-        fileUrl: presignedResponse.fileUrl,
-        fileName: presignedResponse.fileName,
-      };
+      // Upload through backend endpoint (profile pictures don't have an orderId)
+      return await this.uploadFile(file, null);
     } catch (error) {
       console.error("Error uploading profile picture:", error);
       return {
@@ -67,48 +42,48 @@ class FileUploadService {
 
   async uploadFile(
     file: MediaFile,
-    orderId: number,
+    orderId: number | null,
     onProgress?: (progress: number) => void
   ): Promise<UploadResponse> {
     try {
-      // Step 1: Get presigned URL from backend
-      const presignedResponse = await this.getPresignedUrl(
-        file.fileName,
-        file.type,
-        file.mimeType,
-        orderId
-      );
+      // Upload file through backend endpoint (uses Vercel Blob)
+      const token = await this.getAuthToken();
 
-      if (!presignedResponse) {
-        throw new Error("Failed to get presigned URL");
+      const formData = new FormData();
+      formData.append("file", {
+        uri: file.uri,
+        type: file.mimeType,
+        name: file.fileName,
+      } as any);
+      // Only append orderId if it's provided (not null)
+      if (orderId !== null) {
+        formData.append("orderId", orderId.toString());
+      }
+      formData.append("fileType", file.type);
+
+      // Note: Don't set Content-Type header - React Native will set it automatically with boundary
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
       }
 
-      // Step 2: Upload file directly to Google Cloud Storage
-      const uploadSuccess = await this.uploadToCloudStorage(
-        file,
-        presignedResponse.uploadUrl
-      );
+      const response = await fetch(`${this.baseUrl}/media-files/upload`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
 
-      if (!uploadSuccess) {
-        throw new Error("Failed to upload to cloud storage");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to upload file");
       }
 
-      // Step 3: Save file record to database
-      const mediaData = {
-        orderId,
-        fileName: file.fileName, // Use original file name, not GCS path
-        fileUrl: presignedResponse.fileUrl,
-        fileType: file.type,
-        mimeType: file.mimeType,
-        fileSize: file.fileSize,
-      };
-
-      const dbResponse = await this.saveMediaRecord(mediaData);
+      const result = await response.json();
 
       return {
         success: true,
-        fileUrl: presignedResponse.fileUrl,
-        fileName: presignedResponse.fileName,
+        fileUrl: result.fileUrl,
+        fileName: result.fileName || file.fileName,
       };
     } catch (error) {
       console.error("File upload error:", error);
@@ -183,32 +158,18 @@ class FileUploadService {
         const file = files[i];
 
         try {
-          // Get presigned URL for this file (using a temporary order ID of 0)
-          const presignedResponse = await this.getPresignedUrl(
-            file.fileName,
-            file.type,
-            file.mimeType,
-            0 // Temporary order ID
-          );
+          // Upload file through backend (without orderId - will be linked when order is created)
+          // Pass null or don't pass orderId to indicate temporary upload
+          const uploadResult = await this.uploadFile(file, null as any);
 
-          if (!presignedResponse) {
-            throw new Error("Failed to get presigned URL");
-          }
-
-          // Upload file directly to Google Cloud Storage
-          const uploadSuccess = await this.uploadToCloudStorage(
-            file,
-            presignedResponse.uploadUrl
-          );
-
-          if (!uploadSuccess) {
-            throw new Error("Failed to upload to cloud storage");
+          if (!uploadResult.success || !uploadResult.fileUrl) {
+            throw new Error(uploadResult.error || "Failed to upload file");
           }
 
           // Add to uploaded files list
           uploadedFiles.push({
-            fileName: file.fileName, // Use original file name, not GCS path
-            fileUrl: presignedResponse.fileUrl,
+            fileName: file.fileName,
+            fileUrl: uploadResult.fileUrl,
             fileType: file.type,
             mimeType: file.mimeType,
             fileSize: file.fileSize,
@@ -273,7 +234,8 @@ class FileUploadService {
   }
 
   /**
-   * Get presigned URL for direct upload to Google Cloud Storage
+   * Get upload URL info (legacy method - kept for compatibility)
+   * Note: Files are now uploaded through the backend endpoint
    */
   async getPresignedUrl(
     fileName: string,
@@ -346,7 +308,8 @@ class FileUploadService {
   }
 
   /**
-   * Upload file directly to Google Cloud Storage using presigned URL
+   * Upload file directly to storage (legacy method - kept for compatibility)
+   * Note: Files are now uploaded through the backend endpoint
    */
   async uploadToCloudStorage(
     file: MediaFile,

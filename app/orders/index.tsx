@@ -31,6 +31,7 @@ import {
   RefreshControl,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 
 // Filter configuration
@@ -332,6 +333,10 @@ export default function OrdersScreen() {
         setLoadingMore(false);
       } else {
         setLoading(false);
+        // Mark initial load as complete when loading finishes
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
+        }
       }
     }
   };
@@ -371,11 +376,8 @@ export default function OrdersScreen() {
 
     loadOrders();
     loadAppliedOrders();
-    // Set initial load as done after a small delay to prevent immediate filter effect
-    setTimeout(() => {
-      initialLoadDone.current = true;
-      setIsInitialLoad(false);
-    }, 100);
+    // Mark that initial load has started (will be set to false when loading completes)
+    initialLoadDone.current = true;
   }, [isMyOrders, isMyJobs, user?.id, showLoginModal]);
 
   // Handle search and filter changes (only after initial load)
@@ -407,8 +409,8 @@ export default function OrdersScreen() {
 
   const handleOrderPress = (order: Order) => {
     if (isMyOrders) {
-      // For user's own orders, open in edit mode
-      router.push(`/orders/edit/${order.id}`);
+      // For user's own orders, open in edit mode (create.tsx)
+      router.push(`/orders/create?orderId=${order.id}`);
     } else {
       // For other orders, open in view mode
       router.push(`/orders/${order.id}`);
@@ -673,6 +675,14 @@ export default function OrdersScreen() {
   const OrderItem = ({ order }: { order: Order }) => (
     <TouchableOpacity onPress={() => handleOrderPress(order)}>
       <ResponsiveCard>
+        {/* Banner Image */}
+        {order.BannerImage && (
+          <Image
+            source={{ uri: order.BannerImage.fileUrl }}
+            style={styles.bannerImage}
+            resizeMode="cover"
+          />
+        )}
         <View style={styles.orderHeader}>
           <Text style={[styles.orderTitle, { color: colors.text }]}>
             {order.title}
@@ -782,7 +792,7 @@ export default function OrdersScreen() {
               >
                 <IconSymbol name="paperplane.fill" size={16} color="black" />
                 <Text style={styles.applyButtonText}>
-                  {t("apply")} (1 {t("credit")})
+                  {t("apply")} ({order.creditCost || 1} {t("credit")})
                 </Text>
               </TouchableOpacity>
             )}
@@ -849,8 +859,9 @@ export default function OrdersScreen() {
   };
 
   const renderEmptyComponent = () => {
-    if (loading && !filterLoading) {
-      return <EmptyPage type="loading" title={t("loading")} />;
+    // Don't show empty state during initial load
+    if (isInitialLoad || (loading && !filterLoading)) {
+      return null; // Loading overlay will handle this
     }
 
     if (error) {
@@ -914,25 +925,41 @@ export default function OrdersScreen() {
             </ResponsiveCard>
           </View>
 
-          <FlatList
-            style={{ marginTop: 100 }}
-            data={orders}
-            renderItem={({ item }) => <OrderItem order={item} />}
-            keyExtractor={(item) => item.id.toString()}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={renderEmptyComponent}
-            onEndReached={loadMoreOrders}
-            onEndReachedThreshold={0.1}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor={colors.tint}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
-          />
+          {/* Show loading overlay during initial load */}
+          {isInitialLoad ||
+          (loading && !filterLoading && orders.length === 0) ? (
+            <View
+              style={[
+                styles.loadingOverlay,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <ActivityIndicator size="large" color={colors.tint} />
+              <Text style={[styles.loadingText, { color: colors.text }]}>
+                {t("loading")}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              style={{ marginTop: 100 }}
+              data={orders}
+              renderItem={({ item }) => <OrderItem order={item} />}
+              keyExtractor={(item) => item.id.toString()}
+              ListFooterComponent={renderFooter}
+              ListEmptyComponent={renderEmptyComponent}
+              onEndReached={loadMoreOrders}
+              onEndReachedThreshold={0.1}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.tint}
+                />
+              }
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+            />
+          )}
         </View>
       </Layout>
 
@@ -957,6 +984,23 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 100,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    opacity: 0.7,
+  },
+  bannerImage: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
   loadingMoreContainer: {
     flexDirection: "row",
     justifyContent: "center",

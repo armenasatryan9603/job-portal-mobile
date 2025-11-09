@@ -21,14 +21,17 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
+  Modal,
 } from "react-native";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiService, Service } from "@/services/api";
 import { fileUploadService, MediaFile } from "@/services/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 
 export default function CreateOrderScreen() {
-  const { serviceId } = useLocalSearchParams();
+  const { serviceId, orderId } = useLocalSearchParams();
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -57,6 +60,11 @@ export default function CreateOrderScreen() {
     [key: string]: string[];
   }>({});
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedBannerIndex, setSelectedBannerIndex] = useState<number | null>(
+    null
+  );
+  const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
 
   // Format dates with times for form submission in JSON string format
   const formatAllDatesWithTimes = () => {
@@ -89,13 +97,79 @@ export default function CreateOrderScreen() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Handle serviceId from URL params
+  // Handle serviceId and orderId from URL params
   useEffect(() => {
     if (serviceId) {
       const serviceIdNum = parseInt(serviceId as string);
       setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
     }
-  }, [serviceId]);
+
+    // If orderId is provided, load existing order for editing
+    if (orderId) {
+      const loadOrderForEdit = async () => {
+        try {
+          const orderData = await apiService.getOrderById(
+            parseInt(orderId as string)
+          );
+
+          // Populate form with existing data
+          setFormData({
+            title: orderData.title || "",
+            description: orderData.description || "",
+            budget: orderData.budget?.toString() || "",
+            location: orderData.location || "",
+            skills: orderData.skills?.join(", ") || "",
+            availableDates: orderData.availableDates?.join(", ") || "",
+            serviceId: orderData.serviceId || null,
+          });
+
+          // Set selected service if available
+          if (orderData.Service) {
+            setSelectedService(orderData.Service);
+          }
+
+          // Parse available dates
+          if (orderData.availableDates && orderData.availableDates.length > 0) {
+            const dates = orderData.availableDates.map(
+              (dateStr) => new Date(dateStr)
+            );
+            setSelectedDates(dates);
+          }
+
+          // Load existing media files
+          if (orderData.MediaFiles && orderData.MediaFiles.length > 0) {
+            const existingMediaFiles: MediaFile[] = orderData.MediaFiles.map(
+              (mf: any) => ({
+                uri: mf.fileUrl,
+                type: mf.fileType as "image" | "video",
+                fileName: mf.fileName,
+                mimeType: mf.mimeType,
+                fileSize: mf.fileSize || 0,
+                id: mf.id, // Store ID for banner selection
+              })
+            );
+            setMediaFiles(existingMediaFiles);
+
+            // Set existing banner image if available
+            if (orderData.bannerImageId) {
+              setExistingBannerId(orderData.bannerImageId);
+              const bannerIndex = existingMediaFiles.findIndex(
+                (mf: any) => mf.id === orderData.bannerImageId
+              );
+              if (bannerIndex !== -1) {
+                setSelectedBannerIndex(bannerIndex);
+              }
+            }
+          }
+        } catch (error) {
+          console.error("Error loading order for edit:", error);
+          Alert.alert(t("error"), t("failedToLoadOrder"));
+        }
+      };
+
+      loadOrderForEdit();
+    }
+  }, [serviceId, orderId]);
 
   const validateField = (field: string, value: string | number) => {
     switch (field) {
@@ -212,8 +286,14 @@ export default function CreateOrderScreen() {
             : undefined,
       };
 
-      // Call the API to create the order
-      await apiService.createOrder(orderData);
+      // If orderId exists, update the order; otherwise create a new one
+      if (orderId) {
+        // Update existing order
+        await apiService.updateOrder(parseInt(orderId as string), orderData);
+      } else {
+        // Create new order
+        await apiService.createOrder(orderData);
+      }
 
       // Order posted successfully
       router.replace("/orders");
@@ -293,21 +373,134 @@ export default function CreateOrderScreen() {
             : undefined,
       };
 
-      // Use transactional order creation with media files
-      if (mediaFiles.length > 0) {
-        const { order } = await fileUploadService.createOrderWithMedia(
-          orderData,
-          mediaFiles
+      const currentOrderId = orderId ? parseInt(orderId as string) : null;
+
+      // If editing an existing order
+      if (currentOrderId) {
+        // Separate new files (local URIs) from existing files (HTTP URLs)
+        const newFiles = mediaFiles.filter(
+          (file) =>
+            file.uri.startsWith("file://") || file.uri.startsWith("content://")
         );
+        const existingFiles = mediaFiles.filter(
+          (file) =>
+            file.uri.startsWith("http://") || file.uri.startsWith("https://")
+        );
+
+        // Upload new files with the actual orderId
+        if (newFiles.length > 0) {
+          await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
+        }
+
+        // Update the order
+        await apiService.updateOrder(currentOrderId, orderData);
+
+        // Handle banner image update
+        if (selectedBannerIndex !== null) {
+          // Reload the order to get all media files with their IDs
+          const updatedOrder = await apiService.getOrderById(currentOrderId);
+
+          if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
+            // Find the media file at the selected index
+            const bannerFile = mediaFiles[selectedBannerIndex];
+
+            // Try to find the matching media file in the database
+            let targetMediaFile = null;
+
+            // If it's an existing file (has ID), use that ID directly
+            if ((bannerFile as any).id) {
+              targetMediaFile = updatedOrder.MediaFiles.find(
+                (mf: any) => mf.id === (bannerFile as any).id
+              );
+            } else {
+              // For new files, match by filename
+              // The fileName should match between the local file and the uploaded file
+              targetMediaFile = updatedOrder.MediaFiles.find(
+                (mf: any) =>
+                  mf.fileType === "image" && mf.fileName === bannerFile.fileName
+              );
+
+              // If not found by filename, try to match by finding the most recently uploaded image
+              if (!targetMediaFile && newFiles.length > 0) {
+                const imageFiles = updatedOrder.MediaFiles.filter(
+                  (mf: any) => mf.fileType === "image"
+                ).sort(
+                  (a: any, b: any) =>
+                    new Date(b.createdAt).getTime() -
+                    new Date(a.createdAt).getTime()
+                );
+
+                // Find the index of the selected file among new files
+                const newFileIndex = newFiles.findIndex(
+                  (f) => f === bannerFile
+                );
+                if (newFileIndex >= 0 && newFileIndex < imageFiles.length) {
+                  targetMediaFile = imageFiles[newFileIndex];
+                }
+              }
+            }
+
+            // Set banner image if we found a match
+            if (targetMediaFile && targetMediaFile.fileType === "image") {
+              try {
+                await apiService.setBannerImage(
+                  currentOrderId,
+                  targetMediaFile.id
+                );
+                console.log(
+                  "Banner image set successfully:",
+                  targetMediaFile.id
+                );
+              } catch (error) {
+                console.error("Error setting banner image:", error);
+              }
+            } else {
+              console.warn("Could not find matching media file for banner", {
+                selectedIndex: selectedBannerIndex,
+                bannerFileName: bannerFile.fileName,
+                availableFiles: updatedOrder.MediaFiles.map((mf: any) => ({
+                  id: mf.id,
+                  fileName: mf.fileName,
+                  fileType: mf.fileType,
+                })),
+              });
+            }
+          }
+        }
 
         // Application submitted successfully
         router.replace("/orders");
       } else {
-        // No media files, use regular order creation
-        await apiService.createOrder(orderData);
+        // Creating a new order
+        // Use transactional order creation with media files
+        if (mediaFiles.length > 0) {
+          const { order } = await fileUploadService.createOrderWithMedia(
+            orderData,
+            mediaFiles
+          );
 
-        // Application submitted successfully
-        router.replace("/orders");
+          // Set banner image if selected
+          if (selectedBannerIndex !== null && order.id) {
+            // Reload order to get media file IDs
+            const updatedOrder = await apiService.getOrderById(order.id);
+            if (
+              updatedOrder.MediaFiles &&
+              selectedBannerIndex < updatedOrder.MediaFiles.length
+            ) {
+              const bannerFile = updatedOrder.MediaFiles[selectedBannerIndex];
+              await apiService.setBannerImage(order.id, bannerFile.id);
+            }
+          }
+
+          // Application submitted successfully
+          router.replace("/orders");
+        } else {
+          // No media files, use regular order creation
+          await apiService.createOrder(orderData);
+
+          // Application submitted successfully
+          router.replace("/orders");
+        }
       }
     } catch (error: any) {
       console.error("Error creating order:", error);
@@ -350,26 +543,6 @@ export default function CreateOrderScreen() {
       setIsSubmitting(false);
     }
   };
-
-  // console.log("mediaFilesssssssss", JSON.stringify(mediaFiles, null, 2));
-
-  const footer = (
-    <Footer>
-      <View style={styles.footerButtons}>
-        <FooterButton
-          title={t("postOrder")}
-          onPress={handleSubmit}
-          variant="primary"
-          disabled={isSubmitting}
-        />
-        <FooterButton
-          title={t("cancel")}
-          onPress={handleCancel}
-          variant="secondary"
-        />
-      </View>
-    </Footer>
-  );
 
   const header = (
     <Header
@@ -435,7 +608,24 @@ export default function CreateOrderScreen() {
 
           {/* Media Upload */}
           <ResponsiveCard>
-            <MediaUploader onMediaChange={setMediaFiles} maxFiles={10} />
+            <MediaUploader
+              onMediaChange={setMediaFiles}
+              maxFiles={10}
+              value={mediaFiles}
+              selectedBannerIndex={selectedBannerIndex ?? undefined}
+              onBannerSelect={setSelectedBannerIndex}
+              existingBannerId={
+                existingBannerId !== null ? existingBannerId : undefined
+              }
+            />
+            {mediaFiles.length > 0 && (
+              <Text
+                style={[styles.bannerHint, { color: colors.tabIconDefault }]}
+              >
+                {t("tapImageToSetAsBanner") ||
+                  "Tap an image to set it as the banner"}
+              </Text>
+            )}
           </ResponsiveCard>
 
           {/* Action Buttons */}
@@ -462,6 +652,26 @@ export default function CreateOrderScreen() {
           </ResponsiveCard>
         </ResponsiveContainer>
       </ScrollView>
+
+      {/* Image Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedImage(null)}
+        >
+          <Image
+            source={{ uri: selectedImage || "" }}
+            style={styles.modalImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </Modal>
     </Layout>
   );
 }
@@ -487,5 +697,62 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: 20,
+  },
+  mediaGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  mediaGridItemContainer: {
+    width: "30%",
+    position: "relative",
+  },
+  mediaGridItem: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  mediaGridImage: {
+    width: "100%",
+    height: "100%",
+  },
+  mediaGridPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+  },
+  deleteMediaButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "white",
+    borderRadius: 12,
+    zIndex: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalImage: {
+    width: "90%",
+    height: "90%",
+  },
+  bannerHint: {
+    fontSize: 12,
+    fontStyle: "italic",
+    marginTop: 8,
+    textAlign: "center",
+    opacity: 0.7,
   },
 });

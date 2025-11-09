@@ -210,6 +210,13 @@ export interface Order {
   availableDates: string[];
   createdAt: string;
   updatedAt: string;
+  creditCost?: number; // Credit cost based on order budget
+  bannerImageId?: number; // ID of the banner image
+  BannerImage?: {
+    id: number;
+    fileUrl: string;
+    fileType: string;
+  };
   Client: OrderClient;
   Service?: Service;
   Proposals?: any[];
@@ -707,13 +714,31 @@ class ApiService {
       availableDates?: string[];
     }
   ): Promise<any> {
-    return this.request(`/orders/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
+    return this.request(
+      `/orders/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
       },
-      body: JSON.stringify(updateData),
-    });
+      true
+    ); // requireAuth: true
+  }
+
+  async setBannerImage(orderId: number, mediaFileId: number): Promise<any> {
+    return this.request(
+      `/orders/${orderId}/banner-image`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mediaFileId }),
+      },
+      true
+    ); // requireAuth: true
   }
 
   async deleteOrder(id: number): Promise<any> {

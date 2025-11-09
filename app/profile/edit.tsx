@@ -121,10 +121,10 @@ export default function EditProfileScreen() {
 
       let avatarUrl = profilePicture;
 
-      // If a new image was selected, upload it to GCS first
+      // If a new image was selected, upload it to storage first
       if (selectedImageFile) {
         console.log(
-          "Uploading selected image to GCS:",
+          "Uploading selected image:",
           selectedImageFile.fileName
         );
 

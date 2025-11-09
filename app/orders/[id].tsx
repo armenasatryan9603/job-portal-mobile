@@ -5,10 +5,6 @@ import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
-import { ServiceSelector } from "@/components/ServiceSelector";
-import { BasicInformationForm } from "@/components/BasicInformationForm";
-import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
-import { MediaUploader } from "@/components/MediaUploader";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,27 +39,8 @@ export default function EditOrderScreen() {
   const isMyJobs = myJobs === "true";
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [order, setOrder] = useState<Order | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
   const [pendingApply, setPendingApply] = useState(false);
-
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    budget: "",
-    location: "",
-    skills: "",
-    availableDates: "",
-    serviceId: null as number | null,
-  });
-
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
-  const [selectedDateTimes, setSelectedDateTimes] = useState<{
-    [key: string]: string[];
-  }>({});
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Track applied orders (fetched from backend)
@@ -109,31 +86,10 @@ export default function EditOrderScreen() {
         const orderData = await apiService.getOrderById(parseInt(id as string));
         setOrder(orderData);
 
-        // Populate form with existing data
-        setFormData({
-          title: orderData.title || "",
-          description: orderData.description || "",
-          budget: orderData.budget?.toString() || "",
-          location: orderData.location || "",
-          skills: orderData.skills?.join(", ") || "",
-          availableDates: orderData.availableDates?.join(", ") || "",
-          serviceId: orderData.serviceId || null,
-        });
-
-        // Set selected service if available
-        if (orderData.Service) {
-          setSelectedService(orderData.Service);
-        }
-
-        // Check if current user is the owner
-        setIsOwner(user?.id === orderData.clientId);
-
-        // Parse available dates
-        if (orderData.availableDates && orderData.availableDates.length > 0) {
-          const dates = orderData.availableDates.map(
-            (dateStr) => new Date(dateStr)
-          );
-          setSelectedDates(dates);
+        // Check if current user is the owner - if so, redirect to create.tsx for editing
+        if (user?.id === orderData.clientId) {
+          router.replace(`/orders/create?orderId=${id}`);
+          return;
         }
       } catch (error) {
         console.error("Error loading order:", error);
@@ -148,14 +104,7 @@ export default function EditOrderScreen() {
       loadOrder();
       loadAppliedOrders();
     }
-  }, [id]);
-
-  // Re-check ownership when user changes
-  useEffect(() => {
-    if (order && user) {
-      setIsOwner(user.id === order.clientId);
-    }
-  }, [user, order]);
+  }, [id, user]);
 
   // Reload applied orders when screen comes into focus
   useFocusEffect(
@@ -165,112 +114,6 @@ export default function EditOrderScreen() {
       }
     }, [user?.id])
   );
-
-  const handleFormChange = (field: string, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleServiceSelect = (service: Service) => {
-    setSelectedService(service);
-    setFormData((prev) => ({
-      ...prev,
-      serviceId: service.id,
-    }));
-  };
-
-  const handleDateSelect = (dates: Date[]) => {
-    setSelectedDates(dates);
-  };
-
-  const handleTimeSelect = (dateTimes: { [key: string]: string[] }) => {
-    setSelectedDateTimes(dateTimes);
-  };
-
-  const handleMediaChange = (files: MediaFile[]) => {
-    setMediaFiles(files);
-  };
-
-  const validateForm = () => {
-    if (!formData.title.trim()) {
-      Alert.alert(t("error"), t("titleRequired"));
-      return false;
-    }
-    if (!formData.description.trim()) {
-      Alert.alert(t("error"), t("descriptionRequired"));
-      return false;
-    }
-    if (!formData.budget || parseFloat(formData.budget) <= 0) {
-      Alert.alert(t("error"), t("budgetRequired"));
-      return false;
-    }
-    if (!selectedService) {
-      Alert.alert(t("error"), t("serviceRequired"));
-      return false;
-    }
-    return true;
-  };
-
-  const handleSave = async () => {
-    if (!validateForm() || !order) return;
-
-    try {
-      setSaving(true);
-
-      // Upload media files first
-      const uploadedMediaUrls: string[] = [];
-      for (const file of mediaFiles) {
-        if (file.uri) {
-          // New file to upload
-          const uploadResult = await fileUploadService.uploadFile(
-            file,
-            order.id
-          );
-          if (uploadResult.success && uploadResult.fileUrl) {
-            uploadedMediaUrls.push(uploadResult.fileUrl);
-          }
-        }
-      }
-
-      // Prepare update data
-      const updateData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        budget: parseFloat(formData.budget),
-        location: formData.location.trim(),
-        skills: formData.skills
-          .split(",")
-          .map((skill) => skill.trim())
-          .filter((skill) => skill.length > 0),
-        availableDates: selectedDates.map((date) => date.toISOString()),
-        mediaUrls: uploadedMediaUrls,
-      };
-
-      // Update the order
-      await apiService.updateOrder(order.id, updateData);
-
-      // Order updated successfully
-      router.back();
-    } catch (error) {
-      console.error("Error updating order:", error);
-      Alert.alert(t("error"), t("failedToUpdateOrder"));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    Alert.alert(t("cancel"), t("areYouSureCancelChanges"), [
-      { text: t("no"), style: "cancel" },
-      {
-        text: t("yes"),
-        style: "destructive",
-        onPress: () => router.back(),
-      },
-    ]);
-  };
 
   const handleStartChat = async () => {
     // Check if user is authenticated
@@ -527,27 +370,14 @@ export default function EditOrderScreen() {
 
   const header = (
     <Header
-      title={isOwner ? t("editOrder") : t("orderDetails")}
-      subtitle={isOwner ? t("updateOrderDetails") : order?.title}
+      title={t("orderDetails")}
+      subtitle={order?.title}
       showBackButton={true}
       onBackPress={() => router.back()}
     />
   );
 
-  const footer = isOwner ? (
-    <Footer>
-      <FooterButton
-        title={t("cancel")}
-        onPress={handleCancel}
-        variant="secondary"
-      />
-      <FooterButton
-        title={saving ? t("saving") : t("saveChanges")}
-        onPress={handleSave}
-        disabled={saving}
-      />
-    </Footer>
-  ) : (
+  const footer = (
     <Footer>
       <FooterButton
         title={t("startChat")}
@@ -565,468 +395,389 @@ export default function EditOrderScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <ResponsiveContainer>
-          {isOwner ? (
-            // Edit Mode - Show form components
-            <>
-              {/* Service Selection */}
-              <ResponsiveCard>
-                <ServiceSelector
-                  selectedService={selectedService}
-                  onServiceSelect={handleServiceSelect}
-                />
-              </ResponsiveCard>
+          {/* View Mode - Show read-only details */}
+          <>
+            {/* Order Overview */}
+            <ResponsiveCard>
+              <View style={styles.detailSection}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("orderOverview")}
+                </Text>
+                <Text style={[styles.orderTitle, { color: colors.text }]}>
+                  {order?.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.orderDescription,
+                    { color: colors.tabIconDefault },
+                  ]}
+                >
+                  {order?.description}
+                </Text>
 
-              {/* Basic Information */}
-              <ResponsiveCard>
-                <BasicInformationForm
-                  formData={formData}
-                  errors={{
-                    title: "",
-                    description: "",
-                    budget: "",
-                    location: "",
-                  }}
-                  selectedService={selectedService}
-                  onFieldChange={handleFormChange}
-                />
-              </ResponsiveCard>
-
-              {/* Skills and Requirements */}
-              <ResponsiveCard>
-                <SkillsAndRequirementsForm
-                  formData={formData}
-                  errors={{ skills: "", availableDates: "" }}
-                  selectedDates={selectedDates}
-                  selectedDateTimes={selectedDateTimes}
-                  onFieldChange={handleFormChange}
-                  onDatesChange={handleDateSelect}
-                  onDateTimesChange={handleTimeSelect}
-                />
-              </ResponsiveCard>
-
-              {/* Media Upload */}
-              <ResponsiveCard>
-                <MediaUploader onMediaChange={handleMediaChange} maxFiles={5} />
-              </ResponsiveCard>
-
-              {/* Existing Media Files */}
-              {renderMediaFiles(order?.MediaFiles || [], true)}
-            </>
-          ) : (
-            // View Mode - Show read-only details
-            <>
-              {/* Order Overview */}
-              <ResponsiveCard>
-                <View style={styles.detailSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("orderOverview")}
-                  </Text>
-                  <Text style={[styles.orderTitle, { color: colors.text }]}>
-                    {order?.title}
-                  </Text>
-                  <Text
+                {/* Apply Button or Applied Status */}
+                {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
+                  <TouchableOpacity
                     style={[
-                      styles.orderDescription,
-                      { color: colors.tabIconDefault },
+                      styles.applyButton,
+                      { backgroundColor: colors.tint },
+                    ]}
+                    onPress={handleApplyToOrder}
+                    activeOpacity={0.8}
+                  >
+                    <IconSymbol
+                      name="paperplane.fill"
+                      size={16}
+                      color="black"
+                    />
+                    <Text style={styles.applyButtonText}>
+                      {t("apply")} (1 {t("credit")})
+                    </Text>
+                  </TouchableOpacity>
+                ) : order?.status === "open" && hasAppliedToOrder(order.id) ? (
+                  <View
+                    style={[
+                      styles.appliedButton,
+                      { backgroundColor: colors.tabIconDefault },
                     ]}
                   >
-                    {order?.description}
-                  </Text>
+                    <IconSymbol
+                      name="checkmark.circle.fill"
+                      size={16}
+                      color="white"
+                    />
+                    <Text style={styles.appliedButtonText}>{t("applied")}</Text>
+                  </View>
+                ) : null}
 
-                  {/* Apply Button or Applied Status */}
-                  {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
-                    <TouchableOpacity
-                      style={[
-                        styles.applyButton,
-                        { backgroundColor: colors.tint },
-                      ]}
-                      onPress={handleApplyToOrder}
-                      activeOpacity={0.8}
+                {/* Cancel Button - Only show for My Jobs */}
+                {isMyJobs && order?.Proposals && order.Proposals.length > 0 && (
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancelProposal}
+                    activeOpacity={0.8}
+                  >
+                    <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
+                    <Text
+                      style={[styles.cancelButtonText, { color: "#FF3B30" }]}
                     >
-                      <IconSymbol
-                        name="paperplane.fill"
-                        size={16}
-                        color="black"
-                      />
-                      <Text style={styles.applyButtonText}>
-                        {t("apply")} (1 {t("credit")})
+                      {t("cancel")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </ResponsiveCard>
+
+            {/* Order Details */}
+            <ResponsiveCard>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("orderDetails")}
+              </Text>
+              <View style={styles.detailsContainer}>
+                <View style={styles.detailItem}>
+                  <IconSymbol
+                    name="dollarsign.circle.fill"
+                    size={20}
+                    color={colors.tint}
+                  />
+                  <View style={styles.detailContent}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("budget")}
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      ${order?.budget?.toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <IconSymbol
+                    name="location.fill"
+                    size={20}
+                    color={colors.tint}
+                  />
+                  <View style={styles.detailContent}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("location")}
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {order?.location || t("remote")}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <IconSymbol name="calendar" size={20} color={colors.tint} />
+                  <View style={styles.detailContent}>
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("createdAt")}
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.text }]}>
+                      {order?.createdAt
+                        ? new Date(order.createdAt).toLocaleDateString()
+                        : ""}
+                    </Text>
+                  </View>
+                </View>
+
+                {order?.Service && (
+                  <View style={styles.detailItem}>
+                    <IconSymbol
+                      name="briefcase.fill"
+                      size={20}
+                      color={colors.tint}
+                    />
+                    <View style={styles.detailContent}>
+                      <Text
+                        style={[
+                          styles.detailLabel,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("service")}
                       </Text>
-                    </TouchableOpacity>
-                  ) : order?.status === "open" &&
-                    hasAppliedToOrder(order.id) ? (
-                    <View
-                      style={[
-                        styles.appliedButton,
-                        { backgroundColor: colors.tabIconDefault },
-                      ]}
-                    >
-                      <IconSymbol
-                        name="checkmark.circle.fill"
-                        size={16}
-                        color="white"
-                      />
-                      <Text style={styles.appliedButtonText}>
-                        {t("applied")}
+                      <Text
+                        style={[styles.detailValue, { color: colors.text }]}
+                      >
+                        {order.Service.name}
                       </Text>
                     </View>
-                  ) : null}
+                  </View>
+                )}
+              </View>
+            </ResponsiveCard>
 
-                  {/* Cancel Button - Only show for My Jobs */}
-                  {isMyJobs &&
-                    order?.Proposals &&
-                    order.Proposals.length > 0 && (
-                      <TouchableOpacity
-                        style={styles.cancelButton}
-                        onPress={handleCancelProposal}
-                        activeOpacity={0.8}
-                      >
+            {/* Required Skills */}
+            {order?.skills && order.skills.length > 0 && (
+              <ResponsiveCard>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("requiredSkills")}
+                </Text>
+                <View style={styles.skillsContainer}>
+                  {order.skills.map((skill: string, index: number) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.skillTag,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.skillText, { color: colors.text }]}>
+                        {skill}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </ResponsiveCard>
+            )}
+
+            {/* Available Dates */}
+            {order?.availableDates &&
+              order.availableDates.length > 0 &&
+              (() => {
+                // Parse dates and times from format: {"Sep 26 (12:30",14:30,15:00,15:30),"Sep 27 (14:30)","Sep 22"}
+                const parseDates = (dateString: string) => {
+                  const cleanString = dateString.replace(/^[{"']|["'}]$/g, "");
+                  const dates = cleanString.match(/Sep \d+/g) || [];
+
+                  return dates.map((date) => {
+                    const dateIndex = cleanString.indexOf(date);
+                    const nextDateIndex = cleanString.indexOf(
+                      "Sep",
+                      dateIndex + 1
+                    );
+                    const endIndex =
+                      nextDateIndex === -1 ? cleanString.length : nextDateIndex;
+                    const dateSection = cleanString.substring(
+                      dateIndex,
+                      endIndex
+                    );
+                    const times = dateSection.match(/\d{1,2}:\d{2}/g) || [];
+
+                    return { date, times };
+                  });
+                };
+
+                // Parse all available dates
+                const allDateTimes = order.availableDates
+                  .filter((dateStr) => dateStr && dateStr.trim() !== "")
+                  .flatMap((dateStr) => parseDates(dateStr));
+
+                // Only show if there are valid dates
+                return allDateTimes.length > 0 ? (
+                  <ResponsiveCard>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      {t("availableDates")}
+                    </Text>
+                    <View style={styles.datesContainer}>
+                      {allDateTimes.map((dateTime, index) => (
+                        <View key={index} style={styles.dateTimeItem}>
+                          <View style={styles.dateHeader}>
+                            <IconSymbol
+                              name="calendar"
+                              size={16}
+                              color={colors.tint}
+                            />
+                            <Text
+                              style={[styles.dateText, { color: colors.text }]}
+                            >
+                              {dateTime.date}
+                            </Text>
+                          </View>
+                          {dateTime.times && dateTime.times.length > 0 && (
+                            <View style={styles.timesContainer}>
+                              {dateTime.times.map((time, timeIndex) => (
+                                <View
+                                  key={timeIndex}
+                                  style={[
+                                    styles.timeChip,
+                                    {
+                                      backgroundColor: colors.background,
+                                      borderColor: colors.tint,
+                                    },
+                                  ]}
+                                >
+                                  <IconSymbol
+                                    name="clock"
+                                    size={12}
+                                    color={colors.tint}
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.timeText,
+                                      { color: colors.tint },
+                                    ]}
+                                  >
+                                    {time}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  </ResponsiveCard>
+                ) : null;
+              })()}
+
+            {/* Media Files */}
+            {renderMediaFiles(order?.MediaFiles || [], false)}
+
+            {/* Client Information */}
+            {order?.Client && (
+              <ResponsiveCard>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("clientInformation")}
+                </Text>
+                <TouchableOpacity
+                  style={styles.clientInfo}
+                  onPress={() =>
+                    router.push(`/profile/profile?userId=${order.Client.id}`)
+                  }
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.clientHeader}>
+                    <View style={styles.clientMainInfo}>
+                      <View style={styles.clientAvatarContainer}>
+                        {order.Client.avatarUrl ? (
+                          <Image
+                            source={{ uri: order.Client.avatarUrl }}
+                            style={styles.clientAvatar}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              styles.clientAvatarPlaceholder,
+                              { backgroundColor: colors.tint },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.clientAvatarText,
+                                { color: colors.background },
+                              ]}
+                            >
+                              {order.Client.name?.charAt(0)?.toUpperCase()}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.clientNameContainer}>
+                        <Text
+                          style={[styles.clientName, { color: colors.text }]}
+                        >
+                          {order.Client.name}
+                        </Text>
+                        {order.Client.verified && (
+                          <View style={styles.verifiedBadge}>
+                            <IconSymbol
+                              name="checkmark.seal.fill"
+                              size={14}
+                              color="#4CAF50"
+                            />
+                            <Text
+                              style={[
+                                styles.verifiedText,
+                                { color: "#4CAF50" },
+                              ]}
+                            >
+                              {t("verified")}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.clientActionContainer}>
                         <IconSymbol
-                          name="xmark.circle"
+                          name="chevron.right"
                           size={16}
-                          color="#FF3B30"
+                          color={colors.tabIconDefault}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  {order.Client.email && (
+                    <View style={styles.clientDetails}>
+                      <View style={styles.clientDetailItem}>
+                        <IconSymbol
+                          name="envelope.fill"
+                          size={16}
+                          color={colors.tint}
                         />
                         <Text
                           style={[
-                            styles.cancelButtonText,
-                            { color: "#FF3B30" },
+                            styles.clientDetailText,
+                            { color: colors.text },
                           ]}
                         >
-                          {t("cancel")}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                </View>
-              </ResponsiveCard>
-
-              {/* Order Details */}
-              <ResponsiveCard>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("orderDetails")}
-                </Text>
-                <View style={styles.detailsContainer}>
-                  <View style={styles.detailItem}>
-                    <IconSymbol
-                      name="dollarsign.circle.fill"
-                      size={20}
-                      color={colors.tint}
-                    />
-                    <View style={styles.detailContent}>
-                      <Text
-                        style={[
-                          styles.detailLabel,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {t("budget")}
-                      </Text>
-                      <Text
-                        style={[styles.detailValue, { color: colors.text }]}
-                      >
-                        ${order?.budget?.toLocaleString()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <IconSymbol
-                      name="location.fill"
-                      size={20}
-                      color={colors.tint}
-                    />
-                    <View style={styles.detailContent}>
-                      <Text
-                        style={[
-                          styles.detailLabel,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {t("location")}
-                      </Text>
-                      <Text
-                        style={[styles.detailValue, { color: colors.text }]}
-                      >
-                        {order?.location || t("remote")}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.detailItem}>
-                    <IconSymbol name="calendar" size={20} color={colors.tint} />
-                    <View style={styles.detailContent}>
-                      <Text
-                        style={[
-                          styles.detailLabel,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {t("createdAt")}
-                      </Text>
-                      <Text
-                        style={[styles.detailValue, { color: colors.text }]}
-                      >
-                        {order?.createdAt
-                          ? new Date(order.createdAt).toLocaleDateString()
-                          : ""}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {selectedService && (
-                    <View style={styles.detailItem}>
-                      <IconSymbol
-                        name="briefcase.fill"
-                        size={20}
-                        color={colors.tint}
-                      />
-                      <View style={styles.detailContent}>
-                        <Text
-                          style={[
-                            styles.detailLabel,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          {t("service")}
-                        </Text>
-                        <Text
-                          style={[styles.detailValue, { color: colors.text }]}
-                        >
-                          {selectedService.name}
+                          {order.Client.email}
                         </Text>
                       </View>
                     </View>
                   )}
-                </View>
+                </TouchableOpacity>
               </ResponsiveCard>
-
-              {/* Required Skills */}
-              {order?.skills && order.skills.length > 0 && (
-                <ResponsiveCard>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("requiredSkills")}
-                  </Text>
-                  <View style={styles.skillsContainer}>
-                    {order.skills.map((skill: string, index: number) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.skillTag,
-                          {
-                            backgroundColor: colors.background,
-                            borderColor: colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[styles.skillText, { color: colors.text }]}
-                        >
-                          {skill}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                </ResponsiveCard>
-              )}
-
-              {/* Available Dates */}
-              {order?.availableDates &&
-                order.availableDates.length > 0 &&
-                (() => {
-                  // Parse dates and times from format: {"Sep 26 (12:30",14:30,15:00,15:30),"Sep 27 (14:30)","Sep 22"}
-                  const parseDates = (dateString: string) => {
-                    const cleanString = dateString.replace(
-                      /^[{"']|["'}]$/g,
-                      ""
-                    );
-                    const dates = cleanString.match(/Sep \d+/g) || [];
-
-                    return dates.map((date) => {
-                      const dateIndex = cleanString.indexOf(date);
-                      const nextDateIndex = cleanString.indexOf(
-                        "Sep",
-                        dateIndex + 1
-                      );
-                      const endIndex =
-                        nextDateIndex === -1
-                          ? cleanString.length
-                          : nextDateIndex;
-                      const dateSection = cleanString.substring(
-                        dateIndex,
-                        endIndex
-                      );
-                      const times = dateSection.match(/\d{1,2}:\d{2}/g) || [];
-
-                      return { date, times };
-                    });
-                  };
-
-                  // Parse all available dates
-                  const allDateTimes = order.availableDates
-                    .filter((dateStr) => dateStr && dateStr.trim() !== "")
-                    .flatMap((dateStr) => parseDates(dateStr));
-
-                  // Only show if there are valid dates
-                  return allDateTimes.length > 0 ? (
-                    <ResponsiveCard>
-                      <Text
-                        style={[styles.sectionTitle, { color: colors.text }]}
-                      >
-                        {t("availableDates")}
-                      </Text>
-                      <View style={styles.datesContainer}>
-                        {allDateTimes.map((dateTime, index) => (
-                          <View key={index} style={styles.dateTimeItem}>
-                            <View style={styles.dateHeader}>
-                              <IconSymbol
-                                name="calendar"
-                                size={16}
-                                color={colors.tint}
-                              />
-                              <Text
-                                style={[
-                                  styles.dateText,
-                                  { color: colors.text },
-                                ]}
-                              >
-                                {dateTime.date}
-                              </Text>
-                            </View>
-                            {dateTime.times && dateTime.times.length > 0 && (
-                              <View style={styles.timesContainer}>
-                                {dateTime.times.map((time, timeIndex) => (
-                                  <View
-                                    key={timeIndex}
-                                    style={[
-                                      styles.timeChip,
-                                      {
-                                        backgroundColor: colors.background,
-                                        borderColor: colors.tint,
-                                      },
-                                    ]}
-                                  >
-                                    <IconSymbol
-                                      name="clock"
-                                      size={12}
-                                      color={colors.tint}
-                                    />
-                                    <Text
-                                      style={[
-                                        styles.timeText,
-                                        { color: colors.tint },
-                                      ]}
-                                    >
-                                      {time}
-                                    </Text>
-                                  </View>
-                                ))}
-                              </View>
-                            )}
-                          </View>
-                        ))}
-                      </View>
-                    </ResponsiveCard>
-                  ) : null;
-                })()}
-
-              {/* Media Files */}
-              {renderMediaFiles(order?.MediaFiles || [], false)}
-
-              {/* Client Information */}
-              {order?.Client && (
-                <ResponsiveCard>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("clientInformation")}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.clientInfo}
-                    onPress={() =>
-                      router.push(`/profile/profile?userId=${order.Client.id}`)
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.clientHeader}>
-                      <View style={styles.clientMainInfo}>
-                        <View style={styles.clientAvatarContainer}>
-                          {order.Client.avatarUrl ? (
-                            <Image
-                              source={{ uri: order.Client.avatarUrl }}
-                              style={styles.clientAvatar}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                styles.clientAvatarPlaceholder,
-                                { backgroundColor: colors.tint },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  styles.clientAvatarText,
-                                  { color: colors.background },
-                                ]}
-                              >
-                                {order.Client.name?.charAt(0)?.toUpperCase()}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.clientNameContainer}>
-                          <Text
-                            style={[styles.clientName, { color: colors.text }]}
-                          >
-                            {order.Client.name}
-                          </Text>
-                          {order.Client.verified && (
-                            <View style={styles.verifiedBadge}>
-                              <IconSymbol
-                                name="checkmark.seal.fill"
-                                size={14}
-                                color="#4CAF50"
-                              />
-                              <Text
-                                style={[
-                                  styles.verifiedText,
-                                  { color: "#4CAF50" },
-                                ]}
-                              >
-                                {t("verified")}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <View style={styles.clientActionContainer}>
-                          <IconSymbol
-                            name="chevron.right"
-                            size={16}
-                            color={colors.tabIconDefault}
-                          />
-                        </View>
-                      </View>
-                    </View>
-                    {order.Client.email && (
-                      <View style={styles.clientDetails}>
-                        <View style={styles.clientDetailItem}>
-                          <IconSymbol
-                            name="envelope.fill"
-                            size={16}
-                            color={colors.tint}
-                          />
-                          <Text
-                            style={[
-                              styles.clientDetailText,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {order.Client.email}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </ResponsiveCard>
-              )}
-            </>
-          )}
+            )}
+          </>
         </ResponsiveContainer>
       </ScrollView>
 
