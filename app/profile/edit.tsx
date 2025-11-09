@@ -42,10 +42,6 @@ export default function EditProfileScreen() {
   // Profile picture state management
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<any>(null);
-  const [uploadingPicture, setUploadingPicture] = useState(false);
-
-  // Test mode state
-  const [testUserId, setTestUserId] = useState(1);
   const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
@@ -64,33 +60,22 @@ export default function EditProfileScreen() {
 
   // Fetch user profile on component mount
   useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  // Refetch profile when test user ID changes
-  useEffect(() => {
-    if (!user) {
+    if (user) {
       fetchProfile();
     }
-  }, [testUserId]);
+  }, [user]);
 
   const fetchProfile = async () => {
+    if (!user) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      let profileData: UserProfile;
-
-      if (user) {
-        // Authenticated user - get their profile from backend
-        profileData = await apiService.getUserProfile();
-      } else {
-        // Test mode - get real user data from backend by ID (no auth required)
-        console.log(
-          `Test mode: Loading user profile for editing - user ID ${testUserId}`
-        );
-        profileData = await apiService.getUserById(testUserId);
-      }
+      // Get authenticated user's profile from backend
+      const profileData = await apiService.getUserProfile();
 
       setProfile(profileData);
       setFormData({
@@ -102,19 +87,14 @@ export default function EditProfileScreen() {
     } catch (err) {
       console.error("Error fetching profile:", err);
       setError("Failed to load profile. Please try again.");
-      const { t } = useLanguage();
-
-      // Don't show alert in test mode to avoid blocking the UI
-      if (user) {
-        Alert.alert(t("error"), t("failedToLoadProfile"));
-      }
+      Alert.alert(t("error"), t("failedToLoadProfile"));
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
-    if (!profile) return;
+    if (!profile || !user) return;
 
     try {
       setSaving(true);
@@ -146,26 +126,13 @@ export default function EditProfileScreen() {
         avatarUrl: avatarUrl || undefined,
       };
 
-      let updatedProfile: UserProfile;
-
-      if (user) {
-        // Authenticated user - update via auth profile endpoint
-        updatedProfile = await apiService.updateUserProfile(updateData);
-      } else {
-        // Test mode - update via user ID endpoint (no auth required)
-        console.log(
-          `Test mode: Updating user profile for user ID ${testUserId}`
-        );
-        updatedProfile = await apiService.updateUserById(
-          testUserId,
-          updateData
-        );
-      }
+      // Update authenticated user's profile via auth profile endpoint
+      const updatedProfile = await apiService.updateUserProfile(updateData);
 
       setProfile(updatedProfile);
 
       // Update the user object in AuthContext with the new avatarUrl
-      if (user && updatedProfile.avatarUrl) {
+      if (updatedProfile.avatarUrl) {
         const updatedUser = {
           ...user,
           avatarUrl: updatedProfile.avatarUrl,
@@ -180,14 +147,8 @@ export default function EditProfileScreen() {
         setUser(updatedUser);
       }
 
-      // Profile updated successfully
-      // Navigate back with the updated user ID to trigger refresh
-      if (user) {
-        router.back();
-      } else {
-        // In test mode, pass the user ID to ensure the profile page shows the right user
-        router.replace(`/profile/profile?refreshUserId=${testUserId}`);
-      }
+      // Profile updated successfully - navigate back
+      router.back();
     } catch (err) {
       console.error("Error updating profile:", err);
       Alert.alert(t("error"), t("failedToUpdateProfile"));
@@ -266,11 +227,7 @@ export default function EditProfileScreen() {
   const header = (
     <Header
       title={t("editProfile")}
-      subtitle={
-        user
-          ? t("updateProfessionalInfo")
-          : `${t("testModeEditing")} ${testUserId}`
-      }
+      subtitle={t("updateProfessionalInfo")}
       showBackButton={true}
       onBackPress={handleCancel}
     />
@@ -285,6 +242,30 @@ export default function EditProfileScreen() {
           <Text style={[styles.loadingText, { color: colors.text }]}>
             {t("loadingProfile")}
           </Text>
+        </View>
+      </Layout>
+    );
+  }
+
+  // If user is not authenticated, show error
+  if (!user) {
+    return (
+      <Layout header={header}>
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: colors.text }]}>
+            {t("authenticationRequired") ||
+              "Please log in to edit your profile"}
+          </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.tint }]}
+            onPress={() => router.back()}
+          >
+            <Text
+              style={[styles.retryButtonText, { color: colors.background }]}
+            >
+              {t("goBack")}
+            </Text>
+          </TouchableOpacity>
         </View>
       </Layout>
     );

@@ -431,7 +431,7 @@ export default function EditOrderScreen() {
                       color="black"
                     />
                     <Text style={styles.applyButtonText}>
-                      {t("apply")} (1 {t("credit")})
+                      {t("apply")} ({order.creditCost || 1} {t("credit")})
                     </Text>
                   </TouchableOpacity>
                 ) : order?.status === "open" && hasAppliedToOrder(order.id) ? (
