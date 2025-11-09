@@ -309,6 +309,59 @@ export default function CreateOrderScreen() {
     router.back();
   };
 
+  const handleDeleteOrder = () => {
+    if (!orderId) return;
+
+    Alert.alert(
+      t("deleteOrder") || "Delete Order",
+      t("areYouSureDeleteOrder") ||
+        "Are you sure you want to delete this order? This action cannot be undone.",
+      [
+        {
+          text: t("cancel") || "Cancel",
+          style: "cancel",
+        },
+        {
+          text: t("delete") || "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsSubmitting(true);
+              await apiService.deleteOrder(parseInt(orderId as string));
+              Alert.alert(
+                t("success") || "Success",
+                t("orderDeletedSuccessfully") || "Order deleted successfully",
+                [
+                  {
+                    text: t("ok") || "OK",
+                    onPress: () => {
+                      router.replace("/orders");
+                    },
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error("Error deleting order:", error);
+              const errorMessage =
+                error instanceof Error
+                  ? error.message
+                  : typeof error === "string"
+                  ? error
+                  : "Unknown error";
+              Alert.alert(
+                t("error") || "Error",
+                t("failedToDeleteOrder") ||
+                  "Failed to delete order: " + errorMessage
+              );
+            } finally {
+              setIsSubmitting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleApply = async () => {
     // Check if user is authenticated
     if (!isAuthenticated || !user) {
@@ -381,10 +434,6 @@ export default function CreateOrderScreen() {
         const newFiles = mediaFiles.filter(
           (file) =>
             file.uri.startsWith("file://") || file.uri.startsWith("content://")
-        );
-        const existingFiles = mediaFiles.filter(
-          (file) =>
-            file.uri.startsWith("http://") || file.uri.startsWith("https://")
         );
 
         // Upload new files with the actual orderId
@@ -631,6 +680,23 @@ export default function CreateOrderScreen() {
           {/* Action Buttons */}
           <ResponsiveCard>
             <View style={styles.actionButtons}>
+              {orderId && (
+                <TouchableOpacity
+                  style={[
+                    styles.deleteButton,
+                    {
+                      opacity: isSubmitting ? 0.6 : 1,
+                    },
+                  ]}
+                  onPress={handleDeleteOrder}
+                  disabled={isSubmitting}
+                >
+                  <IconSymbol name="trash" size={16} color="#FF3B30" />
+                  <Text style={styles.deleteButtonText}>
+                    {t("delete") || "Delete Order"}
+                  </Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={[
                   styles.applyButton,
@@ -645,7 +711,7 @@ export default function CreateOrderScreen() {
                 <Text
                   style={[styles.applyButtonText, { color: colors.background }]}
                 >
-                  {t("apply")}
+                  {orderId ? t("saveChanges") || "Save Changes" : t("apply")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -684,8 +750,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     marginTop: 10,
+    gap: 12,
   },
   applyButton: {
     paddingHorizontal: 32,
@@ -693,10 +762,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     minWidth: 120,
     alignItems: "center",
+    flex: 1,
   },
   applyButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FF3B30",
+    gap: 6,
+    flex: 1,
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FF3B30",
   },
   sectionTitle: {
     fontSize: 22,

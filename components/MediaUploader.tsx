@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -40,7 +41,6 @@ const ITEM_SIZE = (width - 60) / 3; // 3 items per row with padding
 export const MediaUploader: React.FC<MediaUploaderProps> = ({
   onMediaChange,
   maxFiles = 10,
-  onUploadProgress,
   value,
   selectedBannerIndex,
   onBannerSelect,
@@ -48,6 +48,12 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 }) => {
   const { t } = useLanguage();
   const colorScheme = useColorScheme();
+  const [imageLoadingStates, setImageLoadingStates] = useState<
+    Record<number, boolean>
+  >({});
+  const [imageErrorStates, setImageErrorStates] = useState<
+    Record<number, boolean>
+  >({});
   const colors = ThemeColors[colorScheme ?? "light"];
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>(value || []);
 
@@ -237,15 +243,67 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       }
                     }}
                     activeOpacity={0.8}
+                    style={styles.imageContainer}
                   >
+                    {imageLoadingStates[index] && (
+                      <View
+                        style={[
+                          styles.imageSkeleton,
+                          { backgroundColor: colors.border },
+                        ]}
+                      >
+                        <ActivityIndicator size="small" color={colors.tint} />
+                      </View>
+                    )}
                     <Image
                       source={{ uri: media.uri }}
                       style={[
                         styles.mediaImage,
                         showBannerBadge ? styles.bannerImage : undefined,
+                        imageLoadingStates[index] && styles.imageHidden,
                       ]}
                       resizeMode="cover"
+                      onLoadStart={() => {
+                        setImageLoadingStates((prev) => ({
+                          ...prev,
+                          [index]: true,
+                        }));
+                        setImageErrorStates((prev) => ({
+                          ...prev,
+                          [index]: false,
+                        }));
+                      }}
+                      onLoad={() => {
+                        setImageLoadingStates((prev) => ({
+                          ...prev,
+                          [index]: false,
+                        }));
+                      }}
+                      onError={() => {
+                        setImageLoadingStates((prev) => ({
+                          ...prev,
+                          [index]: false,
+                        }));
+                        setImageErrorStates((prev) => ({
+                          ...prev,
+                          [index]: true,
+                        }));
+                      }}
                     />
+                    {imageErrorStates[index] && (
+                      <View
+                        style={[
+                          styles.imageSkeleton,
+                          { backgroundColor: colors.border },
+                        ]}
+                      >
+                        <IconSymbol
+                          name="photo"
+                          size={20}
+                          color={colors.tabIconDefault}
+                        />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 ) : (
                   <View
@@ -331,6 +389,7 @@ const styles = StyleSheet.create({
   },
   mediaContainer: {
     marginBottom: 12,
+    paddingTop: 10,
   },
   addMediaButton: {
     width: ITEM_SIZE,
@@ -356,10 +415,30 @@ const styles = StyleSheet.create({
     width: ITEM_SIZE,
     height: ITEM_SIZE,
   },
+  imageContainer: {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+  },
   mediaImage: {
     width: "100%",
     height: "100%",
     borderRadius: 12,
+  },
+  imageHidden: {
+    opacity: 0,
+  },
+  imageSkeleton: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   videoPlaceholder: {
     width: "100%",

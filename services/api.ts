@@ -742,9 +742,13 @@ class ApiService {
   }
 
   async deleteOrder(id: number): Promise<any> {
-    return this.request(`/orders/${id}`, {
-      method: "DELETE",
-    });
+    return this.request(
+      `/orders/${id}`,
+      {
+        method: "DELETE",
+      },
+      true
+    ); // requireAuth: true
   }
 
   async getMyOrders(): Promise<any> {

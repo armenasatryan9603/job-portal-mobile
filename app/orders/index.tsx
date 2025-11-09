@@ -22,6 +22,16 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  useMyOrders,
+  useMyJobs,
+  useAllOrders,
+  usePublicOrders,
+  useSearchOrders,
+  useApplyToOrder,
+  useDeleteOrder,
+} from "@/hooks/useApi";
 import {
   FlatList,
   StyleSheet,
@@ -72,31 +82,95 @@ export default function OrdersScreen() {
   >({
     status: isMyJobs ? "all" : "open",
   });
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [allUserOrders, setAllUserOrders] = useState<Order[]>([]); // Store all user orders for client-side pagination
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [filterLoading, setFilterLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [pagination, setPagination] = useState({
+  const queryClient = useQueryClient();
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 20;
+  const status = selectedFilters?.status as string;
+
+  // TanStack Query hooks
+  const myOrdersQuery = useMyOrders();
+  const myJobsQuery = useMyJobs();
+  const allOrdersQuery = useAllOrders(
+    currentPage,
+    limit,
+    status && status !== "all" ? status : undefined
+  );
+  const publicOrdersQuery = usePublicOrders(
+    currentPage,
+    limit,
+    status && status !== "all" ? status : undefined
+  );
+  const searchOrdersQuery = useSearchOrders(
+    searchQuery.trim(),
+    currentPage,
+    limit
+  );
+
+  // Mutations
+  const applyToOrderMutation = useApplyToOrder();
+  const deleteOrderMutation = useDeleteOrder();
+
+  // Determine which query to use based on current view
+  const activeQuery = useMemo(() => {
+    if (isMyOrders) return myOrdersQuery;
+    if (isMyJobs) return myJobsQuery;
+    if (searchQuery.trim()) return searchOrdersQuery;
+    if (user?.id) return allOrdersQuery;
+    return publicOrdersQuery;
+  }, [
+    isMyOrders,
+    isMyJobs,
+    searchQuery,
+    user?.id,
+    myOrdersQuery,
+    myJobsQuery,
+    searchOrdersQuery,
+    allOrdersQuery,
+    publicOrdersQuery,
+  ]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (isMyOrders || isMyJobs) {
+      setClientSidePage(1);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs]);
+
+  // Extract data from active query
+  const queryData = activeQuery.data as OrderListResponse | undefined;
+  const orders = queryData?.orders || [];
+  const pagination = queryData?.pagination || {
     page: 1,
     limit: 20,
     total: 0,
     totalPages: 0,
     hasNextPage: false,
     hasPrevPage: false,
-  });
-  const initialLoadDone = useRef(false);
+  };
+
+  // Loading states
+  const loading = activeQuery.isLoading && !activeQuery.isFetching;
+  const filterLoading = activeQuery.isFetching && currentPage === 1;
+  const loadingMore = activeQuery.isFetching && currentPage > 1;
+  const error = activeQuery.error ? (activeQuery.error as Error).message : null;
+  const isInitialLoad = activeQuery.isLoading && currentPage === 1;
+
+  // For My Orders/My Jobs: client-side pagination
+  const [allUserOrders, setAllUserOrders] = useState<Order[]>([]);
+  const [clientSidePage, setClientSidePage] = useState(1);
+
+  // Track applied orders (fetched from backend)
+  const [appliedOrders, setAppliedOrders] = useState<Set<number>>(new Set());
+
+  // Refresh state
+  const [refreshing, setRefreshing] = useState(false);
 
   // Apply modal state
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [applyLoading, setApplyLoading] = useState(false);
-
-  // Track applied orders (fetched from backend)
-  const [appliedOrders, setAppliedOrders] = useState<Set<number>>(new Set());
 
   // Feedback dialog state
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
@@ -129,6 +203,83 @@ export default function OrdersScreen() {
       console.error("Error loading applied orders:", error);
     }
   };
+
+  // Sync allUserOrders with query data for My Orders/My Jobs
+  useEffect(() => {
+    if (isMyOrders && myOrdersQuery.data) {
+      const data = myOrdersQuery.data as OrderListResponse;
+      setAllUserOrders(data.orders || []);
+    } else if (isMyJobs && myJobsQuery.data) {
+      const data = myJobsQuery.data as OrderListResponse;
+      setAllUserOrders(data.orders || []);
+    }
+  }, [isMyOrders, isMyJobs, myOrdersQuery.data, myJobsQuery.data]);
+
+  // Compute orders for My Orders/My Jobs with client-side pagination
+  const displayedOrders = useMemo(() => {
+    if (isMyOrders || isMyJobs) {
+      // Client-side pagination for My Orders/My Jobs
+      let filteredOrders = allUserOrders;
+
+      // Apply search filter
+      if (searchQuery.trim()) {
+        filteredOrders = filterOrdersBySearch(filteredOrders, searchQuery);
+      }
+
+      // Apply status filter
+      if (status && status !== "all") {
+        filteredOrders = filterOrdersByStatus(filteredOrders, status);
+      }
+
+      // Get paginated results
+      return getPaginatedOrders(filteredOrders, clientSidePage, limit);
+    }
+
+    console.log("zzzzzzzzzzzzzzzz", orders);
+
+    // For regular orders, use query data directly
+    return orders;
+  }, [
+    isMyOrders,
+    isMyJobs,
+    allUserOrders,
+    searchQuery,
+    status,
+    clientSidePage,
+    orders,
+  ]);
+
+  // Compute pagination for My Orders/My Jobs
+  const displayedPagination = useMemo(() => {
+    if (isMyOrders || isMyJobs) {
+      const filteredOrders = (() => {
+        let filtered = allUserOrders;
+        if (searchQuery.trim()) {
+          filtered = filterOrdersBySearch(filtered, searchQuery);
+        }
+        if (status && status !== "all") {
+          filtered = filterOrdersByStatus(filtered, status);
+        }
+        return filtered;
+      })();
+
+      return createPaginationObject(
+        filteredOrders.length,
+        clientSidePage,
+        limit
+      );
+    }
+
+    return pagination;
+  }, [
+    isMyOrders,
+    isMyJobs,
+    allUserOrders,
+    searchQuery,
+    status,
+    clientSidePage,
+    pagination,
+  ]);
 
   // Helper function to create pagination object for local filtering
   const createPaginationObject = (
@@ -181,192 +332,48 @@ export default function OrdersScreen() {
     return filteredOrders.slice(startIndex, endIndex);
   };
 
-  // Load orders from API
-  const loadOrders = async (
-    page: number = 1,
-    search?: string,
-    filters?: Record<string, string | string[] | { min: number; max: number }>,
-    isFilterChange: boolean = false,
-    append: boolean = false
-  ) => {
-    try {
-      if (isFilterChange) {
-        setFilterLoading(true);
-      } else if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      let response: OrderListResponse;
-      const status = filters?.status as string;
-
-      if (isMyOrders) {
-        // For My Orders, load all orders once and cache them for client-side pagination
-        let allOrders = allUserOrders;
-
-        // Only fetch from API if we don't have cached orders or if it's a refresh
-        if (allOrders.length === 0 || page === 1) {
-          const allOrdersResponse = await apiService.getMyOrders();
-          allOrders = allOrdersResponse.orders || [];
-          setAllUserOrders(allOrders);
-        }
-
-        // Apply filters to all orders
-        let filteredOrders = allOrders;
-        if (search && search.trim()) {
-          filteredOrders = filterOrdersBySearch(filteredOrders, search);
-        }
-        if (status && status !== "all") {
-          filteredOrders = filterOrdersByStatus(filteredOrders, status);
-        }
-
-        // Get paginated results from filtered orders
-        const paginatedOrders = getPaginatedOrders(
-          filteredOrders,
-          page,
-          pagination.limit
-        );
-
-        response = {
-          orders: paginatedOrders,
-          pagination: createPaginationObject(
-            filteredOrders.length,
-            page,
-            pagination.limit
-          ),
-        };
-      } else if (isMyJobs) {
-        // For My Jobs, load all jobs once and cache them for client-side pagination
-        let allJobs = allUserOrders; // Reuse the same state for caching
-
-        // Only fetch from API if we don't have cached jobs or if it's a refresh
-        if (allJobs.length === 0 || page === 1) {
-          const allJobsResponse = await apiService.getMyJobs();
-          allJobs = allJobsResponse.orders || [];
-          setAllUserOrders(allJobs);
-        }
-
-        // Apply filters to all jobs
-        let filteredJobs = allJobs;
-        if (search && search.trim()) {
-          filteredJobs = filterOrdersBySearch(filteredJobs, search);
-        }
-        if (status && status !== "all") {
-          filteredJobs = filterOrdersByStatus(filteredJobs, status);
-        }
-
-        // Get paginated results from filtered jobs
-        const paginatedJobs = getPaginatedOrders(
-          filteredJobs,
-          page,
-          pagination.limit
-        );
-
-        response = {
-          orders: paginatedJobs,
-          pagination: createPaginationObject(
-            filteredJobs.length,
-            page,
-            pagination.limit
-          ),
-        };
-      } else {
-        // Regular orders logic - use API filtering
-        if (search && search.trim()) {
-          // Search works for both authenticated and non-authenticated users
-          response = await apiService.searchOrders(
-            search,
-            page,
-            pagination.limit
-          );
-        } else if (status && status !== "all") {
-          // Use public method for non-authenticated users, authenticated method for logged-in users
-          if (user?.id) {
-            response = await apiService.getAllOrders(
-              page,
-              pagination.limit,
-              status
-            );
-          } else {
-            response = await apiService.getPublicOrders(
-              page,
-              pagination.limit,
-              status
-            );
-          }
-        } else {
-          // Use public method for non-authenticated users, authenticated method for logged-in users
-          if (user?.id) {
-            response = await apiService.getAllOrders(page, pagination.limit);
-          } else {
-            response = await apiService.getPublicOrders(page, pagination.limit);
-          }
-        }
-      }
-
-      if (append) {
-        setOrders((prev) => [...prev, ...(response.orders || [])]);
-      } else {
-        setOrders(response.orders || []);
-      }
-
-      setPagination(
-        response.pagination || {
-          page: 1,
-          limit: 20,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPrevPage: false,
-        }
-      );
-    } catch (err) {
-      console.error("Error loading orders:", err);
-      setError(t("failedToLoadOrders"));
-      // Alert.alert("Error", "Failed to load orders. Please try again.");
-    } finally {
-      if (isFilterChange) {
-        setFilterLoading(false);
-      } else if (append) {
-        setLoadingMore(false);
-      } else {
-        setLoading(false);
-        // Mark initial load as complete when loading finishes
-        if (isInitialLoad) {
-          setIsInitialLoad(false);
-        }
-      }
-    }
-  };
-
+  // Load more orders (pagination)
   const loadMoreOrders = useCallback(() => {
-    if (!loadingMore && pagination.hasNextPage && !isInitialLoad) {
-      loadOrders(
-        pagination.page + 1,
-        searchQuery,
-        selectedFilters,
-        false,
-        true
-      );
+    if (isMyOrders || isMyJobs) {
+      // Client-side pagination
+      if (displayedPagination.hasNextPage) {
+        setClientSidePage((prev) => prev + 1);
+      }
+    } else {
+      // Server-side pagination
+      if (!loadingMore && displayedPagination.hasNextPage && !isInitialLoad) {
+        setCurrentPage((prev) => prev + 1);
+      }
     }
   }, [
+    isMyOrders,
+    isMyJobs,
     loadingMore,
-    pagination.hasNextPage,
-    pagination.page,
+    displayedPagination.hasNextPage,
     isInitialLoad,
-    searchQuery,
-    selectedFilters,
   ]);
 
+  // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadOrders(1, searchQuery, selectedFilters, false, false);
-    setRefreshing(false);
-  }, [searchQuery, selectedFilters]);
 
-  // Load orders and applied orders on component mount
+    // Invalidate and refetch all order queries
+    await queryClient.refetchQueries({ queryKey: ["orders"] });
+
+    // Also reload applied orders
+    await loadAppliedOrders();
+
+    // Reset pagination
+    if (isMyOrders || isMyJobs) {
+      setClientSidePage(1);
+    } else {
+      setCurrentPage(1);
+    }
+
+    setRefreshing(false);
+  }, [queryClient, isMyOrders, isMyJobs]);
+
+  // Load applied orders on component mount
   useEffect(() => {
     // If user is trying to access "My Orders" or "My Jobs" but not authenticated, redirect to login
     if ((isMyOrders || isMyJobs) && !user?.id) {
@@ -374,32 +381,8 @@ export default function OrdersScreen() {
       return;
     }
 
-    loadOrders();
     loadAppliedOrders();
-    // Mark that initial load has started (will be set to false when loading completes)
-    initialLoadDone.current = true;
-  }, [isMyOrders, isMyJobs, user?.id, showLoginModal]);
-
-  // Handle search and filter changes (only after initial load)
-  useEffect(() => {
-    // Skip if initial load hasn't completed yet
-    if (isInitialLoad) {
-      return;
-    }
-
-    // Skip if user is currently typing
-    if (isTypingRef.current) {
-      return;
-    }
-
-    // Clear cached orders when filters change for My Orders/My Jobs
-    if (isMyOrders || isMyJobs) {
-      setAllUserOrders([]);
-    }
-
-    // Load orders with search query
-    loadOrders(1, searchQuery, selectedFilters, true);
-  }, [searchQuery, selectedFilters, isInitialLoad, isMyOrders, isMyJobs]);
+  }, [isMyOrders, isMyJobs, user?.id]);
 
   // Filter orders locally for additional filtering (if needed)
   // const filteredOrders = orders.filter(() => {
@@ -439,9 +422,9 @@ export default function OrdersScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            await apiService.deleteOrder(order.id);
-            // Remove the order from the list
-            setOrders((prev) => prev.filter((o) => o.id !== order.id));
+            // Use TanStack Query mutation
+            await deleteOrderMutation.mutateAsync(order.id);
+            // The mutation will automatically invalidate queries and refetch
           } catch (err) {
             console.error("Error deleting order:", err);
             Alert.alert(t("error"), t("failedToDeleteOrder"));
@@ -509,8 +492,8 @@ export default function OrdersScreen() {
 
             await apiService.cancelProposal(userProposal.id);
 
-            // Remove the order from the list
-            setOrders((prev) => prev.filter((o) => o.id !== order.id));
+            // Invalidate queries to refetch orders
+            queryClient.invalidateQueries({ queryKey: ["orders"] });
 
             // Show feedback dialog after successful cancellation
             setCanceledOrderId(order.id);
@@ -542,9 +525,8 @@ export default function OrdersScreen() {
     setApplyLoading(true);
 
     try {
-      // console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxzzzzzx");
-      // Call the API to create proposal and deduct credits
-      const result = await apiService.applyToOrder({
+      // Use TanStack Query mutation
+      await applyToOrderMutation.mutateAsync({
         orderId: selectedOrder.id,
         message: message,
       });
@@ -672,179 +654,228 @@ export default function OrdersScreen() {
   );
 
   // Order item component
-  const OrderItem = ({ order }: { order: Order }) => (
-    <TouchableOpacity onPress={() => handleOrderPress(order)}>
-      <ResponsiveCard>
-        {/* Banner Image */}
-        {order.BannerImage && (
-          <Image
-            source={{ uri: order.BannerImage.fileUrl }}
-            style={styles.bannerImage}
-            resizeMode="cover"
-          />
-        )}
-        <View style={styles.orderHeader}>
-          <Text style={[styles.orderTitle, { color: colors.text }]}>
-            {order.title}
-          </Text>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(order.status) },
-            ]}
-          >
-            <IconSymbol
-              name={getStatusIcon(order.status) as any}
-              size={12}
-              color="white"
-            />
-            <Text style={styles.statusText}>
-              {order.status.replace("_", " ").toUpperCase()}
-            </Text>
-          </View>
-        </View>
+  const OrderItem = ({ order }: { order: Order }) => {
+    const [imageLoading, setImageLoading] = useState(true);
+    const [imageError, setImageError] = useState(false);
 
-        <Text
-          style={[styles.orderDescription, { color: colors.tabIconDefault }]}
-        >
-          {order.description}
-        </Text>
-
-        <View style={styles.orderDetails}>
-          <View style={styles.detailItem}>
-            <IconSymbol
-              name="dollarsign.circle.fill"
-              size={16}
-              color={colors.tint}
-            />
-            <Text style={[styles.detailText, { color: colors.text }]}>
-              ${order.budget.toLocaleString()}
-            </Text>
-          </View>
-          {order.location && (
-            <View style={styles.detailItem}>
-              <IconSymbol name="location.fill" size={16} color={colors.tint} />
-              <Text style={[styles.detailText, { color: colors.text }]}>
-                {order.location}
-              </Text>
+    return (
+      <TouchableOpacity onPress={() => handleOrderPress(order)}>
+        <ResponsiveCard>
+          {/* Banner Image */}
+          {order.BannerImage && (
+            <View style={styles.bannerImageContainer}>
+              {imageLoading && (
+                <View
+                  style={[
+                    styles.bannerImageSkeleton,
+                    { backgroundColor: colors.border },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              )}
+              <Image
+                source={{ uri: order.BannerImage.fileUrl }}
+                style={[
+                  styles.bannerImage,
+                  imageLoading && styles.bannerImageHidden,
+                ]}
+                resizeMode="cover"
+                onLoadStart={() => {
+                  setImageLoading(true);
+                  setImageError(false);
+                }}
+                onLoad={() => setImageLoading(false)}
+                onError={() => {
+                  setImageLoading(false);
+                  setImageError(true);
+                }}
+              />
+              {imageError && (
+                <View
+                  style={[
+                    styles.bannerImageSkeleton,
+                    { backgroundColor: colors.border },
+                  ]}
+                >
+                  <IconSymbol
+                    name="photo"
+                    size={24}
+                    color={colors.tabIconDefault}
+                  />
+                </View>
+              )}
             </View>
           )}
-          <View style={styles.detailItem}>
-            <IconSymbol name="person.fill" size={16} color={colors.tint} />
-            <Text style={[styles.detailText, { color: colors.text }]}>
-              {order._count.Proposals} {t("proposals")}
+          <View style={styles.orderHeader}>
+            <Text style={[styles.orderTitle, { color: colors.text }]}>
+              {order.title}
             </Text>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(order.status) },
+              ]}
+            >
+              <IconSymbol
+                name={getStatusIcon(order.status) as any}
+                size={12}
+                color="white"
+              />
+              <Text style={styles.statusText}>
+                {order.status.replace("_", " ").toUpperCase()}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {order.skills && order.skills.length > 0 && (
-          <View style={styles.skillsContainer}>
-            {order.skills.slice(0, 4).map((skill, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.skillTag,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.skillText, { color: colors.text }]}>
-                  {skill}
+          <Text
+            style={[styles.orderDescription, { color: colors.tabIconDefault }]}
+          >
+            {order.description}
+          </Text>
+
+          <View style={styles.orderDetails}>
+            <View style={styles.detailItem}>
+              <IconSymbol
+                name="dollarsign.circle.fill"
+                size={16}
+                color={colors.tint}
+              />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                ${order.budget.toLocaleString()}
+              </Text>
+            </View>
+            {order.location && (
+              <View style={styles.detailItem}>
+                <IconSymbol
+                  name="location.fill"
+                  size={16}
+                  color={colors.tint}
+                />
+                <Text style={[styles.detailText, { color: colors.text }]}>
+                  {order.location}
                 </Text>
               </View>
-            ))}
-            {order.skills.length > 4 && (
-              <Text
-                style={[
-                  styles.moreSkillsText,
-                  { color: colors.tabIconDefault },
-                ]}
-              >
-                +{order.skills.length - 4} {t("more")}
+            )}
+            <View style={styles.detailItem}>
+              <IconSymbol name="person.fill" size={16} color={colors.tint} />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                {order._count.Proposals} {t("proposals")}
+              </Text>
+            </View>
+          </View>
+
+          {order.skills && order.skills.length > 0 && (
+            <View style={styles.skillsContainer}>
+              {order.skills.slice(0, 4).map((skill, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.skillTag,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.skillText, { color: colors.text }]}>
+                    {skill}
+                  </Text>
+                </View>
+              ))}
+              {order.skills.length > 4 && (
+                <Text
+                  style={[
+                    styles.moreSkillsText,
+                    { color: colors.tabIconDefault },
+                  ]}
+                >
+                  +{order.skills.length - 4} {t("more")}
+                </Text>
+              )}
+            </View>
+          )}
+
+          <View>
+            <Text style={[styles.clientName, { color: colors.tabIconDefault }]}>
+              {t("postedBy")} {order.Client.name} •{" "}
+              {new Date(order.createdAt).toLocaleDateString()}
+            </Text>
+            {order.Service && (
+              <Text style={[styles.serviceName, { color: colors.tint }]}>
+                {order.Service.name}
               </Text>
             )}
           </View>
-        )}
 
-        <View>
-          <Text style={[styles.clientName, { color: colors.tabIconDefault }]}>
-            {t("postedBy")} {order.Client.name} •{" "}
-            {new Date(order.createdAt).toLocaleDateString()}
-          </Text>
-          {order.Service && (
-            <Text style={[styles.serviceName, { color: colors.tint }]}>
-              {order.Service.name}
-            </Text>
-          )}
-        </View>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            {/* Apply Button - Only show for other users' orders (not owner) */}
+            {!isMyOrders &&
+              order.status === "open" &&
+              !hasAppliedToOrder(order.id) &&
+              user?.id !== order.clientId && (
+                <TouchableOpacity
+                  style={[styles.applyButton, { backgroundColor: colors.tint }]}
+                  onPress={() => handleApplyToOrder(order)}
+                >
+                  <IconSymbol name="paperplane.fill" size={16} color="black" />
+                  <Text style={styles.applyButtonText}>
+                    {t("apply")} ({order.creditCost || 1} {t("credit")})
+                  </Text>
+                </TouchableOpacity>
+              )}
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          {/* Apply Button - Only show for other users' orders */}
-          {!isMyOrders &&
-            order.status === "open" &&
-            !hasAppliedToOrder(order.id) && (
+            {/* Applied Status - Show when user has already applied */}
+            {!isMyOrders &&
+              order.status === "open" &&
+              hasAppliedToOrder(order.id) &&
+              user?.id !== order.clientId && (
+                <View
+                  style={[
+                    styles.appliedButton,
+                    { backgroundColor: colors.tabIconDefault },
+                  ]}
+                >
+                  <IconSymbol
+                    name="checkmark.circle.fill"
+                    size={16}
+                    color="white"
+                  />
+                  <Text style={styles.appliedButtonText}>{t("applied")}</Text>
+                </View>
+              )}
+
+            {/* Cancel Button - Only show for My Jobs */}
+            {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
               <TouchableOpacity
-                style={[styles.applyButton, { backgroundColor: colors.tint }]}
-                onPress={() => handleApplyToOrder(order)}
+                style={styles.cancelButton}
+                onPress={() => handleCancelProposal(order)}
               >
-                <IconSymbol name="paperplane.fill" size={16} color="black" />
-                <Text style={styles.applyButtonText}>
-                  {t("apply")} ({order.creditCost || 1} {t("credit")})
+                <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
+                <Text style={[styles.cancelButtonText, { color: "#FF3B30" }]}>
+                  {t("cancel")}
                 </Text>
               </TouchableOpacity>
             )}
 
-          {/* Applied Status - Show when user has already applied */}
-          {!isMyOrders &&
-            order.status === "open" &&
-            hasAppliedToOrder(order.id) && (
-              <View
-                style={[
-                  styles.appliedButton,
-                  { backgroundColor: colors.tabIconDefault },
-                ]}
+            {/* Delete Button - Only show for user's own orders */}
+            {isMyOrders && order.status !== "pending" && (
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteOrder(order)}
               >
-                <IconSymbol
-                  name="checkmark.circle.fill"
-                  size={16}
-                  color="white"
-                />
-                <Text style={styles.appliedButtonText}>{t("applied")}</Text>
-              </View>
+                <IconSymbol name="trash" size={16} color="#FF3B30" />
+                <Text style={[styles.deleteButtonText, { color: "#FF3B30" }]}>
+                  {t("delete")}
+                </Text>
+              </TouchableOpacity>
             )}
-
-          {/* Cancel Button - Only show for My Jobs */}
-          {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={() => handleCancelProposal(order)}
-            >
-              <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
-              <Text style={[styles.cancelButtonText, { color: "#FF3B30" }]}>
-                {t("cancel")}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Delete Button - Only show for user's own orders */}
-          {isMyOrders && order.status !== "pending" && (
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeleteOrder(order)}
-            >
-              <IconSymbol name="trash" size={16} color="#FF3B30" />
-              <Text style={[styles.deleteButtonText, { color: "#FF3B30" }]}>
-                {t("delete")}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </ResponsiveCard>
-    </TouchableOpacity>
-  );
+          </View>
+        </ResponsiveCard>
+      </TouchableOpacity>
+    );
+  };
 
   const renderFooter = () => {
     if (!loadingMore) return null;
@@ -870,12 +901,12 @@ export default function OrdersScreen() {
           type="error"
           title={error}
           buttonText={t("retry")}
-          onRetry={() => loadOrders()}
+          onRetry={() => queryClient.refetchQueries({ queryKey: ["orders"] })}
         />
       );
     }
 
-    if (orders.length === 0) {
+    if (displayedOrders.length === 0) {
       return (
         <EmptyPage
           type="empty"
@@ -927,7 +958,7 @@ export default function OrdersScreen() {
 
           {/* Show loading overlay during initial load */}
           {isInitialLoad ||
-          (loading && !filterLoading && orders.length === 0) ? (
+          (loading && !filterLoading && displayedOrders.length === 0) ? (
             <View
               style={[
                 styles.loadingOverlay,
@@ -942,7 +973,7 @@ export default function OrdersScreen() {
           ) : (
             <FlatList
               style={{ marginTop: 100 }}
-              data={orders}
+              data={displayedOrders}
               renderItem={({ item }) => <OrderItem order={item} />}
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
@@ -995,11 +1026,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     opacity: 0.7,
   },
-  bannerImage: {
+  bannerImageContainer: {
     width: "100%",
     height: 200,
     borderRadius: 12,
     marginBottom: 16,
+    position: "relative",
+    overflow: "hidden",
+  },
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+  },
+  bannerImageHidden: {
+    opacity: 0,
+  },
+  bannerImageSkeleton: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingMoreContainer: {
     flexDirection: "row",
