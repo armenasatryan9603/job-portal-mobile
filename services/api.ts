@@ -596,6 +596,9 @@ class ApiService {
       `/order-proposals/apply`,
       {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(proposalData),
       },
       true

@@ -235,8 +235,6 @@ export default function OrdersScreen() {
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
 
-    console.log("zzzzzzzzzzzzzzzz", orders);
-
     // For regular orders, use query data directly
     return orders;
   }, [
@@ -535,21 +533,11 @@ export default function OrdersScreen() {
       setAppliedOrders((prev) => new Set(prev).add(selectedOrder.id));
 
       // Create a chat conversation with the client
+      // The proposal message will be automatically sent as the first message by the backend
       try {
         const conversation = await chatService.createOrderConversation(
           selectedOrder.id
         );
-
-        // Try to send the initial message, but don't fail if it doesn't work
-        try {
-          await apiService.sendMessage({
-            conversationId: conversation.id,
-            content: message,
-            messageType: "text",
-          });
-        } catch (messageError) {
-          // Don't fail the whole process if message sending fails
-        }
 
         Alert.alert(t("success"), t("applicationSubmittedSuccessfully"), [
           {
