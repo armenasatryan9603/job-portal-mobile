@@ -55,7 +55,7 @@ export default function ChatDetailScreen() {
   // Check for existing feedback and show dialog when conversation loads
   useEffect(() => {
     const checkAndShowDialog = async () => {
-      // Only check if user is client and conversation is closed
+      // Only check if conversation is closed
       if (!conversation || !isConversationClosed()) {
         return;
       }
@@ -64,6 +64,9 @@ export default function ChatDetailScreen() {
       if (feedbackSubmitted || hasExistingFeedback) {
         return;
       }
+
+      // Small delay to ensure conversation state is fully updated
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       try {
         // Check if feedback already exists for this order
@@ -86,13 +89,14 @@ export default function ChatDetailScreen() {
           setFeedbackDialogVisible(true);
         }
       } catch (error) {
+        console.error("Error checking for existing feedback:", error);
         // On error, don't show dialog to be safe
         setHasExistingFeedback(true);
       }
     };
 
     checkAndShowDialog();
-  }, [conversation, feedbackSubmitted, hasExistingFeedback]);
+  }, [conversation, feedbackSubmitted, hasExistingFeedback, user?.id]);
 
   const loadConversation = async () => {
     try {
@@ -287,9 +291,10 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.completeOrder(conversation.Order!.id);
-            Alert.alert(t("success"), t("orderCompleted"));
             // Reload conversation to get updated status
             await loadConversation();
+            // The useEffect will automatically show the feedback dialog
+            // after the conversation is reloaded with "completed" status
           } catch (error) {
             console.error("Failed to complete order:", error);
             Alert.alert(t("error"), t("failedToCompleteOrder"));

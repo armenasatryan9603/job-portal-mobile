@@ -166,11 +166,22 @@ export const Layout: React.FC<LayoutProps> = ({
                   <View
                     style={[styles.avatar, { backgroundColor: colors.tint }]}
                   >
-                    {user && user.avatarUrl && !imageError ? (
+                    {user?.avatarUrl && !imageError ? (
                       <Image
-                        source={{ uri: user.avatarUrl }}
+                        source={{
+                          uri: user.avatarUrl,
+                          cache: "force-cache",
+                        }}
                         style={styles.avatarImage}
                         onError={handleImageError}
+                        onLoad={() => {
+                          console.log(
+                            "Layout - Avatar image loaded successfully:",
+                            user.avatarUrl
+                          );
+                          setImageError(false);
+                        }}
+                        resizeMode="cover"
                       />
                     ) : (
                       <IconSymbol

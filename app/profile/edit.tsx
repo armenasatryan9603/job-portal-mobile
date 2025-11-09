@@ -26,11 +26,12 @@ import { apiService, UserProfile, UpdateUserProfileData } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fileUploadService } from "@/services/fileUpload";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function EditProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
 
   // API state management
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -123,10 +124,7 @@ export default function EditProfileScreen() {
 
       // If a new image was selected, upload it to storage first
       if (selectedImageFile) {
-        console.log(
-          "Uploading selected image:",
-          selectedImageFile.fileName
-        );
+        console.log("Uploading selected image:", selectedImageFile.fileName);
 
         const uploadResult = await fileUploadService.uploadProfilePicture(
           selectedImageFile
@@ -165,6 +163,22 @@ export default function EditProfileScreen() {
       }
 
       setProfile(updatedProfile);
+
+      // Update the user object in AuthContext with the new avatarUrl
+      if (user && updatedProfile.avatarUrl) {
+        const updatedUser = {
+          ...user,
+          avatarUrl: updatedProfile.avatarUrl,
+          name: updatedProfile.name,
+          email: updatedProfile.email,
+          phone: updatedProfile.phone,
+          bio: updatedProfile.bio,
+        };
+        // Update AsyncStorage with the new user data
+        await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+        // Update the user in AuthContext
+        setUser(updatedUser);
+      }
 
       // Profile updated successfully
       // Navigate back with the updated user ID to trigger refresh
