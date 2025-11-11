@@ -55,6 +55,10 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withFirebaseConditionalInit.js",
+      "./plugins/withPodfileModularHeaders.js",
+      "./plugins/withAndroidBuildConfig.js",
+      "./plugins/withAndroidKotlinImports.js",
       "expo-router",
       [
         "expo-splash-screen",

@@ -41,15 +41,18 @@ export const useVerifyOTP = () => {
       phone,
       otp,
       name,
+      isSimulator,
     }: {
       phone: string;
       otp: string;
       name: string;
+      isSimulator?: boolean;
     }) =>
       apiService.post<{ access_token: string; user: any }>("/auth/verify-otp", {
         phone,
         otp,
         name,
+        isSimulator,
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });

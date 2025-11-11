@@ -39,6 +39,7 @@ android/*
 # android/app/src/main/assets/
 
 # iOS
+ios/*
 ios/build/
 ios/Pods/
 ios/*.xcworkspace/xcuserdata/

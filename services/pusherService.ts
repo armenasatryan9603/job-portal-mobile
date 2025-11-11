@@ -1,11 +1,28 @@
-import Pusher, { Channel } from "pusher-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "@/config/api";
 
+// Lazy load Pusher to avoid netinfo import error
+let Pusher: any = null;
+let Channel: any = null;
+
+const loadPusher = async () => {
+  if (!Pusher) {
+    try {
+      const pusherModule = await import("pusher-js");
+      Pusher = pusherModule.default;
+      Channel = pusherModule.Channel;
+    } catch (error) {
+      console.error("Failed to load pusher-js:", error);
+      throw error;
+    }
+  }
+  return { Pusher, Channel };
+};
+
 class PusherService {
   private static instance: PusherService;
-  private pusher: Pusher | null = null;
-  private channels: Map<string, Channel> = new Map();
+  private pusher: any = null;
+  private channels: Map<string, any> = new Map();
   private isInitialized = false;
 
   private constructor() {}
@@ -23,6 +40,9 @@ class PusherService {
     }
 
     try {
+      // Lazy load Pusher
+      await loadPusher();
+
       const token = await AsyncStorage.getItem("auth_token");
 
       // Try to get Pusher config from API first, fallback to env vars

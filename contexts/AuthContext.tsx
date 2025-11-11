@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import * as Device from "expo-device";
 import { apiService } from "@/services/api";
 import PhoneVerificationService from "@/services/PhoneVerificationService";
 
@@ -111,9 +112,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.log("🆕 New user - you'll get welcome credits!");
       }
 
+      // Check if running on simulator
+      const isSimulator = !Device.isDevice;
       const result = await apiService.post<{ access_token: string; user: any }>(
         "/auth/verify-otp",
-        { phone, otp, name }
+        { phone, otp, name, isSimulator }
       );
 
       if (result.access_token && result.user) {
@@ -174,13 +177,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const sendOTP = async (phone: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      // Check if running on simulator
+      const isSimulator = !Device.isDevice;
       const response = await apiService.post<{
         success: boolean;
         message: string;
         otp?: string;
-      }>("/auth/send-otp", { phone });
+      }>("/auth/send-otp", { phone, isSimulator });
       if (response.success) {
-        console.log("OTP sent successfully:", response);
+        if (isSimulator && response.otp) {
+          console.log(`🧪 [SIMULATOR] OTP for ${phone}: ${response.otp}`);
+        } else {
+          console.log("OTP sent successfully:", response);
+        }
         return true;
       }
       return false;
@@ -195,13 +204,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const resetOTP = async (phone: string): Promise<boolean> => {
     try {
       setIsLoading(true);
+      // Check if running on simulator
+      const isSimulator = !Device.isDevice;
       const response = await apiService.post<{
         success: boolean;
         message: string;
         otp?: string;
-      }>("/auth/reset-otp", { phone });
+      }>("/auth/reset-otp", { phone, isSimulator });
       if (response.success) {
-        console.log("OTP reset successfully:", response);
+        if (isSimulator && response.otp) {
+          console.log(`🧪 [SIMULATOR] Reset OTP for ${phone}: ${response.otp}`);
+        } else {
+          console.log("OTP reset successfully:", response);
+        }
         return true;
       }
       return false;
