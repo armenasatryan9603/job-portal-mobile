@@ -1,48 +1,12 @@
-import Constants from "expo-constants";
-
 // Translation configuration
 export const TRANSLATION_CONFIG = {
-  // Google Sheets API configuration
-  googleSheets: {
-    apiKey:
-      Constants.expoConfig?.extra?.GOOGLE_SHEETS_API_KEY ||
-      "AIzaSyAsvtqOaGbV6E1z-g-5fxc1cnJSW_gWyug",
-    baseUrl: "https://sheets.googleapis.com/v4/spreadsheets",
-  },
-
-  // Spreadsheet configurations for each language
-  spreadsheets: {
-    en: {
-      id: "1Mh7mztLyDxRB8HtGDhqDW-M0IfvFocRv5RlBlPfMsnA",
-      name: "English Translations",
-    },
-    ru: {
-      id: "1PD57nH_tgSUa9BGLN2lc9rvpbFZ3HR9n",
-      name: "Russian Translations",
-    },
-    hy: {
-      id: "1XR-nbk34SkEKBZiBIVj07S0PugIjZ0Wk",
-      name: "Armenian Translations",
-    },
-  },
-
   // Cache configuration
   cache: {
-    expiryTime: 5 * 60 * 1000, // 5 minutes in milliseconds (for development)
+    expiryTime: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
     keys: {
       en: "@translations_en",
       ru: "@translations_ru",
       hy: "@translations_hy",
-    },
-  },
-
-  // Fallback configuration
-  fallback: {
-    enabled: true,
-    files: {
-      en: "../translations/en.json",
-      ru: "../translations/ru.json",
-      hy: "../translations/hy.json",
     },
   },
 
@@ -57,7 +21,6 @@ export const TRANSLATION_CONFIG = {
     enabled: __DEV__,
     logMissingTranslations: true,
     logCacheHits: false,
-    logGoogleSheetsRequests: true,
   },
 };
 

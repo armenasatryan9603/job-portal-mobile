@@ -3,6 +3,7 @@ import TRANSLATION_CONFIG, {
   getCacheKey,
   isLanguageSupported,
 } from "../config/translations";
+import { getApiBaseUrl } from "../config/api";
 
 export interface TranslationData {
   [key: string]: string;
@@ -16,11 +17,8 @@ export interface CacheData {
 class TranslationService {
   private static instance: TranslationService;
   private cache: Map<string, TranslationData> = new Map();
-  private fallbackTranslations: Map<string, TranslationData> = new Map();
 
-  private constructor() {
-    this.loadFallbackTranslations();
-  }
+  private constructor() {}
 
   public static getInstance(): TranslationService {
     if (!TranslationService.instance) {
@@ -30,87 +28,9 @@ class TranslationService {
   }
 
   /**
-   * Load fallback translations from local JSON files
+   * Fetch translations from backend API
    */
-  private async loadFallbackTranslations(): Promise<void> {
-    try {
-      const enTranslations = require("../translations/en.json");
-      const ruTranslations = require("../translations/ru.json");
-      const hyTranslations = require("../translations/hy.json");
-
-      this.fallbackTranslations.set("en", enTranslations);
-      this.fallbackTranslations.set("ru", ruTranslations);
-      this.fallbackTranslations.set("hy", hyTranslations);
-    } catch (error) {
-      console.warn("Failed to load fallback translations:", error);
-    }
-  }
-
-  /**
-   * Get sheet metadata to find the correct sheet name
-   */
-  private async getSheetMetadata(language: string): Promise<string | null> {
-    try {
-      const config =
-        TRANSLATION_CONFIG.spreadsheets[
-          language as keyof typeof TRANSLATION_CONFIG.spreadsheets
-        ];
-      const apiKey = TRANSLATION_CONFIG.googleSheets.apiKey;
-
-      if (!apiKey) {
-        throw new Error("Google Sheets API key not configured");
-      }
-
-      const metadataUrl = `${TRANSLATION_CONFIG.googleSheets.baseUrl}/${config.id}?key=${apiKey}`;
-
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(`🔍 [TRANSLATION] Fetching sheet metadata for ${language}`);
-      }
-
-      const response = await fetch(metadataUrl);
-
-      if (!response.ok) {
-        console.error(
-          `❌ [TRANSLATION] Failed to fetch metadata for ${language}: ${response.status}`
-        );
-        return null;
-      }
-
-      const data = await response.json();
-
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(
-          `📋 [TRANSLATION] Found ${
-            data.sheets?.length || 0
-          } sheets for ${language}`
-        );
-      }
-
-      // Return the first sheet's title (most common case)
-      if (data.sheets && data.sheets.length > 0) {
-        const sheetTitle = data.sheets[0].properties?.title;
-        if (TRANSLATION_CONFIG.debug.enabled) {
-          console.log(
-            `✅ [TRANSLATION] Using sheet: "${sheetTitle}" for ${language}`
-          );
-        }
-        return sheetTitle;
-      }
-
-      return null;
-    } catch (error) {
-      console.error(
-        `❌ [TRANSLATION] Error fetching sheet metadata for ${language}:`,
-        error
-      );
-      return null;
-    }
-  }
-
-  /**
-   * Fetch translations from Google Sheets
-   */
-  private async fetchFromGoogleSheets(
+  private async fetchFromBackend(
     language: string
   ): Promise<TranslationData | null> {
     try {
@@ -119,32 +39,16 @@ class TranslationService {
         return null;
       }
 
-      // First, get the actual sheet name from metadata
-      const sheetName = await this.getSheetMetadata(language);
+      const apiUrl = getApiBaseUrl();
+      const url = `${apiUrl}/translations/${language}`;
 
-      if (!sheetName) {
-        console.warn(
-          `⚠️ [TRANSLATION] Could not determine sheet name for ${language}, using fallback`
-        );
-        // Fallback to local translations
-        return this.fallbackTranslations.get(language) || {};
-      }
+      console.log(
+        `🌐 [FRONTEND] Fetching translations for ${language} from backend API: ${url}`
+      );
 
-      // Build URL with the actual sheet name
-      const config =
-        TRANSLATION_CONFIG.spreadsheets[
-          language as keyof typeof TRANSLATION_CONFIG.spreadsheets
-        ];
-      const apiKey = TRANSLATION_CONFIG.googleSheets.apiKey;
-      const url = `${TRANSLATION_CONFIG.googleSheets.baseUrl}/${config.id}/values/${sheetName}!A:B?key=${apiKey}`;
-
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(
-          `🌐 [TRANSLATION] Fetching translations for ${language} from sheet: ${sheetName}`
-        );
-      }
-
+      const startTime = Date.now();
       const response = await fetch(url);
+      const fetchDuration = Date.now() - startTime;
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -157,47 +61,28 @@ class TranslationService {
 
       const data = await response.json();
 
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(
-          `📊 [TRANSLATION] Received ${
-            data.values?.length || 0
-          } rows for ${language}`
-        );
-      }
+      console.log(
+        `📊 [FRONTEND] Received response from backend for ${language} (${fetchDuration}ms)`
+      );
 
-      if (!data.values || data.values.length === 0) {
+      if (!data.success || !data.translations) {
         console.warn(
-          `⚠️ [TRANSLATION] No data found in Google Sheets for ${language}`
+          `⚠️ [FRONTEND] No data found in backend response for ${language}`
         );
         return null;
       }
 
-      // Convert array format to object
-      const translations: TranslationData = {};
-      let processedRows = 0;
-      let skippedRows = 0;
+      const translations = data.translations as TranslationData;
+      const keyCount = Object.keys(translations).length;
 
-      for (const row of data.values) {
-        if (row.length >= 2 && row[0] && row[1]) {
-          translations[row[0]] = row[1];
-          processedRows++;
-        } else {
-          skippedRows++;
-        }
-      }
-
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(
-          `✅ [TRANSLATION] Successfully loaded ${
-            Object.keys(translations).length
-          } translations for ${language}`
-        );
-      }
+      console.log(
+        `✅ [FRONTEND] Successfully loaded ${keyCount} translations for ${language} from backend`
+      );
 
       return translations;
     } catch (error) {
       console.error(
-        `❌ [TRANSLATION] Failed to fetch translations from Google Sheets for ${language}:`,
+        `❌ [TRANSLATION] Failed to fetch translations from backend for ${language}:`,
         error
       );
       console.error(`❌ [TRANSLATION] Error details:`, {
@@ -231,9 +116,11 @@ class TranslationService {
         return null;
       }
 
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(`✅ [TRANSLATION] Cache hit for ${language}`);
-      }
+      const keyCount = Object.keys(cacheData.translations).length;
+      const ageMinutes = Math.floor((Date.now() - cacheData.timestamp) / 60000);
+      console.log(
+        `💾 [FRONTEND] Cache hit for ${language} (${keyCount} keys, cached ${ageMinutes}min ago)`
+      );
 
       return cacheData.translations;
     } catch (error) {
@@ -263,13 +150,9 @@ class TranslationService {
 
       await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
 
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log(
-          `Cached ${
-            Object.keys(translations).length
-          } translations for ${language}`
-        );
-      }
+      console.log(
+        `💾 [FRONTEND] Cached ${Object.keys(translations).length} translations for ${language} in AsyncStorage`
+      );
     } catch (error) {
       console.error(`Failed to cache translations for ${language}:`, error);
     }
@@ -279,30 +162,36 @@ class TranslationService {
    * Get translations for a specific language
    */
   public async getTranslations(language: string): Promise<TranslationData> {
+    console.log(`🔍 [FRONTEND] Getting translations for language: ${language}`);
+    
     // Check memory cache first
     if (this.cache.has(language)) {
-      return this.cache.get(language)!;
+      const cached = this.cache.get(language)!;
+      const keyCount = Object.keys(cached).length;
+      console.log(`⚡ [FRONTEND] Memory cache hit for ${language} (${keyCount} keys)`);
+      return cached;
     }
 
     // Try to get from AsyncStorage cache
     let translations = await this.getCachedTranslations(language);
 
     if (!translations) {
-      // Try to fetch from Google Sheets
-      translations = await this.fetchFromGoogleSheets(language);
+      console.log(`📡 [FRONTEND] Cache miss for ${language}, fetching from backend...`);
+      // Try to fetch from backend API
+      translations = await this.fetchFromBackend(language);
 
-      if (translations) {
-        // Cache the Google Sheets translations
+      if (translations && Object.keys(translations).length > 0) {
+        // Cache the translations
+        console.log(`💾 [FRONTEND] Caching translations for ${language}`);
         await this.cacheTranslations(language, translations);
       } else {
-        // Fallback to local JSON files
-        translations = this.fallbackTranslations.get(language) || {};
-        if (TRANSLATION_CONFIG.debug.enabled) {
-          console.warn(
-            `⚠️ [TRANSLATION] Using fallback translations for ${language}`
-          );
-        }
+        console.warn(
+          `⚠️ [FRONTEND] No translations found for ${language}, returning empty object`
+        );
+        translations = {}; // Return empty object if fetch fails
       }
+    } else {
+      console.log(`📦 [FRONTEND] Using cached translations for ${language}`);
     }
 
     // Store in memory cache
@@ -331,37 +220,38 @@ class TranslationService {
   }
 
   /**
-   * Refresh translations from Google Sheets
+   * Refresh translations (reloads from backend)
    */
   public async refreshTranslations(language: string): Promise<TranslationData> {
+    console.log(`🔄 [FRONTEND] Refreshing translations for ${language} from backend...`);
     try {
       // Clear cache
       const cacheKey = getCacheKey(language);
       if (cacheKey) {
         await AsyncStorage.removeItem(cacheKey);
+        console.log(`🗑️ [FRONTEND] Cleared AsyncStorage cache for ${language}`);
       }
       this.cache.delete(language);
+      console.log(`🗑️ [FRONTEND] Cleared memory cache for ${language}`);
 
-      // Fetch fresh translations
-      const translations = await this.fetchFromGoogleSheets(language);
+      // Fetch fresh translations from backend
+      const translations = await this.fetchFromBackend(language);
 
-      if (translations) {
+      if (translations && Object.keys(translations).length > 0) {
         await this.cacheTranslations(language, translations);
         this.cache.set(language, translations);
         return translations;
       } else {
-        // Fallback to local translations
-        const fallbackTranslations =
-          this.fallbackTranslations.get(language) || {};
-        this.cache.set(language, fallbackTranslations);
-        return fallbackTranslations;
+        // Return empty object if fetch fails
+        const emptyTranslations: TranslationData = {};
+        this.cache.set(language, emptyTranslations);
+        return emptyTranslations;
       }
     } catch (error) {
       console.error(`Failed to refresh translations for ${language}:`, error);
-      const fallbackTranslations =
-        this.fallbackTranslations.get(language) || {};
-      this.cache.set(language, fallbackTranslations);
-      return fallbackTranslations;
+      const emptyTranslations: TranslationData = {};
+      this.cache.set(language, emptyTranslations);
+      return emptyTranslations;
     }
   }
 

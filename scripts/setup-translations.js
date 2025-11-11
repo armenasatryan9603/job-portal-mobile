@@ -4,10 +4,9 @@
  * Translation System Setup Script
  *
  * This script helps set up the translation system by:
- * 1. Validating environment variables
- * 2. Testing Google Sheets connectivity
- * 3. Validating local translation files
- * 4. Providing setup instructions
+ * 1. Validating backend translation files
+ * 2. Testing backend API connectivity
+ * 3. Providing setup instructions
  */
 
 const fs = require("fs");
@@ -32,45 +31,16 @@ const log = {
     console.log(`${colors.bold}${colors.blue}${msg}${colors.reset}`),
 };
 
-// Check if .env file exists
-function checkEnvFile() {
-  const envPath = path.join(process.cwd(), ".env");
-  if (fs.existsSync(envPath)) {
-    log.success(".env file found");
-    return true;
-  } else {
-    log.error(".env file not found");
-    log.info("Create a .env file in your project root with:");
-    log.info("GOOGLE_SHEETS_API_KEY=AIzaSyAsvtqOaGbV6E1z-g-5fxc1cnJSW_gWyug");
-    return false;
-  }
-}
-
-// Check environment variables
-function checkEnvVariables() {
-  const requiredVars = ["GOOGLE_SHEETS_API_KEY"];
-  const missing = [];
-
-  requiredVars.forEach((varName) => {
-    if (process.env[varName]) {
-      log.success(`${varName} is set`);
-    } else {
-      log.error(`${varName} is not set`);
-      missing.push(varName);
-    }
-  });
-
-  return missing.length === 0;
-}
-
-// Check local translation files
-function checkLocalTranslations() {
-  const translationDir = path.join(process.cwd(), "translations");
+// Check backend translation files
+function checkBackendTranslations() {
+  const backendDir = path.join(process.cwd(), "..", "backend");
+  const translationDir = path.join(backendDir, "locales");
   const languages = ["en", "ru", "hy"];
   const missing = [];
 
   if (!fs.existsSync(translationDir)) {
-    log.error("translations directory not found");
+    log.error("Backend locales directory not found");
+    log.info(`Expected path: ${translationDir}`);
     return false;
   }
 
@@ -80,13 +50,13 @@ function checkLocalTranslations() {
       try {
         const content = JSON.parse(fs.readFileSync(filePath, "utf8"));
         const keyCount = Object.keys(content).length;
-        log.success(`${lang}.json found (${keyCount} translations)`);
+        log.success(`Backend ${lang}.json found (${keyCount} translations)`);
       } catch (err) {
-        log.error(`${lang}.json is invalid JSON`);
+        log.error(`Backend ${lang}.json is invalid JSON`);
         missing.push(lang);
       }
     } else {
-      log.error(`${lang}.json not found`);
+      log.error(`Backend ${lang}.json not found`);
       missing.push(lang);
     }
   });
@@ -94,67 +64,44 @@ function checkLocalTranslations() {
   return missing.length === 0;
 }
 
-// Test Google Sheets connectivity
-async function testGoogleSheets() {
-  const apiKey = process.env.GOOGLE_SHEETS_API_KEY;
-  if (!apiKey) {
-    log.warning("Skipping Google Sheets test (no API key)");
-    return false;
-  }
-
+// Test backend API connectivity
+async function testBackendAPI() {
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080";
+  
   try {
-    const testUrl = `https://sheets.googleapis.com/v4/spreadsheets/1Mh7mztLyDxRB8HtGDhqDW-M0IfvFocRv5RlBlPfMsnA/values/en!A:B?key=${apiKey}`;
-    const response = await fetch(testUrl);
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.values && data.values.length > 0) {
-        log.success("Google Sheets connectivity test passed");
-        log.info(`Found ${data.values.length} rows in English sheet`);
+    log.info(`Testing backend API at: ${apiUrl}`);
+    
+    // Test available languages endpoint
+    const languagesUrl = `${apiUrl}/translations`;
+    const languagesResponse = await fetch(languagesUrl);
+    
+    if (languagesResponse.ok) {
+      const languagesData = await languagesResponse.json();
+      log.success("Backend API is accessible");
+      log.info(`Available languages: ${languagesData.languages?.join(", ") || "N/A"}`);
+      
+      // Test fetching English translations
+      const translationsUrl = `${apiUrl}/translations/en`;
+      const translationsResponse = await fetch(translationsUrl);
+      
+      if (translationsResponse.ok) {
+        const translationsData = await translationsResponse.json();
+        const keyCount = Object.keys(translationsData.translations || {}).length;
+        log.success(`Successfully fetched translations (${keyCount} keys)`);
         return true;
       } else {
-        log.warning("Google Sheets is accessible but contains no data");
+        log.warning("Backend API is accessible but translations endpoint failed");
         return false;
       }
     } else {
-      log.error(
-        `Google Sheets test failed: ${response.status} ${response.statusText}`
-      );
+      log.error(`Backend API test failed: ${languagesResponse.status} ${languagesResponse.statusText}`);
       return false;
     }
   } catch (err) {
-    log.error(`Google Sheets test failed: ${err.message}`);
+    log.error(`Backend API test failed: ${err.message}`);
+    log.warning("Make sure the backend server is running");
     return false;
   }
-}
-
-// Check if required dependencies are installed
-function checkDependencies() {
-  const packageJsonPath = path.join(process.cwd(), "package.json");
-  if (!fs.existsSync(packageJsonPath)) {
-    log.error("package.json not found");
-    return false;
-  }
-
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-  const requiredDeps = ["@react-native-async-storage/async-storage"];
-  const missing = [];
-
-  requiredDeps.forEach((dep) => {
-    if (packageJson.dependencies && packageJson.dependencies[dep]) {
-      log.success(`${dep} is installed`);
-    } else if (
-      packageJson.devDependencies &&
-      packageJson.devDependencies[dep]
-    ) {
-      log.success(`${dep} is installed (dev dependency)`);
-    } else {
-      log.error(`${dep} is not installed`);
-      missing.push(dep);
-    }
-  });
-
-  return missing.length === 0;
 }
 
 // Generate setup instructions
@@ -162,91 +109,75 @@ function generateSetupInstructions() {
   log.title("\n📋 Setup Instructions:");
 
   console.log(`
-1. ${colors.bold}Environment Variables:${colors.reset}
-   - Add GOOGLE_SHEETS_API_KEY to your .env file
-   - Get API key from Google Cloud Console
-   - Enable Google Sheets API
+1. ${colors.bold}Backend Translation Files:${colors.reset}
+   - Translation files are located in backend/locales/ folder
+   - Supported languages: en, ru, hy
+   - Format: JSON files with key-value pairs
 
-2. ${colors.bold}Google Sheets Setup:${colors.reset}
-   - English: https://docs.google.com/spreadsheets/d/1Mh7mztLyDxRB8HtGDhqDW-M0IfvFocRv5RlBlPfMsnA/edit
-   - Russian: https://docs.google.com/spreadsheets/d/1-PR5GYLitEBZYaqi69CWOO9FN-g5ql3muzY1rlOLy6s/edit
-   - Armenian: https://docs.google.com/spreadsheets/d/1WO56vVlflD1bGtzXQOXpIL6Ol8GGE0kKy9Asljfj6G4/edit
-   
-   Format: Column A = keys, Column B = translations
+2. ${colors.bold}Backend API:${colors.reset}
+   - Backend must be running to serve translations
+   - API endpoint: GET /translations/:language
+   - Translations are cached in the mobile app
 
 3. ${colors.bold}App Integration:${colors.reset}
    - Wrap your app with TranslationProvider
    - Use useTranslation hook in components
-   - Test with and without internet connection
+   - Translations are automatically cached
 
-4. ${colors.bold}Testing:${colors.reset}
-   - Test offline mode (should use local files)
-   - Test online mode (should use Google Sheets)
+4. ${colors.bold}Adding New Translations:${colors.reset}
+   - Edit the JSON files in backend/locales/ folder
+   - Add new keys to all language files
+   - Restart backend server
+   - Clear cache in app to see changes immediately
+
+5. ${colors.bold}Testing:${colors.reset}
    - Test language switching
    - Test cache functionality
+   - Test offline mode (uses cached translations)
 `);
 }
 
 // Main setup function
 async function runSetup() {
   log.title("🚀 Translation System Setup");
-  console.log("");
 
-  let allChecksPassed = true;
+  // Check backend translations
+  log.title("\n1. Backend Translation Files");
+  const translationsValid = checkBackendTranslations();
 
-  // Check environment file
-  log.title("1. Environment Configuration");
-  if (!checkEnvFile()) {
-    allChecksPassed = false;
-  }
+  // Test backend API
+  log.title("\n2. Backend API Connectivity");
+  const apiWorking = await testBackendAPI();
 
-  // Check environment variables
-  log.title("2. Environment Variables");
-  if (!checkEnvVariables()) {
-    allChecksPassed = false;
-  }
-
-  // Check dependencies
-  log.title("3. Dependencies");
-  if (!checkDependencies()) {
-    allChecksPassed = false;
-  }
-
-  // Check local translations
-  log.title("4. Local Translation Files");
-  if (!checkLocalTranslations()) {
-    allChecksPassed = false;
-  }
-
-  // Test Google Sheets
-  log.title("5. Google Sheets Connectivity");
-  const sheetsWorking = await testGoogleSheets();
-  if (!sheetsWorking) {
-    allChecksPassed = false;
-  }
+  // Generate instructions
+  generateSetupInstructions();
 
   // Summary
-  console.log("");
-  if (allChecksPassed) {
-    log.success("All checks passed! Translation system is ready to use.");
+  log.title("\n📊 Summary:");
+  if (translationsValid) {
+    log.success("Backend translation files are valid");
   } else {
-    log.warning("Some checks failed. Please fix the issues above.");
-    generateSetupInstructions();
+    log.error("Some backend translation files are missing or invalid");
   }
-
-  console.log("");
-  log.info("For more information, see docs/TRANSLATION_SETUP.md");
+  
+  if (apiWorking) {
+    log.success("Backend API is working");
+    console.log("\n✅ Translation system is ready to use!");
+  } else {
+    log.warning("Backend API test failed - make sure backend is running");
+    console.log("\n⚠️  Please ensure the backend server is running");
+  }
 }
 
-// Run the setup
+// Run if called directly
 if (require.main === module) {
-  runSetup().catch(console.error);
+  runSetup().catch((err) => {
+    log.error(`Setup failed: ${err.message}`);
+    process.exit(1);
+  });
 }
 
 module.exports = {
-  checkEnvFile,
-  checkEnvVariables,
-  checkLocalTranslations,
-  testGoogleSheets,
-  checkDependencies,
+  checkBackendTranslations,
+  testBackendAPI,
 };

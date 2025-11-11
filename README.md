@@ -12,8 +12,8 @@ npx expo prebuild --platform android
 
 # Build the APK
 
-cd android
-./gradlew assembleRelease
+cd android && ./gradlew assembleRelease
+
 
 # Or for debug build (easier, no signing required)
 

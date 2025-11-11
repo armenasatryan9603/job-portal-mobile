@@ -38,6 +38,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -90,8 +91,6 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {
-      "GOOGLE_SHEETS_API_KEY": "AIzaSyAsvtqOaGbV6E1z-g-5fxc1cnJSW_gWyug"
-    }
+    "extra": {}
   }
 }

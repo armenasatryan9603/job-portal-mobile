@@ -18,6 +18,7 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  Keyboard,
 } from "react-native";
 import { chatService, Conversation, Message } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
@@ -47,11 +48,41 @@ export default function ChatDetailScreen() {
   >(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [hasExistingFeedback, setHasExistingFeedback] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   // Load conversation and messages
   useEffect(() => {
     loadConversation();
   }, [id]);
+
+  // Handle keyboard show/hide for Android
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      const keyboardWillShowListener = Keyboard.addListener(
+        "keyboardDidShow",
+        (e) => {
+          // Add extra padding to ensure input is fully visible above keyboard
+          const height = e.endCoordinates.height;
+          setKeyboardHeight(height);
+          // Scroll to bottom when keyboard appears
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+      );
+      const keyboardWillHideListener = Keyboard.addListener(
+        "keyboardDidHide",
+        () => {
+          setKeyboardHeight(0);
+        }
+      );
+
+      return () => {
+        keyboardWillShowListener.remove();
+        keyboardWillHideListener.remove();
+      };
+    }
+  }, []);
 
   // Initialize Pusher and subscribe to conversation updates
   useEffect(() => {
@@ -80,7 +111,12 @@ export default function ChatDetailScreen() {
         setMessages((prev) => {
           // Check if message already exists (avoid duplicates)
           const exists = prev.some((msg) => msg.id === newMessage.id);
-          if (exists) return prev;
+          if (exists) {
+            console.log(
+              `⚠️ Duplicate message detected: ${newMessage.id}, skipping`
+            );
+            return prev;
+          }
 
           // Add new message
           return [...prev, newMessage];
@@ -162,7 +198,11 @@ export default function ChatDetailScreen() {
       // Double-check: ensure we're setting messages for the correct conversation
       if (conversationData.id === conversationId) {
         setConversation(conversationData);
-        setMessages(messagesData.messages);
+        // Deduplicate messages by ID before setting
+        const uniqueMessages = messagesData.messages.filter(
+          (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+        );
+        setMessages(uniqueMessages);
       } else {
         console.warn(
           `⚠️ Conversation ID mismatch: expected ${conversationId}, got ${conversationData.id}`
@@ -215,7 +255,17 @@ export default function ChatDetailScreen() {
         messageType: "text",
       });
 
-      setMessages((prev) => [...prev, newMessageData]);
+      setMessages((prev) => {
+        // Check if message already exists (avoid duplicates from Pusher)
+        const exists = prev.some((msg) => msg.id === newMessageData.id);
+        if (exists) {
+          console.log(
+            `⚠️ Message ${newMessageData.id} already exists, skipping duplicate`
+          );
+          return prev;
+        }
+        return [...prev, newMessageData];
+      });
       setNewMessage("");
 
       // Scroll to bottom
@@ -527,21 +577,34 @@ export default function ChatDetailScreen() {
   return (
     <Layout header={header} showFooterTabs={false}>
       <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={[
+          styles.container,
+          Platform.OS === "android" && keyboardHeight > 0
+            ? { paddingBottom: keyboardHeight + 20 }
+            : {},
+        ]}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        enabled={Platform.OS === "ios"}
       >
         {/* Messages List */}
         <FlatList
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => {
+            // Use ID if available, otherwise fallback to index
+            // This prevents duplicate key errors
+            return item.id ? `msg-${item.id}` : `msg-${index}`;
+          }}
           style={styles.messagesList}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: true })
           }
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
         />
 
         {/* Action Buttons - Only show for client and if conversation is not closed */}
@@ -569,7 +632,7 @@ export default function ChatDetailScreen() {
                     onPress={handleReject}
                     disabled={actionLoading}
                   >
-                    <IconSymbol name="xmark" size={16} color="#FF6B6B" />
+                    <IconSymbol name="xmark" size={14} color="#FF6B6B" />
                     <Text
                       style={[styles.actionButtonText, { color: "#FF6B6B" }]}
                     >
@@ -587,7 +650,7 @@ export default function ChatDetailScreen() {
                     onPress={handleChoose}
                     disabled={actionLoading}
                   >
-                    <IconSymbol name="checkmark" size={16} color="white" />
+                    <IconSymbol name="checkmark" size={14} color="white" />
                     <Text style={[styles.actionButtonText, { color: "white" }]}>
                       {t("choose")}
                     </Text>
@@ -608,7 +671,7 @@ export default function ChatDetailScreen() {
                     onPress={handleCancel}
                     disabled={actionLoading}
                   >
-                    <IconSymbol name="xmark" size={16} color="#FF6B6B" />
+                    <IconSymbol name="xmark" size={14} color="#FF6B6B" />
                     <Text
                       style={[styles.actionButtonText, { color: "#FF6B6B" }]}
                     >
@@ -628,7 +691,7 @@ export default function ChatDetailScreen() {
                   >
                     <IconSymbol
                       name="checkmark.circle"
-                      size={16}
+                      size={14}
                       color="white"
                     />
                     <Text style={[styles.actionButtonText, { color: "white" }]}>
@@ -703,7 +766,14 @@ export default function ChatDetailScreen() {
 
         {/* Message Input - Only show if conversation is active */}
         {!isConversationClosed() && (
-          <View style={styles.inputContainer}>
+          <View
+            style={[
+              styles.inputContainer,
+              Platform.OS === "android" && keyboardHeight > 0
+                ? { marginBottom: 10 }
+                : {},
+            ]}
+          >
             <View
               style={[
                 styles.inputWrapper,
@@ -794,11 +864,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   messagesContent: {
-    padding: 16,
-    paddingBottom: 16,
+    padding: 12,
+    paddingBottom: 12,
   },
   messageContainer: {
-    marginBottom: 12,
+    marginBottom: 8,
   },
   currentUserMessage: {
     alignItems: "flex-end",
@@ -808,61 +878,81 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: "80%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     borderWidth: 1,
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 20,
   },
   messageFooter: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-end",
-    marginTop: 4,
+    marginTop: 3,
     gap: 4,
   },
   messageTime: {
-    fontSize: 12,
+    fontSize: 11,
   },
   statusIcon: {
     marginLeft: 2,
   },
   inputContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 30,
   },
   actionContainer: {
     borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   actionButtons: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
+    justifyContent: "center",
   },
   actionButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
+    borderRadius: 12,
+    borderWidth: 1.5,
     gap: 6,
+    minHeight: 38,
+    minWidth: 100,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   rejectButton: {
     backgroundColor: "transparent",
   },
   chooseButton: {
     borderColor: "transparent",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
+    letterSpacing: 0.3,
   },
   disabledButton: {
     opacity: 0.5,
@@ -871,18 +961,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     borderWidth: 1,
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
-    minHeight: 48,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+    minHeight: 44,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     maxHeight: 100,
-    minHeight: 32,
-    paddingVertical: 8,
+    minHeight: 28,
+    paddingVertical: 6,
     paddingHorizontal: 4,
     lineHeight: 20,
   },
@@ -920,8 +1010,8 @@ const styles = StyleSheet.create({
   },
   statusContainer: {
     borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   statusMessage: {
     flexDirection: "row",
@@ -935,21 +1025,21 @@ const styles = StyleSheet.create({
   },
   reviewContainer: {
     borderTopWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   reviewButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 6,
   },
   reviewButtonText: {
     color: "white",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
 });

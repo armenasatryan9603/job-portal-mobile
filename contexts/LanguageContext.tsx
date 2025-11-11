@@ -1,11 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, ReactNode, useContext, useState } from "react";
 
-// Import all translation files
-import enTranslations from "../translations/en.json";
-import hyTranslations from "../translations/hy.json";
-import ruTranslations from "../translations/ru.json";
-
 export type Language = "en" | "ru" | "hy";
 
 interface LanguageContextType {
@@ -32,13 +27,11 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
     await AsyncStorage.setItem("selectedLanguage", newLanguage);
   };
 
+  // Note: This t function is kept for backward compatibility
+  // but should use TranslationContext's t function instead
   const t = (key: string): string => {
-    const translations = {
-      en: enTranslations,
-      ru: ruTranslations,
-      hy: hyTranslations,
-    };
-    return (translations[language] as any)[key] || key;
+    // Return key as fallback - actual translations should come from TranslationContext
+    return key;
   };
 
   // Load saved language on app start

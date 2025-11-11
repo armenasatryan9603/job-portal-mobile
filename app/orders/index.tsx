@@ -735,12 +735,17 @@ export default function OrdersScreen() {
             </View>
             {order.location && (
               <View style={styles.detailItem}>
-                <IconSymbol
-                  name="location.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
+                <View style={styles.detailIconContainer}>
+                  <IconSymbol
+                    name="location.fill"
+                    size={16}
+                    color={colors.tint}
+                  />
+                </View>
+                <Text
+                  style={[styles.detailText, { color: colors.text }]}
+                  numberOfLines={2}
+                >
                   {order.location}
                 </Text>
               </View>
@@ -1090,15 +1095,25 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
     marginBottom: 16,
+    alignItems: "center",
   },
   detailItem: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     gap: 8,
+    flexShrink: 1,
+    maxWidth: "100%",
+    flex: 1,
+    minWidth: 0,
+  },
+  detailIconContainer: {
+    marginTop: 2,
   },
   detailText: {
     fontSize: 14,
     fontWeight: "600",
+    flexShrink: 1,
+    flex: 1,
   },
   skillsContainer: {
     flexDirection: "row",

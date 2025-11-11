@@ -51,6 +51,8 @@ const MAPPING = {
   "plus.circle.fill": "add-circle",
   plus: "add",
   checkmark: "check",
+  "checkmark.circle": "check-circle",
+  "checkmark.circle.fill": "check-circle",
   trash: "delete",
   "trash.fill": "delete",
   "camera.fill": "camera-alt",
@@ -59,6 +61,7 @@ const MAPPING = {
   "phone.fill": "phone",
   pencil: "edit",
   "arrow.right": "arrow-forward",
+  "arrow.up": "arrow-upward",
   "doc.on.doc": "content-copy",
   // Settings icons
   "moon.fill": "dark-mode",

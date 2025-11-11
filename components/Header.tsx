@@ -4,7 +4,13 @@ import { useNavigation } from "@/contexts/NavigationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Platform,
+} from "react-native";
 
 interface HeaderProps {
   title?: string;
@@ -49,13 +55,17 @@ export const Header: React.FC<HeaderProps> = ({
             leftComponent
           ) : showBackButton ? (
             <TouchableOpacity onPress={onBackPress}>
-              <IconSymbol name="chevron.left" size={20} color={colors.text} />
+              <IconSymbol
+                name="chevron.left"
+                size={Platform.OS === "android" ? 34 : 20}
+                color={colors.text}
+              />
             </TouchableOpacity>
           ) : (
             <TouchableOpacity onPress={toggleSidebar}>
               <IconSymbol
                 name="line.3.horizontal"
-                size={28}
+                size={Platform.OS === "android" ? 32 : 28}
                 color={colors.text}
               />
             </TouchableOpacity>
@@ -92,7 +102,11 @@ export const Header: React.FC<HeaderProps> = ({
                   style={styles.iconButton}
                   onPress={() => router.push("/notifications")}
                 >
-                  <IconSymbol name="bell" size={20} color={colors.text} />
+                  <IconSymbol
+                    name="bell"
+                    size={Platform.OS === "android" ? 24 : 20}
+                    color={colors.text}
+                  />
                   {unreadNotificationsCount > 0 && (
                     <View
                       style={[
@@ -114,7 +128,11 @@ export const Header: React.FC<HeaderProps> = ({
                   style={styles.iconButton}
                   onPress={() => router.push("/chat")}
                 >
-                  <IconSymbol name="message" size={20} color={colors.text} />
+                  <IconSymbol
+                    name="message"
+                    size={Platform.OS === "android" ? 24 : 20}
+                    color={colors.text}
+                  />
                   {unreadMessagesCount > 0 && (
                     <View
                       style={[
@@ -139,6 +157,7 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    marginTop: Spacing.lg,
     paddingHorizontal: Spacing.container,
   },
   content: {

@@ -27,11 +27,11 @@ const TranslationExample: React.FC = () => {
         setIsCached(cached);
         setTranslationSource(
           cached
-            ? "📱 Cached (from Google Sheets)"
-            : "🌐 Fresh (from Google Sheets)"
+            ? "📱 Cached (from backend)"
+            : "🌐 Fresh (from backend)"
         );
       } catch (err) {
-        setTranslationSource("📁 Local files (fallback)");
+        setTranslationSource("🌐 Backend");
       }
     };
 
@@ -41,8 +41,8 @@ const TranslationExample: React.FC = () => {
   const handleRefresh = async () => {
     try {
       await refreshTranslations();
-      setTranslationSource("🌐 Fresh (from Google Sheets)");
-      Alert.alert("Success", "Translations refreshed from Google Sheets!");
+      setTranslationSource("🌐 Fresh (from backend)");
+      Alert.alert("Success", "Translations refreshed from backend!");
     } catch (err) {
       Alert.alert("Error", "Failed to refresh translations");
     }
@@ -55,7 +55,7 @@ const TranslationExample: React.FC = () => {
       setTranslationSource("🔄 Cache cleared");
       Alert.alert(
         "Success",
-        "Cache cleared! Next load will fetch from Google Sheets."
+        "Cache cleared! Next load will reload from local files."
       );
     } catch (err) {
       Alert.alert("Error", "Failed to clear cache");
@@ -150,7 +150,7 @@ const TranslationExample: React.FC = () => {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Actions:</Text>
         <TouchableOpacity style={styles.button} onPress={handleRefresh}>
-          <Text style={styles.buttonText}>🔄 Refresh from Google Sheets</Text>
+          <Text style={styles.buttonText}>🔄 Refresh Translations</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.button, styles.clearButton]}
@@ -161,18 +161,18 @@ const TranslationExample: React.FC = () => {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>How to Test:</Text>
+        <Text style={styles.sectionTitle}>How it Works:</Text>
         <Text style={styles.instructionText}>
-          1. Click "Clear Cache" then "Refresh" to force Google Sheets fetch
+          1. Translations are fetched from backend API (/translations/:language)
         </Text>
         <Text style={styles.instructionText}>
-          2. Check console logs for "Fetching translations from Google Sheets"
+          2. Translations are cached in memory and AsyncStorage for performance
         </Text>
         <Text style={styles.instructionText}>
-          3. If you see "🌐 Fresh (from Google Sheets)" - it's working!
+          3. Click "Clear Cache" then "Refresh" to reload from backend
         </Text>
         <Text style={styles.instructionText}>
-          4. If you see "📁 Local files" - check your API key
+          4. Translations are automatically loaded when language changes
         </Text>
       </View>
     </View>

@@ -444,7 +444,7 @@ export default function ProfileSettingsScreen() {
                           { color: colors.textSecondary },
                         ]}
                       >
-                        Test Google Sheets translations and cache
+                        Test translations and cache
                       </Text>
                     </View>
                   </View>
