@@ -18,12 +18,15 @@ import {
   RefreshControl,
 } from "react-native";
 import { chatService, Conversation } from "@/services/chatService";
+import { pusherService } from "@/services/pusherService";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ChatScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +37,54 @@ export default function ChatScreen() {
   useEffect(() => {
     loadConversations();
   }, []);
+
+  // Subscribe to user updates for real-time conversation list updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    // Initialize Pusher
+    pusherService.initialize();
+
+    // Subscribe to user-specific updates
+    const unsubscribe = pusherService.subscribeToUserUpdates(
+      user.id,
+      (data: { conversationId: number; lastMessage: any; updatedAt: string }) => {
+        // Update the conversation in the list
+        setConversations((prev) => {
+          const updated = [...prev];
+          const index = updated.findIndex(
+            (conv) => conv.id === data.conversationId
+          );
+
+          if (index !== -1) {
+            // Update existing conversation
+            updated[index] = {
+              ...updated[index],
+              updatedAt: data.updatedAt,
+              Messages: data.lastMessage
+                ? [{ ...data.lastMessage, Sender: data.lastMessage.Sender }]
+                : updated[index].Messages,
+            };
+            // Sort by updatedAt (most recent first)
+            updated.sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            );
+          } else {
+            // New conversation - reload the list
+            loadConversations();
+          }
+
+          return updated;
+        });
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.id]);
 
   const loadConversations = async () => {
     try {

@@ -22,6 +22,7 @@ import {
 import { chatService, Conversation, Message } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Review } from "@/services/api";
+import { pusherService } from "@/services/pusherService";
 
 export default function ChatDetailScreen() {
   const colorScheme = useColorScheme();
@@ -51,6 +52,52 @@ export default function ChatDetailScreen() {
   useEffect(() => {
     loadConversation();
   }, [id]);
+
+  // Initialize Pusher and subscribe to conversation updates
+  useEffect(() => {
+    // Initialize Pusher
+    pusherService.initialize();
+
+    if (!conversation?.id) return;
+
+    // Store current conversation ID to prevent race conditions
+    const currentConversationId = conversation.id;
+
+    // Subscribe to conversation updates
+    const unsubscribe = pusherService.subscribeToConversation(
+      currentConversationId,
+      (newMessage: Message) => {
+        // Safety check: Ensure message belongs to current conversation
+        // This prevents messages from other conversations appearing if user switches quickly
+        if (newMessage.conversationId !== currentConversationId) {
+          console.warn(
+            `⚠️ Received message for conversation ${newMessage.conversationId} but current is ${currentConversationId}. Ignoring.`
+          );
+          return;
+        }
+
+        // Add new message to the list if it's not already there
+        setMessages((prev) => {
+          // Check if message already exists (avoid duplicates)
+          const exists = prev.some((msg) => msg.id === newMessage.id);
+          if (exists) return prev;
+
+          // Add new message
+          return [...prev, newMessage];
+        });
+
+        // Scroll to bottom when new message arrives
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    );
+
+    // Cleanup on unmount or when conversation changes
+    return () => {
+      unsubscribe();
+    };
+  }, [conversation?.id]);
 
   // Check for existing feedback and show dialog when conversation loads
   useEffect(() => {
@@ -103,14 +150,24 @@ export default function ChatDetailScreen() {
       setLoading(true);
       setError(null);
 
+      // Clear previous messages to prevent showing messages from wrong conversation
+      setMessages([]);
+
       const conversationId = parseInt(id as string);
       const [conversationData, messagesData] = await Promise.all([
         chatService.getConversation(conversationId),
         chatService.getMessages(conversationId),
       ]);
 
-      setConversation(conversationData);
-      setMessages(messagesData.messages);
+      // Double-check: ensure we're setting messages for the correct conversation
+      if (conversationData.id === conversationId) {
+        setConversation(conversationData);
+        setMessages(messagesData.messages);
+      } else {
+        console.warn(
+          `⚠️ Conversation ID mismatch: expected ${conversationId}, got ${conversationData.id}`
+        );
+      }
 
       // Mark messages as read
       await chatService.markAsRead(conversationId);
