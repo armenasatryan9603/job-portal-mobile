@@ -14,8 +14,8 @@ import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { fileUploadService } from "@/services/fileUpload";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface MediaFile {
   uri: string;
@@ -46,7 +46,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   onBannerSelect,
   existingBannerId,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const [imageLoadingStates, setImageLoadingStates] = useState<
     Record<number, boolean>

@@ -10,7 +10,7 @@ import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { MediaUploader } from "@/components/MediaUploader";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -32,7 +32,7 @@ import { useModal } from "@/contexts/ModalContext";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { isAuthenticated, user } = useAuth();

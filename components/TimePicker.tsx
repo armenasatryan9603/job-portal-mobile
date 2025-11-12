@@ -8,8 +8,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface TimePickerProps {
   visible: boolean;
@@ -28,7 +28,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
   onTimeToggle,
   formatDateForDisplay,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

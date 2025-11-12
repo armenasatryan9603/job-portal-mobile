@@ -1,9 +1,9 @@
 import React from "react";
 import { View, Text, TextInput, StyleSheet } from "react-native";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { DateTimeSelector } from "./DateTimeSelector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface SkillsAndRequirementsFormProps {
   formData: {
@@ -32,7 +32,7 @@ export const SkillsAndRequirementsForm: React.FC<
   onDatesChange,
   onDateTimesChange,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

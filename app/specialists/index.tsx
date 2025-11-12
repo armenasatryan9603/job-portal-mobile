@@ -5,7 +5,7 @@ import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors, Spacing } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
@@ -30,7 +30,7 @@ import { useModal } from "@/contexts/ModalContext";
 export default function SpecialistsScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { t, language } = useLanguage();
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
@@ -419,7 +419,7 @@ export default function SpecialistsScreen() {
                     ]}
                   >
                     <Text style={[styles.skillText, { color: colors.text }]}>
-                      {skill}
+                      {skill.name}
                     </Text>
                   </View>
                 )) || (

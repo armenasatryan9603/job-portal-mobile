@@ -3,7 +3,7 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
@@ -113,7 +113,7 @@ const dummyProposals = [
 
 export default function OrderProposalsScreen() {
   const { id } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

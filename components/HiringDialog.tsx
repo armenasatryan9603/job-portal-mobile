@@ -12,9 +12,9 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ThemeColors } from "@/constants/styles";
 import { apiService } from "@/services/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface HiringDialogProps {
   visible: boolean;
@@ -37,7 +37,7 @@ export function HiringDialog({
 }: HiringDialogProps) {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isAlreadyHired, setIsAlreadyHired] = useState(false);

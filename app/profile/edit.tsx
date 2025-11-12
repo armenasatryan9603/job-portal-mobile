@@ -24,7 +24,7 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { apiService, UserProfile, UpdateUserProfileData } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { fileUploadService } from "@/services/fileUpload";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -42,7 +42,7 @@ export default function EditProfileScreen() {
   // Profile picture state management
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [selectedImageFile, setSelectedImageFile] = useState<any>(null);
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     name: "",

@@ -1,18 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  Alert,
-  Text,
-  TouchableOpacity,
-  Dimensions,
-} from "react-native";
+import { View, StyleSheet, Alert, Text, TouchableOpacity } from "react-native";
 import MapView, { Marker, Region, LatLng } from "react-native-maps";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import * as Location from "expo-location";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface MapViewComponentProps {
   initialLocation?: {
@@ -36,7 +29,7 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
   showCurrentLocationButton = true,
 }) => {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const mapRef = useRef<MapView>(null);
@@ -180,17 +173,50 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
     }
   };
 
-  const handleConfirmLocation = () => {
+  const handleConfirmLocation = async () => {
     if (selectedLocation) {
-      onLocationSelect({
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
-        address:
-          initialLocation?.address ||
-          `${selectedLocation.latitude.toFixed(
-            6
-          )}, ${selectedLocation.longitude.toFixed(6)}`,
-      });
+      try {
+        // Get address from coordinates
+        const addressResponse = await Location.reverseGeocodeAsync({
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+        });
+
+        const address = addressResponse[0]
+          ? `${addressResponse[0].street || ""} ${
+              addressResponse[0].city || ""
+            } ${addressResponse[0].region || ""} ${
+              addressResponse[0].country || ""
+            }`.trim()
+          : initialLocation?.address ||
+            `${selectedLocation.latitude.toFixed(
+              6
+            )}, ${selectedLocation.longitude.toFixed(6)}`;
+
+        onLocationSelect({
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          address,
+        });
+
+        // Close the map after confirming
+        onClose?.();
+      } catch (error) {
+        console.error("Error getting address:", error);
+        // Fallback to coordinates if reverse geocoding fails
+        onLocationSelect({
+          latitude: selectedLocation.latitude,
+          longitude: selectedLocation.longitude,
+          address:
+            initialLocation?.address ||
+            `${selectedLocation.latitude.toFixed(
+              6
+            )}, ${selectedLocation.longitude.toFixed(6)}`,
+        });
+
+        // Close the map after confirming
+        onClose?.();
+      }
     }
   };
 

@@ -16,6 +16,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Service } from "@/services/api";
 import { useServices } from "@/hooks/useApi";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ServiceSelectorProps {
   selectedService: Service | null;
@@ -28,7 +29,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   onServiceSelect,
   error,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

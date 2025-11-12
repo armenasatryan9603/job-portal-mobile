@@ -9,7 +9,7 @@ import {
   Typography,
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -24,6 +24,8 @@ import {
   View,
 } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
+import { useTranslation } from "@/hooks/useTranslation";
+import { ReferralCodeInput } from "./ReferralCodeInput";
 
 interface SignupModalProps {
   visible: boolean;
@@ -31,16 +33,12 @@ interface SignupModalProps {
   onSwitchToLogin: () => void;
 }
 
-export function SignupModal({
-  visible,
-  onClose,
-  onSwitchToLogin,
-}: SignupModalProps) {
+export function SignupModal({ visible, onClose }: SignupModalProps) {
   const [step, setStep] = useState<"phone" | "name" | "otp">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [name, setName] = useState("");
   const { login, sendOTP, resetOTP, isLoading } = useAuth();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
@@ -215,12 +213,15 @@ export function SignupModal({
             showsVerticalScrollIndicator={false}
           >
             {step === "phone" && (
+              <View>
               <PhoneNumberInput
                 onPhoneNumberSubmit={handlePhoneNumberSubmit}
                 isLoading={isLoading}
                 buttonText={t("sendOTP")}
                 showTitle={false}
               />
+                <ReferralCodeInput showStatus={true} />
+              </View>
             )}
 
             {step === "name" && renderNameInput()}

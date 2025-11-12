@@ -19,7 +19,7 @@ import {
   ThemeColors,
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -27,7 +27,7 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 export default function WelcomeScreen() {
   const { user, logout, isAuthenticated } = useAuth();
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { showLoginModal } = useModal();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const colors = ThemeColors[isDark ? "dark" : "light"];

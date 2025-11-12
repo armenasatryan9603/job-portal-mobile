@@ -7,11 +7,23 @@
     "icon": "./assets/images/icon.png",
     "scheme": "jobportalmobile",
     "userInterfaceStyle": "automatic",
+    "linking": {
+      "enabled": true,
+      "prefixes": [
+        "jobportalmobile://",
+        "https://yourapp.com",
+        "https://*.yourapp.com"
+      ]
+    },
     "newArchEnabled": true,
     "ios": {
       "deploymentTarget": "17.0",
       "supportsTablet": true,
       "bundleIdentifier": "com.jobportalmobile.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "aps-environment": "development"
+      },
       "config": {
         "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY"
       },
@@ -19,7 +31,9 @@
         "NSLocationWhenInUseUsageDescription": "This app needs access to location to show your current location on the map and help you set your profile location.",
         "NSCameraUsageDescription": "This app needs access to camera to take photos and videos for your orders.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to upload images and videos for your orders.",
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -57,6 +71,7 @@
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       "./plugins/withFirebaseConditionalInit.js",
+      "./plugins/withIosEntitlements.js",
       "./plugins/withPodfileModularHeaders.js",
       "./plugins/withAndroidBuildConfig.js",
       "./plugins/withAndroidKotlinImports.js",
@@ -85,7 +100,8 @@
           "photosPermission": "This app needs access to photo library to upload images and videos for your orders.",
           "cameraPermission": "This app needs access to camera to take photos and videos for your orders."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

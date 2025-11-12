@@ -1,6 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { MapViewComponent } from "./MapView";
 import * as Location from "expo-location";
@@ -14,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface LocationPickerProps {
   visible: boolean;
@@ -37,7 +37,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   initialLocation,
 }) => {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const [location, setLocation] = useState<{
     latitude: number;

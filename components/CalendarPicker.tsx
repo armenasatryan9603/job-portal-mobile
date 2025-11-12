@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
   StyleSheet,
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface CalendarPickerProps {
   visible: boolean;
@@ -32,7 +32,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   onMonthNavigate,
   formatDateWithTimes,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

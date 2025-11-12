@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import * as Device from "expo-device";
 import { apiService } from "@/services/api";
+import { getAndClearReferralCode } from "@/utils/referralStorage";
 import PhoneVerificationService from "@/services/PhoneVerificationService";
 
 interface User {
@@ -114,9 +115,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check if running on simulator
       const isSimulator = !Device.isDevice;
+      
+      // Get referral code if available (and clear it after use)
+      const referralCode = await getAndClearReferralCode();
+      if (referralCode) {
+        console.log(`🎁 Applying referral code: ${referralCode}`);
+      }
+
       const result = await apiService.post<{ access_token: string; user: any }>(
         "/auth/verify-otp",
-        { phone, otp, name, isSimulator }
+        { phone, otp, name, isSimulator, referralCode }
       );
 
       if (result.access_token && result.user) {

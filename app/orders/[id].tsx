@@ -8,7 +8,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -31,7 +31,7 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 
 export default function EditOrderScreen() {
   const { id, myJobs } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { user, isLoading: userLoading } = useAuth();
@@ -238,8 +238,6 @@ export default function EditOrderScreen() {
       return () => clearTimeout(timer);
     }
   }, [user?.id, pendingApply, order, userLoading, id]);
-
-  console.log("ssssssss", JSON.stringify(order?.MediaFiles, null, 2));
 
   // Reusable Media Files Display Component
   const renderMediaFiles = (mediaFiles: any[], canDelete: boolean = false) => {

@@ -6,7 +6,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -27,7 +27,7 @@ import { apiService, Service } from "@/services/api";
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();

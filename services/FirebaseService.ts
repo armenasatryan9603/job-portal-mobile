@@ -1,11 +1,32 @@
-import { initializeApp, getApps } from "@react-native-firebase/app";
+/**
+ * FirebaseService - Minimal Firebase initialization for FCM only
+ * 
+ * NOTE: This service is kept for backward compatibility but is no longer needed.
+ * Firebase Messaging auto-initializes when @react-native-firebase/messaging is used.
+ * 
+ * We only use Firebase Cloud Messaging (FCM) for push notifications.
+ * Other Firebase services (Storage, Database, Analytics) are disabled to reduce costs.
+ */
+import { getApps } from "@react-native-firebase/app";
 
 class FirebaseService {
   private static instance: FirebaseService;
   private app: any = null;
 
   private constructor() {
-    this.initializeFirebase();
+    // Firebase Messaging auto-initializes, so we just check if it's available
+    try {
+      const apps = getApps();
+      if (apps.length > 0) {
+        this.app = apps[0];
+        console.log("✅ Firebase app available (auto-initialized by messaging)");
+      } else {
+        console.log("⚠️ Firebase app not yet initialized (will be auto-initialized by messaging)");
+      }
+    } catch (error) {
+      console.warn("⚠️ Firebase check failed:", error);
+      this.app = null;
+    }
   }
 
   static getInstance(): FirebaseService {
@@ -13,29 +34,6 @@ class FirebaseService {
       FirebaseService.instance = new FirebaseService();
     }
     return FirebaseService.instance;
-  }
-
-  private initializeFirebase() {
-    try {
-      if (getApps().length === 0) {
-        this.app = initializeApp({
-          apiKey: "AIzaSyBSQEhsGpU5-ZZk6MPrSvFTlCKlxD1_PMg",
-          appId: "1:195669708353:ios:76371cf1d89c3ff84780c0",
-          projectId: "job-portal-mobile",
-          storageBucket: "job-portal-mobile.firebasestorage.app",
-          messagingSenderId: "195669708353",
-          measurementId: "G-1234567890",
-          databaseURL: "https://job-portal-mobile-default-rtdb.firebaseio.com",
-        });
-        console.log("✅ Firebase initialized successfully");
-      } else {
-        this.app = getApps()[0];
-        console.log("✅ Firebase app already initialized");
-      }
-    } catch (error) {
-      console.error("❌ Firebase initialization failed:", error);
-      this.app = null;
-    }
   }
 
   getApp() {

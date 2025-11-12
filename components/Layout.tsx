@@ -2,7 +2,7 @@ import { FooterTabs } from "@/components/FooterTabs";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -19,6 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -48,7 +49,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const bgColor = backgroundColor || colors.background;
   const insets = useSafeAreaInsets();
   const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { showLoginModal } = useModal();
 
   // Debug logging

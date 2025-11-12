@@ -1,5 +1,4 @@
 import { OTPVerification } from "@/components/OTPVerification";
-import { PhoneAndNameInput } from "@/components/PhoneAndNameInput";
 import {
   BorderRadius,
   ComponentSizes,
@@ -9,10 +8,8 @@ import {
   Typography,
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { apiService } from "@/services/api";
-import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
   Alert,
@@ -25,6 +22,8 @@ import {
   View,
 } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
+import { useTranslation } from "@/hooks/useTranslation";
+import { ReferralCodeInput } from "./ReferralCodeInput";
 
 interface LoginModalProps {
   visible: boolean;
@@ -53,7 +52,7 @@ export function LoginModal({
     setUser,
     setHasIncompleteProfile,
   } = useAuth();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
@@ -296,6 +295,7 @@ export function LoginModal({
                     autoFocus
                   />
                 </View>
+                <ReferralCodeInput showStatus={true} />
                 <TouchableOpacity
                   style={[
                     styles.button,

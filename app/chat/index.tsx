@@ -3,7 +3,7 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -25,7 +25,7 @@ export default function ChatScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -48,7 +48,11 @@ export default function ChatScreen() {
     // Subscribe to user-specific updates
     const unsubscribe = pusherService.subscribeToUserUpdates(
       user.id,
-      (data: { conversationId: number; lastMessage: any; updatedAt: string }) => {
+      (data: {
+        conversationId: number;
+        lastMessage: any;
+        updatedAt: string;
+      }) => {
         // Update the conversation in the list
         setConversations((prev) => {
           const updated = [...prev];
@@ -226,17 +230,25 @@ export default function ChatScreen() {
           styles.conversationItem,
           {
             backgroundColor: colors.surface,
-            borderBottomColor: colors.border,
-          },
-          hasUnread && {
-            backgroundColor: colors.primary + "10",
+            borderLeftColor: hasUnread ? colors.primary : "transparent",
+            shadowColor: "#000",
           },
         ]}
         onPress={() => handleConversationPress(item)}
+        activeOpacity={0.6}
       >
         <View style={styles.conversationContent}>
           <View style={styles.avatarContainer}>
-            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <View
+              style={[
+                styles.avatar,
+                {
+                  backgroundColor: colors.primary,
+                  borderWidth: hasUnread ? 2 : 0,
+                  borderColor: colors.primary + "40",
+                },
+              ]}
+            >
               <Text style={[styles.avatarText, { color: "white" }]}>
                 {participantName.charAt(0).toUpperCase()}
               </Text>
@@ -245,17 +257,31 @@ export default function ChatScreen() {
 
           <View style={styles.conversationInfo}>
             <View style={styles.conversationHeader}>
-              <Text
-                style={[
-                  styles.participantName,
-                  { color: colors.text },
-                  hasUnread && styles.unreadText,
-                ]}
-              >
-                {participantName}
-              </Text>
+              <View style={styles.nameContainer}>
+                <Text
+                  style={[
+                    styles.participantName,
+                    { color: colors.text },
+                    hasUnread && styles.unreadText,
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {participantName}
+                </Text>
+                {hasUnread && (
+                  <View
+                    style={[
+                      styles.unreadBadge,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  />
+                )}
+              </View>
               <Text
                 style={[styles.timestamp, { color: colors.tabIconDefault }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {lastMessage ? formatTimestamp(lastMessage.createdAt) : ""}
               </Text>
@@ -270,7 +296,7 @@ export default function ChatScreen() {
                         lastMessage?.messageType || "text"
                       ) as any
                     }
-                    size={16}
+                    size={18}
                     color={colors.tabIconDefault}
                     style={styles.messageIcon}
                   />
@@ -282,20 +308,11 @@ export default function ChatScreen() {
                     hasUnread && styles.unreadMessage,
                   ]}
                   numberOfLines={1}
+                  ellipsizeMode="tail"
                 >
                   {lastMessage?.content || t("noMessagesYet")}
                 </Text>
               </View>
-              {hasUnread && (
-                <View
-                  style={[
-                    styles.unreadBadge,
-                    { backgroundColor: colors.primary },
-                  ]}
-                >
-                  <Text style={styles.unreadBadgeText}>1</Text>
-                </View>
-              )}
             </View>
           </View>
         </View>
@@ -403,30 +420,44 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   conversationItem: {
-    borderBottomWidth: 1,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    overflow: "hidden",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   conversationContent: {
     flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
+    alignItems: "flex-start",
+    padding: 18,
+    paddingLeft: 16,
   },
   avatarContainer: {
     position: "relative",
-    marginRight: 12,
+    marginRight: 14,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 20,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
   onlineIndicator: {
     position: "absolute",
@@ -440,23 +471,39 @@ const styles = StyleSheet.create({
   },
   conversationInfo: {
     flex: 1,
+    paddingRight: 4,
   },
   conversationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    minHeight: 24,
+  },
+  nameContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 12,
   },
   participantName: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 17,
+    fontWeight: "600",
+    flex: 1,
+    marginRight: 8,
+    letterSpacing: -0.2,
+    flexShrink: 1,
   },
   timestamp: {
     fontSize: 12,
+    opacity: 0.6,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+    textAlign: "right",
+    minWidth: 60,
   },
   lastMessageContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
   },
   lastMessageContent: {
@@ -465,25 +512,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   messageIcon: {
-    marginRight: 4,
+    marginRight: 6,
   },
   lastMessage: {
-    fontSize: 14,
+    fontSize: 15,
     flex: 1,
+    opacity: 0.75,
+    letterSpacing: -0.1,
   },
   unreadText: {
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: -0.3,
   },
   unreadMessage: {
-    fontWeight: "500",
+    fontWeight: "600",
+    opacity: 0.9,
   },
   unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    minWidth: 8,
   },
   unreadBadgeText: {
     color: "white",

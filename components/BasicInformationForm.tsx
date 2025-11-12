@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Service } from "@/services/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MapViewComponent } from "@/components/MapView";
 import { Modal } from "react-native";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface BasicInformationFormProps {
   formData: {
@@ -43,7 +43,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
   onFieldChange,
   onLocationChange,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const [mapVisible, setMapVisible] = useState(false);

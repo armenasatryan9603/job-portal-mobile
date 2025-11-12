@@ -3,7 +3,7 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
@@ -24,7 +24,7 @@ interface NotificationDetail {
   fullContent: string;
   timestamp: string;
   isRead: boolean;
-  type: "order" | "proposal" | "message" | "system";
+  type: "order" | "new_order" | "proposal" | "message" | "system";
   relatedData?: any;
 }
 
@@ -32,7 +32,7 @@ export default function NotificationDetailScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { refreshNotificationCount } = useUnreadCount();
   const { id } = useLocalSearchParams();
 
@@ -97,6 +97,7 @@ export default function NotificationDetailScreen() {
       case "proposal":
         return "doc.text.fill";
       case "order":
+      case "new_order":
         return "briefcase.fill";
       case "message":
         return "message.fill";
@@ -112,6 +113,7 @@ export default function NotificationDetailScreen() {
       case "proposal":
         return "#007AFF";
       case "order":
+      case "new_order":
         return "#34C759";
       case "message":
         return "#FF9500";
@@ -132,13 +134,17 @@ export default function NotificationDetailScreen() {
         );
         break;
       case "order":
-        router.push(`/orders/${notification.id}`);
+      case "new_order":
+        // For new_order notifications, use orderId from relatedData
+        const orderId = notification.relatedData?.orderId || notification.id;
+        router.push(`/orders/${orderId}`);
         break;
       case "message":
-        router.push("/messages");
+        router.push("/chat");
         break;
       case "system":
-        router.push("/settings");
+        // Navigate to profile or home
+        router.back();
         break;
     }
   };
@@ -150,6 +156,7 @@ export default function NotificationDetailScreen() {
       case "proposal":
         return t("viewProposal");
       case "order":
+      case "new_order":
         return t("viewOrder");
       case "message":
         return t("replyMessage");
@@ -242,7 +249,9 @@ export default function NotificationDetailScreen() {
                           { color: colors.text },
                         ]}
                       >
-                        {Array.isArray(value) ? value.join(", ") : value}
+                        {Array.isArray(value)
+                          ? value.join(", ")
+                          : String(value ?? "")}
                       </Text>
                     </View>
                   )

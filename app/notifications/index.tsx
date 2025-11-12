@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
@@ -22,14 +22,14 @@ interface Notification {
   message: string;
   timestamp: string;
   isRead: boolean;
-  type: "order" | "proposal" | "message" | "system";
+  type: "order" | "new_order" | "proposal" | "message" | "system";
 }
 
 export default function NotificationsScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { refreshNotificationCount } = useUnreadCount();
 
   // Real notifications data from Firebase
@@ -69,6 +69,7 @@ export default function NotificationsScreen() {
       case "proposal":
         return "doc.text.fill";
       case "order":
+      case "new_order":
         return "briefcase.fill";
       case "message":
         return "message.fill";
@@ -84,6 +85,7 @@ export default function NotificationsScreen() {
       case "proposal":
         return "#007AFF";
       case "order":
+      case "new_order":
         return "#34C759";
       case "message":
         return "#FF9500";
@@ -118,66 +120,86 @@ export default function NotificationsScreen() {
     await refreshNotificationCount(); // Refresh the badge count
   };
 
-  const renderNotification = ({ item }: { item: Notification }) => (
+  const renderNotification = ({ item }: { item: Notification }) => {
+    const iconColor = getNotificationColor(item.type);
+    const isUnread = !item.isRead;
+
+    return (
     <TouchableOpacity
       style={[
         styles.notificationItem,
         {
           backgroundColor: colors.surface,
-          borderBottomColor: colors.border,
-        },
-        !item.isRead && {
-          backgroundColor: colors.primary + "10",
+            borderLeftColor: isUnread ? iconColor : "transparent",
+            shadowColor: "#000",
         },
       ]}
       onPress={() => handleNotificationPress(item)}
+        activeOpacity={0.6}
     >
       <View style={styles.notificationContent}>
         <View
           style={[
-            styles.notificationIcon,
-            { backgroundColor: getNotificationColor(item.type) + "20" },
+              styles.notificationIconContainer,
+              {
+                backgroundColor: iconColor + (isUnread ? "20" : "10"),
+                borderWidth: isUnread ? 2 : 0,
+                borderColor: iconColor + "40",
+              },
           ]}
         >
           <IconSymbol
             name={getNotificationIcon(item.type) as any}
-            size={20}
-            color={getNotificationColor(item.type)}
+              size={24}
+              color={iconColor}
           />
         </View>
-        <View style={styles.notificationText}>
+          <View style={styles.notificationTextContainer}>
+            <View style={styles.notificationHeader}>
+              <View style={styles.titleContainer}>
           <Text
             style={[
               styles.notificationTitle,
               { color: colors.text },
-              !item.isRead && styles.unreadText,
+                    isUnread && styles.unreadText,
             ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
           >
             {item.title}
           </Text>
+                {isUnread && (
+                  <View
+                    style={[styles.unreadBadge, { backgroundColor: iconColor }]}
+                  />
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.notificationTime,
+                  { color: colors.tabIconDefault },
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {item.timestamp}
+              </Text>
+            </View>
           <Text
             style={[
               styles.notificationMessage,
               { color: colors.textSecondary },
             ]}
             numberOfLines={2}
+              ellipsizeMode="tail"
           >
             {item.message}
           </Text>
-          <Text
-            style={[styles.notificationTime, { color: colors.tabIconDefault }]}
-          >
-            {item.timestamp}
-          </Text>
-        </View>
-        {!item.isRead && (
-          <View
-            style={[styles.unreadDot, { backgroundColor: colors.primary }]}
-          />
-        )}
+          </View>
       </View>
     </TouchableOpacity>
   );
+  };
 
   // Show loading state
   if (loading) {
@@ -263,9 +285,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   markAllContainer: {
+    flexDirection: "row",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    alignItems: "center",
   },
   markAllButton: {
     paddingHorizontal: 16,
@@ -278,48 +302,91 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   listContainer: {
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
   },
   notificationItem: {
-    borderBottomWidth: 1,
+    marginBottom: 16,
+    borderRadius: 16,
+    borderLeftWidth: 4,
+    overflow: "hidden",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   notificationContent: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 16,
+    padding: 18,
+    paddingLeft: 16,
   },
-  notificationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  notificationIconContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 14,
+  },
+  notificationTextContainer: {
+    flex: 1,
+    paddingRight: 4,
+  },
+  notificationHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    minHeight: 24,
+  },
+  titleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
     marginRight: 12,
   },
-  notificationText: {
-    flex: 1,
-  },
   notificationTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    marginBottom: 4,
+    fontSize: 17,
+    fontWeight: "600",
+    flex: 1,
+    marginRight: 8,
+    letterSpacing: -0.2,
+    flexShrink: 1,
   },
   notificationMessage: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 4,
+    fontSize: 15,
+    lineHeight: 22,
+    opacity: 0.75,
+    letterSpacing: -0.1,
   },
   notificationTime: {
     fontSize: 12,
+    opacity: 0.6,
+    fontWeight: "500",
+    letterSpacing: 0.1,
+    textAlign: "right",
+    minWidth: 60,
   },
   unreadText: {
-    fontWeight: "600",
+    fontWeight: "700",
+    letterSpacing: -0.3,
   },
-  unreadDot: {
+  unreadBadge: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginTop: 4,
+    minWidth: 8,
+  },
+  unreadDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginLeft: 8,
   },
   loadingContainer: {
     flex: 1,

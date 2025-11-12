@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CalendarPicker } from "./CalendarPicker";
 import { TimePicker } from "./TimePicker";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface DateTimeSelectorProps {
   selectedDates: Date[];
@@ -21,7 +21,7 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   onDateTimesChange,
   error,
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

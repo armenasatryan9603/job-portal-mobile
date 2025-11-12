@@ -1,9 +1,8 @@
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -29,7 +28,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(0);
   const inputRefs = useRef<TextInput[]>([]);
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

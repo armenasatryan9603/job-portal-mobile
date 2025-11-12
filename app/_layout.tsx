@@ -1,4 +1,11 @@
-import React from "react";
+// IMPORTANT: Background message handler must be imported FIRST
+// This registers the handler before the app starts
+import "./background-message-handler";
+
+import React, { useEffect } from "react";
+import * as Linking from "expo-linking";
+import { AppState, AppStateStatus } from "react-native";
+import { storeReferralCode } from "@/utils/referralStorage";
 import {
   DarkTheme,
   DefaultTheme,
@@ -9,8 +16,8 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-// Initialize Firebase
-import "@/config/firebase";
+// Firebase Messaging is auto-initialized by NotificationService when needed
+// No explicit Firebase initialization needed here (FCM only, no other services)
 
 // Initialize TanStack Query
 import { queryClient } from "@/services/queryClient";
@@ -31,6 +38,60 @@ export const unstable_settings = {
 
 function AppContent() {
   const { isDark } = useTheme();
+
+  // Handle deep linking for referral codes
+  useEffect(() => {
+    // Handle initial URL (when app is opened via deep link)
+    const handleInitialURL = async () => {
+      try {
+        const url = await Linking.getInitialURL();
+        if (url) {
+          handleDeepLink(url);
+        }
+      } catch (error) {
+        console.error("❌ Error getting initial URL:", error);
+      }
+    };
+
+    handleInitialURL();
+
+    // Handle URL changes (when app is already open)
+    const subscription = Linking.addEventListener("url", (event) => {
+      handleDeepLink(event.url);
+    });
+
+    // Check for URL when app comes to foreground
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === "active") {
+        // App came to foreground, check for pending deep link
+        handleInitialURL();
+      }
+    };
+
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+
+    return () => {
+      subscription.remove();
+      appStateSubscription.remove();
+    };
+  }, []);
+
+  const handleDeepLink = (url: string) => {
+    try {
+      const parsed = Linking.parse(url);
+      const refCode = parsed.queryParams?.ref as string;
+      
+      if (refCode) {
+        console.log(`🔗 Deep link detected with referral code: ${refCode}`);
+        storeReferralCode(refCode);
+      }
+    } catch (error) {
+      console.error("❌ Error parsing deep link:", error);
+    }
+  };
 
   return (
     <NavigationThemeProvider value={isDark ? DarkTheme : DefaultTheme}>

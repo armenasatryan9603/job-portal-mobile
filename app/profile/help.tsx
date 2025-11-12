@@ -6,7 +6,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -22,7 +22,7 @@ import {
 
 export default function ProfileHelpScreen() {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 

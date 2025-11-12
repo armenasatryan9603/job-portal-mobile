@@ -7,7 +7,7 @@ import { ApplyModal } from "@/components/ApplyModal";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -68,7 +68,7 @@ export default function OrdersScreen() {
   const { myOrders, myJobs } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { user, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();

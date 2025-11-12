@@ -1,5 +1,4 @@
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import React, { useState } from "react";
 import {
@@ -10,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PhoneNumberInputProps {
   onPhoneNumberSubmit: (phoneNumber: string) => void;
@@ -25,7 +25,7 @@ export const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
   showTitle = true,
 }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 

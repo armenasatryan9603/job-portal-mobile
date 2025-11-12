@@ -12,7 +12,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface DeleteAccountDialogProps {
   visible: boolean;
@@ -28,7 +28,7 @@ export default function DeleteAccountDialog({
   userEmail,
 }: DeleteAccountDialogProps) {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [confirmationText, setConfirmationText] = useState("");

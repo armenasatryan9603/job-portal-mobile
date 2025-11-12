@@ -14,6 +14,8 @@ export default function ProfileLayout() {
       <Stack.Screen name="edit" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="help" />
+      <Stack.Screen name="refill-credits" />
+      <Stack.Screen name="add-credit-card" />
     </Stack>
   );
 }

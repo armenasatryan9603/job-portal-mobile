@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@/constants/styles";
 import { useCreditCard } from "@/contexts/CreditCardContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { CreditCardErrors, CreditCardForm } from "@/types/creditCard";
@@ -34,7 +34,7 @@ import {
 
 export default function AddCreditCardScreen() {
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { addCreditCard, isLoading } = useCreditCard();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const colors = ThemeColors[isDark ? "dark" : "light"];

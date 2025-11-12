@@ -9,6 +9,7 @@ import TranslationService, {
   TranslationData,
 } from "../services/TranslationService";
 import { useLanguage } from "./LanguageContext";
+import TRANSLATION_CONFIG from "../config/translations";
 
 interface TranslationContextType {
   translations: TranslationData;
@@ -57,6 +58,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
 
   const getTranslation = (key: string, fallback?: string): string => {
     const translation = translations[key];
+
     if (translation) {
       return translation;
     }
@@ -66,10 +68,15 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
       return fallback;
     }
 
-    // Log missing translation for debugging
-    console.warn(
-      `Translation missing for key: ${key} in language: ${language}`
-    );
+    // Log missing translation for debugging (only in debug mode)
+    if (
+      TRANSLATION_CONFIG.debug.enabled &&
+      TRANSLATION_CONFIG.debug.logMissingTranslations
+    ) {
+      console.warn(
+        `Translation missing for key: "${key}" in language: ${language}`
+      );
+    }
     return key;
   };
 
@@ -84,6 +91,7 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({
         const fetchedTranslations = await translationService.getTranslations(
           language
         );
+
         setTranslations(fetchedTranslations);
       } catch (err) {
         console.error("Failed to load translations:", err);

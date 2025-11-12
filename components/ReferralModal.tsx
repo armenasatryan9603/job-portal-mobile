@@ -5,7 +5,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   Alert,
   ActivityIndicator,
   Share,
@@ -14,8 +13,9 @@ import {
 import { IconSymbol } from "./ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/hooks/useTranslation";
+import { apiService } from "@/services/api";
 
 interface ReferralModalProps {
   visible: boolean;
@@ -43,7 +43,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
 
   const [stats, setStats] = useState<ReferralStats | null>(null);
@@ -59,32 +59,19 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const loadReferralStats = async () => {
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // const response = await api.get('/referrals/stats');
-      // setStats(response.data);
-
-      // Mock data for now
+      const response = await apiService.getReferralStats();
       setStats({
-        referralCode: "REF123",
-        totalReferrals: 3,
-        totalEarned: 30,
-        pendingRewards: 0,
-        referrals: [
-          {
-            id: 1,
-            referredUserName: "John Doe",
-            rewardAmount: 10,
-            status: "completed",
-            createdAt: new Date("2024-01-15"),
-          },
-          {
-            id: 2,
-            referredUserName: "Jane Smith",
-            rewardAmount: 10,
-            status: "completed",
-            createdAt: new Date("2024-01-20"),
-          },
-        ],
+        referralCode: response.referralCode,
+        totalReferrals: response.totalReferrals,
+        totalEarned: response.totalEarned,
+        pendingRewards: response.pendingRewards,
+        referrals: response.referrals.map((r) => ({
+          id: r.id,
+          referredUserName: r.referredUserName,
+          rewardAmount: r.rewardAmount,
+          status: r.status,
+          createdAt: new Date(r.createdAt),
+        })),
       });
     } catch (error) {
       console.error("Error loading referral stats:", error);
@@ -103,8 +90,10 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
         return;
       }
 
-      const shareLink = `https://yourapp.com/signup?ref=${stats.referralCode}`;
-      const message = `${t("joinMeOnThisPlatform")} ${t(
+      // Get share link from backend
+      const shareData = await apiService.getReferralShareLink();
+      const shareLink = shareData.shareLink;
+      const message = shareData.message || `${t("joinMeOnThisPlatform")} ${t(
         "useMyReferralCode"
       )}: ${stats.referralCode} ${t("weBothGetCredits")}!`;
 
@@ -115,6 +104,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
       });
     } catch (error) {
       console.error("Error sharing:", error);
+      Alert.alert(t("error"), "Failed to get share link. Please try again.");
     } finally {
       setShareLoading(false);
     }

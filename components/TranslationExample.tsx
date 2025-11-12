@@ -18,18 +18,30 @@ const TranslationExample: React.FC = () => {
   const welcomeText = useT("welcome", "Welcome");
   const servicesText = useT("services", "Services");
 
-  // Check translation source
+  // Check translation source and validate data
   useEffect(() => {
     const checkSource = async () => {
       try {
         const service = TranslationService.getInstance();
         const cached = await service.isCached(language);
         setIsCached(cached);
-        setTranslationSource(
-          cached
-            ? "📱 Cached (from backend)"
-            : "🌐 Fresh (from backend)"
-        );
+
+        // Get translations to validate
+        const translations = await service.getTranslations(language);
+        const welcomeValue = translations["welcome"];
+
+        // Check if translations look valid
+        if (
+          welcomeValue &&
+          welcomeValue !== "welcome" &&
+          welcomeValue.length > 0
+        ) {
+          setTranslationSource(
+            cached ? "📱 Cached (from backend)" : "🌐 Fresh (from backend)"
+          );
+        } else {
+          setTranslationSource("⚠️ Invalid cache - clear and refresh");
+        }
       } catch (err) {
         setTranslationSource("🌐 Backend");
       }
@@ -53,9 +65,13 @@ const TranslationExample: React.FC = () => {
       const service = TranslationService.getInstance();
       await service.clearCache();
       setTranslationSource("🔄 Cache cleared");
+
+      // Force reload translations after clearing cache
+      await refreshTranslations();
+
       Alert.alert(
         "Success",
-        "Cache cleared! Next load will reload from local files."
+        "Cache cleared! Translations reloaded from backend."
       );
     } catch (err) {
       Alert.alert("Error", "Failed to clear cache");

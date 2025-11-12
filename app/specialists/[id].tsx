@@ -4,11 +4,10 @@ import { Layout } from "@/components/Layout";
 import {
   ResponsiveCard,
   ResponsiveContainer,
-  ResponsiveGrid,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect } from "react";
@@ -26,7 +25,7 @@ import { apiService, SpecialistProfile } from "@/services/api";
 
 export default function SpecialistDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
@@ -637,7 +636,7 @@ export default function SpecialistDetailScreen() {
                     <Text
                       style={[styles.modernSkillText, { color: colors.tint }]}
                     >
-                      {skill}
+                      {skill.name}
                     </Text>
                   </View>
                 ))

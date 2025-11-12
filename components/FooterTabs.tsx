@@ -1,7 +1,7 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 import * as Haptics from "expo-haptics";
 import { router, usePathname } from "expo-router";
 import React from "react";
@@ -18,12 +18,12 @@ export const FooterTabs: React.FC = () => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
 
   const tabs: TabItem[] = [
     {
       name: "index",
-      title: t("welcome"),
+      title: t("home"),
       icon: "house.fill",
       route: "/",
     },

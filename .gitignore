@@ -47,6 +47,9 @@ ios/*.xcodeproj/xcuserdata/
 ios/*.xcodeproj/project.xcworkspace/xcuserdata/
 ios/GoogleService-Info.plist
 
+google-services.json
+GoogleService-Info.plist
+
 # Metro
 .metro-health-check*
 .metro-cache/

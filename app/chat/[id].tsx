@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { router, useLocalSearchParams } from "expo-router";
@@ -29,7 +29,7 @@ export default function ChatDetailScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { id } = useLocalSearchParams();
   const [newMessage, setNewMessage] = useState("");

@@ -1039,6 +1039,57 @@ class ApiService {
   async getReasons(): Promise<Reason[]> {
     return this.request("/reasons");
   }
+
+  // Referrals API
+  async getReferralCode(): Promise<{ code: string }> {
+    return this.request("/referrals/code", {}, true);
+  }
+
+  async getReferralStats(): Promise<{
+    referralCode: string | null;
+    totalReferrals: number;
+    totalEarned: number;
+    pendingRewards: number;
+    referrals: Array<{
+      id: number;
+      referredUserName: string;
+      rewardAmount: number;
+      status: string;
+      createdAt: Date;
+    }>;
+  }> {
+    return this.request("/referrals/stats", {}, true);
+  }
+
+  async getReferralShareLink(): Promise<{
+    referralCode: string;
+    shareLink: string;
+    message: string;
+  }> {
+    return this.request("/referrals/share-link", {}, true);
+  }
+
+  async applyReferralCode(
+    referralCode: string,
+    userId: number
+  ): Promise<{
+    success: boolean;
+    referrerId?: number;
+    rewardAmount?: number;
+    bonusAmount?: number;
+  }> {
+    return this.post("/referrals/apply-code", { referralCode, userId }, false);
+  }
+
+  // Credit Refill API
+  async initiateCreditRefill(amount: number): Promise<{
+    orderId: string;
+    paymentUrl: string | null;
+    paymentHtml?: string | null;
+    paymentData: any;
+  }> {
+    return this.post("/credit/refill/initiate", { amount }, true);
+  }
 }
 
 // Export singleton instance

@@ -10,7 +10,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Service } from "@/services/api";
 import { ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type ThemeColorsType = typeof ThemeColors;
 
@@ -39,7 +39,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   onToggleNotification,
   serviceNotifications = {},
 }) => {
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       <View style={styles.header}>

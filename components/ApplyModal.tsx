@@ -11,11 +11,10 @@ import {
   ScrollView,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { Order } from "@/services/api";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface ApplyModalProps {
   visible: boolean;
@@ -34,7 +33,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState("");
 

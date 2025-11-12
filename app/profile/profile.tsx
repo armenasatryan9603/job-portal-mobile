@@ -13,7 +13,7 @@ import {
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreditCard } from "@/contexts/CreditCardContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
@@ -38,7 +38,7 @@ import { useSkills } from "@/hooks/useSkills";
 export default function ProfileScreen() {
   const { user } = useAuth();
   const { isDark } = useTheme();
-  const { t } = useLanguage();
+  const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { creditCards, removeCreditCard, setDefaultCard, isLoading } =
     useCreditCard();
@@ -574,6 +574,22 @@ export default function ProfileScreen() {
                   <Text style={[styles.contactValue, { color: colors.text }]}>
                     {(profile.creditBalance || 0).toFixed(2)}
                   </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.refillButtonSmall,
+                      { backgroundColor: colors.tint },
+                    ]}
+                    onPress={() => router.push("/profile/refill-credits")}
+                  >
+                    <IconSymbol
+                      name="plus.circle.fill"
+                      size={14}
+                      color="black"
+                    />
+                    <Text style={styles.refillButtonTextSmall}>
+                      {t("refill")}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
 
                 <View
@@ -1120,6 +1136,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     textAlign: "center",
+  },
+  refillButtonSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  refillButtonTextSmall: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "black",
   },
 
   // Skills

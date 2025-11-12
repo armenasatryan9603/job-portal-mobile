@@ -6,7 +6,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -27,10 +27,12 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProfileSettingsScreen() {
   const { isDark, toggleTheme } = useTheme();
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
   const { user, logout, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
 

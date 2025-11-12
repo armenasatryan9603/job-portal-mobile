@@ -1,6 +1,6 @@
 {
   "react-native": {
-    "analytics_auto_collection_enabled": true,
+    "analytics_auto_collection_enabled": false,
     "messaging_auto_init_enabled": true,
     "messaging_ios_auto_register_for_remote_messages": true,
     "messaging_android_notification_channel_id": "default"

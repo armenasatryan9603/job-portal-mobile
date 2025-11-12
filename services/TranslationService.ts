@@ -42,13 +42,7 @@ class TranslationService {
       const apiUrl = getApiBaseUrl();
       const url = `${apiUrl}/translations/${language}`;
 
-      console.log(
-        `🌐 [FRONTEND] Fetching translations for ${language} from backend API: ${url}`
-      );
-
-      const startTime = Date.now();
       const response = await fetch(url);
-      const fetchDuration = Date.now() - startTime;
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -61,23 +55,14 @@ class TranslationService {
 
       const data = await response.json();
 
-      console.log(
-        `📊 [FRONTEND] Received response from backend for ${language} (${fetchDuration}ms)`
-      );
-
       if (!data.success || !data.translations) {
         console.warn(
-          `⚠️ [FRONTEND] No data found in backend response for ${language}`
+          `⚠️ [TRANSLATION] No data found in backend response for ${language}`
         );
         return null;
       }
 
       const translations = data.translations as TranslationData;
-      const keyCount = Object.keys(translations).length;
-
-      console.log(
-        `✅ [FRONTEND] Successfully loaded ${keyCount} translations for ${language} from backend`
-      );
 
       return translations;
     } catch (error) {
@@ -116,13 +101,22 @@ class TranslationService {
         return null;
       }
 
-      const keyCount = Object.keys(cacheData.translations).length;
-      const ageMinutes = Math.floor((Date.now() - cacheData.timestamp) / 60000);
-      console.log(
-        `💾 [FRONTEND] Cache hit for ${language} (${keyCount} keys, cached ${ageMinutes}min ago)`
-      );
-
-      return cacheData.translations;
+      // Validate cache data - check if it looks corrupted
+      const sampleValue = cacheData.translations["welcome"];
+      if (
+        sampleValue &&
+        typeof sampleValue === "string" &&
+        sampleValue.length > 0
+      ) {
+        return cacheData.translations;
+      } else {
+        console.warn(
+          `⚠️ [TRANSLATION] Cache data appears corrupted for ${language}, ignoring cache`
+        );
+        // Remove corrupted cache
+        await AsyncStorage.removeItem(cacheKey);
+        return null;
+      }
     } catch (error) {
       console.error(
         `Failed to get cached translations for ${language}:`,
@@ -149,10 +143,6 @@ class TranslationService {
       };
 
       await AsyncStorage.setItem(cacheKey, JSON.stringify(cacheData));
-
-      console.log(
-        `💾 [FRONTEND] Cached ${Object.keys(translations).length} translations for ${language} in AsyncStorage`
-      );
     } catch (error) {
       console.error(`Failed to cache translations for ${language}:`, error);
     }
@@ -162,36 +152,27 @@ class TranslationService {
    * Get translations for a specific language
    */
   public async getTranslations(language: string): Promise<TranslationData> {
-    console.log(`🔍 [FRONTEND] Getting translations for language: ${language}`);
-    
     // Check memory cache first
     if (this.cache.has(language)) {
-      const cached = this.cache.get(language)!;
-      const keyCount = Object.keys(cached).length;
-      console.log(`⚡ [FRONTEND] Memory cache hit for ${language} (${keyCount} keys)`);
-      return cached;
+      return this.cache.get(language)!;
     }
 
     // Try to get from AsyncStorage cache
     let translations = await this.getCachedTranslations(language);
 
     if (!translations) {
-      console.log(`📡 [FRONTEND] Cache miss for ${language}, fetching from backend...`);
       // Try to fetch from backend API
       translations = await this.fetchFromBackend(language);
 
       if (translations && Object.keys(translations).length > 0) {
         // Cache the translations
-        console.log(`💾 [FRONTEND] Caching translations for ${language}`);
         await this.cacheTranslations(language, translations);
       } else {
         console.warn(
-          `⚠️ [FRONTEND] No translations found for ${language}, returning empty object`
+          `⚠️ [TRANSLATION] No translations found for ${language}, returning empty object`
         );
         translations = {}; // Return empty object if fetch fails
       }
-    } else {
-      console.log(`📦 [FRONTEND] Using cached translations for ${language}`);
     }
 
     // Store in memory cache
@@ -223,16 +204,13 @@ class TranslationService {
    * Refresh translations (reloads from backend)
    */
   public async refreshTranslations(language: string): Promise<TranslationData> {
-    console.log(`🔄 [FRONTEND] Refreshing translations for ${language} from backend...`);
     try {
       // Clear cache
       const cacheKey = getCacheKey(language);
       if (cacheKey) {
         await AsyncStorage.removeItem(cacheKey);
-        console.log(`🗑️ [FRONTEND] Cleared AsyncStorage cache for ${language}`);
       }
       this.cache.delete(language);
-      console.log(`🗑️ [FRONTEND] Cleared memory cache for ${language}`);
 
       // Fetch fresh translations from backend
       const translations = await this.fetchFromBackend(language);
@@ -268,10 +246,6 @@ class TranslationService {
         getCacheKey(lang)
       );
       await AsyncStorage.multiRemove(keys);
-
-      if (TRANSLATION_CONFIG.debug.enabled) {
-        console.log("Translation cache cleared");
-      }
     } catch (error) {
       console.error("Failed to clear translation cache:", error);
     }

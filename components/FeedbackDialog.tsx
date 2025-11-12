@@ -12,10 +12,11 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { ThemeColors } from "@/constants/styles";
 import { Reason } from "@/services/api";
 import { useReasons } from "@/hooks/useApi";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface FeedbackDialogProps {
   visible: boolean;
@@ -36,7 +37,8 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { t, language } = useLanguage();
+  const { t } = useTranslation();
+  const { language } = useLanguage();
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [hoveredStar, setHoveredStar] = useState(0);
