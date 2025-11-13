@@ -148,6 +148,10 @@ export default function ServiceDetailScreen() {
     router.push(`/services/${subServiceId}`);
   };
 
+  const handleBrowseOrders = () => {
+    router.push(`/orders?serviceId=${serviceId}`);
+  };
+
   const header = (
     <Header
       title={service.name}
@@ -328,7 +332,7 @@ export default function ServiceDetailScreen() {
 
           {/* Action Buttons */}
           <ResponsiveCard>
-            <View style={styles.actionButtons}>
+            <View style={styles.actionButtonsVertical}>
               <TouchableOpacity
                 style={[styles.primaryButton, { backgroundColor: colors.tint }]}
                 onPress={handleCreateOrder}
@@ -368,6 +372,25 @@ export default function ServiceDetailScreen() {
                   style={[styles.secondaryButtonText, { color: colors.tint }]}
                 >
                   {t("browseSpecialists")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.tertiaryButton,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    borderWidth: 1,
+                  },
+                ]}
+                onPress={handleBrowseOrders}
+              >
+                <IconSymbol name="list.bullet" size={20} color={colors.tint} />
+                <Text
+                  style={[styles.tertiaryButtonText, { color: colors.text }]}
+                >
+                  {t("browseOrders") || "Browse Orders"}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -498,11 +521,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   actionButtons: {
-    flexDirection: "row",
+    gap: 12,
+  },
+  actionButtonsVertical: {
     gap: 12,
   },
   primaryButton: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -517,7 +542,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   secondaryButton: {
-    flex: 1,
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -528,6 +553,21 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   secondaryButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  tertiaryButton: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    gap: 6,
+    minHeight: 44,
+  },
+  tertiaryButtonText: {
     fontSize: 14,
     fontWeight: "600",
   },

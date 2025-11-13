@@ -43,13 +43,10 @@ import {
   ActivityIndicator,
   Image,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Filter configuration
-const filterSections = (
-  t: any,
-  isMyOrders: boolean,
-  isMyJobs: boolean
-): FilterSection[] => [
+const filterSections = (t: any, isMyOrders: boolean): FilterSection[] => [
   {
     key: "status",
     title: t("filterByStatus"),
@@ -65,15 +62,17 @@ const filterSections = (
 ];
 
 export default function OrdersScreen() {
-  const { myOrders, myJobs } = useLocalSearchParams();
+  const { myOrders, myJobs, serviceId } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { user, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
+  const insets = useSafeAreaInsets();
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
+  const filterServiceId = serviceId ? parseInt(serviceId as string) : null;
   const [searchQuery, setSearchQuery] = useState("");
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -136,7 +135,7 @@ export default function OrdersScreen() {
     } else {
       setCurrentPage(1);
     }
-  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs]);
+  }, [selectedFilters, searchQuery, filterServiceId, isMyOrders, isMyJobs]);
 
   // Extract data from active query
   const queryData = activeQuery.data as OrderListResponse | undefined;
@@ -230,6 +229,18 @@ export default function OrdersScreen() {
     []
   );
 
+  // Helper function to filter orders by serviceId
+  const filterOrdersByService = useCallback(
+    (orders: Order[], serviceId: number | null): Order[] => {
+      if (!serviceId) return orders;
+      return orders.filter(
+        (order: Order) =>
+          order.serviceId === serviceId || order.Service?.id === serviceId
+      );
+    },
+    []
+  );
+
   // Helper function to get paginated orders from a filtered list
   const getPaginatedOrders = useCallback(
     (filteredOrders: Order[], page: number, limit: number) => {
@@ -283,22 +294,33 @@ export default function OrdersScreen() {
         filteredOrders = filterOrdersByStatus(filteredOrders, status);
       }
 
+      // Apply service filter
+      if (filterServiceId) {
+        filteredOrders = filterOrdersByService(filteredOrders, filterServiceId);
+      }
+
       // Get paginated results
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
 
-    // For regular orders, use query data directly
-    return orders;
+    // For regular orders, apply service filter if needed
+    let filteredOrders = orders;
+    if (filterServiceId) {
+      filteredOrders = filterOrdersByService(filteredOrders, filterServiceId);
+    }
+    return filteredOrders;
   }, [
     isMyOrders,
     isMyJobs,
     allUserOrders,
     searchQuery,
     status,
+    filterServiceId,
     clientSidePage,
     orders,
     filterOrdersBySearch,
     filterOrdersByStatus,
+    filterOrdersByService,
     getPaginatedOrders,
   ]);
 
@@ -313,6 +335,9 @@ export default function OrdersScreen() {
         if (status && status !== "all") {
           filtered = filterOrdersByStatus(filtered, status);
         }
+        if (filterServiceId) {
+          filtered = filterOrdersByService(filtered, filterServiceId);
+        }
         return filtered;
       })();
 
@@ -323,6 +348,9 @@ export default function OrdersScreen() {
       );
     }
 
+    // For regular orders, if service filter is applied, we need to recalculate pagination
+    // Since server-side pagination doesn't account for client-side filtering,
+    // we'll use the original pagination but note that the count might be off
     return pagination;
   }, [
     isMyOrders,
@@ -330,10 +358,12 @@ export default function OrdersScreen() {
     allUserOrders,
     searchQuery,
     status,
+    filterServiceId,
     clientSidePage,
     pagination,
     filterOrdersBySearch,
     filterOrdersByStatus,
+    filterOrdersByService,
     createPaginationObject,
   ]);
 
@@ -638,13 +668,6 @@ export default function OrdersScreen() {
       showChatButton={isAuthenticated}
       unreadNotificationsCount={unreadNotificationsCount}
       unreadMessagesCount={unreadMessagesCount}
-      rightComponent={
-        isAuthenticated ? (
-          <TouchableOpacity onPress={handleCreateOrder}>
-            <IconSymbol name="plus.circle.fill" size={24} color={colors.tint} />
-          </TouchableOpacity>
-        ) : null
-      }
     />
   );
 
@@ -948,7 +971,7 @@ export default function OrdersScreen() {
               <Filter
                 searchPlaceholder={t("searchOrdersSkills")}
                 onSearchChange={handleSearchChange}
-                filterSections={filterSections(t, isMyOrders, isMyJobs)}
+                filterSections={filterSections(t, isMyOrders)}
                 selectedFilters={selectedFilters}
                 onFilterChange={handleFilterChange}
                 loading={filterLoading}
@@ -988,8 +1011,26 @@ export default function OrdersScreen() {
                 />
               }
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+              contentContainerStyle={{ paddingBottom: 6 * Spacing.lg + 80 }}
             />
+          )}
+
+          {/* Floating Action Button - Only show for authenticated users and not on My Jobs */}
+          {isAuthenticated && !isMyJobs && (
+            <TouchableOpacity
+              style={[
+                styles.fab,
+                {
+                  backgroundColor: colors.primary, // Use primary color which is consistent in both themes
+                  bottom: 80 + insets.bottom, // Account for footer tabs + safe area
+                },
+              ]}
+              onPress={handleCreateOrder}
+              activeOpacity={0.8}
+            >
+              <IconSymbol name="plus" size={24} color="#FFFFFF" />
+              <Text style={styles.fabText}>{t("createOrder")}</Text>
+            </TouchableOpacity>
           )}
         </View>
       </Layout>
@@ -1217,6 +1258,31 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   createButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 28,
+    gap: 8,
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 10,
+  },
+  fabText: {
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
   },

@@ -1,4 +1,3 @@
-import { Footer, FooterButton } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import {
@@ -13,7 +12,7 @@ import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Alert,
   ScrollView,
@@ -23,6 +22,7 @@ import {
   View,
   Image,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiService, Service } from "@/services/api";
@@ -66,23 +66,24 @@ export default function CreateOrderScreen() {
   );
   const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
 
+  // Refs for scrolling to error fields
+  const scrollViewRef = useRef<ScrollView>(null);
+  const serviceSectionRef = useRef<View>(null);
+  const basicInfoSectionRef = useRef<View>(null);
+  const skillsSectionRef = useRef<View>(null);
+
   // Format dates with times for form submission in JSON string format
   const formatAllDatesWithTimes = () => {
-    const dateTimeObjects = selectedDates.map((date) => {
+    return selectedDates.map((date) => {
       const key = date.toDateString();
       const times = selectedDateTimes[key] || [];
-      const dateStr = date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      });
-      return {
-        date: dateStr,
+      // Store date in ISO format (YYYY-MM-DD) - easy to parse back
+      const isoDate = date.toISOString().split("T")[0];
+      return JSON.stringify({
+        date: isoDate,
         times: times,
-      };
+      });
     });
-
-    // Convert to JSON string format that can be parsed back
-    return dateTimeObjects.map((obj) => JSON.stringify(obj));
   };
 
   const [errors, setErrors] = useState({
@@ -130,10 +131,34 @@ export default function CreateOrderScreen() {
 
           // Parse available dates
           if (orderData.availableDates && orderData.availableDates.length > 0) {
-            const dates = orderData.availableDates.map(
-              (dateStr) => new Date(dateStr)
-            );
-            setSelectedDates(dates);
+            const parsedDates: Date[] = [];
+            const parsedDateTimes: { [key: string]: string[] } = {};
+
+            orderData.availableDates.forEach((dateStr: string) => {
+              try {
+                const { date, times = [] } = JSON.parse(dateStr);
+                if (!date) return;
+
+                // Try parsing as ISO date first (YYYY-MM-DD)
+                let parsedDate = new Date(date);
+
+                // If invalid, try old format (backward compatibility)
+                if (isNaN(parsedDate.getTime())) {
+                  // Old format: "Jan 15" - skip it, will be fixed on next save
+                  return;
+                }
+
+                parsedDates.push(parsedDate);
+                parsedDateTimes[parsedDate.toDateString()] = times;
+              } catch (error) {
+                console.warn("Failed to parse date:", dateStr);
+              }
+            });
+
+            if (parsedDates.length > 0) {
+              setSelectedDates(parsedDates);
+              setSelectedDateTimes(parsedDateTimes);
+            }
           }
 
           // Load existing media files
@@ -171,31 +196,140 @@ export default function CreateOrderScreen() {
     }
   }, [serviceId, orderId]);
 
-  const validateField = (field: string, value: string | number) => {
+  const validateField = (
+    field: string,
+    value: string | number | null | undefined,
+    additionalData?: {
+      selectedDates?: Date[];
+      selectedDateTimes?: { [key: string]: string[] };
+    }
+  ) => {
     switch (field) {
       case "title":
         if (!value || (typeof value === "string" && !value.trim())) {
           return t("pleaseEnterTitle");
+        }
+        const titleStr =
+          typeof value === "string" ? value.trim() : value.toString();
+        if (titleStr.length < 3) {
+          return t("titleTooShort") || "Title must be at least 3 characters";
+        }
+        if (titleStr.length > 100) {
+          return t("titleTooLong") || "Title must be less than 100 characters";
         }
         return "";
       case "description":
         if (!value || (typeof value === "string" && !value.trim())) {
           return t("pleaseEnterDescription");
         }
+        const descStr =
+          typeof value === "string" ? value.trim() : value.toString();
+        if (descStr.length < 10) {
+          return (
+            t("descriptionTooShort") ||
+            "Description must be at least 10 characters"
+          );
+        }
+        if (descStr.length > 2000) {
+          return (
+            t("descriptionTooLong") ||
+            "Description must be less than 2000 characters"
+          );
+        }
         return "";
       case "budget":
-        if (!value || parseFloat(value.toString()) <= 0) {
+        if (!value || value === "") {
           return t("pleaseEnterValidBudget");
+        }
+        const budgetStr = value.toString().trim();
+        if (!budgetStr) {
+          return t("pleaseEnterValidBudget");
+        }
+        // Check if it's a valid number
+        if (isNaN(parseFloat(budgetStr))) {
+          return t("budgetMustBeNumber") || "Budget must be a valid number";
+        }
+        const budgetNum = parseFloat(budgetStr);
+        if (budgetNum <= 0) {
+          return t("budgetMustBePositive") || "Budget must be greater than 0";
+        }
+        if (budgetNum < 1) {
+          return t("budgetTooLow") || "Budget must be at least $1";
+        }
+        if (budgetNum > 1000000) {
+          return t("budgetTooHigh") || "Budget must be less than $1,000,000";
         }
         return "";
       case "location":
-        // Location is optional, no validation needed
+        // Location is optional, but if provided, validate format
+        if (value && typeof value === "string" && value.trim()) {
+          const locationStr = value.trim();
+          if (locationStr.length < 3) {
+            return (
+              t("locationTooShort") || "Location must be at least 3 characters"
+            );
+          }
+          if (locationStr.length > 200) {
+            return (
+              t("locationTooLong") ||
+              "Location must be less than 200 characters"
+            );
+          }
+        }
         return "";
       case "skills":
-        // Skills are optional, no validation needed
+        // Skills are optional, but if provided, validate format
+        if (value && typeof value === "string" && value.trim()) {
+          const skillsStr = value.trim();
+          const skillsArray = skillsStr
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s);
+          if (skillsArray.length > 20) {
+            return t("tooManySkills") || "Maximum 20 skills allowed";
+          }
+          // Check if any skill is too long
+          const longSkill = skillsArray.find((skill) => skill.length > 50);
+          if (longSkill) {
+            return (
+              t("skillTooLong") || "Each skill must be less than 50 characters"
+            );
+          }
+        }
         return "";
       case "availableDates":
-        // Available dates are optional, no validation needed
+        // Available dates are optional, but if dates are selected, validate them
+        if (
+          additionalData?.selectedDates &&
+          additionalData.selectedDates.length > 0
+        ) {
+          const dates = additionalData.selectedDates;
+          // Check if dates are in the past
+          const now = new Date();
+          now.setHours(0, 0, 0, 0);
+          const pastDates = dates.filter((date) => {
+            const dateOnly = new Date(date);
+            dateOnly.setHours(0, 0, 0, 0);
+            return dateOnly < now;
+          });
+          if (pastDates.length > 0) {
+            return t("noPastDates") || "Cannot select dates in the past";
+          }
+          // Check if at least one date has times selected
+          if (additionalData.selectedDateTimes) {
+            const hasTimes = dates.some((date) => {
+              const key = date.toDateString();
+              const times = additionalData.selectedDateTimes?.[key] || [];
+              return times.length > 0;
+            });
+            if (!hasTimes) {
+              return (
+                t("selectAtLeastOneTime") ||
+                "Please select at least one time slot"
+              );
+            }
+          }
+        }
         return "";
       case "serviceId":
         if (!value) {
@@ -210,12 +344,101 @@ export default function CreateOrderScreen() {
   const updateField = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Real-time validation
-    const error = validateField(field, value);
+    // Real-time validation with additional data for date validation
+    const error = validateField(field, value, {
+      selectedDates,
+      selectedDateTimes,
+    });
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
 
-  const handleServiceSelect = (service: Service) => {
+  // Validate available dates when they change
+  useEffect(() => {
+    if (selectedDates.length > 0) {
+      const error = validateField("availableDates", formData.availableDates, {
+        selectedDates,
+        selectedDateTimes,
+      });
+      setErrors((prev) => ({ ...prev, availableDates: error }));
+    } else {
+      // Clear error if no dates selected (dates are optional)
+      setErrors((prev) => ({ ...prev, availableDates: "" }));
+    }
+  }, [selectedDates, selectedDateTimes]);
+
+  // Function to scroll to the first error field
+  const scrollToFirstError = (validationErrors: typeof errors) => {
+    // Define the order of fields to check
+    const fieldOrder = [
+      { field: "serviceId", ref: serviceSectionRef },
+      { field: "title", ref: basicInfoSectionRef },
+      { field: "description", ref: basicInfoSectionRef },
+      { field: "budget", ref: basicInfoSectionRef },
+      { field: "location", ref: basicInfoSectionRef },
+      { field: "skills", ref: skillsSectionRef },
+      { field: "availableDates", ref: skillsSectionRef },
+    ];
+
+    // Find the first error
+    for (const { field, ref } of fieldOrder) {
+      const errorMessage =
+        validationErrors[field as keyof typeof validationErrors];
+      // Check if this field has an error
+      if (
+        errorMessage &&
+        typeof errorMessage === "string" &&
+        errorMessage.trim() !== ""
+      ) {
+        // Try measureLayout first (measures relative to ScrollView)
+        if (ref.current && scrollViewRef.current) {
+          try {
+            ref.current.measureLayout(
+              scrollViewRef.current as any,
+              (x, y, width, height) => {
+                if (scrollViewRef.current) {
+                  scrollViewRef.current.scrollTo({
+                    y: Math.max(0, y - 100), // Add padding from top
+                    animated: true,
+                  });
+                }
+              },
+              () => {
+                // Fallback to measureInWindow if measureLayout fails
+                ref.current?.measureInWindow((x, y, width, height) => {
+                  if (scrollViewRef.current) {
+                    scrollViewRef.current.scrollTo({
+                      y: Math.max(0, y - 120),
+                      animated: true,
+                    });
+                  }
+                });
+              }
+            );
+          } catch (error) {
+            // Final fallback: use measure
+            ref.current?.measure((x, y, width, height, pageX, pageY) => {
+              if (scrollViewRef.current) {
+                scrollViewRef.current.scrollTo({
+                  y: Math.max(0, pageY - 120),
+                  animated: true,
+                });
+              }
+            });
+          }
+        }
+        break; // Stop at first error found
+      }
+    }
+  };
+
+  const handleServiceSelect = (service: Service | null) => {
+    if (!service) {
+      setSelectedService(null);
+      setFormData((prev) => ({ ...prev, serviceId: null }));
+      setErrors((prev) => ({ ...prev, serviceId: "" }));
+      return;
+    }
+
     setSelectedService(service);
     setFormData((prev) => ({ ...prev, serviceId: service.id }));
 
@@ -242,13 +465,34 @@ export default function CreateOrderScreen() {
   const handleSubmit = async () => {
     // Validate all required fields before submission
     const validationErrors = {
-      title: validateField("title", formData.title),
-      description: validateField("description", formData.description),
-      budget: validateField("budget", formData.budget),
-      location: validateField("location", formData.location),
-      skills: validateField("skills", formData.skills),
-      availableDates: validateField("availableDates", formData.availableDates),
-      serviceId: validateField("serviceId", formData.serviceId || ""),
+      title: validateField("title", formData.title, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      description: validateField("description", formData.description, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      budget: validateField("budget", formData.budget, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      location: validateField("location", formData.location, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      skills: validateField("skills", formData.skills, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      availableDates: validateField("availableDates", formData.availableDates, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      serviceId: validateField("serviceId", formData.serviceId || "", {
+        selectedDates,
+        selectedDateTimes,
+      }),
     };
 
     setErrors(validationErrors);
@@ -258,7 +502,12 @@ export default function CreateOrderScreen() {
       (error) => error !== ""
     );
     if (hasErrors) {
-      Alert.alert(t("error"), t("pleaseFixValidationErrors"));
+      // Scroll to first error after state and layout are updated
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToFirstError(validationErrors);
+        }, 100);
+      });
       return;
     }
 
@@ -382,13 +631,34 @@ export default function CreateOrderScreen() {
 
     // Validate all required fields before submission
     const validationErrors = {
-      title: validateField("title", formData.title),
-      description: validateField("description", formData.description),
-      budget: validateField("budget", formData.budget),
-      location: validateField("location", formData.location),
-      skills: validateField("skills", formData.skills),
-      availableDates: validateField("availableDates", formData.availableDates),
-      serviceId: validateField("serviceId", formData.serviceId || ""),
+      title: validateField("title", formData.title, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      description: validateField("description", formData.description, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      budget: validateField("budget", formData.budget, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      location: validateField("location", formData.location, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      skills: validateField("skills", formData.skills, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      availableDates: validateField("availableDates", formData.availableDates, {
+        selectedDates,
+        selectedDateTimes,
+      }),
+      serviceId: validateField("serviceId", formData.serviceId || "", {
+        selectedDates,
+        selectedDateTimes,
+      }),
     };
 
     setErrors(validationErrors);
@@ -398,7 +668,12 @@ export default function CreateOrderScreen() {
       (error) => error !== ""
     );
     if (hasErrors) {
-      Alert.alert(t("error"), t("pleaseFixValidationErrors"));
+      // Scroll to first error after state and layout are updated
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToFirstError(validationErrors);
+        }, 100);
+      });
       return;
     }
 
@@ -604,55 +879,61 @@ export default function CreateOrderScreen() {
 
   return (
     <Layout header={header}>
-      <ScrollView style={{ flex: 1, marginBottom: 100 }}>
+      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 100 }}>
         <ResponsiveContainer>
           {/* Service Selection */}
           <ResponsiveCard>
-            <ServiceSelector
-              selectedService={selectedService}
-              onServiceSelect={handleServiceSelect}
-              error={errors.serviceId}
-            />
+            <View ref={serviceSectionRef}>
+              <ServiceSelector
+                selectedService={selectedService}
+                onServiceSelect={handleServiceSelect}
+                error={errors.serviceId}
+              />
+            </View>
           </ResponsiveCard>
 
           {/* Basic Information */}
           <ResponsiveCard>
-            <BasicInformationForm
-              formData={{
-                title: formData.title,
-                description: formData.description,
-                budget: formData.budget,
-                location: formData.location,
-              }}
-              errors={{
-                title: errors.title,
-                description: errors.description,
-                budget: errors.budget,
-                location: errors.location,
-              }}
-              selectedService={selectedService}
-              onFieldChange={updateField}
-              onLocationChange={handleLocationChange}
-            />
+            <View ref={basicInfoSectionRef}>
+              <BasicInformationForm
+                formData={{
+                  title: formData.title,
+                  description: formData.description,
+                  budget: formData.budget,
+                  location: formData.location,
+                }}
+                errors={{
+                  title: errors.title,
+                  description: errors.description,
+                  budget: errors.budget,
+                  location: errors.location,
+                }}
+                selectedService={selectedService}
+                onFieldChange={updateField}
+                onLocationChange={handleLocationChange}
+              />
+            </View>
           </ResponsiveCard>
 
           {/* Skills and Requirements */}
           <ResponsiveCard>
-            <SkillsAndRequirementsForm
-              formData={{
-                skills: formData.skills,
-                availableDates: formData.availableDates,
-              }}
-              errors={{
-                skills: errors.skills,
-                availableDates: errors.availableDates,
-              }}
-              selectedDates={selectedDates}
-              selectedDateTimes={selectedDateTimes}
-              onFieldChange={updateField}
-              onDatesChange={setSelectedDates}
-              onDateTimesChange={setSelectedDateTimes}
-            />
+            <View ref={skillsSectionRef}>
+              <SkillsAndRequirementsForm
+                formData={{
+                  skills: formData.skills,
+                  availableDates: formData.availableDates,
+                }}
+                errors={{
+                  skills: errors.skills,
+                  availableDates: errors.availableDates,
+                }}
+                selectedDates={selectedDates}
+                selectedDateTimes={selectedDateTimes}
+                onFieldChange={updateField}
+                onDatesChange={setSelectedDates}
+                onDateTimesChange={setSelectedDateTimes}
+              />
+            </View>
           </ResponsiveCard>
 
           {/* Media Upload */}
@@ -708,11 +989,30 @@ export default function CreateOrderScreen() {
                 onPress={handleApply}
                 disabled={isSubmitting}
               >
-                <Text
-                  style={[styles.applyButtonText, { color: colors.background }]}
-                >
-                  {orderId ? t("saveChanges") || "Save Changes" : t("apply")}
-                </Text>
+                {isSubmitting ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={colors.background} />
+                    <Text
+                      style={[
+                        styles.applyButtonText,
+                        { color: colors.background, marginLeft: 8 },
+                      ]}
+                    >
+                      {orderId
+                        ? t("saving") || "Saving..."
+                        : t("creating") || "Creating..."}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text
+                    style={[
+                      styles.applyButtonText,
+                      { color: colors.background },
+                    ]}
+                  >
+                    {orderId ? t("saveChanges") || "Save Changes" : t("apply")}
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </ResponsiveCard>
@@ -767,6 +1067,11 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
     flexDirection: "row",

@@ -5,8 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   ScrollView,
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  Dimensions,
+  Animated,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -58,24 +62,12 @@ export const Filter: React.FC<FilterProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const textInputRef = useRef<TextInput>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({});
-  const [sectionAnimations, setSectionAnimations] = useState<
-    Record<string, Animated.Value>
-  >({});
-  const [filterAnimation] = useState(new Animated.Value(0));
-
-  // Initialize animations when filterSections change
-  useEffect(() => {
-    const newAnimations: Record<string, Animated.Value> = {};
-    filterSections.forEach((section) => {
-      newAnimations[section.title] =
-        sectionAnimations[section.title] || new Animated.Value(0);
-    });
-    setSectionAnimations(newAnimations);
-  }, [filterSections]);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const slideAnim = useRef(new Animated.Value(0)).current;
 
   // Helper function to get range values
   const getRangeValues = (
@@ -94,44 +86,16 @@ export const Filter: React.FC<FilterProps> = ({
     return { min: defaultMin, max: defaultMax };
   };
 
-  const toggleFilter = () => {
-    const newExpandedState = !isExpanded;
-    setIsExpanded(newExpandedState);
-
-    // Animate the filter container
-    Animated.timing(filterAnimation, {
-      toValue: newExpandedState ? 1 : 0,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const toggleSection = (sectionTitle: string) => {
-    const isExpanded = expandedSections[sectionTitle];
-    const newExpandedState = !isExpanded;
-
-    setExpandedSections((prev) => ({
-      ...prev,
-      [sectionTitle]: newExpandedState,
-    }));
-
-    // Animate the section if animation exists
-    if (sectionAnimations[sectionTitle]) {
-      Animated.timing(sectionAnimations[sectionTitle], {
-        toValue: newExpandedState ? 1 : 0,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    onSearchChange(text);
   };
 
   const handleFilterSelect = (
-    sectionTitle: string,
+    sectionKey: string,
     option: FilterOption,
     multiSelect: boolean = false
   ) => {
-    const sectionKey =
-      filterSections.find((s) => s.title === sectionTitle)?.key || sectionTitle;
     const currentValue = selectedFilters[sectionKey];
 
     if (multiSelect) {
@@ -141,18 +105,17 @@ export const Filter: React.FC<FilterProps> = ({
         : [...currentArray, option.key];
       onFilterChange(sectionKey, newValue);
     } else {
-      onFilterChange(sectionKey, option.key);
-      toggleSection(sectionTitle);
+      // For single select, toggle if already selected
+      const newValue = currentValue === option.key ? "" : option.key;
+      onFilterChange(sectionKey, newValue);
     }
   };
 
   const isFilterSelected = (
-    sectionTitle: string,
+    sectionKey: string,
     optionKey: string,
     multiSelect: boolean = false
   ) => {
-    const sectionKey =
-      filterSections.find((s) => s.title === sectionTitle)?.key || sectionTitle;
     const currentValue = selectedFilters[sectionKey];
 
     if (multiSelect) {
@@ -162,9 +125,7 @@ export const Filter: React.FC<FilterProps> = ({
     }
   };
 
-  const getSelectedCount = (sectionTitle: string) => {
-    const sectionKey =
-      filterSections.find((s) => s.title === sectionTitle)?.key || sectionTitle;
+  const getSelectedCount = (sectionKey: string) => {
     const currentValue = selectedFilters[sectionKey];
     if (Array.isArray(currentValue)) {
       return currentValue.length;
@@ -179,72 +140,106 @@ export const Filter: React.FC<FilterProps> = ({
     return currentValue ? 1 : 0;
   };
 
+  const clearFilter = (sectionKey: string) => {
+    const section = filterSections.find(
+      (s) => (s.key || s.title) === sectionKey
+    );
+    if (section?.multiSelect) {
+      onFilterChange(sectionKey, []);
+    } else if (section?.type === "range") {
+      const defaultMin = section.rangeConfig?.min || 0;
+      const defaultMax = section.rangeConfig?.max || 1000;
+      onFilterChange(sectionKey, { min: defaultMin, max: defaultMax });
+    } else {
+      onFilterChange(sectionKey, "");
+    }
+  };
+
+  const hasActiveFilters = () => {
+    return filterSections.some((section) => {
+      const sectionKey = section.key || section.title;
+      return getSelectedCount(sectionKey) > 0;
+    });
+  };
+
   const getTotalSelectedCount = () => {
     return filterSections.reduce((total, section) => {
-      return total + getSelectedCount(section.title);
+      const sectionKey = section.key || section.title;
+      return total + getSelectedCount(sectionKey);
     }, 0);
   };
 
+  const clearAllFilters = () => {
+    filterSections.forEach((section) => {
+      const sectionKey = section.key || section.title;
+      clearFilter(sectionKey);
+    });
+  };
+
+  const toggleSection = (sectionKey: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }));
+  };
+
+  const isSectionExpanded = (sectionKey: string, inModal: boolean = false) => {
+    // In modal, expand all sections by default for better UX
+    if (inModal) {
+      return expandedSections[sectionKey] ?? true;
+    }
+    // Auto-expand if section has active filters, otherwise check state
+    const hasFilters = getSelectedCount(sectionKey) > 0;
+    return expandedSections[sectionKey] ?? hasFilters;
+  };
+
+  const totalFilterCount = getTotalSelectedCount();
+
+  // Handle modal close with animation
+  const closeModal = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => {
+      setFilterModalVisible(false);
+    });
+  };
+
+  // Animate modal content when it opens
+  useEffect(() => {
+    if (filterModalVisible) {
+      // Animate in
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 50,
+        friction: 8,
+      }).start();
+    } else {
+      // Reset animation
+      slideAnim.setValue(0);
+    }
+  }, [filterModalVisible, slideAnim]);
+
+  const modalContentTranslateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [Dimensions.get("window").height, 0],
+  });
+
   return (
     <View style={styles.container}>
-      {/* Filter Toggle Button - Compact */}
-      <TouchableOpacity
-        style={[
-          styles.filterToggle,
-          {
-            borderColor: colors.border,
-            backgroundColor: colors.background,
-          },
-        ]}
-        onPress={toggleFilter}
-        activeOpacity={0.7}
-      >
-        <View style={styles.filterToggleContent}>
-          <IconSymbol
-            name="line.3.horizontal.decrease"
-            size={16}
-            color={colors.tabIconDefault}
-          />
-          <Text style={[styles.filterToggleText, { color: colors.text }]}>
-            Filters
-          </Text>
-          {getTotalSelectedCount() > 0 && (
-            <View
-              style={[styles.filterBadge, { backgroundColor: colors.tint }]}
-            >
-              <Text
-                style={[styles.filterBadgeText, { color: colors.background }]}
-              >
-                {getTotalSelectedCount()}
-              </Text>
-            </View>
-          )}
-        </View>
-        <IconSymbol
-          name={isExpanded ? "chevron.up" : "chevron.down"}
-          size={14}
-          color={colors.tabIconDefault}
-        />
-      </TouchableOpacity>
-
-      {/* Search & Filter Sections - Animated */}
-      <Animated.View
-        style={[
-          styles.searchAndFiltersContainer,
-          {
-            maxHeight: filterAnimation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, 1000], // Adjust based on content
-            }),
-            opacity: filterAnimation,
-          },
-        ]}
-      >
-        {/* Search Bar */}
-        <View style={[styles.searchContainer, { borderColor: colors.border }]}>
+      {/* Compact Search Bar with Filter Button */}
+      <View style={styles.searchRow}>
+        <View
+          style={[
+            styles.searchContainer,
+            { borderColor: colors.border, flex: 1 },
+          ]}
+        >
           <IconSymbol
             name="magnifyingglass"
-            size={20}
+            size={18}
             color={colors.tabIconDefault}
           />
           <TextInput
@@ -252,306 +247,646 @@ export const Filter: React.FC<FilterProps> = ({
             style={[styles.searchInput, { color: colors.text }]}
             placeholder={searchPlaceholder}
             placeholderTextColor={colors.tabIconDefault}
-            onChangeText={onSearchChange}
+            value={searchQuery}
+            onChangeText={handleSearchChange}
             returnKeyType="search"
-            selectTextOnFocus={true}
+            editable={!loading}
           />
-          {loading && (
-            <IconSymbol
-              name="arrow.clockwise"
-              size={16}
-              color={colors.tint}
-              style={styles.loadingIcon}
-            />
-          )}
+          {loading ? (
+            <ActivityIndicator size="small" color={colors.tint} />
+          ) : searchQuery.length > 0 ? (
+            <TouchableOpacity
+              onPress={() => handleSearchChange("")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <IconSymbol
+                name="xmark.circle.fill"
+                size={16}
+                color={colors.tabIconDefault}
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
-
-        {/* Filter Sections */}
-        <View style={styles.filtersContainer}>
-          {filterSections.map((section) => {
-            // Handle range sections differently - always visible, no expand/collapse
-            if (section.type === "range" && section.rangeConfig) {
-              return (
-                <View key={section.title} style={styles.filterSection}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {section.title}
-                  </Text>
-
-                  {/* Range Content - Always visible */}
-                  <View style={styles.sectionContent}>
-                    <View style={styles.rangeContainer}>
-                      <PriceRangeSlider
-                        minValue={
-                          getRangeValues(
-                            selectedFilters[section.key || section.title],
-                            section.rangeConfig.min,
-                            section.rangeConfig.max
-                          ).min
-                        }
-                        maxValue={
-                          getRangeValues(
-                            selectedFilters[section.key || section.title],
-                            section.rangeConfig.min,
-                            section.rangeConfig.max
-                          ).max
-                        }
-                        onValueChange={(low, high) => {
-                          const sectionKey = section.key || section.title;
-                          onFilterChange(sectionKey, { min: low, max: high });
-                        }}
-                        disabled={loading}
-                      />
-                    </View>
-                  </View>
-                </View>
-              );
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            {
+              backgroundColor: hasActiveFilters()
+                ? colors.tint
+                : colors.background,
+              borderColor: colors.border,
+            },
+          ]}
+          onPress={() => setFilterModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            name="line.3.horizontal.decrease"
+            size={18}
+            color={
+              hasActiveFilters() ? colors.background : colors.tabIconDefault
             }
+          />
+          {totalFilterCount > 0 && (
+            <View
+              style={[
+                styles.filterButtonBadge,
+                {
+                  backgroundColor: hasActiveFilters()
+                    ? colors.background
+                    : colors.tint,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.filterButtonBadgeText,
+                  {
+                    color: hasActiveFilters() ? colors.tint : colors.background,
+                  },
+                ]}
+              >
+                {totalFilterCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
 
-            // Handle regular sections with expand/collapse functionality
-            const isExpanded = expandedSections[section.title];
-            const selectedCount = getSelectedCount(section.title);
+      {/* Active Filters - Horizontal Scrollable Chips */}
+      {hasActiveFilters() && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.activeFiltersScroll}
+          contentContainerStyle={styles.activeFiltersContent}
+        >
+          {filterSections.map((section) => {
+            const sectionKey = section.key || section.title;
+            const count = getSelectedCount(sectionKey);
+            if (count === 0) return null;
 
             return (
-              <View key={section.title} style={styles.filterSection}>
-                {/* Section Header */}
-                <TouchableOpacity
-                  style={[
-                    styles.sectionHeader,
-                    { borderBottomColor: colors.border },
-                  ]}
-                  onPress={() => toggleSection(section.title)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.sectionHeaderContent}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {section.title}
-                    </Text>
-                    {selectedCount > 0 && (
-                      <View
-                        style={[styles.badge, { backgroundColor: colors.tint }]}
+              <TouchableOpacity
+                key={sectionKey}
+                style={[
+                  styles.activeFilterChip,
+                  {
+                    backgroundColor: colors.tint + "15",
+                    borderColor: colors.tint,
+                  },
+                ]}
+                onPress={() => clearFilter(sectionKey)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.activeFilterText, { color: colors.tint }]}>
+                  {section.title}
+                  {count > 1 ? ` (${count})` : ""}
+                </Text>
+                <IconSymbol
+                  name="xmark.circle.fill"
+                  size={12}
+                  color={colors.tint}
+                  style={styles.chipIcon}
+                />
+              </TouchableOpacity>
+            );
+          })}
+          <TouchableOpacity
+            style={[styles.clearAllChip, { borderColor: colors.border }]}
+            onPress={clearAllFilters}
+            activeOpacity={0.7}
+          >
+            <Text
+              style={[styles.clearAllText, { color: colors.tabIconDefault }]}
+            >
+              Clear All
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+
+      {/* Filter Modal */}
+      <Modal
+        visible={filterModalVisible}
+        animationType="none"
+        transparent={true}
+        onRequestClose={closeModal}
+      >
+        <Pressable style={styles.modalOverlay} onPress={closeModal}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: colors.background,
+                transform: [{ translateY: modalContentTranslateY }],
+              },
+            ]}
+          >
+            <Pressable style={{ flex: 1 }} onPress={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <View
+                style={[
+                  styles.modalHeader,
+                  { borderBottomColor: colors.border },
+                ]}
+              >
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Filters
+                </Text>
+                <View style={styles.modalHeaderRight}>
+                  {hasActiveFilters() && (
+                    <TouchableOpacity
+                      onPress={clearAllFilters}
+                      style={styles.modalClearButton}
+                    >
+                      <Text
+                        style={[styles.modalClearText, { color: colors.tint }]}
                       >
-                        <Text
+                        Clear All
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={closeModal}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <IconSymbol
+                      name="xmark.circle.fill"
+                      size={24}
+                      color={colors.tabIconDefault}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Filter Sections in Modal */}
+              <ScrollView
+                style={styles.modalScroll}
+                showsVerticalScrollIndicator={true}
+              >
+                <View style={styles.modalFiltersContainer}>
+                  {filterSections.map((section) => {
+                    const sectionKey = section.key || section.title;
+                    const selectedCount = getSelectedCount(sectionKey);
+
+                    // Handle range sections
+                    if (section.type === "range" && section.rangeConfig) {
+                      const isExpanded = isSectionExpanded(sectionKey, true);
+                      return (
+                        <View
+                          key={sectionKey}
                           style={[
-                            styles.badgeText,
-                            { color: colors.background },
+                            styles.filterSection,
+                            {
+                              backgroundColor:
+                                (colors as any).surface || colors.background,
+                            },
                           ]}
                         >
-                          {selectedCount}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <IconSymbol
-                    name={isExpanded ? "chevron.up" : "chevron.down"}
-                    size={16}
-                    color={colors.tabIconDefault}
-                  />
-                </TouchableOpacity>
+                          <View style={styles.sectionHeader}>
+                            <TouchableOpacity
+                              style={styles.sectionHeaderLeft}
+                              onPress={() => toggleSection(sectionKey)}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.sectionTitle,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                {section.title}
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.sectionHeaderRight}>
+                              {selectedCount > 0 && (
+                                <View
+                                  style={[
+                                    styles.badge,
+                                    { backgroundColor: colors.tint },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.badgeText,
+                                      { color: colors.background },
+                                    ]}
+                                  >
+                                    {selectedCount}
+                                  </Text>
+                                </View>
+                              )}
+                              <TouchableOpacity
+                                onPress={() => toggleSection(sectionKey)}
+                                hitSlop={{
+                                  top: 5,
+                                  bottom: 5,
+                                  left: 5,
+                                  right: 5,
+                                }}
+                              >
+                                <IconSymbol
+                                  name={
+                                    isExpanded ? "chevron.up" : "chevron.down"
+                                  }
+                                  size={14}
+                                  color={colors.tabIconDefault}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          {isExpanded && (
+                            <View style={styles.rangeContainer}>
+                              <PriceRangeSlider
+                                minValue={
+                                  getRangeValues(
+                                    selectedFilters[sectionKey],
+                                    section.rangeConfig.min,
+                                    section.rangeConfig.max
+                                  ).min
+                                }
+                                maxValue={
+                                  getRangeValues(
+                                    selectedFilters[sectionKey],
+                                    section.rangeConfig.min,
+                                    section.rangeConfig.max
+                                  ).max
+                                }
+                                onValueChange={(low, high) => {
+                                  onFilterChange(sectionKey, {
+                                    min: low,
+                                    max: high,
+                                  });
+                                }}
+                                disabled={loading}
+                              />
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
 
-                {/* Section Content */}
-                <Animated.View
-                  style={[
-                    styles.sectionContent,
-                    sectionAnimations[section.title] && {
-                      maxHeight: sectionAnimations[section.title].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, 300], // Increased height for better scrolling
-                      }),
-                      opacity: sectionAnimations[section.title],
-                    },
-                  ]}
-                >
-                  <ScrollView
-                    style={styles.scrollContainer}
-                    showsVerticalScrollIndicator={true}
-                    nestedScrollEnabled={true}
-                  >
-                    <View style={styles.filterOptions}>
-                      {section.options?.map((option) => {
-                        const isSelected = isFilterSelected(
-                          section.title,
-                          option.key,
-                          section.multiSelect
-                        );
+                    // Handle option sections
+                    if (!section.options || section.options.length === 0) {
+                      return null;
+                    }
 
-                        return (
+                    const isExpanded = isSectionExpanded(sectionKey, true);
+
+                    return (
+                      <View
+                        key={sectionKey}
+                        style={[
+                          styles.filterSection,
+                          {
+                            backgroundColor:
+                              (colors as any).surface || colors.background,
+                          },
+                        ]}
+                      >
+                        <View style={styles.sectionHeader}>
                           <TouchableOpacity
-                            key={option.key}
-                            style={[
-                              styles.filterOption,
-                              {
-                                backgroundColor: isSelected
-                                  ? colors.tint
-                                  : colors.background,
-                                borderColor: isSelected
-                                  ? colors.tint
-                                  : colors.border,
-                              },
-                            ]}
-                            onPress={() =>
-                              handleFilterSelect(
-                                section.title,
-                                option,
-                                section.multiSelect
-                              )
-                            }
-                            disabled={loading}
+                            style={styles.sectionHeaderLeft}
+                            onPress={() => toggleSection(sectionKey)}
                             activeOpacity={0.7}
                           >
                             <Text
                               style={[
-                                styles.filterOptionText,
-                                {
-                                  color: isSelected
-                                    ? colors.background
-                                    : colors.text,
-                                },
+                                styles.sectionTitle,
+                                { color: colors.text },
                               ]}
                             >
-                              {option.label}
+                              {section.title}
                             </Text>
-                            {section.multiSelect && isSelected && (
-                              <IconSymbol
-                                name="checkmark"
-                                size={14}
-                                color={colors.background}
-                                style={styles.checkIcon}
-                              />
-                            )}
                           </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                </Animated.View>
-              </View>
-            );
-          })}
-        </View>
-      </Animated.View>
+                          <View style={styles.sectionHeaderRight}>
+                            {selectedCount > 0 && (
+                              <>
+                                <View
+                                  style={[
+                                    styles.badge,
+                                    { backgroundColor: colors.tint },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.badgeText,
+                                      { color: colors.background },
+                                    ]}
+                                  >
+                                    {selectedCount}
+                                  </Text>
+                                </View>
+                                <TouchableOpacity
+                                  onPress={() => clearFilter(sectionKey)}
+                                  hitSlop={{
+                                    top: 5,
+                                    bottom: 5,
+                                    left: 5,
+                                    right: 5,
+                                  }}
+                                  style={styles.clearButton}
+                                >
+                                  <IconSymbol
+                                    name="xmark.circle.fill"
+                                    size={14}
+                                    color={colors.tabIconDefault}
+                                  />
+                                </TouchableOpacity>
+                              </>
+                            )}
+                            <TouchableOpacity
+                              onPress={() => toggleSection(sectionKey)}
+                              hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
+                            >
+                              <IconSymbol
+                                name={
+                                  isExpanded ? "chevron.up" : "chevron.down"
+                                }
+                                size={14}
+                                color={colors.tabIconDefault}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        {isExpanded && (
+                          <View style={styles.filterOptions}>
+                            {section.options.map((option) => {
+                              const isSelected = isFilterSelected(
+                                sectionKey,
+                                option.key,
+                                section.multiSelect
+                              );
+
+                              return (
+                                <TouchableOpacity
+                                  key={option.key}
+                                  style={[
+                                    styles.filterChip,
+                                    {
+                                      backgroundColor: isSelected
+                                        ? colors.tint
+                                        : colors.background,
+                                      borderColor: isSelected
+                                        ? colors.tint
+                                        : colors.border,
+                                    },
+                                  ]}
+                                  onPress={() =>
+                                    handleFilterSelect(
+                                      sectionKey,
+                                      option,
+                                      section.multiSelect
+                                    )
+                                  }
+                                  disabled={loading}
+                                  activeOpacity={0.7}
+                                >
+                                  {section.multiSelect && (
+                                    <View
+                                      style={[
+                                        styles.checkbox,
+                                        {
+                                          backgroundColor: isSelected
+                                            ? colors.background
+                                            : "transparent",
+                                          borderColor: isSelected
+                                            ? colors.background
+                                            : colors.border,
+                                        },
+                                      ]}
+                                    >
+                                      {isSelected && (
+                                        <IconSymbol
+                                          name="checkmark"
+                                          size={12}
+                                          color={colors.tint}
+                                        />
+                                      )}
+                                    </View>
+                                  )}
+                                  <Text
+                                    style={[
+                                      styles.filterChipText,
+                                      {
+                                        color: isSelected
+                                          ? colors.background
+                                          : colors.text,
+                                      },
+                                    ]}
+                                  >
+                                    {option.label}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
+    gap: 6,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 10,
     paddingHorizontal: 12,
-    paddingVertical: 14,
-    marginBlock: 10,
+    paddingVertical: 10,
     gap: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 15,
     paddingVertical: 0,
   },
-  loadingIcon: {
-    marginLeft: 8,
+  filterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
-  filterToggle: {
+  filterButtonBadge: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  filterButtonBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  activeFiltersScroll: {
+    marginTop: 4,
+  },
+  activeFiltersContent: {
+    gap: 6,
+    paddingRight: 12,
+  },
+  activeFilterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 6,
+  },
+  activeFilterText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  chipIcon: {
+    marginLeft: 2,
+  },
+  clearAllChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  clearAllText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: Dimensions.get("window").height * 0.7,
+  },
+  modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
   },
-  filterToggleContent: {
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  modalHeaderRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 12,
   },
-  filterToggleText: {
+  modalClearButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  modalClearText: {
     fontSize: 14,
-    fontWeight: "500",
-  },
-  filterBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 16,
-    alignItems: "center",
-  },
-  filterBadgeText: {
-    fontSize: 10,
     fontWeight: "600",
   },
-  searchAndFiltersContainer: {
-    overflow: "hidden",
+  modalScroll: {
+    flex: 1,
   },
-  filtersContainer: {
-    gap: 10,
+  modalFiltersContainer: {
+    padding: 16,
+    paddingBottom: 40,
+    gap: 20,
   },
   filterSection: {
-    borderRadius: 12,
-    overflow: "hidden",
+    borderRadius: 10,
+    padding: 10,
+    gap: 8,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
+    paddingVertical: 2,
   },
-  sectionHeaderContent: {
+  sectionHeaderLeft: {
+    flex: 1,
+  },
+  sectionHeaderRight: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: 14,
+    fontWeight: "700",
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
     minWidth: 20,
     alignItems: "center",
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 10,
+    fontWeight: "700",
   },
-  sectionContent: {
-    overflow: "hidden",
-  },
-  scrollContainer: {
-    maxHeight: 300,
+  clearButton: {
+    padding: 2,
   },
   filterOptions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    padding: 16,
+    paddingTop: 4,
   },
-  filterOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
+  filterChip: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    borderWidth: 1.5,
     gap: 6,
     minHeight: 36,
   },
-  filterOptionText: {
-    fontSize: 14,
-    fontWeight: "500",
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  checkIcon: {
-    marginLeft: 4,
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   rangeContainer: {
-    paddingVertical: 8,
+    paddingVertical: 6,
+    paddingTop: 8,
   },
 });

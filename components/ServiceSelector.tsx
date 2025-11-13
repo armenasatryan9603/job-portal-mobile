@@ -10,6 +10,7 @@ import {
   Platform,
   UIManager,
   Image,
+  ScrollView,
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -17,10 +18,11 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Service } from "@/services/api";
 import { useServices } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 
 interface ServiceSelectorProps {
   selectedService: Service | null;
-  onServiceSelect: (service: Service) => void;
+  onServiceSelect: (service: Service | null) => void;
   error?: string;
 }
 
@@ -50,11 +52,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
   const servicesError = servicesErrorData ? t("failedToLoadServices") : null;
 
-  const [expandedCategory, setExpandedCategory] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showAllServices, setShowAllServices] = useState(false);
-  const [isServiceSelectorCollapsed, setIsServiceSelectorCollapsed] =
-    useState(false);
 
   // Enable LayoutAnimation on Android
   useEffect(() => {
@@ -63,60 +61,71 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     }
   }, []);
 
-  // Organize services by categories with search and filter
-  const organizeServicesByCategory = () => {
-    let filteredServices = services;
+  // Organize services by category
+  const getServicesByCategory = () => {
+    const categories = services.filter((service) => !service.parentId);
+    const subServices = services.filter((service) => service.parentId);
 
-    if (searchQuery.trim()) {
-      filteredServices = services.filter((service) =>
-        service.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+    if (!searchQuery.trim()) {
+      // No search - show all categories with all their sub-services
+      return categories.map((category) => ({
+        ...category,
+        subServices: subServices.filter((sub) => sub.parentId === category.id),
+      }));
     }
 
-    const categories = filteredServices.filter((service) => !service.parentId);
-    const subServices = filteredServices.filter((service) => service.parentId);
+    // Search is active - filter both categories and sub-services
+    const searchLower = searchQuery.toLowerCase();
 
-    return categories.map((category) => ({
-      ...category,
-      subServices: subServices.filter((sub) => sub.parentId === category.id),
-    }));
-  };
+    // Find matching sub-services
+    const matchingSubServices = subServices.filter(
+      (service) =>
+        service.name.toLowerCase().includes(searchLower) ||
+        service.Parent?.name.toLowerCase().includes(searchLower)
+    );
 
-  // Get all services for flat view
-  const getAllServicesFlat = () => {
-    let filteredServices = services;
+    // Find categories that match or have matching sub-services
+    const matchingCategoryIds = new Set<number>();
+    matchingSubServices.forEach((service) => {
+      if (service.parentId) {
+        matchingCategoryIds.add(service.parentId);
+      }
+    });
 
-    if (searchQuery.trim()) {
-      filteredServices = services.filter((service) =>
-        service.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+    // Get categories that match search or have matching sub-services
+    const relevantCategories = categories.filter(
+      (cat) =>
+        cat.name.toLowerCase().includes(searchLower) ||
+        matchingCategoryIds.has(cat.id)
+    );
 
-    return filteredServices.filter((service) => service.parentId);
+    // Group matching sub-services by their parent category
+    return relevantCategories
+      .map((category) => {
+        const categoryMatches = category.name
+          .toLowerCase()
+          .includes(searchLower);
+        const categorySubServices = matchingSubServices.filter(
+          (sub) => sub.parentId === category.id
+        );
+
+        // If category name matches, show all sub-services
+        // Otherwise, only show matching sub-services
+        return {
+          ...category,
+          subServices: categoryMatches
+            ? subServices.filter((sub) => sub.parentId === category.id)
+            : categorySubServices,
+        };
+      })
+      .filter((category) => category.subServices.length > 0);
   };
 
   const handleServiceSelect = (service: Service) => {
     onServiceSelect(service);
-
-    // Collapse service selector with animation
-    LayoutAnimation.configureNext({
-      duration: 300,
-      create: { type: "easeInEaseOut", property: "opacity" },
-      update: { type: "easeInEaseOut" },
-      delete: { type: "easeInEaseOut", property: "opacity" },
-    });
-    setIsServiceSelectorCollapsed(true);
   };
 
-  const handleReselectService = () => {
-    LayoutAnimation.configureNext({
-      duration: 300,
-      create: { type: "easeInEaseOut", property: "opacity" },
-      update: { type: "easeInEaseOut" },
-      delete: { type: "easeInEaseOut", property: "opacity" },
-    });
-    setIsServiceSelectorCollapsed(false);
-  };
+  const servicesByCategory = getServicesByCategory();
 
   return (
     <View>
@@ -127,115 +136,82 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
         {t("selectServiceDescription")}
       </Text>
 
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View
+          style={[
+            styles.searchInputWrapper,
+            { backgroundColor: colors.background, borderColor: colors.border },
+          ]}
+        >
+          <IconSymbol
+            name="magnifyingglass"
+            size={20}
+            color={colors.tabIconDefault}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder={t("searchServices")}
+            placeholderTextColor={colors.tabIconDefault}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery("")}>
+              <IconSymbol
+                name="xmark.circle.fill"
+                size={18}
+                color={colors.tabIconDefault}
+              />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {/* Selected Service Display */}
-      {selectedService && isServiceSelectorCollapsed ? (
+      {selectedService && (
         <View
           style={[
             styles.selectedServiceCard,
             {
-              backgroundColor: colors.background,
-              borderColor: colors.border,
+              backgroundColor: colors.primary + "15",
+              borderColor: colors.primary,
             },
           ]}
         >
+          {selectedService.imageUrl && (
+            <Image
+              source={{ uri: selectedService.imageUrl }}
+              style={styles.selectedServiceImage}
+              resizeMode="cover"
+            />
+          )}
           <View style={styles.selectedServiceInfo}>
             <Text style={[styles.selectedServiceName, { color: colors.text }]}>
               {selectedService.name}
             </Text>
             {selectedService.averagePrice && (
               <Text
-                style={[styles.selectedServicePrice, { color: colors.tint }]}
+                style={[styles.selectedServicePrice, { color: colors.primary }]}
               >
                 ${selectedService.averagePrice}/hr
               </Text>
             )}
           </View>
           <TouchableOpacity
-            style={[
-              styles.changeServiceButton,
-              { backgroundColor: colors.tint, borderColor: colors.tint },
-            ]}
-            onPress={handleReselectService}
+            onPress={() => onServiceSelect(null)}
+            style={styles.removeButton}
           >
-            <Text
-              style={[styles.changeServiceText, { color: colors.background }]}
-            >
-              {t("change")}
-            </Text>
+            <IconSymbol
+              name="xmark.circle.fill"
+              size={18}
+              color={colors.tabIconDefault}
+            />
           </TouchableOpacity>
         </View>
-      ) : (
-        <>
-          {/* Search Bar */}
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder={t("searchServices")}
-              placeholderTextColor={colors.tabIconDefault}
-            />
-          </View>
-
-          {/* View Toggle */}
-          <View style={styles.viewToggleContainer}>
-            <TouchableOpacity
-              style={[
-                styles.viewToggleButton,
-                {
-                  backgroundColor: !showAllServices
-                    ? colors.tint
-                    : colors.background,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => setShowAllServices(false)}
-            >
-              <Text
-                style={[
-                  styles.viewToggleText,
-                  {
-                    color: !showAllServices ? colors.background : colors.text,
-                  },
-                ]}
-              >
-                {t("byCategory")}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.viewToggleButton,
-                {
-                  backgroundColor: showAllServices
-                    ? colors.tint
-                    : colors.background,
-                  borderColor: colors.border,
-                },
-              ]}
-              onPress={() => setShowAllServices(true)}
-            >
-              <Text
-                style={[
-                  styles.viewToggleText,
-                  {
-                    color: showAllServices ? colors.background : colors.text,
-                  },
-                ]}
-              >
-                {t("allServices")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </>
       )}
 
+      {/* Services Grid */}
       <View
         style={[
           styles.servicesContainer,
@@ -243,208 +219,167 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             ? {
                 borderColor: "#ff4444",
                 borderWidth: 1,
-                borderRadius: 8,
+                borderRadius: 12,
                 padding: 8,
               }
             : {},
         ]}
       >
-        {!isServiceSelectorCollapsed && (
-          <>
-            {isLoadingServices ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="small" color={colors.tint} />
-                <Text style={[styles.loadingText, { color: colors.text }]}>
-                  {t("loadingServices")}
-                </Text>
-              </View>
-            ) : servicesError ? (
-              <View style={styles.errorContainer}>
-                <Text style={[styles.errorText, { color: "#ff4444" }]}>
-                  {servicesError}
-                </Text>
-                <TouchableOpacity
-                  style={[styles.retryButton, { borderColor: colors.border }]}
-                  onPress={() => {
-                    refetchServices();
-                  }}
-                >
-                  <Text
-                    style={[styles.retryButtonText, { color: colors.text }]}
-                  >
-                    {t("retry")}
+        {isLoadingServices ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={[styles.loadingText, { color: colors.text }]}>
+              {t("loadingServices")}
+            </Text>
+          </View>
+        ) : servicesError ? (
+          <View style={styles.errorContainer}>
+            <Text style={[styles.errorText, { color: "#ff4444" }]}>
+              {servicesError}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.retryButton,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                },
+              ]}
+              onPress={() => {
+                refetchServices();
+              }}
+            >
+              <Text style={[styles.retryButtonText, { color: colors.text }]}>
+                {t("retry")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : servicesByCategory.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <IconSymbol
+              name="magnifyingglass"
+              size={48}
+              color={colors.tabIconDefault}
+            />
+            <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
+              {t("noServicesFound") || "No services found"}
+            </Text>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.categoriesScrollView}
+            contentContainerStyle={styles.categoriesContainer}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {servicesByCategory.map((category) => (
+              <View key={category.id} style={styles.categorySection}>
+                <View style={styles.categoryHeader}>
+                  {category.imageUrl && (
+                    <Image
+                      source={{ uri: category.imageUrl }}
+                      style={styles.categoryHeaderImage}
+                      resizeMode="cover"
+                    />
+                  )}
+                  <Text style={[styles.categoryTitle, { color: colors.text }]}>
+                    {category.name}
                   </Text>
-                </TouchableOpacity>
-              </View>
-            ) : showAllServices ? (
-              // Flat view - all services in a grid
-              <View style={styles.allServicesGrid}>
-                {getAllServicesFlat().map((service) => (
-                  <TouchableOpacity
-                    key={service.id}
+                  <Text
                     style={[
-                      styles.serviceCard,
-                      {
-                        backgroundColor:
-                          selectedService?.id === service.id
-                            ? colors.tint
-                            : colors.background,
-                        borderColor:
-                          selectedService?.id === service.id
-                            ? colors.tint
-                            : colors.border,
-                      },
+                      styles.categoryCount,
+                      { color: colors.tabIconDefault },
                     ]}
-                    onPress={() => handleServiceSelect(service)}
                   >
-                    {service.imageUrl && (
-                      <Image
-                        source={{ uri: service.imageUrl }}
-                        style={styles.serviceCardImage}
-                        resizeMode="cover"
-                      />
-                    )}
-                    <Text
-                      style={[
-                        styles.serviceCardName,
-                        {
-                          color:
-                            selectedService?.id === service.id
-                              ? colors.background
-                              : colors.text,
-                        },
-                      ]}
-                    >
-                      {service.name}
-                    </Text>
-                    {service.averagePrice && (
-                      <Text
+                    {category.subServices.length}{" "}
+                    {category.subServices.length === 1
+                      ? t("service") || "service"
+                      : t("services") || "services"}
+                  </Text>
+                </View>
+                <View style={styles.servicesList}>
+                  {category.subServices.map((service) => {
+                    const isSelected = selectedService?.id === service.id;
+                    return (
+                      <TouchableOpacity
+                        key={service.id}
                         style={[
-                          styles.serviceCardPrice,
+                          styles.serviceListItem,
                           {
-                            color:
-                              selectedService?.id === service.id
-                                ? colors.background
-                                : colors.tint,
+                            backgroundColor: isSelected
+                              ? colors.primary + "15"
+                              : colors.background,
+                            borderLeftColor: isSelected
+                              ? colors.primary
+                              : "transparent",
                           },
                         ]}
+                        onPress={() => handleServiceSelect(service)}
+                        activeOpacity={0.7}
                       >
-                        ${service.averagePrice}/hr
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            ) : (
-              // Category view
-              <View style={styles.servicesGrid}>
-                {organizeServicesByCategory().map((category) => (
-                  <View key={category.id} style={styles.categoryCard}>
-                    <TouchableOpacity
-                      style={[
-                        styles.categoryCardHeader,
-                        {
-                          backgroundColor: colors.background,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                      onPress={() =>
-                        setExpandedCategory(
-                          expandedCategory === category.id ? null : category.id
-                        )
-                      }
-                    >
-                      <View style={styles.categoryInfo}>
-                        <Text
-                          style={[styles.categoryTitle, { color: colors.text }]}
-                        >
-                          {category.name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.categorySubtext,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          {category.subServices.length} {t("services")}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.expandButton,
-                          {
-                            backgroundColor: colors.tint,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.expandIcon,
-                            { color: colors.background },
-                          ]}
-                        >
-                          {expandedCategory === category.id ? "−" : "+"}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    {expandedCategory === category.id && (
-                      <View style={styles.subServicesGrid}>
-                        {category.subServices.map((subService) => (
-                          <TouchableOpacity
-                            key={subService.id}
+                        {service.imageUrl ? (
+                          <Image
+                            source={{ uri: service.imageUrl }}
+                            style={styles.serviceListItemImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View
                             style={[
-                              styles.subServiceCard,
+                              styles.serviceListItemImagePlaceholder,
                               {
-                                backgroundColor:
-                                  selectedService?.id === subService.id
-                                    ? colors.tint
-                                    : colors.background,
-                                borderColor:
-                                  selectedService?.id === subService.id
-                                    ? colors.tint
-                                    : colors.border,
+                                backgroundColor: colors.border + "40",
                               },
                             ]}
-                            onPress={() => handleServiceSelect(subService)}
                           >
+                            <IconSymbol
+                              name="gearshape.fill"
+                              size={16}
+                              color={colors.tabIconDefault}
+                            />
+                          </View>
+                        )}
+                        <View style={styles.serviceListItemContent}>
+                          <Text
+                            style={[
+                              styles.serviceListItemName,
+                              {
+                                color: isSelected
+                                  ? colors.primary
+                                  : colors.text,
+                              },
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {service.name}
+                          </Text>
+                          {service.averagePrice && (
                             <Text
                               style={[
-                                styles.subServiceName,
+                                styles.serviceListItemPrice,
                                 {
-                                  color:
-                                    selectedService?.id === subService.id
-                                      ? colors.background
-                                      : colors.text,
+                                  color: colors.tabIconDefault,
                                 },
                               ]}
                             >
-                              {subService.name}
+                              ${service.averagePrice}/hr
                             </Text>
-                            {subService.averagePrice && (
-                              <Text
-                                style={[
-                                  styles.subServicePrice,
-                                  {
-                                    color:
-                                      selectedService?.id === subService.id
-                                        ? colors.background
-                                        : colors.tint,
-                                  },
-                                ]}
-                              >
-                                ${subService.averagePrice}/hr
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                ))}
+                          )}
+                        </View>
+                        {isSelected && (
+                          <IconSymbol
+                            name="checkmark.circle.fill"
+                            size={18}
+                            color={colors.primary}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            )}
-          </>
+            ))}
+          </ScrollView>
         )}
       </View>
 
@@ -453,41 +388,6 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
           {error}
         </Text>
       ) : null}
-
-      {/* Selected Service Info */}
-      {selectedService && (
-        <View style={styles.selectedServiceInfo}>
-          <Text style={[styles.selectedServiceTitle, { color: colors.text }]}>
-            {t("selectedService")}: {selectedService.name}
-          </Text>
-          {selectedService.description && (
-            <Text
-              style={[
-                styles.selectedServiceDescription,
-                { color: colors.tabIconDefault },
-              ]}
-            >
-              {selectedService.description}
-            </Text>
-          )}
-          {selectedService.averagePrice && (
-            <View style={styles.priceInfo}>
-              <Text style={[styles.priceLabel, { color: colors.text }]}>
-                {t("suggestedBudget")}:
-              </Text>
-              <Text style={[styles.priceValue, { color: colors.tint }]}>
-                ${selectedService.minPrice} - ${selectedService.maxPrice}{" "}
-                {t("perHour")}
-              </Text>
-              <Text
-                style={[styles.priceAverage, { color: colors.tabIconDefault }]}
-              >
-                ({t("average")}: ${selectedService.averagePrice}/hr)
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
     </View>
   );
 };
@@ -495,192 +395,136 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 20,
+    fontWeight: "700",
+    marginBottom: 8,
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 16,
+    marginBottom: 20,
     lineHeight: 20,
+    opacity: 0.7,
+  },
+  searchContainer: {
+    marginBottom: 20,
+  },
+  searchInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
   },
   servicesContainer: {
+    gap: 16,
+  },
+  categoriesScrollView: {
+    maxHeight: 400,
+  },
+  categoriesContainer: {
+    gap: 16,
+  },
+  categorySection: {
     gap: 8,
   },
-  servicesGrid: {
-    gap: 8,
-  },
-  categoryCard: {
-    borderRadius: 12,
-    overflow: "hidden",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  categoryCardHeader: {
+  categoryHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderRadius: 10,
+    gap: 8,
+    marginBottom: 4,
   },
-  categoryInfo: {
-    flex: 1,
+  categoryHeaderImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 6,
   },
   categoryTitle: {
     fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 2,
+    fontWeight: "700",
+    flex: 1,
   },
-  categorySubtext: {
+  categoryCount: {
     fontSize: 12,
-    fontWeight: "400",
+    fontWeight: "500",
   },
-  expandButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  servicesList: {
+    gap: 4,
+  },
+  serviceListItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    gap: 8,
+  },
+  serviceListItemImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
+    backgroundColor: "#f0f0f0",
+  },
+  serviceListItemImagePlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 6,
     justifyContent: "center",
     alignItems: "center",
   },
-  expandIcon: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  subServicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingBottom: 12,
-    paddingTop: 6,
-  },
-  subServiceCard: {
+  serviceListItemContent: {
     flex: 1,
-    minWidth: "45%",
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    alignItems: "center",
+    gap: 2,
   },
-  subServiceName: {
-    fontSize: 13,
-    fontWeight: "500",
-    textAlign: "center",
-    marginBottom: 4,
-  },
-  subServicePrice: {
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  searchContainer: {
-    marginBottom: 16,
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-  },
-  viewToggleContainer: {
-    flexDirection: "row",
-    marginBottom: 16,
-    borderRadius: 8,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "transparent",
-  },
-  viewToggleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    alignItems: "center",
-  },
-  viewToggleText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  allServicesGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  serviceCard: {
-    flex: 1,
-    minWidth: "30%",
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: "center",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-  },
-  serviceCardImage: {
-    width: "100%",
-    height: 60,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  serviceCardName: {
+  serviceListItemName: {
     fontSize: 13,
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 4,
+    lineHeight: 16,
   },
-  serviceCardPrice: {
+  serviceListItemPrice: {
     fontSize: 11,
     fontWeight: "500",
-    textAlign: "center",
   },
   selectedServiceCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 2,
+    marginBottom: 8,
+    gap: 8,
+  },
+  selectedServiceImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
   },
   selectedServiceInfo: {
     flex: 1,
   },
   selectedServiceName: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "600",
     marginBottom: 2,
   },
   selectedServicePrice: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  changeServiceButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  changeServiceText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "600",
+  },
+  removeButton: {
+    padding: 4,
   },
   loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
-    gap: 8,
+    padding: 40,
+    gap: 12,
   },
   loadingText: {
     fontSize: 14,
@@ -688,49 +532,32 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     alignItems: "center",
-    padding: 20,
-    gap: 12,
+    padding: 40,
+    gap: 16,
   },
   retryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   retryButtonText: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   errorText: {
     fontSize: 12,
     marginTop: 4,
     marginLeft: 4,
   },
-  selectedServiceTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 8,
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    gap: 12,
   },
-  selectedServiceDescription: {
+  emptyText: {
     fontSize: 14,
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  priceInfo: {
-    marginTop: 8,
-  },
-  priceLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 4,
-  },
-  priceValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  priceAverage: {
-    fontSize: 12,
-    fontStyle: "italic",
+    textAlign: "center",
   },
 });

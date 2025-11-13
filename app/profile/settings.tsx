@@ -26,8 +26,19 @@ import {
   View,
   Alert,
   ActivityIndicator,
+  Platform,
+  LayoutAnimation,
+  UIManager,
 } from "react-native";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+// Enable LayoutAnimation on Android
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function ProfileSettingsScreen() {
   const { isDark, toggleTheme } = useTheme();
@@ -37,6 +48,22 @@ export default function ProfileSettingsScreen() {
   const { showLoginModal } = useModal();
 
   const colors = ThemeColors[isDark ? "dark" : "light"];
+
+  // Smooth theme toggle with animation
+  const handleThemeToggle = () => {
+    // Configure animation for smooth transition
+    LayoutAnimation.configureNext({
+      duration: 300,
+      create: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+        property: LayoutAnimation.Properties.opacity,
+      },
+      update: {
+        type: LayoutAnimation.Types.easeInEaseOut,
+      },
+    });
+    toggleTheme();
+  };
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
@@ -146,12 +173,23 @@ export default function ProfileSettingsScreen() {
               </View>
               <Switch
                 value={isDark}
-                onValueChange={toggleTheme}
+                onValueChange={handleThemeToggle}
                 trackColor={{
-                  false: colors.border,
-                  true: colors.primary + "40",
+                  false: Platform.OS === "ios" ? colors.border : colors.border,
+                  true:
+                    Platform.OS === "ios"
+                      ? colors.primary + "80"
+                      : colors.primary + "40",
                 }}
-                thumbColor={isDark ? colors.primary : colors.textSecondary}
+                thumbColor={
+                  Platform.OS === "ios"
+                    ? "#FFFFFF"
+                    : isDark
+                    ? colors.primary
+                    : colors.textSecondary
+                }
+                ios_backgroundColor={colors.border}
+                style={styles.switch}
               />
             </View>
           </ResponsiveCard>
@@ -661,5 +699,9 @@ const styles = StyleSheet.create({
   languageCode: {
     fontSize: 14,
     marginRight: 8,
+  },
+  switch: {
+    transform:
+      Platform.OS === "ios" ? [{ scaleX: 1.05 }, { scaleY: 1.05 }] : [],
   },
 });

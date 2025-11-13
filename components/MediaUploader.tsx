@@ -61,6 +61,9 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   useEffect(() => {
     if (value !== undefined) {
       setMediaFiles(value);
+      // Reset loading and error states when value changes
+      setImageLoadingStates({});
+      setImageErrorStates({});
     }
   }, [value]);
 
@@ -231,6 +234,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           const isExistingBanner =
             existingBannerId && (media as any).id === existingBannerId;
           const showBannerBadge = isBanner || isExistingBanner;
+          const isLoading = imageLoadingStates[index] ?? false;
+          const hasError = imageErrorStates[index] ?? false;
 
           return (
             <View key={index} style={styles.mediaItem}>
@@ -245,22 +250,12 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                     activeOpacity={0.8}
                     style={styles.imageContainer}
                   >
-                    {imageLoadingStates[index] && (
-                      <View
-                        style={[
-                          styles.imageSkeleton,
-                          { backgroundColor: colors.border },
-                        ]}
-                      >
-                        <ActivityIndicator size="small" color={colors.tint} />
-                      </View>
-                    )}
                     <Image
                       source={{ uri: media.uri }}
                       style={[
                         styles.mediaImage,
                         showBannerBadge ? styles.bannerImage : undefined,
-                        imageLoadingStates[index] && styles.imageHidden,
+                        isLoading && styles.imageHidden,
                       ]}
                       resizeMode="cover"
                       onLoadStart={() => {
@@ -290,7 +285,17 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                         }));
                       }}
                     />
-                    {imageErrorStates[index] && (
+                    {isLoading && (
+                      <View
+                        style={[
+                          styles.imageSkeleton,
+                          { backgroundColor: colors.border },
+                        ]}
+                      >
+                        <ActivityIndicator size="small" color={colors.tint} />
+                      </View>
+                    )}
+                    {hasError && (
                       <View
                         style={[
                           styles.imageSkeleton,

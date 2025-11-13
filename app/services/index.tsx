@@ -6,6 +6,7 @@ import { EmptyPage } from "@/components/EmptyPage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, ViewStyles } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -29,6 +30,7 @@ const ServicesScreen = () => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,8 +47,8 @@ const ServicesScreen = () => {
     isFetching,
     error,
     refetch,
-  } = useServices(currentPage, 20);
-  const { data: rootServices } = useRootServices();
+  } = useServices(currentPage, 20, undefined, language);
+  const { data: rootServices } = useRootServices(language);
 
   // Accumulate services from all pages
   useEffect(() => {
@@ -118,10 +120,10 @@ const ServicesScreen = () => {
   // Filter configuration
   const filterSections: FilterSection[] = [
     {
-      title: "Categories",
+      title: t("categories") || "Categories",
       multiSelect: true,
       options: [
-        { key: "all", label: "All Categories" },
+        { key: "all", label: t("allCategories") || "All Categories" },
         ...mainServices.map((service) => ({
           key: service.id.toString(),
           label: service.name,
