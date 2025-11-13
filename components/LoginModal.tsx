@@ -295,7 +295,9 @@ export function LoginModal({
                     autoFocus
                   />
                 </View>
-                <ReferralCodeInput showStatus={true} />
+                <View style={styles.referralCodeWrapper}>
+                  <ReferralCodeInput showStatus={true} />
+                </View>
                 <TouchableOpacity
                   style={[
                     styles.button,
@@ -479,5 +481,8 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  referralCodeWrapper: {
+    marginBottom: Spacing.lg,
   },
 });

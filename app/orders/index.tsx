@@ -204,6 +204,58 @@ export default function OrdersScreen() {
     }
   };
 
+  // Helper function to filter orders by search
+  const filterOrdersBySearch = useCallback(
+    (orders: Order[], searchQuery: string): Order[] => {
+      if (!searchQuery.trim()) return orders;
+
+      return orders.filter(
+        (order: Order) =>
+          order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.skills?.some((skill: string) =>
+            skill.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+    },
+    []
+  );
+
+  // Helper function to filter orders by status
+  const filterOrdersByStatus = useCallback(
+    (orders: Order[], status: string): Order[] => {
+      if (!status || status === "all") return orders;
+      return orders.filter((order: Order) => order.status === status);
+    },
+    []
+  );
+
+  // Helper function to get paginated orders from a filtered list
+  const getPaginatedOrders = useCallback(
+    (filteredOrders: Order[], page: number, limit: number) => {
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      return filteredOrders.slice(startIndex, endIndex);
+    },
+    []
+  );
+
+  // Helper function to create pagination object for local filtering
+  const createPaginationObject = useCallback(
+    (total: number, currentPage: number = 1, limit: number = 20) => {
+      const totalPages = Math.ceil(total / limit);
+      return {
+        page: currentPage,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: currentPage < totalPages,
+        hasPrevPage: currentPage > 1,
+      };
+    },
+    []
+  );
+
   // Sync allUserOrders with query data for My Orders/My Jobs
   useEffect(() => {
     if (isMyOrders && myOrdersQuery.data) {
@@ -245,6 +297,9 @@ export default function OrdersScreen() {
     status,
     clientSidePage,
     orders,
+    filterOrdersBySearch,
+    filterOrdersByStatus,
+    getPaginatedOrders,
   ]);
 
   // Compute pagination for My Orders/My Jobs
@@ -277,58 +332,10 @@ export default function OrdersScreen() {
     status,
     clientSidePage,
     pagination,
+    filterOrdersBySearch,
+    filterOrdersByStatus,
+    createPaginationObject,
   ]);
-
-  // Helper function to create pagination object for local filtering
-  const createPaginationObject = (
-    total: number,
-    currentPage: number = 1,
-    limit: number = 20
-  ) => {
-    const totalPages = Math.ceil(total / limit);
-    return {
-      page: currentPage,
-      limit,
-      total,
-      totalPages,
-      hasNextPage: currentPage < totalPages,
-      hasPrevPage: currentPage > 1,
-    };
-  };
-
-  // Helper function to filter orders by search
-  const filterOrdersBySearch = (
-    orders: Order[],
-    searchQuery: string
-  ): Order[] => {
-    if (!searchQuery.trim()) return orders;
-
-    return orders.filter(
-      (order: Order) =>
-        order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.skills?.some((skill: string) =>
-          skill.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-    );
-  };
-
-  // Helper function to filter orders by status
-  const filterOrdersByStatus = (orders: Order[], status: string): Order[] => {
-    if (!status || status === "all") return orders;
-    return orders.filter((order: Order) => order.status === status);
-  };
-
-  // Helper function to get paginated orders from a filtered list
-  const getPaginatedOrders = (
-    filteredOrders: Order[],
-    page: number,
-    limit: number
-  ) => {
-    const startIndex = (page - 1) * limit;
-    const endIndex = startIndex + limit;
-    return filteredOrders.slice(startIndex, endIndex);
-  };
 
   // Load more orders (pagination)
   const loadMoreOrders = useCallback(() => {
