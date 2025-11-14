@@ -8,20 +8,24 @@ interface FloatingSkeletonProps {
   count?: number;
   itemHeight?: number;
   showImage?: boolean;
+  showAvatar?: boolean;
   showTitle?: boolean;
   showDescription?: boolean;
   showDetails?: boolean;
   showTags?: boolean;
+  showFooter?: boolean;
 }
 
 export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
   count = 5,
   itemHeight = 200,
   showImage = true,
+  showAvatar = false,
   showTitle = true,
   showDescription = true,
   showDetails = true,
   showTags = true,
+  showFooter = false,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -53,7 +57,7 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
 
   const SkeletonItem = () => (
     <ResponsiveCard style={{ minHeight: itemHeight }}>
-      {showImage && (
+      {showImage && !showAvatar && (
         <Animated.View
           style={[
             styles.skeletonImage,
@@ -65,7 +69,63 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
         />
       )}
       <View style={styles.skeletonContent}>
-        {showTitle && (
+        {showAvatar && (
+          <View style={styles.skeletonHeader}>
+            <Animated.View
+              style={[
+                styles.skeletonAvatar,
+                {
+                  backgroundColor: colors.border,
+                  opacity,
+                },
+              ]}
+            />
+            <View style={styles.skeletonHeaderInfo}>
+              <Animated.View
+                style={[
+                  styles.skeletonTitle,
+                  {
+                    backgroundColor: colors.border,
+                    opacity,
+                    width: "60%",
+                  },
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.skeletonSubtitle,
+                  {
+                    backgroundColor: colors.border,
+                    opacity,
+                    width: "40%",
+                    marginTop: 6,
+                  },
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.skeletonRating,
+                  {
+                    backgroundColor: colors.border,
+                    opacity,
+                    width: "50%",
+                    marginTop: 6,
+                  },
+                ]}
+              />
+            </View>
+            <Animated.View
+              style={[
+                styles.skeletonBadge,
+                {
+                  backgroundColor: colors.border,
+                  opacity,
+                },
+              ]}
+            />
+          </View>
+        )}
+        {showTitle && !showAvatar && (
           <Animated.View
             style={[
               styles.skeletonTitle,
@@ -161,6 +221,40 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
             />
           </View>
         )}
+        {showFooter && (
+          <View style={styles.skeletonFooter}>
+            <View style={styles.skeletonFooterStats}>
+              <Animated.View
+                style={[
+                  styles.skeletonFooterStat,
+                  {
+                    backgroundColor: colors.border,
+                    opacity,
+                  },
+                ]}
+              />
+              <Animated.View
+                style={[
+                  styles.skeletonFooterStat,
+                  {
+                    backgroundColor: colors.border,
+                    opacity,
+                    marginTop: 4,
+                  },
+                ]}
+              />
+            </View>
+            <Animated.View
+              style={[
+                styles.skeletonFooterButton,
+                {
+                  backgroundColor: colors.border,
+                  opacity,
+                },
+              ]}
+            />
+          </View>
+        )}
       </View>
     </ResponsiveCard>
   );
@@ -221,5 +315,55 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     width: 70,
+  },
+  skeletonHeader: {
+    flexDirection: "row",
+    marginBottom: 16,
+    alignItems: "flex-start",
+  },
+  skeletonAvatar: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    marginRight: 16,
+  },
+  skeletonHeaderInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  skeletonSubtitle: {
+    height: 16,
+    borderRadius: 4,
+  },
+  skeletonRating: {
+    height: 14,
+    borderRadius: 4,
+  },
+  skeletonBadge: {
+    width: 60,
+    height: 20,
+    borderRadius: 10,
+  },
+  skeletonFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  skeletonFooterStats: {
+    flex: 1,
+  },
+  skeletonFooterStat: {
+    height: 12,
+    borderRadius: 4,
+    width: "60%",
+  },
+  skeletonFooterButton: {
+    width: 70,
+    height: 36,
+    borderRadius: 10,
   },
 });

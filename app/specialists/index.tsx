@@ -555,10 +555,12 @@ export default function SpecialistsScreen() {
               count={5}
               itemHeight={300}
               showImage={false}
-              showTitle={true}
+              showAvatar={true}
+              showTitle={false}
               showDescription={true}
               showDetails={true}
               showTags={true}
+              showFooter={true}
             />
           </View>
         ) : (

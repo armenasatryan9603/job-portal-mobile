@@ -29,6 +29,7 @@ import { apiService, Service } from "@/services/api";
 import { fileUploadService, MediaFile } from "@/services/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -37,6 +38,7 @@ export default function CreateOrderScreen() {
   const colors = ThemeColors[colorScheme ?? "light"];
   const { isAuthenticated, user } = useAuth();
   const { showLoginModal } = useModal();
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
     title: "",
@@ -544,6 +546,9 @@ export default function CreateOrderScreen() {
         await apiService.createOrder(orderData);
       }
 
+      // Invalidate orders queries to refresh the list
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+
       // Order posted successfully
       router.replace("/orders");
     } catch (error) {
@@ -720,13 +725,24 @@ export default function CreateOrderScreen() {
         await apiService.updateOrder(currentOrderId, orderData);
 
         // Handle banner image update
-        if (selectedBannerIndex !== null) {
+        // Auto-select first image if no banner is selected
+        let bannerIndexToUse = selectedBannerIndex;
+        if (bannerIndexToUse === null && mediaFiles.length > 0) {
+          const firstImageIndex = mediaFiles.findIndex(
+            (file) => file.type === "image"
+          );
+          if (firstImageIndex !== -1) {
+            bannerIndexToUse = firstImageIndex;
+          }
+        }
+
+        if (bannerIndexToUse !== null) {
           // Reload the order to get all media files with their IDs
           const updatedOrder = await apiService.getOrderById(currentOrderId);
 
           if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
             // Find the media file at the selected index
-            const bannerFile = mediaFiles[selectedBannerIndex];
+            const bannerFile = mediaFiles[bannerIndexToUse];
 
             // Try to find the matching media file in the database
             let targetMediaFile = null;
@@ -780,7 +796,7 @@ export default function CreateOrderScreen() {
               }
             } else {
               console.warn("Could not find matching media file for banner", {
-                selectedIndex: selectedBannerIndex,
+                selectedIndex: bannerIndexToUse,
                 bannerFileName: bannerFile.fileName,
                 availableFiles: updatedOrder.MediaFiles.map((mf: any) => ({
                   id: mf.id,
@@ -791,6 +807,9 @@ export default function CreateOrderScreen() {
             }
           }
         }
+
+        // Invalidate orders queries to refresh the list
+        await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
         // Application submitted successfully
         router.replace("/orders");
@@ -803,24 +822,41 @@ export default function CreateOrderScreen() {
             mediaFiles
           );
 
-          // Set banner image if selected
-          if (selectedBannerIndex !== null && order.id) {
+          // Auto-select first image if no banner is selected
+          let bannerIndexToUse = selectedBannerIndex;
+          if (bannerIndexToUse === null) {
+            const firstImageIndex = mediaFiles.findIndex(
+              (file) => file.type === "image"
+            );
+            if (firstImageIndex !== -1) {
+              bannerIndexToUse = firstImageIndex;
+            }
+          }
+
+          // Set banner image if available
+          if (bannerIndexToUse !== null && order.id) {
             // Reload order to get media file IDs
             const updatedOrder = await apiService.getOrderById(order.id);
             if (
               updatedOrder.MediaFiles &&
-              selectedBannerIndex < updatedOrder.MediaFiles.length
+              bannerIndexToUse < updatedOrder.MediaFiles.length
             ) {
-              const bannerFile = updatedOrder.MediaFiles[selectedBannerIndex];
+              const bannerFile = updatedOrder.MediaFiles[bannerIndexToUse];
               await apiService.setBannerImage(order.id, bannerFile.id);
             }
           }
+
+          // Invalidate orders queries to refresh the list
+          await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
           // Application submitted successfully
           router.replace("/orders");
         } else {
           // No media files, use regular order creation
           await apiService.createOrder(orderData);
+
+          // Invalidate orders queries to refresh the list
+          await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
           // Application submitted successfully
           router.replace("/orders");
