@@ -260,13 +260,14 @@ export const useAllOrders = (
   limit: number = 10,
   status?: string,
   serviceId?: number,
+  serviceIds?: number[],
   clientId?: number
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "all", page, limit, status, serviceId, clientId],
+    queryKey: ["orders", "all", page, limit, status, serviceId, serviceIds, clientId],
     queryFn: () =>
-      apiService.getAllOrders(page, limit, status, serviceId, clientId),
+      apiService.getAllOrders(page, limit, status, serviceId, serviceIds, clientId),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: true,
     retry: isOnline,
@@ -337,13 +338,14 @@ export const usePublicOrders = (
   limit: number = 10,
   status?: string,
   serviceId?: number,
+  serviceIds?: number[],
   clientId?: number
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "public", page, limit, status, serviceId, clientId],
+    queryKey: ["orders", "public", page, limit, status, serviceId, serviceIds, clientId],
     queryFn: () =>
-      apiService.getPublicOrders(page, limit, status, serviceId, clientId),
+      apiService.getPublicOrders(page, limit, status, serviceId, serviceIds, clientId),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: true,
     retry: isOnline,
@@ -353,12 +355,13 @@ export const usePublicOrders = (
 export const useSearchOrders = (
   query: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  serviceIds?: number[]
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "search", query, page, limit],
-    queryFn: () => apiService.searchOrders(query, page, limit),
+    queryKey: ["orders", "search", query, page, limit, serviceIds],
+    queryFn: () => apiService.searchOrders(query, page, limit, serviceIds),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: !!query,
     retry: isOnline,

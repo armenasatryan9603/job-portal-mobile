@@ -5,9 +5,11 @@ import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { ApplyModal } from "@/components/ApplyModal";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -31,6 +33,7 @@ import {
   useSearchOrders,
   useApplyToOrder,
   useDeleteOrder,
+  useServices,
 } from "@/hooks/useApi";
 import {
   FlatList,
@@ -45,34 +48,23 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Filter configuration
-const filterSections = (t: any, isMyOrders: boolean): FilterSection[] => [
-  {
-    key: "status",
-    title: t("filterByStatus"),
-    options: [
-      { key: "all", label: t("all") },
-      { key: "open", label: t("open") },
-      { key: "in_progress", label: t("inProgress") },
-      { key: "completed", label: t("completed") },
-      { key: "cancelled", label: t("cancelled") },
-      ...(isMyOrders ? [{ key: "pending", label: t("pending") }] : []),
-    ],
-  },
-];
-
 export default function OrdersScreen() {
   const { myOrders, myJobs, serviceId } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { user, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
   const insets = useSafeAreaInsets();
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
-  const filterServiceId = serviceId ? parseInt(serviceId as string) : null;
+  const filterServiceId = serviceId
+    ? isNaN(parseInt(serviceId as string))
+      ? null
+      : parseInt(serviceId as string)
+    : null;
   const [searchQuery, setSearchQuery] = useState("");
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
@@ -80,11 +72,26 @@ export default function OrdersScreen() {
     Record<string, string | string[] | { min: number; max: number }>
   >({
     status: isMyJobs ? "all" : "open",
+    services: filterServiceId ? [filterServiceId.toString()] : [],
   });
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 20;
   const status = selectedFilters?.status as string;
+
+  // Convert selected services to number array
+  // Prioritize filterServiceId from URL if present, otherwise use selectedFilters
+  const selectedServiceIds = useMemo(() => {
+    // If we have a serviceId from URL, use it directly (most reliable)
+    if (filterServiceId !== null) {
+      return [filterServiceId];
+    }
+    // Otherwise, use selectedFilters (for manual filter selection)
+    const services = Array.isArray(selectedFilters.services)
+      ? selectedFilters.services
+      : [];
+    return services.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+  }, [filterServiceId, selectedFilters.services]);
 
   // TanStack Query hooks
   const myOrdersQuery = useMyOrders();
@@ -92,18 +99,24 @@ export default function OrdersScreen() {
   const allOrdersQuery = useAllOrders(
     currentPage,
     limit,
-    status && status !== "all" ? status : undefined
+    status && status !== "all" ? status : undefined,
+    undefined, // serviceId (single, for backward compatibility)
+    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
   );
   const publicOrdersQuery = usePublicOrders(
     currentPage,
     limit,
-    status && status !== "all" ? status : undefined
+    status && status !== "all" ? status : undefined,
+    undefined, // serviceId (single, for backward compatibility)
+    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
   );
   const searchOrdersQuery = useSearchOrders(
     searchQuery.trim(),
     currentPage,
-    limit
+    limit,
+    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
   );
+  const { data: servicesData } = useServices(1, 100, undefined, language); // Get all services for filtering
 
   // Mutations
   const applyToOrderMutation = useApplyToOrder();
@@ -128,6 +141,51 @@ export default function OrdersScreen() {
     publicOrdersQuery,
   ]);
 
+  // Sync serviceId from URL parameter with selectedFilters
+  // This ensures that when navigating from service detail page, the filter is applied
+  useEffect(() => {
+    if (filterServiceId !== null) {
+      const serviceIdString = filterServiceId.toString();
+      setSelectedFilters((prev) => {
+        // Always update to match URL parameter when it's present
+        const currentServices = Array.isArray(prev.services)
+          ? prev.services
+          : [];
+        // Update if different or if we have multiple services selected
+        if (
+          currentServices.length !== 1 ||
+          currentServices[0] !== serviceIdString
+        ) {
+          return {
+            ...prev,
+            services: [serviceIdString],
+          };
+        }
+        return prev;
+      });
+      // Reset to page 1 when service changes
+      if (!isMyOrders && !isMyJobs) {
+        setCurrentPage(1);
+      }
+    } else {
+      // If no serviceId in URL, clear the service filter (unless user manually selected)
+      // Only clear if it was set from URL (we can detect this by checking if it's a single service)
+      setSelectedFilters((prev) => {
+        const currentServices = Array.isArray(prev.services)
+          ? prev.services
+          : [];
+        // Only clear if it's a single service (likely from URL), not multiple (user selection)
+        if (currentServices.length === 1) {
+          return {
+            ...prev,
+            services: [],
+          };
+        }
+        return prev;
+      });
+    }
+  }, [filterServiceId, isMyOrders, isMyJobs]);
+
   // Reset to page 1 when filters change
   useEffect(() => {
     if (isMyOrders || isMyJobs) {
@@ -135,7 +193,7 @@ export default function OrdersScreen() {
     } else {
       setCurrentPage(1);
     }
-  }, [selectedFilters, searchQuery, filterServiceId, isMyOrders, isMyJobs]);
+  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs]);
 
   // Extract data from active query
   const queryData = activeQuery.data as OrderListResponse | undefined;
@@ -148,6 +206,37 @@ export default function OrdersScreen() {
     hasNextPage: false,
     hasPrevPage: false,
   };
+
+  // Extract services for filtering
+  const services = servicesData?.services || [];
+
+  // Filter configuration
+  const filterSections = useMemo<FilterSection[]>(
+    () => [
+      {
+        key: "status",
+        title: t("filterByStatus"),
+        options: [
+          { key: "all", label: t("all") },
+          { key: "open", label: t("open") },
+          { key: "in_progress", label: t("inProgress") },
+          { key: "completed", label: t("completed") },
+          { key: "cancelled", label: t("cancelled") },
+          ...(isMyOrders ? [{ key: "pending", label: t("pending") }] : []),
+        ],
+      },
+      {
+        key: "services",
+        title: t("services") || "Services",
+        multiSelect: true,
+        options: services.map((service) => ({
+          key: service.id.toString(),
+          label: service.name,
+        })),
+      },
+    ],
+    [t, isMyOrders, services]
+  );
 
   // Loading states
   const loading = activeQuery.isLoading && !activeQuery.isFetching;
@@ -229,13 +318,15 @@ export default function OrdersScreen() {
     []
   );
 
-  // Helper function to filter orders by serviceId
-  const filterOrdersByService = useCallback(
-    (orders: Order[], serviceId: number | null): Order[] => {
-      if (!serviceId) return orders;
+  // Helper function to filter orders by serviceIds (array)
+  const filterOrdersByServices = useCallback(
+    (orders: Order[], serviceIds: string[]): Order[] => {
+      if (!serviceIds || serviceIds.length === 0) return orders;
+      const serviceIdNumbers = serviceIds.map((id) => parseInt(id));
       return orders.filter(
         (order: Order) =>
-          order.serviceId === serviceId || order.Service?.id === serviceId
+          (order.serviceId && serviceIdNumbers.includes(order.serviceId)) ||
+          (order.Service?.id && serviceIdNumbers.includes(order.Service.id))
       );
     },
     []
@@ -280,8 +371,13 @@ export default function OrdersScreen() {
 
   // Compute orders for My Orders/My Jobs with client-side pagination
   const displayedOrders = useMemo(() => {
+    const selectedServices = Array.isArray(selectedFilters.services)
+      ? selectedFilters.services
+      : [];
+
     if (isMyOrders || isMyJobs) {
       // Client-side pagination for My Orders/My Jobs
+      // Note: These queries don't support server-side service filtering yet
       let filteredOrders = allUserOrders;
 
       // Apply search filter
@@ -294,38 +390,42 @@ export default function OrdersScreen() {
         filteredOrders = filterOrdersByStatus(filteredOrders, status);
       }
 
-      // Apply service filter
-      if (filterServiceId) {
-        filteredOrders = filterOrdersByService(filteredOrders, filterServiceId);
+      // Apply service filter (client-side for My Orders/My Jobs)
+      if (selectedServices.length > 0) {
+        filteredOrders = filterOrdersByServices(
+          filteredOrders,
+          selectedServices
+        );
       }
 
       // Get paginated results
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
 
-    // For regular orders, apply service filter if needed
-    let filteredOrders = orders;
-    if (filterServiceId) {
-      filteredOrders = filterOrdersByService(filteredOrders, filterServiceId);
-    }
-    return filteredOrders;
+    // For regular orders, service filtering is handled server-side
+    // No need to filter locally anymore
+    return orders;
   }, [
     isMyOrders,
     isMyJobs,
     allUserOrders,
     searchQuery,
     status,
-    filterServiceId,
+    selectedFilters.services,
     clientSidePage,
     orders,
     filterOrdersBySearch,
     filterOrdersByStatus,
-    filterOrdersByService,
+    filterOrdersByServices,
     getPaginatedOrders,
   ]);
 
   // Compute pagination for My Orders/My Jobs
   const displayedPagination = useMemo(() => {
+    const selectedServices = Array.isArray(selectedFilters.services)
+      ? selectedFilters.services
+      : [];
+
     if (isMyOrders || isMyJobs) {
       const filteredOrders = (() => {
         let filtered = allUserOrders;
@@ -335,8 +435,8 @@ export default function OrdersScreen() {
         if (status && status !== "all") {
           filtered = filterOrdersByStatus(filtered, status);
         }
-        if (filterServiceId) {
-          filtered = filterOrdersByService(filtered, filterServiceId);
+        if (selectedServices.length > 0) {
+          filtered = filterOrdersByServices(filtered, selectedServices);
         }
         return filtered;
       })();
@@ -348,9 +448,8 @@ export default function OrdersScreen() {
       );
     }
 
-    // For regular orders, if service filter is applied, we need to recalculate pagination
-    // Since server-side pagination doesn't account for client-side filtering,
-    // we'll use the original pagination but note that the count might be off
+    // For regular orders, service filtering is handled server-side
+    // Pagination is already correct from the server response
     return pagination;
   }, [
     isMyOrders,
@@ -358,12 +457,12 @@ export default function OrdersScreen() {
     allUserOrders,
     searchQuery,
     status,
-    filterServiceId,
+    selectedFilters.services,
     clientSidePage,
     pagination,
     filterOrdersBySearch,
     filterOrdersByStatus,
-    filterOrdersByService,
+    filterOrdersByServices,
     createPaginationObject,
   ]);
 
@@ -967,11 +1066,11 @@ export default function OrdersScreen() {
               backgroundColor: colors.background,
             }}
           >
-            <ResponsiveCard style={{ marginBottom: 0 }}>
+            <ResponsiveCard padding={Spacing.md}>
               <Filter
                 searchPlaceholder={t("searchOrdersSkills")}
                 onSearchChange={handleSearchChange}
-                filterSections={filterSections(t, isMyOrders)}
+                filterSections={filterSections}
                 selectedFilters={selectedFilters}
                 onFilterChange={handleFilterChange}
                 loading={filterLoading}
@@ -979,19 +1078,19 @@ export default function OrdersScreen() {
             </ResponsiveCard>
           </View>
 
-          {/* Show loading overlay during initial load */}
+          {/* Show skeleton loading during initial load */}
           {isInitialLoad ||
           (loading && !filterLoading && displayedOrders.length === 0) ? (
-            <View
-              style={[
-                styles.loadingOverlay,
-                { backgroundColor: colors.background },
-              ]}
-            >
-              <ActivityIndicator size="large" color={colors.tint} />
-              <Text style={[styles.loadingText, { color: colors.text }]}>
-                {t("loading")}
-              </Text>
+            <View style={{ marginTop: 100, flex: 1 }}>
+              <FloatingSkeleton
+                count={5}
+                itemHeight={280}
+                showImage={true}
+                showTitle={true}
+                showDescription={true}
+                showDetails={true}
+                showTags={true}
+              />
             </View>
           ) : (
             <FlatList
@@ -1056,17 +1155,6 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 100,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    opacity: 0.7,
-  },
   bannerImageContainer: {
     width: "100%",
     height: 200,

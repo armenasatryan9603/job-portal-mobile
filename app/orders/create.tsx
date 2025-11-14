@@ -298,38 +298,38 @@ export default function CreateOrderScreen() {
         }
         return "";
       case "availableDates":
-        // Available dates are optional, but if dates are selected, validate them
+        // Available dates are completely optional
+        // Only validate if dates are selected
         if (
           additionalData?.selectedDates &&
+          Array.isArray(additionalData.selectedDates) &&
           additionalData.selectedDates.length > 0
         ) {
           const dates = additionalData.selectedDates;
-          // Check if dates are in the past
-          const now = new Date();
-          now.setHours(0, 0, 0, 0);
+          // Check if dates are in the past (allow today's date)
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
           const pastDates = dates.filter((date) => {
-            const dateOnly = new Date(date);
-            dateOnly.setHours(0, 0, 0, 0);
-            return dateOnly < now;
+            if (!date) return false;
+            try {
+              const dateOnly = new Date(date);
+              dateOnly.setHours(0, 0, 0, 0);
+              // Only reject dates that are strictly before today (allow today and future)
+              const dateTime = dateOnly.getTime();
+              const todayTime = today.getTime();
+              return dateTime < todayTime;
+            } catch (error) {
+              console.warn("Error validating date:", date, error);
+              return false;
+            }
           });
           if (pastDates.length > 0) {
             return t("noPastDates") || "Cannot select dates in the past";
           }
-          // Check if at least one date has times selected
-          if (additionalData.selectedDateTimes) {
-            const hasTimes = dates.some((date) => {
-              const key = date.toDateString();
-              const times = additionalData.selectedDateTimes?.[key] || [];
-              return times.length > 0;
-            });
-            if (!hasTimes) {
-              return (
-                t("selectAtLeastOneTime") ||
-                "Please select at least one time slot"
-              );
-            }
-          }
+          // Times are also optional - no validation error if no times selected
         }
+        // Return empty string if no dates selected (completely optional)
         return "";
       case "serviceId":
         if (!value) {
@@ -1094,41 +1094,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 20,
-  },
-  mediaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  mediaGridItemContainer: {
-    width: "30%",
-    position: "relative",
-  },
-  mediaGridItem: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  mediaGridImage: {
-    width: "100%",
-    height: "100%",
-  },
-  mediaGridPlaceholder: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  deleteMediaButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    backgroundColor: "white",
-    borderRadius: 12,
-    zIndex: 10,
   },
   modalOverlay: {
     flex: 1,

@@ -46,6 +46,9 @@ const MAPPING = {
   "location.fill": "location-on",
   map: "map",
   magnifyingglass: "search",
+  // Filter icons
+  "slider.horizontal.3": "tune",
+  "line.3.horizontal.decrease": "tune",
   // Star rating icons
   "star.fill": "star",
   star: "star-border",

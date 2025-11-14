@@ -3,9 +3,11 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors, Spacing } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
@@ -31,6 +33,7 @@ export default function SpecialistsScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { isAuthenticated } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
@@ -59,7 +62,7 @@ export default function SpecialistsScreen() {
     error,
     refetch,
   } = useSpecialists(currentPage, 20);
-  const { data: servicesData } = useServices(1, 100); // Get all services for filtering
+  const { data: servicesData } = useServices(1, 100, undefined, language); // Get all services for filtering with correct language
   const { data: ordersData } = useMyOrders();
 
   // Accumulate specialists from all pages
@@ -518,15 +521,6 @@ export default function SpecialistsScreen() {
     return null;
   }, [filteredSpecialists.length, searchQuery, t]);
 
-  // Show loading state
-  if (isInitialLoading) {
-    return (
-      <Layout header={header}>
-        <EmptyPage type="loading" title={t("loadingSpecialists")} />
-      </Layout>
-    );
-  }
-
   // Show error state
   if (error) {
     return (
@@ -544,7 +538,7 @@ export default function SpecialistsScreen() {
   return (
     <Layout header={header}>
       <View style={styles.container}>
-        <ResponsiveCard style={[styles.filterCard, styles.filterContainer]}>
+        <ResponsiveCard padding={Spacing.md}>
           <Filter
             searchPlaceholder={t("searchSpecialistsSkills")}
             onSearchChange={setSearchQuery}
@@ -554,26 +548,40 @@ export default function SpecialistsScreen() {
           />
         </ResponsiveCard>
 
-        <FlatList
-          style={{ marginTop: 100 }}
-          data={filteredSpecialists}
-          renderItem={renderSpecialistItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListHeaderComponent={renderHeader}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmptyComponent}
-          onEndReached={loadMoreSpecialists}
-          onEndReachedThreshold={0.1}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={onRefresh}
-              tintColor={colors.tint}
+        {/* Show skeleton during initial load, otherwise show FlatList */}
+        {isInitialLoading ? (
+          <View style={{ flex: 1 }}>
+            <FloatingSkeleton
+              count={5}
+              itemHeight={300}
+              showImage={false}
+              showTitle={true}
+              showDescription={true}
+              showDetails={true}
+              showTags={true}
             />
-          }
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
-        />
+          </View>
+        ) : (
+          <FlatList
+            data={filteredSpecialists}
+            renderItem={renderSpecialistItem}
+            keyExtractor={(item) => item.id.toString()}
+            ListHeaderComponent={renderHeader}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmptyComponent}
+            onEndReached={loadMoreSpecialists}
+            onEndReachedThreshold={0.1}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={onRefresh}
+                tintColor={colors.tint}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+          />
+        )}
       </View>
 
       <HiringDialog

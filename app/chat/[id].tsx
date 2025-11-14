@@ -126,6 +126,24 @@ export default function ChatDetailScreen() {
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
+      },
+      // Handle conversation status updates
+      (statusData: {
+        conversationId: number;
+        status: string;
+        updatedAt: string;
+      }) => {
+        // Update conversation status in real-time
+        setConversation((prev) => {
+          if (!prev || prev.id !== statusData.conversationId) {
+            return prev;
+          }
+          return {
+            ...prev,
+            status: statusData.status,
+            updatedAt: statusData.updatedAt,
+          };
+        });
       }
     );
 
@@ -134,6 +152,43 @@ export default function ChatDetailScreen() {
       unsubscribe();
     };
   }, [conversation?.id]);
+
+  // Subscribe to user updates for order status changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    pusherService.initialize();
+
+    const unsubscribe = pusherService.subscribeToUserUpdates(
+      user.id,
+      () => {}, // conversation-updated handler (not needed here)
+      undefined, // conversation-status-updated (handled above)
+      // Handle order status updates
+      (orderStatusData: {
+        orderId: number;
+        status: string;
+        updatedAt: string;
+      }) => {
+        // Update order status in conversation if it matches
+        setConversation((prev) => {
+          if (!prev || prev.Order?.id !== orderStatusData.orderId) {
+            return prev;
+          }
+          return {
+            ...prev,
+            Order: {
+              ...prev.Order!,
+              status: orderStatusData.status,
+            },
+          };
+        });
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.id, conversation?.Order?.id]);
 
   // Check for existing feedback and show dialog when conversation loads
   useEffect(() => {
@@ -237,6 +292,88 @@ export default function ChatDetailScreen() {
     />
   );
 
+  // Function to detect phone numbers in text
+  const containsPhoneNumber = (text: string): boolean => {
+    // More comprehensive phone number detection
+    // Handles various formats including:
+    // - International: +374 77 7539543, +1-234-567-8900
+    // - Local formats: 094122345, 093 10 19 43, 094 40-60 - 71 10
+    // - With multiple spaces: 033      50 6070
+    // - With quotes: "000777659-67"
+
+    // Pattern to match sequences that look like phone numbers:
+    // - Starts with optional + or 0
+    // - Followed by digits with various separators (spaces, dashes, dots, parentheses)
+    // - Matches sequences that when cleaned have 7-15 digits
+    const phonePatterns = [
+      // International format: +374 77 7539543, +1 234 567 8900
+      /\+\d{1,4}[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g,
+      // Local formats with spaces/dashes: 094 40-60 - 71 10, 093 10 19 43
+      /0\d{1,2}[\s\-\.]+[\d\s\-\.]{5,}/g,
+      // Formats with parentheses: (123) 456-7890
+      /\(\d{1,4}\)[\s\-\.]?\d{1,4}[\s\-\.]?\d{1,9}/g,
+      // Sequences of digits with separators: 055906940, "000777659-67"
+      /["']?\d{2,}[\s\-\.]?\d{1,}[\s\-\.]?\d{1,}["']?/g,
+      // Consecutive digits (7+): 1234567890
+      /\d{7,}/g,
+    ];
+
+    // Check if any pattern matches
+    for (const pattern of phonePatterns) {
+      const matches = text.match(pattern);
+      if (matches) {
+        for (const match of matches) {
+          // Remove all non-digit characters to get pure number
+          const digitsOnly = match.replace(/\D/g, "");
+
+          // Check if it's a valid phone number length (7-15 digits)
+          if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
+            const num = parseInt(digitsOnly);
+
+            // Filter out false positives:
+            // - Years (1900-2099)
+            // - Very small numbers that are likely not phones
+            // - Numbers that are too short even after cleaning
+            if (
+              !(num >= 1900 && num <= 2099) &&
+              digitsOnly.length >= 7 &&
+              // Additional check: if it starts with 0 and has 7+ digits, likely a phone
+              (match.trim().startsWith("0") ||
+                match.trim().startsWith("+") ||
+                digitsOnly.length >= 8)
+            ) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    // Additional check: look for sequences of digits separated by spaces/dashes
+    // that when combined form a phone number (7-15 digits)
+    const flexiblePattern = /[\d\s\-\.\(\)\+]{7,}/g;
+    const flexibleMatches = text.match(flexiblePattern);
+    if (flexibleMatches) {
+      for (const match of flexibleMatches) {
+        const digitsOnly = match.replace(/\D/g, "");
+        if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
+          const num = parseInt(digitsOnly);
+          // Check if it looks like a phone number (not a year, not too small)
+          if (
+            !(num >= 1900 && num <= 2099) &&
+            digitsOnly.length >= 7 &&
+            // Must have some separators or be 8+ digits to avoid false positives
+            (match.match(/[\s\-\.]/) || digitsOnly.length >= 8)
+          ) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  };
+
   const handleSendMessage = async () => {
     if (
       !newMessage.trim() ||
@@ -245,6 +382,17 @@ export default function ChatDetailScreen() {
       isConversationClosed()
     )
       return;
+
+    // Check for phone numbers in the message
+    if (containsPhoneNumber(newMessage.trim())) {
+      Alert.alert(
+        t("cannotSendPhoneNumber") || "Cannot Send Phone Number",
+        t("phoneNumbersNotAllowed") ||
+          "Sharing phone numbers is not allowed in chat messages for security reasons.",
+        [{ text: t("ok") || "OK" }]
+      );
+      return;
+    }
 
     try {
       setSending(true);
@@ -274,7 +422,22 @@ export default function ChatDetailScreen() {
       }, 100);
     } catch (err) {
       console.error("Failed to send message:", err);
-      // You could show an error toast here
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send message";
+
+      // Check if it's a phone number error
+      if (
+        errorMessage.includes("phone number") ||
+        errorMessage.includes("phone numbers")
+      ) {
+        Alert.alert(
+          t("cannotSendPhoneNumber") || "Cannot Send Phone Number",
+          errorMessage,
+          [{ text: t("ok") || "OK" }]
+        );
+      } else {
+        Alert.alert(t("error") || "Error", errorMessage);
+      }
     } finally {
       setSending(false);
     }

@@ -82,6 +82,45 @@ export default function ChatScreen() {
 
           return updated;
         });
+      },
+      // Handle conversation status updates
+      (statusData: { conversationId: number; status: string; updatedAt: string }) => {
+        // Update conversation status in the list
+        setConversations((prev) => {
+          const updated = [...prev];
+          const index = updated.findIndex(
+            (conv) => conv.id === statusData.conversationId
+          );
+
+          if (index !== -1) {
+            updated[index] = {
+              ...updated[index],
+              status: statusData.status,
+              updatedAt: statusData.updatedAt,
+            };
+          }
+
+          return updated;
+        });
+      },
+      // Handle order status updates
+      (orderStatusData: { orderId: number; status: string; updatedAt: string }) => {
+        // Update order status in conversations that have this order
+        setConversations((prev) => {
+          const updated = [...prev];
+          updated.forEach((conv, index) => {
+            if (conv.Order?.id === orderStatusData.orderId) {
+              updated[index] = {
+                ...conv,
+                Order: {
+                  ...conv.Order,
+                  status: orderStatusData.status,
+                },
+              };
+            }
+          });
+          return updated;
+        });
       }
     );
 

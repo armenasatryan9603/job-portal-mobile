@@ -83,7 +83,7 @@ function AppContent() {
     try {
       const parsed = Linking.parse(url);
       const refCode = parsed.queryParams?.ref as string;
-      
+
       if (refCode) {
         console.log(`🔗 Deep link detected with referral code: ${refCode}`);
         storeReferralCode(refCode);

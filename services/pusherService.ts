@@ -113,7 +113,8 @@ class PusherService {
 
   subscribeToConversation(
     conversationId: number,
-    onNewMessage: (message: any) => void
+    onNewMessage: (message: any) => void,
+    onStatusUpdate?: (data: { conversationId: number; status: string; updatedAt: string }) => void
   ) {
     if (!this.pusher) {
       console.warn("Pusher not initialized");
@@ -151,7 +152,26 @@ class PusherService {
       onNewMessage(data);
     };
 
+    // Handler for conversation status updates
+    const statusUpdateHandler = (data: any) => {
+      if (data.conversationId !== conversationId) {
+        console.warn(
+          `⚠️ Status update conversationId mismatch: expected ${conversationId}, got ${data.conversationId}`
+        );
+        return;
+      }
+
+      console.log(`🔄 Conversation status updated on ${channelName}:`, {
+        conversationId: data.conversationId,
+        status: data.status,
+      });
+      if (onStatusUpdate) {
+        onStatusUpdate(data);
+      }
+    };
+
     channel.bind("new-message", messageHandler);
+    channel.bind("conversation-status-updated", statusUpdateHandler);
 
     channel.bind("pusher:subscription_succeeded", () => {
       console.log(`✅ Successfully subscribed to ${channelName}`);
@@ -187,7 +207,9 @@ class PusherService {
 
   subscribeToUserUpdates(
     userId: number,
-    onConversationUpdated: (data: any) => void
+    onConversationUpdated: (data: any) => void,
+    onStatusUpdate?: (data: { conversationId: number; status: string; updatedAt: string }) => void,
+    onOrderStatusUpdate?: (data: { orderId: number; status: string; updatedAt: string }) => void
   ) {
     if (!this.pusher) {
       return () => {};
@@ -206,6 +228,20 @@ class PusherService {
       console.log("💬 Conversation updated:", data);
       onConversationUpdated(data);
     });
+
+    if (onStatusUpdate) {
+      channel.bind("conversation-status-updated", (data: any) => {
+        console.log("🔄 Conversation status updated:", data);
+        onStatusUpdate(data);
+      });
+    }
+
+    if (onOrderStatusUpdate) {
+      channel.bind("order-status-updated", (data: any) => {
+        console.log("📦 Order status updated:", data);
+        onOrderStatusUpdate(data);
+      });
+    }
 
     channel.bind("pusher:subscription_succeeded", () => {
       console.log(`✅ Subscribed to user-${userId}`);

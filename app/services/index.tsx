@@ -3,6 +3,7 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, ViewStyles } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -11,7 +12,7 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -49,6 +50,13 @@ const ServicesScreen = () => {
     refetch,
   } = useServices(currentPage, 20, undefined, language);
   const { data: rootServices } = useRootServices(language);
+  // Fetch all services for filter dropdown with correct language
+  // const { data: allServicesForFilter } = useServices(
+  //   1,
+  //   1000,
+  //   undefined,
+  //   language
+  // );
 
   // Accumulate services from all pages
   useEffect(() => {
@@ -86,28 +94,40 @@ const ServicesScreen = () => {
     await refetch();
   }, [refetch]);
 
-  // Filter services based on search and category
-  const filteredServices = services.filter((service) => {
-    const matchesSearch =
-      !searchQuery ||
-      service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (service.description &&
-        service.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  // Filter services based on search, category, and services
+  const filteredServices = useMemo(() => {
+    return services.filter((service) => {
+      const matchesSearch =
+        !searchQuery ||
+        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (service.description &&
+          service.description
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()));
 
-    const selectedCategories = selectedFilters["Categories"];
-    const matchesCategory =
-      !selectedCategories ||
-      (Array.isArray(selectedCategories) && selectedCategories.length === 0) ||
-      (Array.isArray(selectedCategories) &&
-        selectedCategories.includes("all")) ||
-      (Array.isArray(selectedCategories) &&
-        selectedCategories.includes(service?.parentId?.toString() || "")) ||
-      (!service.parentId &&
-        Array.isArray(selectedCategories) &&
-        selectedCategories.includes("all"));
+      const selectedCategories = selectedFilters["Categories"];
+      const matchesCategory =
+        !selectedCategories ||
+        (Array.isArray(selectedCategories) &&
+          selectedCategories.length === 0) ||
+        (Array.isArray(selectedCategories) &&
+          selectedCategories.includes("all")) ||
+        (Array.isArray(selectedCategories) &&
+          selectedCategories.includes(service?.parentId?.toString() || "")) ||
+        (!service.parentId &&
+          Array.isArray(selectedCategories) &&
+          selectedCategories.includes("all"));
 
-    return matchesSearch && matchesCategory;
-  });
+      const selectedServices = selectedFilters["services"];
+      const matchesService =
+        !selectedServices ||
+        (Array.isArray(selectedServices) && selectedServices.length === 0) ||
+        (Array.isArray(selectedServices) &&
+          selectedServices.includes(service.id.toString()));
+
+      return matchesSearch && matchesCategory && matchesService;
+    });
+  }, [services, searchQuery, selectedFilters]);
 
   const handleServicePress = (serviceId: number) => {
     router.push(`/services/${serviceId}`);
@@ -118,19 +138,32 @@ const ServicesScreen = () => {
   };
 
   // Filter configuration
-  const filterSections: FilterSection[] = [
-    {
-      title: t("categories") || "Categories",
-      multiSelect: true,
-      options: [
-        { key: "all", label: t("allCategories") || "All Categories" },
-        ...mainServices.map((service) => ({
-          key: service.id.toString(),
-          label: service.name,
-        })),
-      ],
-    },
-  ];
+  const filterSections: FilterSection[] = useMemo(
+    () => [
+      {
+        title: t("categories") || "Categories",
+        key: "Categories",
+        multiSelect: true,
+        options: [
+          { key: "all", label: t("allCategories") || "All Categories" },
+          ...mainServices.map((service) => ({
+            key: service.id.toString(),
+            label: service.name,
+          })),
+        ],
+      },
+      // {
+      //   key: "services",
+      //   title: t("services") || "Services",
+      //   multiSelect: true,
+      //   options: (allServicesForFilter?.services || []).map((service) => ({
+      //     key: service.id.toString(),
+      //     label: service.name,
+      //   })),
+      // },
+    ],
+    [t, mainServices, services]
+  );
 
   const handleFilterChange = (
     sectionKey: string,
@@ -152,15 +185,6 @@ const ServicesScreen = () => {
       unreadMessagesCount={unreadMessagesCount}
     />
   );
-
-  // Show loading state only on initial load
-  if (isInitialLoading) {
-    return (
-      <Layout header={header}>
-        <EmptyPage type="loading" title={t("loadingServices")} />
-      </Layout>
-    );
-  }
 
   // Show error state
   if (error) {
@@ -279,7 +303,7 @@ const ServicesScreen = () => {
             backgroundColor: colors.background,
           }}
         >
-          <ResponsiveCard style={{ marginBottom: 0 }}>
+          <ResponsiveCard padding={Spacing.md}>
             <Filter
               searchPlaceholder={t("searchServices")}
               onSearchChange={setSearchQuery}
@@ -291,26 +315,40 @@ const ServicesScreen = () => {
           </ResponsiveCard>
         </View>
 
-        {/* FlatList with top padding to account for fixed header */}
-        <FlatList
-          style={{ marginTop: 100 }}
-          data={filteredServices}
-          renderItem={renderServiceItem}
-          keyExtractor={(item) => item.id.toString()}
-          ListFooterComponent={renderFooter}
-          ListEmptyComponent={renderEmptyComponent}
-          onEndReached={loadMoreServices}
-          onEndReachedThreshold={0.1}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={onRefresh}
-              tintColor={colors.tint}
+        {/* Show skeleton during initial load, otherwise show FlatList */}
+        {isInitialLoading ? (
+          <View style={{ flex: 1, marginTop: 100 }}>
+            <FloatingSkeleton
+              count={5}
+              itemHeight={220}
+              showImage={true}
+              showTitle={true}
+              showDescription={true}
+              showDetails={true}
+              showTags={false}
             />
-          }
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
-        />
+          </View>
+        ) : (
+          <FlatList
+            style={{ marginTop: 100 }}
+            data={filteredServices}
+            renderItem={renderServiceItem}
+            keyExtractor={(item) => item.id.toString()}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmptyComponent}
+            onEndReached={loadMoreServices}
+            onEndReachedThreshold={0.1}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading}
+                onRefresh={onRefresh}
+                tintColor={colors.tint}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+          />
+        )}
       </View>
     </Layout>
   );

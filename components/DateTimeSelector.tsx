@@ -32,8 +32,15 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   );
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  const normalizeDate = (date: Date): Date => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  };
+
   const getDateKey = (date: Date) => {
-    return date.toDateString();
+    const normalized = normalizeDate(date);
+    return normalized.toDateString();
   };
 
   const getTimesForDate = (date: Date) => {
@@ -62,21 +69,31 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   };
 
   const toggleDateSelection = (date: Date) => {
-    if (selectedDates.some((d) => d.toDateString() === date.toDateString())) {
+    // Normalize date to midnight for consistent comparison
+    const normalizedDate = normalizeDate(date);
+    const dateKey = normalizedDate.toDateString();
+
+    if (
+      selectedDates.some((d) => {
+        const normalized = normalizeDate(d);
+        return normalized.toDateString() === dateKey;
+      })
+    ) {
       // Remove date
-      const newDates = selectedDates.filter(
-        (d) => d.toDateString() !== date.toDateString()
-      );
+      const newDates = selectedDates.filter((d) => {
+        const normalized = normalizeDate(d);
+        return normalized.toDateString() !== dateKey;
+      });
       onDatesChange(newDates);
 
       // Remove associated times
-      const key = getDateKey(date);
+      const key = getDateKey(normalizedDate);
       const newDateTimes = { ...selectedDateTimes };
       delete newDateTimes[key];
       onDateTimesChange(newDateTimes);
     } else {
-      // Add date
-      onDatesChange([...selectedDates, date]);
+      // Add date (normalized to midnight)
+      onDatesChange([...selectedDates, normalizedDate]);
     }
   };
 

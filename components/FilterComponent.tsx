@@ -281,7 +281,7 @@ export const Filter: React.FC<FilterProps> = ({
           activeOpacity={0.7}
         >
           <IconSymbol
-            name="line.3.horizontal.decrease"
+            name="slider.horizontal.3"
             size={18}
             color={
               hasActiveFilters() ? colors.background : colors.tabIconDefault
@@ -312,59 +312,6 @@ export const Filter: React.FC<FilterProps> = ({
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Active Filters - Horizontal Scrollable Chips */}
-      {hasActiveFilters() && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.activeFiltersScroll}
-          contentContainerStyle={styles.activeFiltersContent}
-        >
-          {filterSections.map((section) => {
-            const sectionKey = section.key || section.title;
-            const count = getSelectedCount(sectionKey);
-            if (count === 0) return null;
-
-            return (
-              <TouchableOpacity
-                key={sectionKey}
-                style={[
-                  styles.activeFilterChip,
-                  {
-                    backgroundColor: colors.tint + "15",
-                    borderColor: colors.tint,
-                  },
-                ]}
-                onPress={() => clearFilter(sectionKey)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.activeFilterText, { color: colors.tint }]}>
-                  {section.title}
-                  {count > 1 ? ` (${count})` : ""}
-                </Text>
-                <IconSymbol
-                  name="xmark.circle.fill"
-                  size={12}
-                  color={colors.tint}
-                  style={styles.chipIcon}
-                />
-              </TouchableOpacity>
-            );
-          })}
-          <TouchableOpacity
-            style={[styles.clearAllChip, { borderColor: colors.border }]}
-            onPress={clearAllFilters}
-            activeOpacity={0.7}
-          >
-            <Text
-              style={[styles.clearAllText, { color: colors.tabIconDefault }]}
-            >
-              Clear All
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
 
       {/* Filter Modal */}
       <Modal

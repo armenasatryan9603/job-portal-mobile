@@ -669,6 +669,7 @@ class ApiService {
     limit: number = 10,
     status?: string,
     serviceId?: number,
+    serviceIds?: number[],
     clientId?: number
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
@@ -677,7 +678,11 @@ class ApiService {
     });
 
     if (status) params.append("status", status);
-    if (serviceId) params.append("serviceId", serviceId.toString());
+    if (serviceIds && serviceIds.length > 0) {
+      params.append("serviceIds", serviceIds.join(","));
+    } else if (serviceId) {
+      params.append("serviceId", serviceId.toString());
+    }
     if (clientId) params.append("clientId", clientId.toString());
 
     return this.request<OrderListResponse>(`/orders?${params}`, {}, true);
@@ -807,6 +812,7 @@ class ApiService {
     limit: number = 10,
     status?: string,
     serviceId?: number,
+    serviceIds?: number[],
     clientId?: number
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
@@ -815,7 +821,11 @@ class ApiService {
     });
 
     if (status) params.append("status", status);
-    if (serviceId) params.append("serviceId", serviceId.toString());
+    if (serviceIds && serviceIds.length > 0) {
+      params.append("serviceIds", serviceIds.join(","));
+    } else if (serviceId) {
+      params.append("serviceId", serviceId.toString());
+    }
     if (clientId) params.append("clientId", clientId.toString());
 
     return this.request<OrderListResponse>(`/orders?${params}`, {}, false);
@@ -824,13 +834,18 @@ class ApiService {
   async searchOrders(
     query: string,
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    serviceIds?: number[]
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       q: query,
       page: page.toString(),
       limit: limit.toString(),
     });
+
+    if (serviceIds && serviceIds.length > 0) {
+      params.append("serviceIds", serviceIds.join(","));
+    }
 
     return this.request<OrderListResponse>(`/orders/search?${params}`);
   }

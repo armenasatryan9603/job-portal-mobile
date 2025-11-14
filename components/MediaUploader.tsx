@@ -196,7 +196,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         {t("mediaFiles")} ({mediaFiles.length}/{maxFiles})
       </Text>
@@ -379,9 +379,6 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -393,7 +390,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   mediaContainer: {
-    marginBottom: 12,
     paddingTop: 10,
   },
   addMediaButton: {

@@ -51,18 +51,31 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       days.push(null);
     }
 
-    // Add days of the month
+    // Add days of the month (normalize to midnight)
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+      const date = new Date(year, month, day);
+      date.setHours(0, 0, 0, 0); // Normalize to midnight
+      days.push(date);
     }
 
     return days;
   };
 
+  const normalizeDate = (date: Date): Date => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+  };
+
   const isDateSelected = (date: Date) => {
-    return selectedDates.some(
-      (selectedDate) => selectedDate.toDateString() === date.toDateString()
-    );
+    if (!date) return false;
+    const normalizedDate = normalizeDate(date);
+    return selectedDates.some((selectedDate) => {
+      const normalizedSelected = normalizeDate(selectedDate);
+      return (
+        normalizedSelected.toDateString() === normalizedDate.toDateString()
+      );
+    });
   };
 
   return (
