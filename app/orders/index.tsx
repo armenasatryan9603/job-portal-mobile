@@ -73,6 +73,7 @@ export default function OrdersScreen() {
   >({
     status: isMyJobs ? "all" : "open",
     services: filterServiceId ? [filterServiceId.toString()] : [],
+    priceRange: { min: 0, max: 100000 },
   });
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -226,6 +227,16 @@ export default function OrdersScreen() {
         ],
       },
       {
+        key: "priceRange",
+        title: t("priceRange") || "Price Range",
+        type: "range",
+        rangeConfig: {
+          min: 0,
+          max: 100000,
+          step: 100,
+        },
+      },
+      {
         key: "services",
         title: t("services") || "Services",
         multiSelect: true,
@@ -332,6 +343,18 @@ export default function OrdersScreen() {
     []
   );
 
+  // Helper function to filter orders by price range
+  const filterOrdersByPriceRange = useCallback(
+    (orders: Order[], priceRange: { min: number; max: number }): Order[] => {
+      if (!priceRange) return orders;
+      return orders.filter(
+        (order: Order) =>
+          order.budget >= priceRange.min && order.budget <= priceRange.max
+      );
+    },
+    []
+  );
+
   // Helper function to get paginated orders from a filtered list
   const getPaginatedOrders = useCallback(
     (filteredOrders: Order[], page: number, limit: number) => {
@@ -369,6 +392,20 @@ export default function OrdersScreen() {
     }
   }, [isMyOrders, isMyJobs, myOrdersQuery.data, myJobsQuery.data]);
 
+  // Extract price range from filters
+  const priceRange = useMemo(() => {
+    const range = selectedFilters.priceRange;
+    if (
+      range &&
+      typeof range === "object" &&
+      "min" in range &&
+      "max" in range
+    ) {
+      return range as { min: number; max: number };
+    }
+    return { min: 0, max: 100000 };
+  }, [selectedFilters.priceRange]);
+
   // Compute orders for My Orders/My Jobs with client-side pagination
   const displayedOrders = useMemo(() => {
     const selectedServices = Array.isArray(selectedFilters.services)
@@ -398,13 +435,20 @@ export default function OrdersScreen() {
         );
       }
 
+      // Apply price range filter (client-side for My Orders/My Jobs)
+      filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
+
       // Get paginated results
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
 
-    // For regular orders, service filtering is handled server-side
-    // No need to filter locally anymore
-    return orders;
+    // For regular orders, apply price filter client-side
+    // (Server-side price filtering can be added later)
+    let filteredOrders = orders;
+    if (priceRange.min !== 0 || priceRange.max !== 100000) {
+      filteredOrders = filterOrdersByPriceRange(orders, priceRange);
+    }
+    return filteredOrders;
   }, [
     isMyOrders,
     isMyJobs,
@@ -412,11 +456,13 @@ export default function OrdersScreen() {
     searchQuery,
     status,
     selectedFilters.services,
+    priceRange,
     clientSidePage,
     orders,
     filterOrdersBySearch,
     filterOrdersByStatus,
     filterOrdersByServices,
+    filterOrdersByPriceRange,
     getPaginatedOrders,
   ]);
 
@@ -438,6 +484,7 @@ export default function OrdersScreen() {
         if (selectedServices.length > 0) {
           filtered = filterOrdersByServices(filtered, selectedServices);
         }
+        filtered = filterOrdersByPriceRange(filtered, priceRange);
         return filtered;
       })();
 
@@ -458,11 +505,13 @@ export default function OrdersScreen() {
     searchQuery,
     status,
     selectedFilters.services,
+    priceRange,
     clientSidePage,
     pagination,
     filterOrdersBySearch,
     filterOrdersByStatus,
     filterOrdersByServices,
+    filterOrdersByPriceRange,
     createPaginationObject,
   ]);
 

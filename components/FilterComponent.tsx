@@ -15,7 +15,6 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { PriceRangeSlider } from "./PriceRangeSlider";
 
 export interface FilterOption {
   key: string;
@@ -379,6 +378,7 @@ export const Filter: React.FC<FilterProps> = ({
 
                     // Handle range sections
                     if (section.type === "range" && section.rangeConfig) {
+                      const rangeConfig = section.rangeConfig; // Store to help TypeScript
                       const isExpanded = isSectionExpanded(sectionKey, true);
                       return (
                         <View
@@ -445,29 +445,186 @@ export const Filter: React.FC<FilterProps> = ({
                           </View>
                           {isExpanded && (
                             <View style={styles.rangeContainer}>
-                              <PriceRangeSlider
-                                minValue={
-                                  getRangeValues(
-                                    selectedFilters[sectionKey],
-                                    section.rangeConfig.min,
-                                    section.rangeConfig.max
-                                  ).min
-                                }
-                                maxValue={
-                                  getRangeValues(
-                                    selectedFilters[sectionKey],
-                                    section.rangeConfig.min,
-                                    section.rangeConfig.max
-                                  ).max
-                                }
-                                onValueChange={(low, high) => {
-                                  onFilterChange(sectionKey, {
-                                    min: low,
-                                    max: high,
-                                  });
-                                }}
-                                disabled={loading}
-                              />
+                              <View style={styles.priceInputsContainer}>
+                                <View style={styles.priceInputWrapper}>
+                                  <Text
+                                    style={[
+                                      styles.priceLabel,
+                                      { color: colors.tabIconDefault },
+                                    ]}
+                                  >
+                                    Min
+                                  </Text>
+                                  <View
+                                    style={[
+                                      styles.priceInputContainer,
+                                      {
+                                        borderColor: colors.border,
+                                        backgroundColor: colors.background,
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.pricePrefix,
+                                        { color: colors.tabIconDefault },
+                                      ]}
+                                    >
+                                      $
+                                    </Text>
+                                    <TextInput
+                                      style={[
+                                        styles.priceInput,
+                                        { color: colors.text },
+                                      ]}
+                                      placeholder={`${rangeConfig.min}`}
+                                      placeholderTextColor={
+                                        colors.tabIconDefault
+                                      }
+                                      keyboardType="numeric"
+                                      value={
+                                        getRangeValues(
+                                          selectedFilters[sectionKey],
+                                          rangeConfig.min,
+                                          rangeConfig.max
+                                        ).min === rangeConfig.min
+                                          ? ""
+                                          : getRangeValues(
+                                              selectedFilters[sectionKey],
+                                              rangeConfig.min,
+                                              rangeConfig.max
+                                            ).min.toString()
+                                      }
+                                      onChangeText={(text) => {
+                                        if (text === "") {
+                                          // If empty, reset to default min
+                                          const max = getRangeValues(
+                                            selectedFilters[sectionKey],
+                                            rangeConfig.min,
+                                            rangeConfig.max
+                                          ).max;
+                                          onFilterChange(sectionKey, {
+                                            min: rangeConfig.min,
+                                            max,
+                                          });
+                                          return;
+                                        }
+                                        const numValue = parseInt(text);
+                                        if (isNaN(numValue)) return;
+
+                                        const min = Math.max(
+                                          rangeConfig.min,
+                                          numValue
+                                        );
+                                        const max = getRangeValues(
+                                          selectedFilters[sectionKey],
+                                          rangeConfig.min,
+                                          rangeConfig.max
+                                        ).max;
+                                        onFilterChange(sectionKey, {
+                                          min: Math.min(min, max),
+                                          max,
+                                        });
+                                      }}
+                                      editable={!loading}
+                                    />
+                                  </View>
+                                </View>
+                                <View style={styles.priceSeparator}>
+                                  <Text
+                                    style={[
+                                      styles.priceSeparatorText,
+                                      { color: colors.tabIconDefault },
+                                    ]}
+                                  >
+                                    to
+                                  </Text>
+                                </View>
+                                <View style={styles.priceInputWrapper}>
+                                  <Text
+                                    style={[
+                                      styles.priceLabel,
+                                      { color: colors.tabIconDefault },
+                                    ]}
+                                  >
+                                    Max
+                                  </Text>
+                                  <View
+                                    style={[
+                                      styles.priceInputContainer,
+                                      {
+                                        borderColor: colors.border,
+                                        backgroundColor: colors.background,
+                                      },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.pricePrefix,
+                                        { color: colors.tabIconDefault },
+                                      ]}
+                                    >
+                                      $
+                                    </Text>
+                                    <TextInput
+                                      style={[
+                                        styles.priceInput,
+                                        { color: colors.text },
+                                      ]}
+                                      placeholder={`${rangeConfig.max}`}
+                                      placeholderTextColor={
+                                        colors.tabIconDefault
+                                      }
+                                      keyboardType="numeric"
+                                      value={
+                                        getRangeValues(
+                                          selectedFilters[sectionKey],
+                                          rangeConfig.min,
+                                          rangeConfig.max
+                                        ).max === rangeConfig.max
+                                          ? ""
+                                          : getRangeValues(
+                                              selectedFilters[sectionKey],
+                                              rangeConfig.min,
+                                              rangeConfig.max
+                                            ).max.toString()
+                                      }
+                                      onChangeText={(text) => {
+                                        if (text === "") {
+                                          // If empty, reset to default max
+                                          const min = getRangeValues(
+                                            selectedFilters[sectionKey],
+                                            rangeConfig.min,
+                                            rangeConfig.max
+                                          ).min;
+                                          onFilterChange(sectionKey, {
+                                            min,
+                                            max: rangeConfig.max,
+                                          });
+                                          return;
+                                        }
+                                        const numValue = parseInt(text);
+                                        if (isNaN(numValue)) return;
+
+                                        const min = getRangeValues(
+                                          selectedFilters[sectionKey],
+                                          rangeConfig.min,
+                                          rangeConfig.max
+                                        ).min;
+                                        const max = Math.min(
+                                          rangeConfig.max,
+                                          numValue
+                                        );
+                                        onFilterChange(sectionKey, {
+                                          min,
+                                          max: Math.max(max, min),
+                                        });
+                                      }}
+                                      editable={!loading}
+                                    />
+                                  </View>
+                                </View>
+                              </View>
                             </View>
                           )}
                         </View>
@@ -835,5 +992,46 @@ const styles = StyleSheet.create({
   rangeContainer: {
     paddingVertical: 6,
     paddingTop: 8,
+  },
+  priceInputsContainer: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 12,
+  },
+  priceInputWrapper: {
+    flex: 1,
+    gap: 6,
+  },
+  priceLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "uppercase",
+  },
+  priceInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 6,
+  },
+  pricePrefix: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    paddingVertical: 0,
+  },
+  priceSeparator: {
+    paddingBottom: 8,
+    justifyContent: "center",
+  },
+  priceSeparatorText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 });
