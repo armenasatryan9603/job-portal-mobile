@@ -737,6 +737,12 @@ export default function ChatDetailScreen() {
     );
   }
 
+  const handleViewOrder = () => {
+    if (conversation?.Order?.id) {
+      router.push(`/orders/${conversation.Order.id}`);
+    }
+  };
+
   return (
     <Layout header={header} showFooterTabs={false}>
       <KeyboardAvoidingView
@@ -750,6 +756,170 @@ export default function ChatDetailScreen() {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
         enabled={Platform.OS === "ios"}
       >
+        {/* Order Reference Card with Action Buttons */}
+        {conversation?.Order && (
+          <View
+            style={[
+              styles.orderCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            {/* Order Info Section - Clickable */}
+            <TouchableOpacity
+              onPress={handleViewOrder}
+              activeOpacity={0.7}
+              style={styles.orderCardHeader}
+            >
+              <View style={styles.orderCardLeft}>
+                <IconSymbol name="doc.text" size={20} color={colors.primary} />
+                <View style={styles.orderCardInfo}>
+                  <Text
+                    style={[styles.orderCardTitle, { color: colors.text }]}
+                    numberOfLines={1}
+                  >
+                    {conversation.Order.title || t("order")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.orderCardSubtitle,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {t("viewOrderDetails") || "View Order Details"}
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol
+                name="chevron.right"
+                size={16}
+                color={colors.tabIconDefault}
+              />
+            </TouchableOpacity>
+
+            {/* Action Buttons - Only show for client and if conversation is not closed */}
+            {isClient() && !isConversationClosed() && (
+              <>
+                <View
+                  style={[
+                    styles.orderCardDivider,
+                    { backgroundColor: colors.border },
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.orderCardActions,
+                    {
+                      paddingBottom:
+                        conversation?.Order?.status === "open" ? 10 : 0,
+                    },
+                  ]}
+                >
+                  {/* Show Reject/Choose buttons for open orders */}
+                  {conversation?.Order?.status === "open" && (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.orderActionButton,
+                          styles.orderRejectButton,
+                          { borderColor: "#FF6B6B" },
+                          actionLoading && styles.disabledButton,
+                        ]}
+                        onPress={handleReject}
+                        disabled={actionLoading}
+                      >
+                        <IconSymbol name="xmark" size={14} color="#FF6B6B" />
+                        <Text
+                          style={[
+                            styles.orderActionButtonText,
+                            { color: "#FF6B6B" },
+                          ]}
+                        >
+                          {t("reject")}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.orderActionButton,
+                          styles.orderApproveButton,
+                          { backgroundColor: colors.primary },
+                          actionLoading && styles.disabledButton,
+                        ]}
+                        onPress={handleChoose}
+                        disabled={actionLoading}
+                      >
+                        <IconSymbol name="checkmark" size={14} color="white" />
+                        <Text
+                          style={[
+                            styles.orderActionButtonText,
+                            { color: "white" },
+                          ]}
+                        >
+                          {t("choose")}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {/* Show Complete/Cancel buttons for in_progress orders */}
+                  {conversation?.Order?.status === "in_progress" && (
+                    <>
+                      <TouchableOpacity
+                        style={[
+                          styles.orderActionButton,
+                          styles.orderRejectButton,
+                          { borderColor: "#FF6B6B" },
+                          actionLoading && styles.disabledButton,
+                        ]}
+                        onPress={handleCancel}
+                        disabled={actionLoading}
+                      >
+                        <IconSymbol name="xmark" size={14} color="#FF6B6B" />
+                        <Text
+                          style={[
+                            styles.orderActionButtonText,
+                            { color: "#FF6B6B" },
+                          ]}
+                        >
+                          {t("cancel")}
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          styles.orderActionButton,
+                          styles.orderApproveButton,
+                          { backgroundColor: colors.primary },
+                          actionLoading && styles.disabledButton,
+                        ]}
+                        onPress={handleComplete}
+                        disabled={actionLoading}
+                      >
+                        <IconSymbol
+                          name="checkmark.circle"
+                          size={14}
+                          color="white"
+                        />
+                        <Text
+                          style={[
+                            styles.orderActionButtonText,
+                            { color: "white" },
+                          ]}
+                        >
+                          {t("complete")}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+          </View>
+        )}
+
         {/* Messages List */}
         <FlatList
           ref={flatListRef}
@@ -769,103 +939,6 @@ export default function ChatDetailScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         />
-
-        {/* Action Buttons - Only show for client and if conversation is not closed */}
-        {isClient() && !isConversationClosed() && (
-          <View
-            style={[
-              styles.actionContainer,
-              {
-                backgroundColor: colors.background,
-                borderTopColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.actionButtons}>
-              {/* Show Reject/Choose buttons for open orders */}
-              {conversation?.Order?.status === "open" && (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.rejectButton,
-                      { borderColor: "#FF6B6B" },
-                      actionLoading && styles.disabledButton,
-                    ]}
-                    onPress={handleReject}
-                    disabled={actionLoading}
-                  >
-                    <IconSymbol name="xmark" size={14} color="#FF6B6B" />
-                    <Text
-                      style={[styles.actionButtonText, { color: "#FF6B6B" }]}
-                    >
-                      {t("reject")}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.chooseButton,
-                      { backgroundColor: colors.primary },
-                      actionLoading && styles.disabledButton,
-                    ]}
-                    onPress={handleChoose}
-                    disabled={actionLoading}
-                  >
-                    <IconSymbol name="checkmark" size={14} color="white" />
-                    <Text style={[styles.actionButtonText, { color: "white" }]}>
-                      {t("choose")}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-
-              {/* Show Complete/Cancel buttons for in_progress orders */}
-              {conversation?.Order?.status === "in_progress" && (
-                <>
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.rejectButton,
-                      { borderColor: "#FF6B6B" },
-                      actionLoading && styles.disabledButton,
-                    ]}
-                    onPress={handleCancel}
-                    disabled={actionLoading}
-                  >
-                    <IconSymbol name="xmark" size={14} color="#FF6B6B" />
-                    <Text
-                      style={[styles.actionButtonText, { color: "#FF6B6B" }]}
-                    >
-                      {t("cancel")}
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.actionButton,
-                      styles.chooseButton,
-                      { backgroundColor: colors.primary },
-                      actionLoading && styles.disabledButton,
-                    ]}
-                    onPress={handleComplete}
-                    disabled={actionLoading}
-                  >
-                    <IconSymbol
-                      name="checkmark.circle"
-                      size={14}
-                      color="white"
-                    />
-                    <Text style={[styles.actionButtonText, { color: "white" }]}>
-                      {t("complete")}
-                    </Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </View>
-        )}
 
         {/* Conversation Status - Show when closed */}
         {isConversationClosed() && (
@@ -1029,6 +1102,89 @@ const styles = StyleSheet.create({
   messagesContent: {
     padding: 12,
     paddingBottom: 12,
+  },
+  orderCard: {
+    marginHorizontal: 12,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  orderCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 12,
+  },
+  orderCardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+  },
+  orderCardInfo: {
+    flex: 1,
+  },
+  orderCardTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  orderCardSubtitle: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  orderCardDivider: {
+    height: 1,
+    marginHorizontal: 12,
+    opacity: 0.3,
+  },
+  orderCardActions: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 12,
+    // paddingBottom: 12,
+    paddingTop: 0,
+  },
+  orderActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 6,
+    minHeight: 40,
+  },
+  orderRejectButton: {
+    backgroundColor: "transparent",
+    borderWidth: 1.5,
+  },
+  orderApproveButton: {
+    borderWidth: 0,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  orderActionButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: 0.3,
   },
   messageContainer: {
     marginBottom: 8,
