@@ -19,11 +19,126 @@ import {
   ActivityIndicator,
   Alert,
   Keyboard,
+  Animated,
 } from "react-native";
 import { chatService, Conversation, Message } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Review } from "@/services/api";
 import { pusherService } from "@/services/pusherService";
+
+// Typing Indicator Component
+const TypingIndicator = ({
+  typingUsers,
+  conversation,
+  colors,
+}: {
+  typingUsers: Set<number>;
+  conversation: Conversation | null;
+  colors: any;
+}) => {
+  const [dot1] = useState(new Animated.Value(0));
+  const [dot2] = useState(new Animated.Value(0));
+  const [dot3] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    const animateDot = (dot: Animated.Value, delay: number) => {
+      return Animated.loop(
+        Animated.sequence([
+          Animated.delay(delay),
+          Animated.timing(dot, {
+            toValue: 1,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+          Animated.timing(dot, {
+            toValue: 0,
+            duration: 400,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+    };
+
+    const animations = [
+      animateDot(dot1, 0),
+      animateDot(dot2, 200),
+      animateDot(dot3, 400),
+    ];
+
+    animations.forEach((anim) => anim.start());
+
+    return () => {
+      animations.forEach((anim) => anim.stop());
+    };
+  }, [dot1, dot2, dot3]);
+
+  const getTypingUserName = () => {
+    if (!conversation || typingUsers.size === 0) return "";
+    const typingUserIds = Array.from(typingUsers);
+    const typingParticipants = conversation.Participants.filter((p) =>
+      typingUserIds.includes(p.userId)
+    );
+    if (typingParticipants.length === 0) return "";
+    if (typingParticipants.length === 1) {
+      return typingParticipants[0].User.name;
+    }
+    return "Someone";
+  };
+
+  const typingName = getTypingUserName();
+  if (!typingName) return null;
+
+  const opacity1 = dot1.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1],
+  });
+  const opacity2 = dot2.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1],
+  });
+  const opacity3 = dot3.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.3, 1],
+  });
+
+  return (
+    <View style={styles.typingContainer}>
+      <View
+        style={[
+          styles.typingBubble,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Text style={[styles.typingText, { color: colors.tabIconDefault }]}>
+          {typingName} is typing
+        </Text>
+        <View style={styles.typingDots}>
+          <Animated.View
+            style={[
+              styles.typingDot,
+              { backgroundColor: colors.tabIconDefault, opacity: opacity1 },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.typingDot,
+              { backgroundColor: colors.tabIconDefault, opacity: opacity2 },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.typingDot,
+              { backgroundColor: colors.tabIconDefault, opacity: opacity3 },
+            ]}
+          />
+        </View>
+      </View>
+    </View>
+  );
+};
 
 export default function ChatDetailScreen() {
   const colorScheme = useColorScheme();
@@ -49,6 +164,13 @@ export default function ChatDetailScreen() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [hasExistingFeedback, setHasExistingFeedback] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingSentRef = useRef(false);
+  const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingClearTimeoutsRef = useRef<
+    Map<number, ReturnType<typeof setTimeout>>
+  >(new Map());
 
   // Load conversation and messages
   useEffect(() => {
@@ -94,6 +216,96 @@ export default function ChatDetailScreen() {
     // Store current conversation ID to prevent race conditions
     const currentConversationId = conversation.id;
 
+    // Get Pusher channel for typing events
+    const channelName = `conversation-${currentConversationId}`;
+    const pusher = (pusherService as any).pusher;
+    let typingChannel: any = null;
+
+    if (pusher) {
+      typingChannel = pusher.channel(channelName);
+      if (!typingChannel) {
+        // Channel might not be ready yet, wait a bit
+        setTimeout(() => {
+          typingChannel = pusher.channel(channelName);
+          if (typingChannel) {
+            // Subscribe to typing events (client events in Pusher)
+            typingChannel.bind(
+              "client-currently-typing",
+              (data: { userId: number; isTyping: boolean }) => {
+                if (data.userId !== user?.id) {
+                  // Clear any existing timeout for this user
+                  const existingTimeout = typingClearTimeoutsRef.current.get(
+                    data.userId
+                  );
+                  if (existingTimeout) {
+                    clearTimeout(existingTimeout);
+                  }
+
+                  if (data.isTyping) {
+                    setTypingUsers((prev) => new Set(prev).add(data.userId));
+                    // Auto-clear typing indicator after 4 seconds if no new typing event (like Messenger.com)
+                    const timeoutId = setTimeout(() => {
+                      setTypingUsers((prev) => {
+                        const newSet = new Set(prev);
+                        newSet.delete(data.userId);
+                        return newSet;
+                      });
+                      typingClearTimeoutsRef.current.delete(data.userId);
+                    }, 4000);
+                    typingClearTimeoutsRef.current.set(data.userId, timeoutId);
+                  } else {
+                    setTypingUsers((prev) => {
+                      const newSet = new Set(prev);
+                      newSet.delete(data.userId);
+                      return newSet;
+                    });
+                    typingClearTimeoutsRef.current.delete(data.userId);
+                  }
+                }
+              }
+            );
+          }
+        }, 500);
+      } else {
+        // Subscribe to typing events (client events in Pusher)
+        typingChannel.bind(
+          "client-currently-typing",
+          (data: { userId: number; isTyping: boolean }) => {
+            if (data.userId !== user?.id) {
+              // Clear any existing timeout for this user
+              const existingTimeout = typingClearTimeoutsRef.current.get(
+                data.userId
+              );
+              if (existingTimeout) {
+                clearTimeout(existingTimeout);
+              }
+
+              if (data.isTyping) {
+                setTypingUsers((prev) => new Set(prev).add(data.userId));
+                // Auto-clear typing indicator after 4 seconds if no new typing event (like Messenger.com)
+                const timeoutId = setTimeout(() => {
+                  setTypingUsers((prev) => {
+                    const newSet = new Set(prev);
+                    newSet.delete(data.userId);
+                    return newSet;
+                  });
+                  typingClearTimeoutsRef.current.delete(data.userId);
+                }, 4000);
+                typingClearTimeoutsRef.current.set(data.userId, timeoutId);
+              } else {
+                setTypingUsers((prev) => {
+                  const newSet = new Set(prev);
+                  newSet.delete(data.userId);
+                  return newSet;
+                });
+                typingClearTimeoutsRef.current.delete(data.userId);
+              }
+            }
+          }
+        );
+      }
+    }
+
     // Subscribe to conversation updates
     const unsubscribe = pusherService.subscribeToConversation(
       currentConversationId,
@@ -121,6 +333,23 @@ export default function ChatDetailScreen() {
           // Add new message
           return [...prev, newMessage];
         });
+
+        // Clear typing indicator when message arrives (like Messenger.com)
+        if (newMessage.senderId !== user?.id) {
+          setTypingUsers((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(newMessage.senderId);
+            return newSet;
+          });
+          // Clear timeout for this user
+          const existingTimeout = typingClearTimeoutsRef.current.get(
+            newMessage.senderId
+          );
+          if (existingTimeout) {
+            clearTimeout(existingTimeout);
+            typingClearTimeoutsRef.current.delete(newMessage.senderId);
+          }
+        }
 
         // Scroll to bottom when new message arrives
         setTimeout(() => {
@@ -186,7 +415,22 @@ export default function ChatDetailScreen() {
         const channel = pusher.channel(channelName);
         if (channel) {
           channel.unbind("conversation-deleted", conversationDeletedHandler);
+          channel.unbind("client-currently-typing");
         }
+      }
+      // Clear typing state and timeouts
+      setTypingUsers(new Set());
+      typingClearTimeoutsRef.current.forEach((timeout) =>
+        clearTimeout(timeout)
+      );
+      typingClearTimeoutsRef.current.clear();
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
       }
     };
   }, [conversation?.id]);
@@ -412,6 +656,75 @@ export default function ChatDetailScreen() {
     return false;
   };
 
+  // Send typing indicator via Pusher (like Messenger.com)
+  const sendTypingIndicator = (isTyping: boolean) => {
+    if (!conversation?.id || !user?.id) return;
+
+    const channelName = `conversation-${conversation.id}`;
+    const pusher = (pusherService as any).pusher;
+    if (pusher) {
+      const channel = pusher.channel(channelName);
+      if (channel && channel.trigger) {
+        // Use client events for typing indicators
+        channel.trigger("client-currently-typing", {
+          userId: user.id,
+          isTyping,
+        });
+      }
+    }
+  };
+
+  // Handle typing with debounce (like Messenger.com behavior)
+  const handleTyping = (text: string) => {
+    setNewMessage(text);
+
+    // Clear existing timeout and interval
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+
+    // Send typing indicator immediately when user starts typing
+    if (text.trim().length > 0) {
+      if (!typingSentRef.current) {
+        // First time typing - send typing indicator immediately
+        sendTypingIndicator(true);
+        typingSentRef.current = true;
+
+        // Send periodic typing indicators every 2.5 seconds while actively typing (like Messenger.com)
+        typingIntervalRef.current = setInterval(() => {
+          if (typingSentRef.current) {
+            sendTypingIndicator(true);
+          }
+        }, 2500);
+      }
+      // Reset the timeout - stop typing indicator after 3 seconds of inactivity
+      typingTimeoutRef.current = setTimeout(() => {
+        if (typingSentRef.current) {
+          sendTypingIndicator(false);
+          typingSentRef.current = false;
+          if (typingIntervalRef.current) {
+            clearInterval(typingIntervalRef.current);
+            typingIntervalRef.current = null;
+          }
+        }
+      }, 3000); // 3 seconds of inactivity = stop typing (like Messenger.com)
+    } else {
+      // Text is empty - stop typing indicator immediately
+      if (typingSentRef.current) {
+        sendTypingIndicator(false);
+        typingSentRef.current = false;
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
+      }
+    }
+  };
+
   const handleSendMessage = async () => {
     if (
       !newMessage.trim() ||
@@ -421,6 +734,18 @@ export default function ChatDetailScreen() {
       conversation.status === "removed"
     )
       return;
+
+    // Stop typing indicator when sending message
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    if (typingIntervalRef.current) {
+      clearInterval(typingIntervalRef.current);
+      typingIntervalRef.current = null;
+    }
+    sendTypingIndicator(false);
+    typingSentRef.current = false;
 
     // Check for phone numbers in the message - only prevent when order is "open"
     // Once order is "in_progress" (candidate chosen), phone numbers are allowed
@@ -1012,6 +1337,15 @@ export default function ChatDetailScreen() {
           }
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          ListFooterComponent={
+            typingUsers.size > 0 ? (
+              <TypingIndicator
+                typingUsers={typingUsers}
+                conversation={conversation}
+                colors={colors}
+              />
+            ) : null
+          }
         />
 
         {/* Conversation Status - Show when closed or removed */}
@@ -1109,7 +1443,7 @@ export default function ChatDetailScreen() {
                 placeholder={t("typeMessage")}
                 placeholderTextColor={colors.tabIconDefault}
                 value={newMessage}
-                onChangeText={setNewMessage}
+                onChangeText={handleTyping}
                 multiline
                 maxLength={500}
                 textAlignVertical="top"
@@ -1474,5 +1808,34 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "600",
+  },
+  typingContainer: {
+    marginBottom: 8,
+    alignItems: "flex-start",
+    paddingHorizontal: 12,
+  },
+  typingBubble: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    maxWidth: "80%",
+    gap: 8,
+  },
+  typingText: {
+    fontSize: 13,
+    fontStyle: "italic",
+  },
+  typingDots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
 });

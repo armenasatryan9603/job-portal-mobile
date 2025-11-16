@@ -494,127 +494,67 @@ export default function ProfileScreen() {
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {t("contactInformation")}
               </Text>
-              <View style={styles.contactGrid}>
-                <View
-                  style={[
-                    styles.contactCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
+              <View style={styles.contactInfo}>
+                <View style={styles.contactItem}>
                   <IconSymbol
                     name="envelope.fill"
-                    size={20}
+                    size={16}
                     color={colors.primary}
                   />
-                  <Text
-                    style={[
-                      styles.contactLabel,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("email")}
-                  </Text>
-                  <Text style={[styles.contactValue, { color: colors.text }]}>
-                    {profile.email}
+                  <Text style={[styles.contactText, { color: colors.text }]}>
+                    {t("email")}: {profile.email}
                   </Text>
                 </View>
 
-                <View
-                  style={[
-                    styles.contactCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
+                <View style={styles.contactItem}>
                   <IconSymbol
                     name="phone.fill"
-                    size={20}
+                    size={16}
                     color={colors.primary}
                   />
-                  <Text
-                    style={[
-                      styles.contactLabel,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("phone")}
-                  </Text>
-                  <Text style={[styles.contactValue, { color: colors.text }]}>
-                    {profile.phone || t("notProvided")}
+                  <Text style={[styles.contactText, { color: colors.text }]}>
+                    {t("phone")}: {profile.phone || t("notProvided")}
                   </Text>
                 </View>
 
-                <View
-                  style={[
-                    styles.contactCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
+                <View style={styles.contactItem}>
                   <IconSymbol
                     name="dollarsign.circle.fill"
-                    size={20}
+                    size={16}
                     color={colors.primary}
                   />
-                  <Text
-                    style={[
-                      styles.contactLabel,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("creditBalance")}
-                  </Text>
-                  <Text style={[styles.contactValue, { color: colors.text }]}>
+                  <Text style={[styles.contactText, { color: colors.text }]}>
+                    {t("creditBalance")}:{" "}
                     {(profile.creditBalance || 0).toFixed(2)}
                   </Text>
-                  <TouchableOpacity
-                    style={[
-                      styles.refillButtonSmall,
-                      { backgroundColor: colors.tint },
-                    ]}
-                    onPress={() => router.push("/profile/refill-credits")}
-                  >
-                    <IconSymbol
-                      name="plus.circle.fill"
-                      size={14}
-                      color="black"
-                    />
-                    <Text style={styles.refillButtonTextSmall}>
-                      {t("refill")}
-                    </Text>
-                  </TouchableOpacity>
+                  {!userId && (
+                    <TouchableOpacity
+                      style={[
+                        styles.refillButtonSmall,
+                        { backgroundColor: colors.tint },
+                      ]}
+                      onPress={() => router.push("/profile/refill-credits")}
+                    >
+                      <IconSymbol
+                        name="plus.circle.fill"
+                        size={14}
+                        color="black"
+                      />
+                      <Text style={styles.refillButtonTextSmall}>
+                        {t("refill")}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
-                <View
-                  style={[
-                    styles.contactCard,
-                    {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
+                <View style={styles.contactItem}>
                   <IconSymbol
                     name="person.fill"
-                    size={20}
+                    size={16}
                     color={colors.primary}
                   />
-                  <Text
-                    style={[
-                      styles.contactLabel,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("role")}
-                  </Text>
-                  <Text style={[styles.contactValue, { color: colors.text }]}>
+                  <Text style={[styles.contactText, { color: colors.text }]}>
+                    {t("role")}:{" "}
                     {profile.role.charAt(0).toUpperCase() +
                       profile.role.slice(1)}
                   </Text>
@@ -653,16 +593,25 @@ export default function ProfileScreen() {
           )}
 
           {/* Bio */}
-          {profile.bio && (
-            <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                About
-              </Text>
+          <ResponsiveCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t("about")}
+            </Text>
+            {profile.bio ? (
               <Text style={[styles.bioText, { color: colors.text }]}>
                 {profile.bio}
               </Text>
-            </ResponsiveCard>
-          )}
+            ) : (
+              <Text
+                style={[
+                  styles.bioText,
+                  { color: colors.textSecondary, fontStyle: "italic" },
+                ]}
+              >
+                {t("noBioProvided")}
+              </Text>
+            )}
+          </ResponsiveCard>
 
           {/* Account Information */}
           <ResponsiveCard>
@@ -1114,28 +1063,17 @@ const styles = StyleSheet.create({
   },
 
   // Contact information
-  contactGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  contactInfo: {
     gap: 12,
   },
-  contactCard: {
-    width: "48%",
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+  contactItem: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    gap: 10,
   },
-  contactLabel: {
-    fontSize: 12,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  contactValue: {
-    fontSize: 14,
-    fontWeight: "600",
-    textAlign: "center",
+  contactText: {
+    fontSize: 15,
+    flex: 1,
   },
   refillButtonSmall: {
     flexDirection: "row",
@@ -1145,7 +1083,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
-    marginTop: 8,
+    marginLeft: 8,
   },
   refillButtonTextSmall: {
     fontSize: 12,
