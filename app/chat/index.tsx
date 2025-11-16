@@ -16,10 +16,12 @@ import {
   View,
   ActivityIndicator,
   RefreshControl,
+  Alert,
 } from "react-native";
 import { chatService, Conversation } from "@/services/chatService";
 import { pusherService } from "@/services/pusherService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useConversations } from "@/contexts/ConversationsContext";
 
 export default function ChatScreen() {
   const colorScheme = useColorScheme();
@@ -27,16 +29,16 @@ export default function ChatScreen() {
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useTranslation();
   const { user } = useAuth();
+  const {
+    conversations,
+    loading,
+    error,
+    refreshConversations,
+    updateConversation,
+    removeConversation,
+  } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Load conversations on mount
-  useEffect(() => {
-    loadConversations();
-  }, []);
 
   // Subscribe to user updates for real-time conversation list updates
   useEffect(() => {
@@ -54,99 +56,97 @@ export default function ChatScreen() {
         updatedAt: string;
       }) => {
         // Update the conversation in the list
-        setConversations((prev) => {
-          const updated = [...prev];
-          const index = updated.findIndex(
-            (conv) => conv.id === data.conversationId
-          );
+        const existingConv = conversations.find(
+          (conv) => conv.id === data.conversationId
+        );
 
-          if (index !== -1) {
-            // Update existing conversation
-            updated[index] = {
-              ...updated[index],
-              updatedAt: data.updatedAt,
-              Messages: data.lastMessage
-                ? [{ ...data.lastMessage, Sender: data.lastMessage.Sender }]
-                : updated[index].Messages,
-            };
-            // Sort by updatedAt (most recent first)
-            updated.sort(
-              (a, b) =>
-                new Date(b.updatedAt).getTime() -
-                new Date(a.updatedAt).getTime()
-            );
-          } else {
-            // New conversation - reload the list
-            loadConversations();
-          }
-
-          return updated;
-        });
+        if (existingConv) {
+          // Update existing conversation
+          updateConversation(data.conversationId, {
+            updatedAt: data.updatedAt,
+            Messages: data.lastMessage
+              ? [{ ...data.lastMessage, Sender: data.lastMessage.Sender }]
+              : existingConv.Messages,
+          });
+        } else {
+          // New conversation - reload the list
+          refreshConversations();
+        }
       },
       // Handle conversation status updates
-      (statusData: { conversationId: number; status: string; updatedAt: string }) => {
+      (statusData: {
+        conversationId: number;
+        status: string;
+        updatedAt: string;
+      }) => {
         // Update conversation status in the list
-        setConversations((prev) => {
-          const updated = [...prev];
-          const index = updated.findIndex(
-            (conv) => conv.id === statusData.conversationId
-          );
-
-          if (index !== -1) {
-            updated[index] = {
-              ...updated[index],
-              status: statusData.status,
-              updatedAt: statusData.updatedAt,
-            };
-          }
-
-          return updated;
+        updateConversation(statusData.conversationId, {
+          status: statusData.status,
+          updatedAt: statusData.updatedAt,
         });
       },
       // Handle order status updates
-      (orderStatusData: { orderId: number; status: string; updatedAt: string }) => {
+      (orderStatusData: {
+        orderId: number;
+        status: string;
+        updatedAt: string;
+      }) => {
         // Update order status in conversations that have this order
-        setConversations((prev) => {
-          const updated = [...prev];
-          updated.forEach((conv, index) => {
-            if (conv.Order?.id === orderStatusData.orderId) {
-              updated[index] = {
-                ...conv,
-                Order: {
-                  ...conv.Order,
-                  status: orderStatusData.status,
-                },
-              };
-            }
-          });
-          return updated;
+        conversations.forEach((conv) => {
+          if (conv.Order?.id === orderStatusData.orderId) {
+            updateConversation(conv.id, {
+              Order: {
+                ...conv.Order,
+                status: orderStatusData.status,
+              },
+            });
+          }
         });
       }
     );
 
-    return () => {
-      unsubscribe();
+    // Subscribe to conversation deletion events
+    const conversationDeletedHandler = (data: {
+      conversationId: number;
+      deletedBy: number;
+    }) => {
+      // Remove conversation from list
+      removeConversation(data.conversationId);
     };
-  }, [user?.id]);
 
-  const loadConversations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await chatService.getConversations();
-      setConversations(response.conversations);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("failedToLoadConversations")
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Bind to conversation-deleted event on user channel
+    const timeoutId = setTimeout(() => {
+      const pusher = (pusherService as any).pusher;
+      if (pusher) {
+        const channel = pusher.channel(`user-${user.id}`);
+        if (channel) {
+          channel.bind("conversation-deleted", conversationDeletedHandler);
+        }
+      }
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      unsubscribe();
+      const pusher = (pusherService as any).pusher;
+      if (pusher) {
+        const channel = pusher.channel(`user-${user.id}`);
+        if (channel) {
+          channel.unbind("conversation-deleted", conversationDeletedHandler);
+        }
+      }
+    };
+  }, [
+    user?.id,
+    conversations,
+    updateConversation,
+    refreshConversations,
+    removeConversation,
+  ]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadConversations();
+    await refreshConversations();
     setRefreshing(false);
   };
 
@@ -201,24 +201,62 @@ export default function ChatScreen() {
         newLastReadAt = new Date().toISOString();
       }
 
-      setConversations((prev) =>
-        prev.map((conv) =>
-          conv.id === conversation.id
-            ? {
-                ...conv,
-                Participants: conv.Participants.map((p) =>
-                  p.isActive ? { ...p, lastReadAt: newLastReadAt } : p
-                ),
-              }
-            : conv
-        )
-      );
+      updateConversation(conversation.id, {
+        Participants: conversation.Participants.map((p) =>
+          p.isActive ? { ...p, lastReadAt: newLastReadAt } : p
+        ),
+      });
     } catch (err) {
       console.error("Failed to mark as read:", err);
     }
 
     // Navigate to chat detail
     router.push(`/chat/${conversation.id}`);
+  };
+
+  const handleDeleteConversation = async (conversation: Conversation) => {
+    const isClosed =
+      conversation.status === "closed" || conversation.status === "completed";
+
+    if (!isClosed) {
+      Alert.alert(
+        t("cannotDeleteConversation") || "Cannot Delete Conversation",
+        t("conversationMustBeClosed") ||
+          "Conversations can only be deleted if they are closed.",
+        [{ text: t("ok") || "OK" }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      t("deleteConversation") || "Delete Conversation",
+      t("areYouSureDeleteConversation") ||
+        "Are you sure you want to delete this conversation?",
+      [
+        {
+          text: t("cancel") || "Cancel",
+          style: "cancel",
+        },
+        {
+          text: t("delete") || "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await chatService.deleteConversation(conversation.id);
+              // Remove conversation from local state
+              removeConversation(conversation.id);
+            } catch (error) {
+              console.error("Failed to delete conversation:", error);
+              const errorMessage =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to delete conversation";
+              Alert.alert(t("error") || "Error", errorMessage);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const getLastMessageIcon = (type: string) => {
@@ -263,6 +301,8 @@ export default function ChatScreen() {
       }
     };
 
+    const isClosed = item.status === "closed" || item.status === "completed";
+
     return (
       <TouchableOpacity
         style={[
@@ -274,6 +314,7 @@ export default function ChatScreen() {
           },
         ]}
         onPress={() => handleConversationPress(item)}
+        onLongPress={() => handleDeleteConversation(item)}
         activeOpacity={0.6}
       >
         <View style={styles.conversationContent}>
@@ -381,7 +422,7 @@ export default function ChatScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={loadConversations}
+            onPress={refreshConversations}
           >
             <Text style={styles.retryButtonText}>{t("retry")}</Text>
           </TouchableOpacity>

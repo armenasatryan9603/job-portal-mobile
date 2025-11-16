@@ -31,6 +31,7 @@ import { NavigationProvider } from "@/contexts/NavigationContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
+import { ConversationsProvider } from "@/contexts/ConversationsContext";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -126,13 +127,15 @@ export default function RootLayout() {
           <TranslationProvider>
             <UnreadCountProvider>
               <AuthProvider>
-                <CreditCardProvider>
-                  <ModalProvider>
-                    <NavigationProvider>
-                      <AppContent />
-                    </NavigationProvider>
-                  </ModalProvider>
-                </CreditCardProvider>
+                <ConversationsProvider>
+                  <CreditCardProvider>
+                    <ModalProvider>
+                      <NavigationProvider>
+                        <AppContent />
+                      </NavigationProvider>
+                    </ModalProvider>
+                  </CreditCardProvider>
+                </ConversationsProvider>
               </AuthProvider>
             </UnreadCountProvider>
           </TranslationProvider>

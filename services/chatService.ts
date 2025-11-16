@@ -44,6 +44,7 @@ export interface Message {
   metadata?: any;
   isEdited: boolean;
   editedAt?: string;
+  status?: string;
   createdAt: string;
   Sender: {
     id: number;
@@ -293,6 +294,15 @@ class ChatService {
   async getReviewsByOrder(orderId: number): Promise<any> {
     return this.makeRequest<any>(`/reviews/order/${orderId}`, {
       method: "GET",
+    });
+  }
+
+  /**
+   * Delete a conversation (mark as removed)
+   */
+  async deleteConversation(conversationId: number): Promise<any> {
+    return this.makeRequest<any>(`/chat/conversations/${conversationId}`, {
+      method: "DELETE",
     });
   }
 }

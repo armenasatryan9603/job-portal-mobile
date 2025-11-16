@@ -147,9 +147,47 @@ export default function ChatDetailScreen() {
       }
     );
 
+    // Subscribe to conversation deletion events
+    const conversationDeletedHandler = (data: {
+      conversationId: number;
+      deletedBy: number;
+    }) => {
+      if (data.conversationId !== currentConversationId) {
+        return;
+      }
+
+      // Update conversation status to removed
+      setConversation((prev) => {
+        if (!prev) return prev;
+        return { ...prev, status: "removed" };
+      });
+    };
+
+    // Bind to conversation-deleted event after a short delay to ensure channel is ready
+    const timeoutId = setTimeout(() => {
+      // Access channel through pusher instance
+      const channelName = `conversation-${currentConversationId}`;
+      const pusher = (pusherService as any).pusher;
+      if (pusher) {
+        const channel = pusher.channel(channelName);
+        if (channel) {
+          channel.bind("conversation-deleted", conversationDeletedHandler);
+        }
+      }
+    }, 100);
+
     // Cleanup on unmount or when conversation changes
     return () => {
+      clearTimeout(timeoutId);
       unsubscribe();
+      const channelName = `conversation-${currentConversationId}`;
+      const pusher = (pusherService as any).pusher;
+      if (pusher) {
+        const channel = pusher.channel(channelName);
+        if (channel) {
+          channel.unbind("conversation-deleted", conversationDeletedHandler);
+        }
+      }
     };
   }, [conversation?.id]);
 
@@ -379,16 +417,19 @@ export default function ChatDetailScreen() {
       !newMessage.trim() ||
       !conversation ||
       sending ||
-      isConversationClosed()
+      isConversationClosed() ||
+      conversation.status === "removed"
     )
       return;
 
-    // Check for phone numbers in the message
-    if (containsPhoneNumber(newMessage.trim())) {
+    // Check for phone numbers in the message - only prevent when order is "open"
+    // Once order is "in_progress" (candidate chosen), phone numbers are allowed
+    const orderStatus = conversation?.Order?.status;
+    if (orderStatus === "open" && containsPhoneNumber(newMessage.trim())) {
       Alert.alert(
         t("cannotSendPhoneNumber") || "Cannot Send Phone Number",
-        t("phoneNumbersNotAllowed") ||
-          "Sharing phone numbers is not allowed in chat messages for security reasons.",
+        t("phoneNumbersNotAllowedUntilChosen") ||
+          "Phone numbers cannot be shared until you choose a candidate. Please wait until the order is accepted.",
         [{ text: t("ok") || "OK" }]
       );
       return;
@@ -633,6 +674,7 @@ export default function ChatDetailScreen() {
     // Get the current user ID from auth context
     const currentUserId = user?.id || 0;
     const isFromCurrentUser = item.senderId === currentUserId;
+    const isSystemMessage = item.messageType === "system";
 
     const formatTimestamp = (dateString: string) => {
       const date = new Date(dateString);
@@ -648,6 +690,40 @@ export default function ChatDetailScreen() {
         return `${diffInHours}h ago`;
       }
     };
+
+    // Render system messages differently
+    if (isSystemMessage) {
+      return (
+        <View style={styles.systemMessageContainer}>
+          <View
+            style={[
+              styles.systemMessageBubble,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <IconSymbol
+              name="info.circle.fill"
+              size={16}
+              color={colors.primary}
+              style={styles.systemMessageIcon}
+            />
+            <Text
+              style={[
+                styles.systemMessageText,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {item.content}
+            </Text>
+          </View>
+        </View>
+      );
+    }
 
     return (
       <View
@@ -812,8 +888,11 @@ export default function ChatDetailScreen() {
                   style={[
                     styles.orderCardActions,
                     {
-                      paddingBottom:
-                        conversation?.Order?.status === "open" ? 10 : 0,
+                      paddingBottom: ["open", "in_progress"].includes(
+                        conversation?.Order?.status
+                      )
+                        ? 10
+                        : 0,
                     },
                   ]}
                 >
@@ -940,29 +1019,40 @@ export default function ChatDetailScreen() {
           keyboardDismissMode="on-drag"
         />
 
-        {/* Conversation Status - Show when closed */}
-        {isConversationClosed() && (
+        {/* Conversation Status - Show when closed or removed */}
+        {(isConversationClosed() || conversation?.status === "removed") && (
           <View
             style={[
               styles.statusContainer,
               {
                 backgroundColor: colors.background,
                 borderTopColor: colors.border,
+                paddingBottom: 30,
               },
             ]}
           >
             <View style={styles.statusMessage}>
               <IconSymbol
-                name="checkmark.circle.fill"
+                name={
+                  conversation?.status === "removed"
+                    ? "trash.fill"
+                    : conversation?.status === "completed"
+                    ? "checkmark.circle.fill"
+                    : "xmark.circle.fill"
+                }
                 size={20}
                 color={
-                  conversation?.status === "completed"
+                  conversation?.status === "removed"
+                    ? "#FF6B6B"
+                    : conversation?.status === "completed"
                     ? colors.primary
                     : "#FF6B6B"
                 }
               />
               <Text style={[styles.statusText, { color: colors.text }]}>
-                {conversation?.status === "completed"
+                {conversation?.status === "removed"
+                  ? t("conversationDeleted") || "This conversation was deleted"
+                  : conversation?.status === "completed"
                   ? t("conversationCompleted")
                   : t("conversationClosed")}
               </Text>
@@ -977,7 +1067,10 @@ export default function ChatDetailScreen() {
             <View
               style={[
                 styles.reviewContainer,
-                { backgroundColor: colors.background },
+                {
+                  backgroundColor: colors.background,
+                  paddingBottom: Platform.OS === "android" ? 20 : 8,
+                },
               ]}
             >
               <TouchableOpacity
@@ -1000,13 +1093,13 @@ export default function ChatDetailScreen() {
             </View>
           )}
 
-        {/* Message Input - Only show if conversation is active */}
-        {!isConversationClosed() && (
+        {/* Message Input - Only show if conversation is active and not removed */}
+        {!isConversationClosed() && conversation?.status !== "removed" && (
           <View
             style={[
               styles.inputContainer,
               Platform.OS === "android" && keyboardHeight > 0
-                ? { marginBottom: 10 }
+                ? { paddingBottom: 10 }
                 : {},
             ]}
           >
@@ -1195,6 +1288,30 @@ const styles = StyleSheet.create({
   otherUserMessage: {
     alignItems: "flex-start",
   },
+  systemMessageContainer: {
+    marginBottom: 12,
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  systemMessageBubble: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    maxWidth: "90%",
+    gap: 8,
+  },
+  systemMessageIcon: {
+    marginRight: 0,
+  },
+  systemMessageText: {
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+    textAlign: "center",
+  },
   messageBubble: {
     maxWidth: "80%",
     paddingHorizontal: 12,
@@ -1222,7 +1339,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingHorizontal: 12,
     paddingTop: 6,
-    paddingBottom: 30,
+    paddingBottom: Platform.OS === "android" ? 50 : 30,
   },
   actionContainer: {
     borderTopWidth: 1,
@@ -1330,7 +1447,8 @@ const styles = StyleSheet.create({
   statusContainer: {
     borderTopWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === "android" ? 20 : 8,
   },
   statusMessage: {
     flexDirection: "row",
@@ -1345,7 +1463,8 @@ const styles = StyleSheet.create({
   reviewContainer: {
     borderTopWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: Platform.OS === "android" ? 20 : 8,
   },
   reviewButton: {
     flexDirection: "row",
