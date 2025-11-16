@@ -67,6 +67,7 @@ export default function CreateOrderScreen() {
     null
   );
   const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
+  const [orderStatus, setOrderStatus] = useState<string | null>(null);
 
   // Refs for scrolling to error fields
   const scrollViewRef = useRef<ScrollView>(null);
@@ -114,6 +115,9 @@ export default function CreateOrderScreen() {
           const orderData = await apiService.getOrderById(
             parseInt(orderId as string)
           );
+
+          // Store order status
+          setOrderStatus(orderData.status || null);
 
           // Populate form with existing data
           setFormData({
@@ -434,6 +438,11 @@ export default function CreateOrderScreen() {
   };
 
   const handleServiceSelect = (service: Service | null) => {
+    // Prevent service changes when order is in_progress
+    if (orderStatus === "in_progress") {
+      return;
+    }
+
     if (!service) {
       setSelectedService(null);
       setFormData((prev) => ({ ...prev, serviceId: null }));
@@ -924,6 +933,7 @@ export default function CreateOrderScreen() {
                 selectedService={selectedService}
                 onServiceSelect={handleServiceSelect}
                 error={errors.serviceId}
+                disabled={orderStatus === "in_progress"}
               />
             </View>
           </ResponsiveCard>
@@ -1046,7 +1056,7 @@ export default function CreateOrderScreen() {
                       { color: colors.background },
                     ]}
                   >
-                    {orderId ? t("saveChanges") || "Save Changes" : t("apply")}
+                    {orderId ? t("save") : t("apply")}
                   </Text>
                 )}
               </TouchableOpacity>

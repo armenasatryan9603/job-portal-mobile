@@ -896,6 +896,7 @@ export default function OrdersScreen() {
 
           <Text
             style={[styles.orderDescription, { color: colors.tabIconDefault }]}
+            numberOfLines={5}
           >
             {order.description}
           </Text>
@@ -931,7 +932,7 @@ export default function OrdersScreen() {
             <View style={styles.detailItem}>
               <IconSymbol name="person.fill" size={16} color={colors.tint} />
               <Text style={[styles.detailText, { color: colors.text }]}>
-                {order._count.Proposals} {t("proposals")}
+                {order._count.Proposals} {t("application")}
               </Text>
             </View>
           </View>

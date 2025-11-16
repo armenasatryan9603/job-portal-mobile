@@ -24,8 +24,7 @@ import {
   Image,
   Modal,
 } from "react-native";
-import { apiService, Service, Order } from "@/services/api";
-import { fileUploadService, MediaFile } from "@/services/fileUpload";
+import { apiService, Order } from "@/services/api";
 import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 

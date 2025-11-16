@@ -24,12 +24,14 @@ interface ServiceSelectorProps {
   selectedService: Service | null;
   onServiceSelect: (service: Service | null) => void;
   error?: string;
+  disabled?: boolean;
 }
 
 export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   selectedService,
   onServiceSelect,
   error,
+  disabled = false,
 }) => {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -155,6 +157,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             onChangeText={setSearchQuery}
             placeholder={t("searchServices")}
             placeholderTextColor={colors.tabIconDefault}
+            editable={!disabled}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
@@ -198,16 +201,18 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               </Text>
             )}
           </View>
-          <TouchableOpacity
-            onPress={() => onServiceSelect(null)}
-            style={styles.removeButton}
-          >
-            <IconSymbol
-              name="xmark.circle.fill"
-              size={18}
-              color={colors.tabIconDefault}
-            />
-          </TouchableOpacity>
+          {!disabled && (
+            <TouchableOpacity
+              onPress={() => onServiceSelect(null)}
+              style={styles.removeButton}
+            >
+              <IconSymbol
+                name="xmark.circle.fill"
+                size={18}
+                color={colors.tabIconDefault}
+              />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -312,10 +317,14 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                             borderLeftColor: isSelected
                               ? colors.primary
                               : "transparent",
+                            opacity: disabled ? 0.5 : 1,
                           },
                         ]}
-                        onPress={() => handleServiceSelect(service)}
+                        onPress={() =>
+                          !disabled && handleServiceSelect(service)
+                        }
                         activeOpacity={0.7}
+                        disabled={disabled}
                       >
                         {service.imageUrl ? (
                           <Image
