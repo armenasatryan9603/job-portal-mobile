@@ -770,14 +770,6 @@ export default function SpecialistDetailScreen() {
                   {specialist.User.email}
                 </Text>
               </View>
-              {specialist.User.phone && (
-                <View style={styles.contactItem}>
-                  <IconSymbol name="phone.fill" size={16} color={colors.tint} />
-                  <Text style={[styles.contactText, { color: colors.text }]}>
-                    {specialist.User.phone}
-                  </Text>
-                </View>
-              )}
               <View style={styles.contactItem}>
                 <IconSymbol name="calendar" size={16} color={colors.tint} />
                 <Text style={[styles.contactText, { color: colors.text }]}>

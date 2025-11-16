@@ -512,7 +512,6 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.rejectApplication(conversation.Order!.id);
-            Alert.alert(t("success"), t("applicationRejected"));
             // Reload conversation to get updated status
             await loadConversation();
           } catch (error) {
@@ -542,7 +541,6 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.chooseApplication(conversation.Order!.id);
-            Alert.alert(t("success"), t("applicationChosen"));
             // Reload conversation to get updated status
             await loadConversation();
           } catch (error) {
@@ -572,7 +570,6 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.cancelApplication(conversation.Order!.id);
-            Alert.alert(t("success"), t("applicationCanceled"));
             // Reload conversation to get updated status
             await loadConversation();
           } catch (error) {
@@ -646,8 +643,6 @@ export default function ChatDetailScreen() {
         comment: feedback,
         feedbackType: pendingAction === "cancel" ? "canceled" : "completed",
       });
-
-      Alert.alert(t("success"), t("feedbackSubmitted"));
 
       // Mark feedback as submitted and close dialog
       setFeedbackSubmitted(true);
