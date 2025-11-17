@@ -40,8 +40,7 @@ export default function ProfileScreen() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { creditCards, removeCreditCard, setDefaultCard, isLoading } =
-    useCreditCard();
+  const { creditCards } = useCreditCard();
 
   // Get URL parameters for handling refresh from edit screen and viewing other users
   const { refreshUserId, userId } = useLocalSearchParams();
@@ -372,7 +371,6 @@ export default function ProfileScreen() {
     <Layout header={header}>
       <ScrollView
         style={{
-          // backgroundColor: "red",
           flex: 1,
           marginBottom: 4 * Spacing.xxl,
         }}
@@ -519,24 +517,6 @@ export default function ProfileScreen() {
                     {t("creditBalance")}:{" "}
                     {(profile.creditBalance || 0).toFixed(2)}
                   </Text>
-                  {!userId && (
-                    <TouchableOpacity
-                      style={[
-                        styles.refillButtonSmall,
-                        { backgroundColor: colors.tint },
-                      ]}
-                      onPress={() => router.push("/profile/refill-credits")}
-                    >
-                      <IconSymbol
-                        name="plus.circle.fill"
-                        size={14}
-                        color="black"
-                      />
-                      <Text style={styles.refillButtonTextSmall}>
-                        {t("refill")}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
 
                 <View style={styles.contactItem}>
@@ -551,6 +531,42 @@ export default function ProfileScreen() {
                       profile.role.slice(1)}
                   </Text>
                 </View>
+              </View>
+            </ResponsiveCard>
+          )}
+
+          {/* Payments entry point */}
+          {!userId && (
+            <ResponsiveCard>
+              <View style={styles.paymentsPreview}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {t("paymentsOverview")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.paymentsPreviewSubtitle,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("paymentsOverviewDescription")}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                  onPress={() => router.push("/profile/payments")}
+                >
+                  <Text
+                    style={[styles.paymentsCtaText, { color: colors.text }]}
+                  >
+                    {t("managePaymentsCta")}
+                  </Text>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.primary}
+                  />
+                </TouchableOpacity>
               </View>
             </ResponsiveCard>
           )}
@@ -801,168 +817,6 @@ export default function ProfileScreen() {
               </View>
             )}
           </ResponsiveCard>
-
-          {/* Payment Methods - Only show for own profile */}
-          {!userId && (
-            <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("paymentMethods")}
-              </Text>
-
-              {creditCards.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <IconSymbol
-                    name="creditcard"
-                    size={48}
-                    color={colors.textSecondary}
-                  />
-                  <Text
-                    style={[styles.emptyStateTitle, { color: colors.text }]}
-                  >
-                    {t("noCreditCardsAdded")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.emptyStateDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("addCreditCardToMakePayments")}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  {creditCards.map((card) => (
-                    <View
-                      key={card.id}
-                      style={[
-                        styles.creditCardItem,
-                        { borderBottomColor: colors.border },
-                      ]}
-                    >
-                      <View style={styles.cardInfo}>
-                        <View
-                          style={[
-                            styles.cardIcon,
-                            { backgroundColor: colors.primary + "20" },
-                          ]}
-                        >
-                          <IconSymbol
-                            name="creditcard.fill"
-                            size={20}
-                            color={colors.primary}
-                          />
-                        </View>
-                        <View style={styles.cardDetails}>
-                          <View style={styles.cardHeader}>
-                            <Text
-                              style={[
-                                styles.cardNumber,
-                                { color: colors.text },
-                              ]}
-                            >
-                              •••• •••• •••• {card.cardNumber}
-                            </Text>
-                            {card.isDefault && (
-                              <View
-                                style={[
-                                  styles.defaultBadge,
-                                  { backgroundColor: colors.primary },
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.defaultBadgeText,
-                                    { color: colors.textInverse },
-                                  ]}
-                                >
-                                  {t("default")}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text
-                            style={[
-                              styles.cardName,
-                              { color: colors.textSecondary },
-                            ]}
-                          >
-                            {card.cardholderName}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.cardExpiry,
-                              { color: colors.textSecondary },
-                            ]}
-                          >
-                            {t("expires")} {card.expiryMonth.padStart(2, "0")}/
-                            {card.expiryYear.slice(-2)}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.cardActions}>
-                        {!card.isDefault && (
-                          <TouchableOpacity
-                            style={[
-                              styles.actionButton,
-                              { borderColor: colors.border },
-                            ]}
-                            onPress={() => setDefaultCard(card.id)}
-                            disabled={isLoading}
-                          >
-                            <Text
-                              style={[
-                                styles.actionButtonText,
-                                { color: colors.text },
-                              ]}
-                            >
-                              {t("setDefault")}
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                        <TouchableOpacity
-                          style={[
-                            styles.actionButton,
-                            styles.removeButton,
-                            { borderColor: colors.error },
-                          ]}
-                          onPress={() => removeCreditCard(card.id)}
-                          disabled={isLoading}
-                        >
-                          <Text
-                            style={[
-                              styles.actionButtonText,
-                              { color: colors.error },
-                            ]}
-                          >
-                            {t("remove")}
-                          </Text>
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
-                </>
-              )}
-
-              <TouchableOpacity
-                style={[
-                  styles.addCardButton,
-                  { backgroundColor: colors.primary },
-                ]}
-                onPress={() => router.push("/profile/add-credit-card")}
-              >
-                <IconSymbol name="plus" size={20} color={colors.textInverse} />
-                <Text
-                  style={[
-                    styles.addCardButtonText,
-                    { color: colors.textInverse },
-                  ]}
-                >
-                  {t("addCreditCard")}
-                </Text>
-              </TouchableOpacity>
-            </ResponsiveCard>
-          )}
         </ResponsiveContainer>
       </ScrollView>
 
@@ -1067,21 +921,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     flex: 1,
   },
-  refillButtonSmall: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginLeft: 8,
-  },
-  refillButtonTextSmall: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "black",
-  },
 
   // Skills
   skillsContainer: {
@@ -1100,98 +939,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Credit Card Styles
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: Spacing.xxl,
-  },
-  emptyStateTitle: {
-    fontSize: Typography.xl,
-    fontWeight: Typography.semibold,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  emptyStateDescription: {
-    fontSize: Typography.md,
-    textAlign: "center",
-    lineHeight: Typography.lineHeightRelaxed * Typography.md,
-  },
-  creditCardItem: {
-    paddingVertical: Spacing.lg,
-    borderBottomWidth: 1,
-  },
-  cardInfo: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: Spacing.md,
-  },
-  cardIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: Spacing.md,
-  },
-  cardDetails: {
-    flex: 1,
-  },
-  cardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.xs,
-  },
-  cardNumber: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.semibold,
-  },
-  defaultBadge: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  defaultBadgeText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semibold,
-  },
-  cardName: {
-    fontSize: Typography.md,
-    marginBottom: 2,
-  },
-  cardExpiry: {
-    fontSize: Typography.sm,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  actionButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderWidth: 1,
-    borderRadius: BorderRadius.sm,
-  },
-  removeButton: {
-    // Additional styles for remove button if needed
-  },
-  actionButtonText: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.medium,
-  },
-  addCardButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: Spacing.lg,
-    borderRadius: BorderRadius.md,
-    marginTop: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  addCardButtonText: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.semibold,
-  },
+  // Credit card preview styles moved to dedicated screen
   // Loading and Error States
   loadingContainer: {
     flex: 1,
@@ -1377,5 +1125,27 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: Typography.lineHeightRelaxed * Typography.md,
     paddingHorizontal: Spacing.lg,
+  },
+  paymentsPreview: {
+    gap: Spacing.sm,
+  },
+  paymentsPreviewSubtitle: {
+    fontSize: Typography.md,
+    marginTop: Spacing.xs,
+    lineHeight: Typography.lineHeightRelaxed * Typography.md,
+  },
+  paymentsCta: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  paymentsCtaText: {
+    fontSize: Typography.md,
+    fontWeight: Typography.semibold,
   },
 });

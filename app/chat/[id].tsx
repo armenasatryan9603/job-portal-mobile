@@ -21,6 +21,7 @@ import {
   Keyboard,
   Animated,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { chatService, Conversation, Message } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Review } from "@/services/api";
@@ -147,6 +148,7 @@ export default function ChatDetailScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { id } = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
   const [newMessage, setNewMessage] = useState("");
   const flatListRef = useRef<FlatList>(null);
 
@@ -163,7 +165,6 @@ export default function ChatDetailScreen() {
   >(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [hasExistingFeedback, setHasExistingFeedback] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSentRef = useRef(false);
@@ -177,33 +178,23 @@ export default function ChatDetailScreen() {
     loadConversation();
   }, [id]);
 
-  // Handle keyboard show/hide for Android
+  // Handle keyboard show/hide - scroll to bottom when keyboard appears
   useEffect(() => {
-    if (Platform.OS === "android") {
-      const keyboardWillShowListener = Keyboard.addListener(
-        "keyboardDidShow",
-        (e) => {
-          // Add extra padding to ensure input is fully visible above keyboard
-          const height = e.endCoordinates.height;
-          setKeyboardHeight(height);
-          // Scroll to bottom when keyboard appears
-          setTimeout(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => {
+        setTimeout(
+          () => {
             flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
-        }
-      );
-      const keyboardWillHideListener = Keyboard.addListener(
-        "keyboardDidHide",
-        () => {
-          setKeyboardHeight(0);
-        }
-      );
+          },
+          Platform.OS === "ios" ? 100 : 300
+        );
+      }
+    );
 
-      return () => {
-        keyboardWillShowListener.remove();
-        keyboardWillHideListener.remove();
-      };
-    }
+    return () => {
+      keyboardWillShowListener.remove();
+    };
   }, []);
 
   // Initialize Pusher and subscribe to conversation updates
@@ -1093,18 +1084,18 @@ export default function ChatDetailScreen() {
     }
   };
 
+  // Calculate keyboard offset for iOS (header height + status bar)
+  // For Android, KeyboardAvoidingView with "height" behavior should handle it automatically
+  const keyboardVerticalOffset =
+    Platform.OS === "ios" ? 33 + insets.top : 45 + insets.top;
+
   return (
     <Layout header={header} showFooterTabs={false}>
       <KeyboardAvoidingView
-        style={[
-          styles.container,
-          Platform.OS === "android" && keyboardHeight > 0
-            ? { paddingBottom: keyboardHeight + 20 }
-            : {},
-        ]}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-        enabled={Platform.OS === "ios"}
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardVerticalOffset}
+        enabled={true}
       >
         {/* Order Reference Card with Action Buttons */}
         {conversation?.Order && (
@@ -1274,33 +1265,35 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Messages List */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item, index) => {
-            // Use ID if available, otherwise fallback to index
-            // This prevents duplicate key errors
-            return item.id ? `msg-${item.id}` : `msg-${index}`;
-          }}
-          style={styles.messagesList}
-          contentContainerStyle={styles.messagesContent}
-          showsVerticalScrollIndicator={false}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          ListFooterComponent={
-            typingUsers.size > 0 ? (
-              <TypingIndicator
-                typingUsers={typingUsers}
-                conversation={conversation}
-                colors={colors}
-              />
-            ) : null
-          }
-        />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item, index) => {
+              // Use ID if available, otherwise fallback to index
+              // This prevents duplicate key errors
+              return item.id ? `msg-${item.id}` : `msg-${index}`;
+            }}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            ListFooterComponent={
+              typingUsers.size > 0 ? (
+                <TypingIndicator
+                  typingUsers={typingUsers}
+                  conversation={conversation}
+                  colors={colors}
+                />
+              ) : null
+            }
+          />
+        </View>
 
         {/* Conversation Status - Show when closed or removed */}
         {(isConversationClosed() || conversation?.status === "removed") && (
@@ -1378,14 +1371,7 @@ export default function ChatDetailScreen() {
 
         {/* Message Input - Only show if conversation is active and not removed */}
         {!isConversationClosed() && conversation?.status !== "removed" && (
-          <View
-            style={[
-              styles.inputContainer,
-              Platform.OS === "android" && keyboardHeight > 0
-                ? { paddingBottom: 10 }
-                : {},
-            ]}
-          >
+          <View style={styles.inputContainer}>
             <View
               style={[
                 styles.inputWrapper,
@@ -1622,7 +1608,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingHorizontal: 12,
     paddingTop: 6,
-    paddingBottom: Platform.OS === "android" ? 50 : 30,
+    paddingBottom: Platform.OS === "android" ? 20 : 30,
   },
   actionContainer: {
     borderTopWidth: 1,

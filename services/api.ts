@@ -1105,6 +1105,40 @@ class ApiService {
   }> {
     return this.post("/credit/refill/initiate", { amount }, true);
   }
+
+  // Credit Transactions API
+  async getCreditTransactions(
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{
+    transactions: Array<{
+      id: number;
+      userId: number;
+      amount: number;
+      balanceAfter: number;
+      type: string;
+      status: string;
+      description: string | null;
+      referenceId: string | null;
+      referenceType: string | null;
+      metadata: any;
+      createdAt: string;
+    }>;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }> {
+    return this.request(
+      `/credit/transactions?page=${page}&limit=${limit}`,
+      {},
+      true
+    );
+  }
 }
 
 // Export singleton instance
