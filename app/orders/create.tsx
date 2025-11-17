@@ -568,10 +568,6 @@ export default function CreateOrderScreen() {
     }
   };
 
-  const handleCancel = () => {
-    router.back();
-  };
-
   const handleDeleteOrder = () => {
     if (!orderId) return;
 

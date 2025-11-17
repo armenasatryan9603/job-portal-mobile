@@ -171,6 +171,7 @@ export default function ChatDetailScreen() {
   const typingClearTimeoutsRef = useRef<
     Map<number, ReturnType<typeof setTimeout>>
   >(new Map());
+  const typingChannelRef = useRef<any>(null);
 
   // Load conversation and messages
   useEffect(() => {
@@ -208,110 +209,80 @@ export default function ChatDetailScreen() {
 
   // Initialize Pusher and subscribe to conversation updates
   useEffect(() => {
-    // Initialize Pusher
     pusherService.initialize();
 
     if (!conversation?.id) return;
 
-    // Store current conversation ID to prevent race conditions
     const currentConversationId = conversation.id;
-
-    // Get Pusher channel for typing events
-    const channelName = `conversation-${currentConversationId}`;
+    const conversationChannelName = `conversation-${currentConversationId}`;
+    const typingChannelName = `private-conversation-${currentConversationId}`;
     const pusher = (pusherService as any).pusher;
-    let typingChannel: any = null;
+    let typingChannelRetryTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const handleTypingEvent = (data: { userId: number; isTyping: boolean }) => {
+      if (data.userId === user?.id) {
+        return;
+      }
+
+      const existingTimeout = typingClearTimeoutsRef.current.get(data.userId);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
+      if (data.isTyping) {
+        setTypingUsers((prev) => new Set(prev).add(data.userId));
+        const timeoutId = setTimeout(() => {
+          setTypingUsers((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(data.userId);
+            return newSet;
+          });
+          typingClearTimeoutsRef.current.delete(data.userId);
+        }, 4000);
+        typingClearTimeoutsRef.current.set(data.userId, timeoutId);
+      } else {
+        setTypingUsers((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(data.userId);
+          return newSet;
+        });
+        typingClearTimeoutsRef.current.delete(data.userId);
+      }
+    };
+
+    const ensureTypingChannel = () => {
+      if (!pusher) return null;
+      try {
+        const channel =
+          pusher.channel(typingChannelName) ||
+          pusher.subscribe(typingChannelName);
+        if (channel) {
+          channel.unbind("client-currently-typing", handleTypingEvent);
+          channel.bind("client-currently-typing", handleTypingEvent);
+          typingChannelRef.current = channel;
+        }
+        return channel;
+      } catch (error) {
+        console.error(
+          `Failed to subscribe to ${typingChannelName} for typing events`,
+          error
+        );
+        return null;
+      }
+    };
 
     if (pusher) {
-      typingChannel = pusher.channel(channelName);
-      if (!typingChannel) {
-        // Channel might not be ready yet, wait a bit
-        setTimeout(() => {
-          typingChannel = pusher.channel(channelName);
-          if (typingChannel) {
-            // Subscribe to typing events (client events in Pusher)
-            typingChannel.bind(
-              "client-currently-typing",
-              (data: { userId: number; isTyping: boolean }) => {
-                if (data.userId !== user?.id) {
-                  // Clear any existing timeout for this user
-                  const existingTimeout = typingClearTimeoutsRef.current.get(
-                    data.userId
-                  );
-                  if (existingTimeout) {
-                    clearTimeout(existingTimeout);
-                  }
-
-                  if (data.isTyping) {
-                    setTypingUsers((prev) => new Set(prev).add(data.userId));
-                    // Auto-clear typing indicator after 4 seconds if no new typing event (like Messenger.com)
-                    const timeoutId = setTimeout(() => {
-                      setTypingUsers((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.delete(data.userId);
-                        return newSet;
-                      });
-                      typingClearTimeoutsRef.current.delete(data.userId);
-                    }, 4000);
-                    typingClearTimeoutsRef.current.set(data.userId, timeoutId);
-                  } else {
-                    setTypingUsers((prev) => {
-                      const newSet = new Set(prev);
-                      newSet.delete(data.userId);
-                      return newSet;
-                    });
-                    typingClearTimeoutsRef.current.delete(data.userId);
-                  }
-                }
-              }
-            );
-          }
+      const channel = ensureTypingChannel();
+      if (!channel) {
+        typingChannelRetryTimeout = setTimeout(() => {
+          ensureTypingChannel();
         }, 500);
-      } else {
-        // Subscribe to typing events (client events in Pusher)
-        typingChannel.bind(
-          "client-currently-typing",
-          (data: { userId: number; isTyping: boolean }) => {
-            if (data.userId !== user?.id) {
-              // Clear any existing timeout for this user
-              const existingTimeout = typingClearTimeoutsRef.current.get(
-                data.userId
-              );
-              if (existingTimeout) {
-                clearTimeout(existingTimeout);
-              }
-
-              if (data.isTyping) {
-                setTypingUsers((prev) => new Set(prev).add(data.userId));
-                // Auto-clear typing indicator after 4 seconds if no new typing event (like Messenger.com)
-                const timeoutId = setTimeout(() => {
-                  setTypingUsers((prev) => {
-                    const newSet = new Set(prev);
-                    newSet.delete(data.userId);
-                    return newSet;
-                  });
-                  typingClearTimeoutsRef.current.delete(data.userId);
-                }, 4000);
-                typingClearTimeoutsRef.current.set(data.userId, timeoutId);
-              } else {
-                setTypingUsers((prev) => {
-                  const newSet = new Set(prev);
-                  newSet.delete(data.userId);
-                  return newSet;
-                });
-                typingClearTimeoutsRef.current.delete(data.userId);
-              }
-            }
-          }
-        );
       }
     }
 
-    // Subscribe to conversation updates
     const unsubscribe = pusherService.subscribeToConversation(
       currentConversationId,
       (newMessage: Message) => {
-        // Safety check: Ensure message belongs to current conversation
-        // This prevents messages from other conversations appearing if user switches quickly
         if (newMessage.conversationId !== currentConversationId) {
           console.warn(
             `⚠️ Received message for conversation ${newMessage.conversationId} but current is ${currentConversationId}. Ignoring.`
@@ -319,9 +290,7 @@ export default function ChatDetailScreen() {
           return;
         }
 
-        // Add new message to the list if it's not already there
         setMessages((prev) => {
-          // Check if message already exists (avoid duplicates)
           const exists = prev.some((msg) => msg.id === newMessage.id);
           if (exists) {
             console.log(
@@ -329,19 +298,15 @@ export default function ChatDetailScreen() {
             );
             return prev;
           }
-
-          // Add new message
           return [...prev, newMessage];
         });
 
-        // Clear typing indicator when message arrives (like Messenger.com)
         if (newMessage.senderId !== user?.id) {
           setTypingUsers((prev) => {
             const newSet = new Set(prev);
             newSet.delete(newMessage.senderId);
             return newSet;
           });
-          // Clear timeout for this user
           const existingTimeout = typingClearTimeoutsRef.current.get(
             newMessage.senderId
           );
@@ -351,18 +316,15 @@ export default function ChatDetailScreen() {
           }
         }
 
-        // Scroll to bottom when new message arrives
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       },
-      // Handle conversation status updates
       (statusData: {
         conversationId: number;
         status: string;
         updatedAt: string;
       }) => {
-        // Update conversation status in real-time
         setConversation((prev) => {
           if (!prev || prev.id !== statusData.conversationId) {
             return prev;
@@ -376,7 +338,6 @@ export default function ChatDetailScreen() {
       }
     );
 
-    // Subscribe to conversation deletion events
     const conversationDeletedHandler = (data: {
       conversationId: number;
       deletedBy: number;
@@ -385,40 +346,49 @@ export default function ChatDetailScreen() {
         return;
       }
 
-      // Update conversation status to removed
       setConversation((prev) => {
         if (!prev) return prev;
         return { ...prev, status: "removed" };
       });
     };
 
-    // Bind to conversation-deleted event after a short delay to ensure channel is ready
     const timeoutId = setTimeout(() => {
-      // Access channel through pusher instance
-      const channelName = `conversation-${currentConversationId}`;
-      const pusher = (pusherService as any).pusher;
-      if (pusher) {
-        const channel = pusher.channel(channelName);
+      const pusherInstance = (pusherService as any).pusher;
+      if (pusherInstance) {
+        const channel = pusherInstance.channel(conversationChannelName);
         if (channel) {
           channel.bind("conversation-deleted", conversationDeletedHandler);
         }
       }
     }, 100);
 
-    // Cleanup on unmount or when conversation changes
     return () => {
       clearTimeout(timeoutId);
+      if (typingChannelRetryTimeout) {
+        clearTimeout(typingChannelRetryTimeout);
+      }
       unsubscribe();
-      const channelName = `conversation-${currentConversationId}`;
-      const pusher = (pusherService as any).pusher;
-      if (pusher) {
-        const channel = pusher.channel(channelName);
-        if (channel) {
-          channel.unbind("conversation-deleted", conversationDeletedHandler);
-          channel.unbind("client-currently-typing");
+      const pusherInstance = (pusherService as any).pusher;
+      if (pusherInstance) {
+        const conversationChannel = pusherInstance.channel(
+          conversationChannelName
+        );
+        if (conversationChannel) {
+          conversationChannel.unbind(
+            "conversation-deleted",
+            conversationDeletedHandler
+          );
+        }
+        const privateChannel = pusherInstance.channel(typingChannelName);
+        if (privateChannel) {
+          privateChannel.unbind("client-currently-typing", handleTypingEvent);
+          if (typingChannelRef.current === privateChannel) {
+            typingChannelRef.current = null;
+          }
+          pusherInstance.unsubscribe(typingChannelName);
         }
       }
-      // Clear typing state and timeouts
+
       setTypingUsers(new Set());
       typingClearTimeoutsRef.current.forEach((timeout) =>
         clearTimeout(timeout)
@@ -433,7 +403,7 @@ export default function ChatDetailScreen() {
         typingIntervalRef.current = null;
       }
     };
-  }, [conversation?.id]);
+  }, [conversation?.id, user?.id]);
 
   // Subscribe to user updates for order status changes
   useEffect(() => {
@@ -660,17 +630,21 @@ export default function ChatDetailScreen() {
   const sendTypingIndicator = (isTyping: boolean) => {
     if (!conversation?.id || !user?.id) return;
 
-    const channelName = `conversation-${conversation.id}`;
+    const channelName = `private-conversation-${conversation.id}`;
     const pusher = (pusherService as any).pusher;
-    if (pusher) {
-      const channel = pusher.channel(channelName);
-      if (channel && channel.trigger) {
-        // Use client events for typing indicators
-        channel.trigger("client-currently-typing", {
-          userId: user.id,
-          isTyping,
-        });
-      }
+    if (!pusher) return;
+
+    let channel = typingChannelRef.current;
+    if (!channel) {
+      channel = pusher.channel(channelName) || pusher.subscribe(channelName);
+      typingChannelRef.current = channel;
+    }
+
+    if (channel?.trigger) {
+      channel.trigger("client-currently-typing", {
+        userId: user.id,
+        isTyping,
+      });
     }
   };
 

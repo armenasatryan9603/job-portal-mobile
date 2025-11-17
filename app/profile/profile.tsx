@@ -61,7 +61,6 @@ export default function ProfileScreen() {
 
   // Profile picture state management
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const [selectedImageFile, setSelectedImageFile] = useState<any>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
 
   // Test mode state - will use real backend data
@@ -72,12 +71,6 @@ export default function ProfileScreen() {
 
   // Skills/Services management
   const skills = useSkills(userId ? targetUserId : user?.id);
-
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-    address: string;
-  } | null>(null);
 
   // Fetch user profile from API
   useEffect(() => {
@@ -248,7 +241,6 @@ export default function ProfileScreen() {
 
         // Show local preview immediately
         setProfilePicture(asset.uri);
-        setSelectedImageFile(mediaFile);
 
         // Upload to storage and update profile immediately
         setUploadingPicture(true);
