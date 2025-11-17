@@ -298,6 +298,22 @@ class ChatService {
   }
 
   /**
+   * Send typing status for a conversation
+   */
+  async sendTypingStatus(
+    conversationId: number,
+    isTyping: boolean
+  ): Promise<void> {
+    await this.makeRequest<void>(
+      `/chat/conversations/${conversationId}/typing`,
+      {
+        method: "POST",
+        body: JSON.stringify({ isTyping }),
+      }
+    );
+  }
+
+  /**
    * Delete a conversation (mark as removed)
    */
   async deleteConversation(conversationId: number): Promise<any> {

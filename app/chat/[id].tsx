@@ -171,7 +171,6 @@ export default function ChatDetailScreen() {
   const typingClearTimeoutsRef = useRef<
     Map<number, ReturnType<typeof setTimeout>>
   >(new Map());
-  const typingChannelRef = useRef<any>(null);
 
   // Load conversation and messages
   useEffect(() => {
@@ -215,11 +214,20 @@ export default function ChatDetailScreen() {
 
     const currentConversationId = conversation.id;
     const conversationChannelName = `conversation-${currentConversationId}`;
-    const typingChannelName = `private-conversation-${currentConversationId}`;
     const pusher = (pusherService as any).pusher;
-    let typingChannelRetryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let typingEventRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    const handleTypingEvent = (data: { userId: number; isTyping: boolean }) => {
+    const handleTypingEvent = (data: {
+      userId: number;
+      isTyping: boolean;
+      conversationId?: number;
+    }) => {
+      if (
+        data.conversationId &&
+        data.conversationId !== currentConversationId
+      ) {
+        return;
+      }
       if (data.userId === user?.id) {
         return;
       }
@@ -250,33 +258,23 @@ export default function ChatDetailScreen() {
       }
     };
 
-    const ensureTypingChannel = () => {
-      if (!pusher) return null;
-      try {
-        const channel =
-          pusher.channel(typingChannelName) ||
-          pusher.subscribe(typingChannelName);
-        if (channel) {
-          channel.unbind("client-currently-typing", handleTypingEvent);
-          channel.bind("client-currently-typing", handleTypingEvent);
-          typingChannelRef.current = channel;
-        }
-        return channel;
-      } catch (error) {
-        console.error(
-          `Failed to subscribe to ${typingChannelName} for typing events`,
-          error
-        );
-        return null;
+    const bindTypingEvent = () => {
+      if (!pusher) return false;
+      const channel = pusher.channel(conversationChannelName);
+      if (channel) {
+        channel.unbind("currently-typing", handleTypingEvent);
+        channel.bind("currently-typing", handleTypingEvent);
+        return true;
       }
+      return false;
     };
 
     if (pusher) {
-      const channel = ensureTypingChannel();
-      if (!channel) {
-        typingChannelRetryTimeout = setTimeout(() => {
-          ensureTypingChannel();
-        }, 500);
+      const bound = bindTypingEvent();
+      if (!bound) {
+        typingEventRetryTimeout = setTimeout(() => {
+          bindTypingEvent();
+        }, 300);
       }
     }
 
@@ -364,8 +362,8 @@ export default function ChatDetailScreen() {
 
     return () => {
       clearTimeout(timeoutId);
-      if (typingChannelRetryTimeout) {
-        clearTimeout(typingChannelRetryTimeout);
+      if (typingEventRetryTimeout) {
+        clearTimeout(typingEventRetryTimeout);
       }
       unsubscribe();
       const pusherInstance = (pusherService as any).pusher;
@@ -378,14 +376,7 @@ export default function ChatDetailScreen() {
             "conversation-deleted",
             conversationDeletedHandler
           );
-        }
-        const privateChannel = pusherInstance.channel(typingChannelName);
-        if (privateChannel) {
-          privateChannel.unbind("client-currently-typing", handleTypingEvent);
-          if (typingChannelRef.current === privateChannel) {
-            typingChannelRef.current = null;
-          }
-          pusherInstance.unsubscribe(typingChannelName);
+          conversationChannel.unbind("currently-typing", handleTypingEvent);
         }
       }
 
@@ -627,24 +618,13 @@ export default function ChatDetailScreen() {
   };
 
   // Send typing indicator via Pusher (like Messenger.com)
-  const sendTypingIndicator = (isTyping: boolean) => {
+  const sendTypingIndicator = async (isTyping: boolean) => {
     if (!conversation?.id || !user?.id) return;
 
-    const channelName = `private-conversation-${conversation.id}`;
-    const pusher = (pusherService as any).pusher;
-    if (!pusher) return;
-
-    let channel = typingChannelRef.current;
-    if (!channel) {
-      channel = pusher.channel(channelName) || pusher.subscribe(channelName);
-      typingChannelRef.current = channel;
-    }
-
-    if (channel?.trigger) {
-      channel.trigger("client-currently-typing", {
-        userId: user.id,
-        isTyping,
-      });
+    try {
+      await chatService.sendTypingStatus(conversation.id, isTyping);
+    } catch (error) {
+      console.error("Failed to send typing status:", error);
     }
   };
 
@@ -665,20 +645,20 @@ export default function ChatDetailScreen() {
     if (text.trim().length > 0) {
       if (!typingSentRef.current) {
         // First time typing - send typing indicator immediately
-        sendTypingIndicator(true);
+        void sendTypingIndicator(true);
         typingSentRef.current = true;
 
         // Send periodic typing indicators every 2.5 seconds while actively typing (like Messenger.com)
         typingIntervalRef.current = setInterval(() => {
           if (typingSentRef.current) {
-            sendTypingIndicator(true);
+            void sendTypingIndicator(true);
           }
         }, 2500);
       }
       // Reset the timeout - stop typing indicator after 3 seconds of inactivity
       typingTimeoutRef.current = setTimeout(() => {
         if (typingSentRef.current) {
-          sendTypingIndicator(false);
+          void sendTypingIndicator(false);
           typingSentRef.current = false;
           if (typingIntervalRef.current) {
             clearInterval(typingIntervalRef.current);
@@ -689,7 +669,7 @@ export default function ChatDetailScreen() {
     } else {
       // Text is empty - stop typing indicator immediately
       if (typingSentRef.current) {
-        sendTypingIndicator(false);
+        void sendTypingIndicator(false);
         typingSentRef.current = false;
         if (typingIntervalRef.current) {
           clearInterval(typingIntervalRef.current);
@@ -718,7 +698,7 @@ export default function ChatDetailScreen() {
       clearInterval(typingIntervalRef.current);
       typingIntervalRef.current = null;
     }
-    sendTypingIndicator(false);
+    void sendTypingIndicator(false);
     typingSentRef.current = false;
 
     // Check for phone numbers in the message - only prevent when order is "open"
