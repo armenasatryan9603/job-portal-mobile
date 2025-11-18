@@ -25,6 +25,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button } from "@/components/ui/button";
 import { apiService, Service } from "@/services/api";
 import { fileUploadService, MediaFile } from "@/services/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
@@ -606,7 +607,7 @@ export default function CreateOrderScreen() {
                   ? error.message
                   : typeof error === "string"
                   ? error
-                  : "Unknown error";
+                  : t("unknownError");
               Alert.alert(
                 t("error") || "Error",
                 t("failedToDeleteOrder") ||
@@ -875,7 +876,7 @@ export default function CreateOrderScreen() {
           ? error.message
           : typeof error === "string"
           ? error
-          : "Unknown error";
+          : t("unknownError");
 
       // Check if it's an authentication error
       if (
@@ -1020,42 +1021,18 @@ export default function CreateOrderScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity
-                style={[
-                  styles.applyButton,
-                  {
-                    backgroundColor: colors.tint,
-                    opacity: isSubmitting ? 0.6 : 1,
-                  },
-                ]}
+              <Button
                 onPress={handleApply}
+                title={
+                  orderId
+                    ? t("save") || "Save"
+                    : t("apply") || "Apply"
+                }
+                variant="primary"
                 disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.background} />
-                    <Text
-                      style={[
-                        styles.applyButtonText,
-                        { color: colors.background, marginLeft: 8 },
-                      ]}
-                    >
-                      {orderId
-                        ? t("saving") || "Saving..."
-                        : t("creating") || "Creating..."}
-                    </Text>
-                  </View>
-                ) : (
-                  <Text
-                    style={[
-                      styles.applyButtonText,
-                      { color: colors.background },
-                    ]}
-                  >
-                    {orderId ? t("save") : t("apply")}
-                  </Text>
-                )}
-              </TouchableOpacity>
+                loading={isSubmitting}
+                textColor={colors.background}
+              />
             </View>
           </ResponsiveCard>
         </ResponsiveContainer>

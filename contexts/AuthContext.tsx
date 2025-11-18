@@ -10,6 +10,7 @@ import * as Device from "expo-device";
 import { apiService } from "@/services/api";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
 import PhoneVerificationService from "@/services/PhoneVerificationService";
+import NotificationService from "@/services/NotificationService";
 
 interface User {
   id: number;
@@ -73,6 +74,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Check if user has incomplete profile (no name or empty name)
         const isIncomplete = !userData.name || userData.name.trim() === "";
         setHasIncompleteProfile(isIncomplete);
+
+        // Send FCM token to backend if user is already logged in
+        try {
+          await NotificationService.getInstance().ensureFCMTokenSent();
+        } catch (error) {
+          console.error("❌ Error sending FCM token on app start:", error);
+        }
       } else {
         setUser(null);
         setIsAuthenticated(false);
@@ -142,6 +150,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           !result.user.name || result.user.name.trim() === "";
         setHasIncompleteProfile(isIncomplete);
 
+        // Send FCM token to backend after login
+        try {
+          await NotificationService.getInstance().ensureFCMTokenSent();
+        } catch (error) {
+          console.error("❌ Error sending FCM token after login:", error);
+        }
+
         return true;
       }
 
@@ -170,6 +185,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AsyncStorage.setItem("user", JSON.stringify(result.user));
         setUser(result.user);
         setIsAuthenticated(true);
+
+        // Send FCM token to backend after signup
+        try {
+          await NotificationService.getInstance().ensureFCMTokenSent();
+        } catch (error) {
+          console.error("❌ Error sending FCM token after signup:", error);
+        }
+
         return true;
       }
 

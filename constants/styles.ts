@@ -215,9 +215,9 @@ export const StatusColors = {
 export const ThemeColors = {
   light: {
     // Background colors
-    background: "#FFFFFF",
-    backgroundSecondary: "#F8F9FA",
-    backgroundTertiary: "#F1F3F4",
+    background: "#F5F5F5",
+    backgroundSecondary: "#E8E8E8",
+    backgroundTertiary: "#E0E0E0",
     surface: "#FFFFFF",
     surfaceSecondary: "#F8F9FA",
 

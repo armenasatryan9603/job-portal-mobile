@@ -332,7 +332,7 @@ export default function ProfileScreen() {
             <Text
               style={[styles.retryButtonText, { color: colors.textInverse }]}
             >
-              Retry
+              {t("retry")}
             </Text>
           </TouchableOpacity>
           <Text style={[styles.debugText, { color: colors.tabIconDefault }]}>
@@ -350,7 +350,7 @@ export default function ProfileScreen() {
       <Layout header={header}>
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: colors.text }]}>
-            No profile data available
+            {t("noProfileDataAvailable")}
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
@@ -359,7 +359,7 @@ export default function ProfileScreen() {
             <Text
               style={[styles.retryButtonText, { color: colors.textInverse }]}
             >
-              Retry
+              {t("retry")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -645,17 +645,19 @@ export default function ProfileScreen() {
                   {new Date(profile.createdAt).toLocaleDateString()}
                 </Text>
               </View>
-              <View style={styles.accountItem}>
-                <IconSymbol
-                  name="dollarsign.circle.fill"
-                  size={16}
-                  color={colors.primary}
-                />
-                <Text style={[styles.accountText, { color: colors.text }]}>
-                  {t("creditBalance")}:{" "}
-                  {(profile.creditBalance || 0).toFixed(2)}
-                </Text>
-              </View>
+              {!userId && (
+                <View style={styles.accountItem}>
+                  <IconSymbol
+                    name="dollarsign.circle.fill"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.accountText, { color: colors.text }]}>
+                    {t("creditBalance")}:{" "}
+                    {(profile.creditBalance || 0).toFixed(2)}
+                  </Text>
+                </View>
+              )}
             </View>
           </ResponsiveCard>
 
@@ -713,7 +715,7 @@ export default function ProfileScreen() {
                       { color: colors.textInverse },
                     ]}
                   >
-                    Retry
+                    {t("retry")}
                   </Text>
                 </TouchableOpacity>
               </View>

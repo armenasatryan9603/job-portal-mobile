@@ -502,7 +502,7 @@ export default function ChatDetailScreen() {
       await chatService.markAsRead(conversationId);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load conversation"
+        err instanceof Error ? err.message : t("failedToLoadConversation")
       );
     } finally {
       setLoading(false);
@@ -734,7 +734,7 @@ export default function ChatDetailScreen() {
     } catch (err) {
       console.error("Failed to send message:", err);
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to send message";
+        err instanceof Error ? err.message : t("failedToSendMessage");
 
       // Check if it's a phone number error
       if (
@@ -1053,7 +1053,7 @@ export default function ChatDetailScreen() {
         <View style={[styles.container, styles.centerContent]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.loadingText, { color: colors.text }]}>
-            Loading conversation...
+            {t("loadingConversation")}
           </Text>
         </View>
       </Layout>
@@ -1071,7 +1071,7 @@ export default function ChatDetailScreen() {
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
             onPress={loadConversation}
           >
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>{t("retry")}</Text>
           </TouchableOpacity>
         </View>
       </Layout>
@@ -1087,13 +1087,13 @@ export default function ChatDetailScreen() {
   // Calculate keyboard offset for iOS (header height + status bar)
   // For Android, KeyboardAvoidingView with "height" behavior should handle it automatically
   const keyboardVerticalOffset =
-    Platform.OS === "ios" ? 33 + insets.top : 45 + insets.top;
+    Platform.OS === "ios" ? 33 + insets.top : 45 + insets.top + 15;
 
   return (
     <Layout header={header} showFooterTabs={false}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={"padding"}
         keyboardVerticalOffset={keyboardVerticalOffset}
         enabled={true}
       >
@@ -1608,7 +1608,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     paddingHorizontal: 12,
     paddingTop: 6,
-    paddingBottom: Platform.OS === "android" ? 20 : 30,
+    paddingBottom: 30,
   },
   actionContainer: {
     borderTopWidth: 1,

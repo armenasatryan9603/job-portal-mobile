@@ -6,6 +6,7 @@ import {
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button } from "@/components/ui/button";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -21,9 +22,9 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
-  Image,
   Modal,
 } from "react-native";
+import { Image } from "expo-image";
 import { apiService, Order } from "@/services/api";
 import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
@@ -49,6 +50,9 @@ export default function EditOrderScreen() {
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
+  // Avatar image error state
+  const [avatarImageError, setAvatarImageError] = useState(false);
+
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
     return appliedOrders.has(orderId);
@@ -57,7 +61,6 @@ export default function EditOrderScreen() {
   // Fetch user's applied orders from backend
   const loadAppliedOrders = async () => {
     if (!user?.id) {
-      console.log("No user ID available, skipping applied orders load");
       return;
     }
 
@@ -67,10 +70,6 @@ export default function EditOrderScreen() {
         proposals.proposals.map((proposal: any) => proposal.orderId)
       );
       setAppliedOrders(appliedOrderIds);
-      console.log(
-        "Loaded applied orders from backend:",
-        Array.from(appliedOrderIds)
-      );
     } catch (error) {
       console.error("Error loading applied orders:", error);
     }
@@ -81,6 +80,7 @@ export default function EditOrderScreen() {
     const loadOrder = async () => {
       try {
         setLoading(true);
+        setAvatarImageError(false); // Reset avatar error when loading new order
         // Get order data (works for both authenticated and non-authenticated users)
         const orderData = await apiService.getOrderById(parseInt(id as string));
         setOrder(orderData);
@@ -253,11 +253,7 @@ export default function EditOrderScreen() {
             style: "destructive",
             onPress: async () => {
               try {
-                console.log("Deleting media file:", mediaFileId);
                 await apiService.deleteMediaFile(mediaFileId);
-                console.log("Media file deleted successfully");
-
-                // Reload order to refresh media files
                 const orderData = await apiService.getOrderById(
                   parseInt(id as string)
                 );
@@ -292,9 +288,9 @@ export default function EditOrderScreen() {
               >
                 {mediaFile.fileType === "image" ? (
                   <Image
-                    source={{ uri: mediaFile.fileUrl }}
+                    source={mediaFile.fileUrl}
                     style={styles.mediaGridImage}
-                    resizeMode="cover"
+                    contentFit="cover"
                   />
                 ) : (
                   <View
@@ -414,23 +410,14 @@ export default function EditOrderScreen() {
 
                 {/* Apply Button or Applied Status */}
                 {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
-                  <TouchableOpacity
-                    style={[
-                      styles.applyButton,
-                      { backgroundColor: colors.tint },
-                    ]}
+                  <Button
                     onPress={handleApplyToOrder}
-                    activeOpacity={0.8}
-                  >
-                    <IconSymbol
-                      name="paperplane.fill"
-                      size={16}
-                      color="black"
-                    />
-                    <Text style={styles.applyButtonText}>
-                      {t("apply")} ({order.creditCost || 1} {t("credit")})
-                    </Text>
-                  </TouchableOpacity>
+                    title={`${t("apply")} (${order.creditCost || 1} ${t(
+                      "credit"
+                    )})`}
+                    icon="paperplane.fill"
+                    variant="primary"
+                  />
                 ) : order?.status === "open" && hasAppliedToOrder(order.id) ? (
                   <View
                     style={[
@@ -443,7 +430,14 @@ export default function EditOrderScreen() {
                       size={16}
                       color="white"
                     />
-                    <Text style={styles.appliedButtonText}>{t("applied")}</Text>
+                    <Text
+                      style={[
+                        styles.appliedButtonText,
+                        { color: colors.textInverse },
+                      ]}
+                    >
+                      {t("applied")}
+                    </Text>
                   </View>
                 ) : null}
 
@@ -695,11 +689,12 @@ export default function EditOrderScreen() {
                   <View style={styles.clientHeader}>
                     <View style={styles.clientMainInfo}>
                       <View style={styles.clientAvatarContainer}>
-                        {order.Client.avatarUrl ? (
+                        {order.Client.avatarUrl && !avatarImageError ? (
                           <Image
-                            source={{ uri: order.Client.avatarUrl }}
+                            source={order.Client.avatarUrl.trim()}
                             style={styles.clientAvatar}
-                            resizeMode="cover"
+                            contentFit="cover"
+                            onError={() => setAvatarImageError(true)}
                           />
                         ) : (
                           <View
@@ -791,9 +786,9 @@ export default function EditOrderScreen() {
           onPress={() => setSelectedImage(null)}
         >
           <Image
-            source={{ uri: selectedImage || "" }}
+            source={selectedImage || ""}
             style={styles.modalImage}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </TouchableOpacity>
       </Modal>
@@ -869,21 +864,6 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 26,
     opacity: 0.9,
-  },
-  applyButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 6,
-    marginTop: 20,
-  },
-  applyButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "black",
   },
   appliedButton: {
     flexDirection: "row",
@@ -1013,6 +993,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   clientAvatarContainer: {
+    backgroundColor: "gray",
     width: 50,
     height: 50,
     borderRadius: 25,

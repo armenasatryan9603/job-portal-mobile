@@ -4,6 +4,7 @@ import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { ApplyModal } from "@/components/ApplyModal";
+import { Button } from "@/components/ui/button";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -987,15 +988,14 @@ export default function OrdersScreen() {
               order.status === "open" &&
               !hasAppliedToOrder(order.id) &&
               user?.id !== order.clientId && (
-                <TouchableOpacity
-                  style={[styles.applyButton, { backgroundColor: colors.tint }]}
+                <Button
                   onPress={() => handleApplyToOrder(order)}
-                >
-                  <IconSymbol name="paperplane.fill" size={16} color="black" />
-                  <Text style={styles.applyButtonText}>
-                    {t("apply")} ({order.creditCost || 1} {t("credit")})
-                  </Text>
-                </TouchableOpacity>
+                  title={`${t("apply")} (${order.creditCost || 1} ${t(
+                    "credit"
+                  )})`}
+                  icon="paperplane.fill"
+                  variant="primary"
+                />
               )}
 
             {/* Applied Status - Show when user has already applied */}
@@ -1014,7 +1014,14 @@ export default function OrdersScreen() {
                     size={16}
                     color="white"
                   />
-                  <Text style={styles.appliedButtonText}>{t("applied")}</Text>
+                  <Text
+                    style={[
+                      styles.appliedButtonText,
+                      { color: colors.textInverse },
+                    ]}
+                  >
+                    {t("applied")}
+                  </Text>
                 </View>
               )}
 
@@ -1025,7 +1032,12 @@ export default function OrdersScreen() {
                 onPress={() => handleCancelProposal(order)}
               >
                 <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
-                <Text style={[styles.cancelButtonText, { color: "#FF3B30" }]}>
+                <Text
+                  style={[
+                    styles.cancelButtonText,
+                    { color: colors.textInverse },
+                  ]}
+                >
                   {t("cancel")}
                 </Text>
               </TouchableOpacity>
@@ -1038,7 +1050,12 @@ export default function OrdersScreen() {
                 onPress={() => handleDeleteOrder(order)}
               >
                 <IconSymbol name="trash" size={16} color="#FF3B30" />
-                <Text style={[styles.deleteButtonText, { color: "#FF3B30" }]}>
+                <Text
+                  style={[
+                    styles.deleteButtonText,
+                    { color: colors.textInverse },
+                  ]}
+                >
                   {t("delete")}
                 </Text>
               </TouchableOpacity>
@@ -1349,7 +1366,7 @@ const styles = StyleSheet.create({
   applyButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "black",
+    // color: "black",
   },
   appliedButton: {
     flexDirection: "row",
@@ -1363,7 +1380,7 @@ const styles = StyleSheet.create({
   appliedButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "white",
+    // color: "white",
   },
   deleteButton: {
     flexDirection: "row",

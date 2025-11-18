@@ -15,6 +15,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export interface FilterOption {
   key: string;
@@ -60,6 +61,7 @@ export const Filter: React.FC<FilterProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { t } = useTranslation();
   const textInputRef = useRef<TextInput>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedSections, setExpandedSections] = useState<
@@ -349,7 +351,7 @@ export const Filter: React.FC<FilterProps> = ({
                       <Text
                         style={[styles.modalClearText, { color: colors.tint }]}
                       >
-                        Clear All
+                        {t("clearAll")}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -889,7 +891,7 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    height: Dimensions.get("window").height * 0.7,
+    height: Dimensions.get("window").height * 0.8,
   },
   modalHeader: {
     flexDirection: "row",

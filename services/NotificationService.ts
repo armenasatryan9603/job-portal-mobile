@@ -546,6 +546,35 @@ class NotificationService {
     }
     return token;
   }
+
+  /**
+   * Ensure FCM token is sent to backend after user logs in
+   * This should be called after authentication is complete
+   */
+  async ensureFCMTokenSent(): Promise<void> {
+    try {
+      console.log("🔍 Checking FCM token status after login...");
+      const authToken = await this.getAuthToken();
+      
+      if (!authToken) {
+        console.warn("⚠️  No auth token available - cannot send FCM token");
+        return;
+      }
+
+      const fcmToken = await this.getFCMToken();
+      if (fcmToken) {
+        console.log("✅ FCM token available, sending to backend...");
+        await this.sendFCMTokenToBackend(fcmToken);
+      } else {
+        console.log("⏳ FCM token not ready yet");
+        console.log("   - For iOS: Token will be sent when APNS token is available");
+        console.log("   - For Android: Check notification permissions");
+        console.log("   - Token will be sent automatically when available via onTokenRefresh");
+      }
+    } catch (error) {
+      console.error("❌ Error ensuring FCM token is sent:", error);
+    }
+  }
 }
 
 export default NotificationService;
