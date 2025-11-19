@@ -4,10 +4,10 @@ import { Platform } from "react-native";
 export const API_CONFIG = {
   // Use environment variable if set, otherwise fallback to localhost
   // For production, set EXPO_PUBLIC_API_URL to your Cloud Run URL
-  BASE_URL:
-    Platform.OS === "android"
-      ? "http://10.0.2.2:8080"
-      : "http://localhost:8080",
+  BASE_URL: process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080",
+  // Platform.OS === "android"
+  //   ? "http://10.0.2.2:8080"
+  //   : "http://localhost:8080",
 
   // Request timeouts
   TIMEOUT: 10000, // 10 seconds
