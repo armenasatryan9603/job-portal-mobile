@@ -123,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Check if running on simulator
       const isSimulator = !Device.isDevice;
-      
+
       // Get referral code if available (and clear it after use)
       const referralCode = await getAndClearReferralCode();
       if (referralCode) {

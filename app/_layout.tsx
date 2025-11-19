@@ -23,6 +23,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/services/queryClient";
 
 import { GlobalModals } from "@/components/GlobalModals";
+import { ChatReminderToast } from "@/components/ChatReminderToast";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CreditCardProvider } from "@/contexts/CreditCardContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
@@ -32,6 +33,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
+import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -115,6 +117,7 @@ function AppContent() {
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
       <GlobalModals />
+      <ChatReminderToast />
     </NavigationThemeProvider>
   );
 }
@@ -131,7 +134,9 @@ export default function RootLayout() {
                   <CreditCardProvider>
                     <ModalProvider>
                       <NavigationProvider>
-                        <AppContent />
+                        <ChatReminderProvider>
+                          <AppContent />
+                        </ChatReminderProvider>
                       </NavigationProvider>
                     </ModalProvider>
                   </CreditCardProvider>

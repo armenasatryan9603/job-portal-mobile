@@ -27,7 +27,8 @@ export type NotificationType =
   | "new_order"
   | "proposal"
   | "message"
-  | "system";
+  | "system"
+  | "chat_message";
 
 export interface Notification {
   id: string;
@@ -36,6 +37,14 @@ export interface Notification {
   timestamp: string;
   isRead: boolean;
   type: NotificationType;
+}
+
+export interface ChatReminderPayload {
+  conversationId?: string;
+  messageId?: string;
+  senderId?: string;
+  title: string;
+  body: string;
 }
 
 interface RemoteMessage {
@@ -47,6 +56,11 @@ interface RemoteMessage {
   data?: {
     type?: NotificationType;
     relatedId?: string;
+    conversationId?: string;
+    messageId?: string;
+    senderId?: string;
+    title?: string;
+    body?: string;
   };
 }
 
@@ -54,12 +68,39 @@ class NotificationService {
   private static instance: NotificationService;
   private readonly STORAGE_KEY = "notifications";
   private readonly MAX_NOTIFICATIONS = 100;
+  private activeConversationId: number | null = null;
+  private chatReminderListeners = new Set<
+    (payload: ChatReminderPayload) => void
+  >();
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
       NotificationService.instance = new NotificationService();
     }
     return NotificationService.instance;
+  }
+
+  setActiveConversationId(conversationId: number | null) {
+    this.activeConversationId = conversationId;
+  }
+
+  onChatReminder(
+    listener: (payload: ChatReminderPayload) => void
+  ): () => void {
+    this.chatReminderListeners.add(listener);
+    return () => {
+      this.chatReminderListeners.delete(listener);
+    };
+  }
+
+  private emitChatReminder(payload: ChatReminderPayload) {
+    this.chatReminderListeners.forEach((listener) => {
+      try {
+        listener(payload);
+      } catch (error) {
+        console.error("Error delivering chat reminder:", error);
+      }
+    });
   }
 
   async initialize(): Promise<void> {
@@ -243,6 +284,40 @@ class NotificationService {
     remoteMessage: RemoteMessage
   ): Promise<void> {
     try {
+      const messageType = remoteMessage.data?.type;
+      const conversationId = remoteMessage.data?.conversationId;
+
+      if (messageType === "chat_message") {
+        const title =
+          remoteMessage.notification?.title ||
+          remoteMessage.data?.title ||
+          "New message";
+        const body =
+          remoteMessage.notification?.body ||
+          remoteMessage.data?.body ||
+          "";
+        const numericConversationId = conversationId
+          ? Number(conversationId)
+          : null;
+        const isActiveConversation =
+          numericConversationId !== null &&
+          this.activeConversationId !== null &&
+          numericConversationId === this.activeConversationId;
+
+        if (!isActiveConversation) {
+          this.emitChatReminder({
+            conversationId,
+            messageId: remoteMessage.data?.messageId,
+            senderId: remoteMessage.data?.senderId,
+            title,
+            body,
+          });
+        }
+
+        // Chat reminders are lightweight cues - do not store them
+        return;
+      }
+
       const notification: Notification = {
         id: remoteMessage.messageId || `local_${Date.now()}`,
         title: remoteMessage.notification?.title || "New Notification",

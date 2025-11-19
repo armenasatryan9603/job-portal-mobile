@@ -5,8 +5,8 @@ import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/contexts/AuthContext";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -26,6 +26,7 @@ import { chatService, Conversation, Message } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Review } from "@/services/api";
 import { pusherService } from "@/services/pusherService";
+import { useChatReminder } from "@/contexts/ChatReminderContext";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -148,6 +149,7 @@ export default function ChatDetailScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { id } = useLocalSearchParams();
+  const { setActiveConversationId } = useChatReminder();
   const insets = useSafeAreaInsets();
   const [newMessage, setNewMessage] = useState("");
   const flatListRef = useRef<FlatList>(null);
@@ -169,9 +171,25 @@ export default function ChatDetailScreen() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSentRef = useRef(false);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [androidKeyboardPadding, setAndroidKeyboardPadding] = useState(0);
   const typingClearTimeoutsRef = useRef<
     Map<number, ReturnType<typeof setTimeout>>
   >(new Map());
+
+  useFocusEffect(
+    useCallback(() => {
+      if (id) {
+        const numericId = parseInt(id as string, 10);
+        if (!Number.isNaN(numericId)) {
+          setActiveConversationId(numericId);
+        }
+      }
+
+      return () => {
+        setActiveConversationId(null);
+      };
+    }, [id, setActiveConversationId])
+  );
 
   // Load conversation and messages
   useEffect(() => {
@@ -194,6 +212,24 @@ export default function ChatDetailScreen() {
 
     return () => {
       keyboardWillShowListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") {
+      return;
+    }
+
+    const showSub = Keyboard.addListener("keyboardDidShow", (event) => {
+      setAndroidKeyboardPadding(event.endCoordinates.height);
+    });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      setAndroidKeyboardPadding(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
     };
   }, []);
 
@@ -1084,18 +1120,31 @@ export default function ChatDetailScreen() {
     }
   };
 
-  // Calculate keyboard offset for iOS (header height + status bar)
-  // For Android, KeyboardAvoidingView with "height" behavior should handle it automatically
-  const keyboardVerticalOffset =
-    Platform.OS === "ios" ? 33 + insets.top : 45 + insets.top + 15;
+  // Calculate keyboard offset (header height + status bar on iOS)
+  const isIOS = Platform.OS === "ios";
+  const keyboardVerticalOffset = isIOS ? 33 + insets.top : 0;
+  const keyboardBehavior = isIOS ? "padding" : undefined;
+  const messagesContentStyle = [
+    styles.messagesContent,
+    !isIOS &&
+      androidKeyboardPadding > 0 && {
+        paddingBottom: 12 + androidKeyboardPadding,
+      },
+  ];
+  const inputContainerStyle = [
+    styles.inputContainer,
+    !isIOS && {
+      paddingBottom: 30 + androidKeyboardPadding,
+    },
+  ];
 
   return (
     <Layout header={header} showFooterTabs={false}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={"padding"}
+        behavior={keyboardBehavior}
         keyboardVerticalOffset={keyboardVerticalOffset}
-        enabled={true}
+        enabled={isIOS}
       >
         {/* Order Reference Card with Action Buttons */}
         {conversation?.Order && (
@@ -1276,7 +1325,7 @@ export default function ChatDetailScreen() {
               return item.id ? `msg-${item.id}` : `msg-${index}`;
             }}
             style={styles.messagesList}
-            contentContainerStyle={styles.messagesContent}
+            contentContainerStyle={messagesContentStyle}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => {
               flatListRef.current?.scrollToEnd({ animated: true });
@@ -1371,7 +1420,7 @@ export default function ChatDetailScreen() {
 
         {/* Message Input - Only show if conversation is active and not removed */}
         {!isConversationClosed() && conversation?.status !== "removed" && (
-          <View style={styles.inputContainer}>
+          <View style={inputContainerStyle}>
             <View
               style={[
                 styles.inputWrapper,
