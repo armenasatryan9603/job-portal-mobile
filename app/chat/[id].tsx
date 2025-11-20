@@ -1134,7 +1134,7 @@ export default function ChatDetailScreen() {
   const inputContainerStyle = [
     styles.inputContainer,
     !isIOS && {
-      paddingBottom: 30 + androidKeyboardPadding,
+      paddingBottom: 40 + androidKeyboardPadding,
     },
   ];
 
