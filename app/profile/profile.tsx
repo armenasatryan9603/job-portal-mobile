@@ -22,6 +22,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
   ActivityIndicator,
@@ -36,7 +37,7 @@ import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { useSkills } from "@/hooks/useSkills";
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -61,6 +62,11 @@ export default function ProfileScreen() {
   // Profile picture state management
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
+
+  // Bio editing state management
+  const [isEditingBio, setIsEditingBio] = useState(false);
+  const [bioText, setBioText] = useState("");
+  const [savingBio, setSavingBio] = useState(false);
 
   // Test mode state - will use real backend data
   const [testUserId, setTestUserId] = useState(1);
@@ -262,7 +268,19 @@ export default function ProfileScreen() {
                 await apiService.updateUserProfile({
                   avatarUrl: uploadResult.fileUrl,
                 });
-                console.log("User profile updated with new avatar URL");
+
+                // Update the user object in AuthContext with the new avatarUrl
+                await updateUser({
+                  avatarUrl: uploadResult.fileUrl,
+                });
+
+                // Also update local profile state
+                if (profile) {
+                  setProfile({
+                    ...profile,
+                    avatarUrl: uploadResult.fileUrl,
+                  });
+                }
               } catch (error) {
                 console.error("Error updating user profile:", error);
                 Alert.alert(t("error"), t("imageUploadFailedToUpdateProfile"));
@@ -286,6 +304,54 @@ export default function ProfileScreen() {
 
   const handleEditProfile = () => {
     router.push("/profile/edit");
+  };
+
+  // Sync bioText with profile.bio when profile changes
+  useEffect(() => {
+    if (profile) {
+      setBioText(profile.bio || "");
+    }
+  }, [profile?.bio]);
+
+  const handleStartEditBio = () => {
+    setBioText(profile?.bio || "");
+    setIsEditingBio(true);
+  };
+
+  const handleCancelEditBio = () => {
+    setBioText(profile?.bio || "");
+    setIsEditingBio(false);
+  };
+
+  const handleSaveBio = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setSavingBio(true);
+
+      // Update profile on backend
+      const updatedProfile = await apiService.updateUserProfile({
+        bio: bioText.trim() || undefined,
+      });
+
+      // Update local profile state
+      setProfile({
+        ...profile,
+        bio: updatedProfile.bio,
+      });
+
+      // Update user in AuthContext
+      await updateUser({
+        bio: updatedProfile.bio || undefined,
+      });
+
+      setIsEditingBio(false);
+    } catch (error) {
+      console.error("Error updating bio:", error);
+      Alert.alert(t("error"), t("failedToUpdateProfile"));
+    } finally {
+      setSavingBio(false);
+    }
   };
 
   const header = (
@@ -602,22 +668,116 @@ export default function ProfileScreen() {
 
           {/* Bio */}
           <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("about")}
-            </Text>
-            {profile.bio ? (
-              <Text style={[styles.bioText, { color: colors.text }]}>
-                {profile.bio}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("about")}
               </Text>
+              {!userId && !isEditingBio && (
+                <TouchableOpacity
+                  style={styles.editBioButton}
+                  onPress={handleStartEditBio}
+                >
+                  <IconSymbol name="pencil" size={16} color={colors.primary} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {isEditingBio ? (
+              <View style={styles.bioEditContainer}>
+                <TextInput
+                  style={[
+                    styles.bioTextInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={bioText}
+                  onChangeText={setBioText}
+                  placeholder={t("tellUsAboutYourself")}
+                  placeholderTextColor={colors.tabIconDefault}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+                {bioText.length > 400 && (
+                  <Text
+                    style={[
+                      styles.characterCount,
+                      { color: colors.tabIconDefault },
+                      bioText.length > 480 && { color: "#FF6B6B" },
+                    ]}
+                  >
+                    {bioText.length}/500 {t("charactersRemaining")}
+                  </Text>
+                )}
+                <View style={styles.bioEditActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.bioActionButton,
+                      styles.bioCancelButton,
+                      { borderColor: colors.border },
+                    ]}
+                    onPress={handleCancelEditBio}
+                    disabled={savingBio}
+                  >
+                    <Text
+                      style={[
+                        styles.bioActionButtonText,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {t("cancel")}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.bioActionButton,
+                      styles.bioSaveButton,
+                      { backgroundColor: colors.primary },
+                      savingBio && { opacity: 0.7 },
+                    ]}
+                    onPress={handleSaveBio}
+                    disabled={savingBio}
+                  >
+                    {savingBio ? (
+                      <ActivityIndicator size="small" color="white" />
+                    ) : (
+                      <Text
+                        style={[styles.bioActionButtonText, { color: "white" }]}
+                      >
+                        {t("save")}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             ) : (
-              <Text
-                style={[
-                  styles.bioText,
-                  { color: colors.textSecondary, fontStyle: "italic" },
-                ]}
-              >
-                {t("noBioProvided")}
-              </Text>
+              <>
+                {profile.bio ? (
+                  <Text style={[styles.bioText, { color: colors.text }]}>
+                    {profile.bio}
+                  </Text>
+                ) : (
+                  <Text
+                    style={[
+                      styles.bioText,
+                      { color: colors.textSecondary, fontStyle: "italic" },
+                    ]}
+                  >
+                    {t("noBioProvided")}
+                  </Text>
+                )}
+              </>
             )}
           </ResponsiveCard>
 
@@ -982,6 +1142,50 @@ const styles = StyleSheet.create({
   bioText: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  editBioButton: {
+    padding: 4,
+  },
+  bioEditContainer: {
+    gap: 12,
+  },
+  bioTextInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
+  characterCount: {
+    fontSize: 12,
+    textAlign: "right",
+    marginTop: 4,
+  },
+  bioEditActions: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "flex-end",
+  },
+  bioActionButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bioCancelButton: {
+    borderWidth: 1,
+    backgroundColor: "transparent",
+  },
+  bioSaveButton: {
+    borderWidth: 0,
+  },
+  bioActionButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   accountInfo: {
     gap: 12,

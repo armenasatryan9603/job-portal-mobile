@@ -824,6 +824,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 15,
+    lineHeight: 20,
     paddingVertical: 0,
   },
   filterButton: {

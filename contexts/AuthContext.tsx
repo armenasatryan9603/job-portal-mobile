@@ -30,6 +30,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasIncompleteProfile: boolean;
   setUser: (user: User | null) => void;
+  updateUser: (userData: Partial<User>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
   login: (phone: string, otp: string, name?: string) => Promise<boolean>;
   signup: (
@@ -259,6 +260,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const updateUser = async (userData: Partial<User>): Promise<void> => {
+    if (!user) {
+      console.warn("Cannot update user: no user is currently logged in");
+      return;
+    }
+
+    try {
+      // Merge the new data with the existing user data
+      const updatedUser = {
+        ...user,
+        ...userData,
+      };
+
+      // Update AsyncStorage
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+
+      // Update the state
+      setUser(updatedUser);
+
+      // Check if user has incomplete profile (no name or empty name)
+      const isIncomplete = !updatedUser.name || updatedUser.name.trim() === "";
+      setHasIncompleteProfile(isIncomplete);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw error;
+    }
+  };
+
   const logout = async (): Promise<void> => {
     try {
       // Call backend logout endpoint if user is authenticated
@@ -288,6 +317,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated,
     hasIncompleteProfile,
     setUser,
+    updateUser,
     setHasIncompleteProfile,
     login,
     signup,

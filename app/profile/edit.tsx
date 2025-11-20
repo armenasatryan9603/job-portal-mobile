@@ -26,12 +26,11 @@ import { apiService, UserProfile, UpdateUserProfileData } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { fileUploadService } from "@/services/fileUpload";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function EditProfileScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
 
   // API state management
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -131,20 +130,15 @@ export default function EditProfileScreen() {
 
       setProfile(updatedProfile);
 
-      // Update the user object in AuthContext with the new avatarUrl
-      if (updatedProfile.avatarUrl) {
-        const updatedUser = {
-          ...user,
-          avatarUrl: updatedProfile.avatarUrl,
+      // Update the user object in AuthContext with all updated fields
+      if (user) {
+        await updateUser({
           name: updatedProfile.name,
           email: updatedProfile.email,
-          phone: updatedProfile.phone,
-          bio: updatedProfile.bio,
-        };
-        // Update AsyncStorage with the new user data
-        await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
-        // Update the user in AuthContext
-        setUser(updatedUser);
+          phone: updatedProfile.phone || user.phone,
+          avatarUrl: updatedProfile.avatarUrl || user.avatarUrl,
+          bio: updatedProfile.bio || user.bio,
+        });
       }
 
       // Profile updated successfully - navigate back

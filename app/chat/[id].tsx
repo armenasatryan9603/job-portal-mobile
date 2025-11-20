@@ -1124,17 +1124,10 @@ export default function ChatDetailScreen() {
   const isIOS = Platform.OS === "ios";
   const keyboardVerticalOffset = isIOS ? 33 + insets.top : 0;
   const keyboardBehavior = isIOS ? "padding" : undefined;
-  const messagesContentStyle = [
-    styles.messagesContent,
-    !isIOS &&
-      androidKeyboardPadding > 0 && {
-        paddingBottom: 12 + androidKeyboardPadding,
-      },
-  ];
   const inputContainerStyle = [
     styles.inputContainer,
     !isIOS && {
-      paddingBottom: 40 + androidKeyboardPadding,
+      marginBottom: 40 + androidKeyboardPadding,
     },
   ];
 
@@ -1325,7 +1318,7 @@ export default function ChatDetailScreen() {
               return item.id ? `msg-${item.id}` : `msg-${index}`;
             }}
             style={styles.messagesList}
-            contentContainerStyle={messagesContentStyle}
+            contentContainerStyle={styles.messagesContent}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => {
               flatListRef.current?.scrollToEnd({ animated: true });
@@ -1512,7 +1505,6 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     padding: 12,
-    paddingBottom: 12,
   },
   orderCard: {
     marginHorizontal: 12,

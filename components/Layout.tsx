@@ -169,9 +169,10 @@ export const Layout: React.FC<LayoutProps> = ({
                   >
                     {user?.avatarUrl && !imageError ? (
                       <Image
+                        key={`avatar-${user.id}-${user.avatarUrl}`}
                         source={{
                           uri: user.avatarUrl,
-                          cache: "force-cache",
+                          cache: "default",
                         }}
                         style={styles.avatarImage}
                         onError={handleImageError}

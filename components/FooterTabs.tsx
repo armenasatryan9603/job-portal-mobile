@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     bottom: 0,
+    paddingBottom: Platform.OS === "ios" ? 0 : 10,
     left: 0,
     right: 0,
   },
