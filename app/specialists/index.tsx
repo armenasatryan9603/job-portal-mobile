@@ -41,7 +41,7 @@ export default function SpecialistsScreen() {
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string | string[] | { min: number; max: number }>
   >({
-    priceRange: { min: 0, max: 200 },
+    priceRange: { min: 0, max: 10000000 },
     services: [],
   });
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
@@ -169,7 +169,7 @@ export default function SpecialistsScreen() {
         type: "range",
         rangeConfig: {
           min: 0,
-          max: 200,
+          max: 10000000,
           step: 5,
         },
       },

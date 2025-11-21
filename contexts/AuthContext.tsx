@@ -29,6 +29,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   hasIncompleteProfile: boolean;
+  justSignedUp: boolean;
   setUser: (user: User | null) => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
@@ -57,6 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
+  const [justSignedUp, setJustSignedUp] = useState(false);
 
   useEffect(() => {
     loadStoredUser();
@@ -151,6 +153,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           !result.user.name || result.user.name.trim() === "";
         setHasIncompleteProfile(isIncomplete);
 
+        // Track if this is a new signup (when name is provided)
+        if (name) {
+          setJustSignedUp(true);
+          // Reset after 10 seconds to allow modal to show
+          setTimeout(() => {
+            setJustSignedUp(false);
+          }, 10000);
+        }
+
         // Send FCM token to backend after login
         try {
           await NotificationService.getInstance().ensureFCMTokenSent();
@@ -186,6 +197,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AsyncStorage.setItem("user", JSON.stringify(result.user));
         setUser(result.user);
         setIsAuthenticated(true);
+
+        // Track that user just signed up
+        setJustSignedUp(true);
+        // Reset after 10 seconds to allow modal to show
+        setTimeout(() => {
+          setJustSignedUp(false);
+        }, 10000);
 
         // Send FCM token to backend after signup
         try {
@@ -304,6 +322,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(null);
       setIsAuthenticated(false);
       setHasIncompleteProfile(false);
+      setJustSignedUp(false);
       await AsyncStorage.removeItem("user");
       await apiService.clearAuthToken();
     } catch (error) {
@@ -316,6 +335,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     isAuthenticated,
     hasIncompleteProfile,
+    justSignedUp,
     setUser,
     updateUser,
     setHasIncompleteProfile,

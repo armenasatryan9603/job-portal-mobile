@@ -243,12 +243,15 @@ const styles = StyleSheet.create({
   contactInfoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
     marginBottom: 16,
+    gap: 10,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: "700",
+    flex: 1,
+    flexShrink: 1,
   },
   contactInfo: {
     gap: 12,

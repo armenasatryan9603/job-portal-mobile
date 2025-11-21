@@ -81,6 +81,10 @@ export default function ProfileHelpScreen() {
           description: t("keepYourInformationCurrent"),
         },
         {
+          title: t("roleRequirementsForSpecialists"),
+          description: t("roleRequirementsForSpecialistsDescription"),
+        },
+        {
           title: t("privacySettings"),
           description: t("controlWhoCanSeeYourInfo"),
         },

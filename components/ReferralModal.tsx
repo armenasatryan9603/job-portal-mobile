@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Share,
   Clipboard,
+  Platform,
 } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -93,9 +94,11 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
       // Get share link from backend
       const shareData = await apiService.getReferralShareLink();
       const shareLink = shareData.shareLink;
-      const message = shareData.message || `${t("joinMeOnThisPlatform")} ${t(
-        "useMyReferralCode"
-      )}: ${stats.referralCode} ${t("weBothGetCredits")}!`;
+      const message =
+        shareData.message ||
+        `${t("joinMeOnThisPlatform")} ${t("useMyReferralCode")}: ${
+          stats.referralCode
+        } ${t("weBothGetCredits")}!`;
 
       await Share.share({
         message: `${message}\n\n${shareLink}`,
@@ -355,6 +358,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === "ios" ? 0 : 30,
   },
   header: {
     flexDirection: "row",

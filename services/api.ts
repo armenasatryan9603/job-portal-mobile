@@ -113,6 +113,7 @@ export interface UpdateUserProfileData {
   email?: string;
   avatarUrl?: string;
   bio?: string;
+  role?: string;
 }
 
 // Review Types

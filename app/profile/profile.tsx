@@ -36,6 +36,7 @@ import { SkillsSection } from "@/components/SkillsSection";
 import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { useSkills } from "@/hooks/useSkills";
 import { ContactInfo } from "@/components/ContactInfo";
+import { AccountInfo } from "@/components/AccountInfo";
 
 export default function ProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -640,55 +641,13 @@ export default function ProfileScreen() {
           />
 
           {/* Account Information */}
-          <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("accountInformation")}
-            </Text>
-            <View style={styles.accountInfo}>
-              <View style={styles.accountItem}>
-                <IconSymbol
-                  name="person.badge.shield.checkmark.fill"
-                  size={16}
-                  color={profile.verified ? "#4CAF50" : colors.textSecondary}
-                />
-                <Text style={[styles.accountText, { color: colors.text }]}>
-                  {t("verificationStatus")}{" "}
-                  {profile.verified ? t("verified") : t("unverified")}
-                </Text>
-              </View>
-              <View style={styles.accountItem}>
-                <IconSymbol name="calendar" size={16} color={colors.primary} />
-                <Text style={[styles.accountText, { color: colors.text }]}>
-                  {t("joined")}:{" "}
-                  {new Date(profile.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              {!userId && (
-                <View style={styles.accountItem}>
-                  <IconSymbol
-                    name="dollarsign.circle.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.accountText, { color: colors.text }]}>
-                    {t("creditBalance")}:{" "}
-                    {(profile.creditBalance || 0).toFixed(2)}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.accountItem}>
-                <IconSymbol
-                  name="person.fill"
-                  size={16}
-                  color={colors.primary}
-                />
-                <Text style={[styles.accountText, { color: colors.text }]}>
-                  {t("role")}:{" "}
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                </Text>
-              </View>
-            </View>
-          </ResponsiveCard>
+          <AccountInfo
+            profile={profile}
+            userId={userId ? targetUserId : undefined}
+            onProfileUpdate={(updatedProfile) => {
+              setProfile(updatedProfile);
+            }}
+          />
 
           {/* Payments entry point */}
           {!userId && (

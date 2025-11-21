@@ -128,17 +128,50 @@ export const Filter: React.FC<FilterProps> = ({
 
   const getSelectedCount = (sectionKey: string) => {
     const currentValue = selectedFilters[sectionKey];
+
+    // If no value, return 0
+    if (currentValue === undefined || currentValue === null) {
+      return 0;
+    }
+
+    // Handle arrays (multi-select filters)
     if (Array.isArray(currentValue)) {
       return currentValue.length;
     }
+
+    // Handle range filters (objects with min/max)
     if (
       typeof currentValue === "object" &&
-      currentValue !== null &&
-      "min" in currentValue
+      "min" in currentValue &&
+      "max" in currentValue
     ) {
-      return 1; // Range is selected
+      // Find the section to get default values
+      const section = filterSections.find(
+        (s) => (s.key || s.title) === sectionKey
+      );
+
+      // If section not found or not a range filter, return 0
+      if (!section || section.type !== "range" || !section.rangeConfig) {
+        return 0;
+      }
+
+      // Check if values differ from defaults
+      const defaultMin = section.rangeConfig.min;
+      const defaultMax = section.rangeConfig.max;
+      const isDifferentFromDefault =
+        Number(currentValue.min) !== Number(defaultMin) ||
+        Number(currentValue.max) !== Number(defaultMax);
+
+      return isDifferentFromDefault ? 1 : 0;
     }
-    return currentValue ? 1 : 0;
+
+    // Handle string values (single-select filters)
+    // Only count if it's a non-empty string
+    if (typeof currentValue === "string") {
+      return currentValue.trim().length > 0 ? 1 : 0;
+    }
+
+    return 0;
   };
 
   const clearFilter = (sectionKey: string) => {
@@ -149,7 +182,7 @@ export const Filter: React.FC<FilterProps> = ({
       onFilterChange(sectionKey, []);
     } else if (section?.type === "range") {
       const defaultMin = section.rangeConfig?.min || 0;
-      const defaultMax = section.rangeConfig?.max || 1000;
+      const defaultMax = section.rangeConfig?.max || 10000000;
       onFilterChange(sectionKey, { min: defaultMin, max: defaultMax });
     } else {
       onFilterChange(sectionKey, "");
