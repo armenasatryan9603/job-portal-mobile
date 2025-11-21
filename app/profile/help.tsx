@@ -35,7 +35,7 @@ export default function ProfileHelpScreen() {
         Linking.openURL("tel:+37477754955");
         break;
       case "website":
-        Linking.openURL("https://jobportal.com/support");
+        Linking.openURL("https://job-portal-website-phi.vercel.app");
         break;
       default:
         Alert.alert(t("contactSupport"), t("chooseContactMethod"));
