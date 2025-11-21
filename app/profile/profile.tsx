@@ -35,6 +35,7 @@ import { chatService } from "@/services/chatService";
 import { SkillsSection } from "@/components/SkillsSection";
 import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { useSkills } from "@/hooks/useSkills";
+import { ContactInfo } from "@/components/ContactInfo";
 
 export default function ProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -301,10 +302,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleEditProfile = () => {
-    router.push("/profile/edit");
-  };
-
   // Sync bioText with profile.bio when profile changes
   useEffect(() => {
     if (profile) {
@@ -531,140 +528,6 @@ export default function ProfileScreen() {
             </View>
           </ResponsiveCard>
 
-          {/* Contact Information - Only show if user has active chat or is viewing own profile */}
-          {hasActiveChat && (
-            <ResponsiveCard>
-              <View style={styles.contactInfoHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("contactInformation")}
-                </Text>
-                {!userId && (
-                  <Button
-                    onPress={handleEditProfile}
-                    title={t("edit")}
-                    variant="primary"
-                    icon="pencil"
-                    iconSize={14}
-                    backgroundColor={colors.primary}
-                  />
-                )}
-              </View>
-              <View style={styles.contactInfo}>
-                <View style={styles.contactItem}>
-                  <IconSymbol
-                    name="envelope.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.contactText, { color: colors.text }]}>
-                    {t("email")}: {profile.email}
-                  </Text>
-                </View>
-
-                <View style={styles.contactItem}>
-                  <IconSymbol
-                    name="phone.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.contactText, { color: colors.text }]}>
-                    {t("phone")}: {profile.phone || t("notProvided")}
-                  </Text>
-                </View>
-
-                <View style={styles.contactItem}>
-                  <IconSymbol
-                    name="dollarsign.circle.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.contactText, { color: colors.text }]}>
-                    {t("creditBalance")}:{" "}
-                    {(profile.creditBalance || 0).toFixed(2)}
-                  </Text>
-                </View>
-
-                <View style={styles.contactItem}>
-                  <IconSymbol
-                    name="person.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={[styles.contactText, { color: colors.text }]}>
-                    {t("role")}:{" "}
-                    {profile.role.charAt(0).toUpperCase() +
-                      profile.role.slice(1)}
-                  </Text>
-                </View>
-              </View>
-            </ResponsiveCard>
-          )}
-
-          {/* Payments entry point */}
-          {!userId && (
-            <ResponsiveCard>
-              <View style={styles.paymentsPreview}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("paymentsOverview")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.paymentsPreviewSubtitle,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("paymentsOverviewDescription")}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                  onPress={() => router.push("/profile/payments")}
-                >
-                  <Text
-                    style={[styles.paymentsCtaText, { color: colors.text }]}
-                  >
-                    {t("managePaymentsCta")}
-                  </Text>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-              </View>
-            </ResponsiveCard>
-          )}
-
-          {/* Contact Information Not Available */}
-          {!hasActiveChat && userId && (
-            <ResponsiveCard>
-              <View style={styles.contactRestrictedContainer}>
-                <IconSymbol
-                  name="lock.fill"
-                  size={48}
-                  color={colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.contactRestrictedTitle,
-                    { color: colors.text },
-                  ]}
-                >
-                  {t("contactInformationRestricted")}
-                </Text>
-                <Text
-                  style={[
-                    styles.contactRestrictedDescription,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {t("contactInformationOnlyVisibleWithActiveChat")}
-                </Text>
-              </View>
-            </ResponsiveCard>
-          )}
-
           {/* Bio */}
           <ResponsiveCard>
             <View
@@ -722,44 +585,28 @@ export default function ProfileScreen() {
                   </Text>
                 )}
                 <View style={styles.bioEditActions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.bioActionButton,
-                      styles.bioCancelButton,
-                      { borderColor: colors.border },
-                    ]}
+                  <Button
+                    variant="outline"
+                    icon="xmark"
+                    iconSize={14}
+                    title={t("cancel")}
+                    iconPosition="left"
+                    backgroundColor={colors.background}
+                    textColor={colors.text}
                     onPress={handleCancelEditBio}
                     disabled={savingBio}
-                  >
-                    <Text
-                      style={[
-                        styles.bioActionButtonText,
-                        { color: colors.text },
-                      ]}
-                    >
-                      {t("cancel")}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.bioActionButton,
-                      styles.bioSaveButton,
-                      { backgroundColor: colors.primary },
-                      savingBio && { opacity: 0.7 },
-                    ]}
+                  />
+                  <Button
+                    variant="primary"
+                    icon="checkmark"
+                    iconSize={14}
+                    title={t("save")}
+                    iconPosition="left"
+                    backgroundColor={colors.primary}
+                    textColor="white"
                     onPress={handleSaveBio}
                     disabled={savingBio}
-                  >
-                    {savingBio ? (
-                      <ActivityIndicator size="small" color="white" />
-                    ) : (
-                      <Text
-                        style={[styles.bioActionButtonText, { color: "white" }]}
-                      >
-                        {t("save")}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
+                  />
                 </View>
               </View>
             ) : (
@@ -781,6 +628,16 @@ export default function ProfileScreen() {
               </>
             )}
           </ResponsiveCard>
+
+          {/* Contact Information */}
+          <ContactInfo
+            profile={profile}
+            hasActiveChat={hasActiveChat}
+            userId={userId ? targetUserId : undefined}
+            onProfileUpdate={(updatedProfile) => {
+              setProfile(updatedProfile);
+            }}
+          />
 
           {/* Account Information */}
           <ResponsiveCard>
@@ -819,8 +676,55 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               )}
+              <View style={styles.accountItem}>
+                <IconSymbol
+                  name="person.fill"
+                  size={16}
+                  color={colors.primary}
+                />
+                <Text style={[styles.accountText, { color: colors.text }]}>
+                  {t("role")}:{" "}
+                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                </Text>
+              </View>
             </View>
           </ResponsiveCard>
+
+          {/* Payments entry point */}
+          {!userId && (
+            <ResponsiveCard>
+              <View style={styles.paymentsPreview}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {t("paymentsOverview")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.paymentsPreviewSubtitle,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("paymentsOverviewDescription")}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                  onPress={() => router.push("/profile/payments")}
+                >
+                  <Text
+                    style={[styles.paymentsCtaText, { color: colors.text }]}
+                  >
+                    {t("managePaymentsCta")}
+                  </Text>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.primary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </ResponsiveCard>
+          )}
 
           {/* Skills/Services Section */}
           <ResponsiveCard>
@@ -1036,12 +940,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
   },
-  contactInfoHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
-  },
   profileTitle: {
     fontSize: 16,
     marginBottom: 8,
@@ -1072,20 +970,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     marginBottom: 16,
-  },
-
-  // Contact information
-  contactInfo: {
-    gap: 12,
-  },
-  contactItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  contactText: {
-    fontSize: 15,
-    flex: 1,
   },
 
   // Skills
@@ -1173,7 +1057,6 @@ const styles = StyleSheet.create({
   bioEditActions: {
     flexDirection: "row",
     gap: 10,
-    justifyContent: "flex-end",
   },
   bioActionButton: {
     paddingHorizontal: 20,
@@ -1321,23 +1204,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 10,
     textAlign: "center",
-  },
-  // Contact restricted styles
-  contactRestrictedContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing.xxl,
-    gap: Spacing.md,
-  },
-  contactRestrictedTitle: {
-    fontSize: Typography.lg,
-    fontWeight: Typography.semibold,
-    textAlign: "center",
-  },
-  contactRestrictedDescription: {
-    fontSize: Typography.md,
-    textAlign: "center",
-    lineHeight: Typography.lineHeightRelaxed * Typography.md,
-    paddingHorizontal: Spacing.lg,
   },
   paymentsPreview: {
     gap: Spacing.sm,

@@ -991,8 +991,7 @@ export default function CreateOrderScreen() {
               <Text
                 style={[styles.bannerHint, { color: colors.tabIconDefault }]}
               >
-                {t("tapImageToSetAsBanner") ||
-                  "Tap an image to set it as the banner"}
+                {t("tapImageToSetAsBanner")}
               </Text>
             )}
           </ResponsiveCard>
@@ -1006,21 +1005,15 @@ export default function CreateOrderScreen() {
               ]}
             >
               {orderId && (
-                <TouchableOpacity
-                  style={[
-                    styles.deleteButton,
-                    {
-                      opacity: isSubmitting ? 0.6 : 1,
-                    },
-                  ]}
+                <Button
+                  variant="outline"
+                  icon="trash"
+                  iconSize={16}
+                  iconPosition="left"
+                  title={t("delete")}
+                  textColor="#FF3B30"
                   onPress={handleDeleteOrder}
-                  disabled={isSubmitting}
-                >
-                  <IconSymbol name="trash" size={16} color="#FF3B30" />
-                  <Text style={styles.deleteButtonText}>
-                    {t("delete") || "Delete Order"}
-                  </Text>
-                </TouchableOpacity>
+                />
               )}
               <Button
                 onPress={handleApply}
@@ -1067,7 +1060,7 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     marginTop: 10,
     gap: 12,
@@ -1128,7 +1121,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: "italic",
     marginTop: 8,
-    textAlign: "center",
     opacity: 0.7,
   },
 });

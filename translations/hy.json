@@ -845,5 +845,6 @@
   "helpDetailRightToRectification": "• Ուղղման իրավունք",
   "helpDetailRightToErasure": "• Ջնջման իրավունք",
   "helpDetailRightToPortability": "• Տվյալների փոխանցելիության իրավունք",
-  "helpDetailRightToObject": "• Մշակմանը դեմ լինելու իրավունք"
+  "helpDetailRightToObject": "• Մշակմանը դեմ լինելու իրավունք",
+  "tapImageToSetAsBanner": "Սեղմեք պատկերը՝ որպես բաններ սահմանելու համար"
 }

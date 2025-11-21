@@ -9,7 +9,6 @@ import {
   Typography,
   Shadows,
 } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -333,63 +332,72 @@ export default function RefillCreditsScreen() {
               </View>
 
               {/* Preset Amounts Grid */}
-              <View style={styles.presetAmounts}>
-                {PRESET_AMOUNTS.map((amount) => {
-                  const isSelected = selectedAmount === amount;
-                  return (
-                    <TouchableOpacity
-                      key={amount}
-                      style={[
-                        styles.amountButton,
-                        {
-                          backgroundColor: isSelected
-                            ? colors.tint
-                            : colors.background,
-                          borderColor: isSelected ? colors.tint : colors.border,
-                        },
-                        isSelected && styles.amountButtonSelected,
-                      ]}
-                      onPress={() => handleAmountSelect(amount)}
-                      activeOpacity={0.7}
-                    >
-                      {isSelected && (
-                        <View style={styles.checkmarkContainer}>
-                          <IconSymbol
-                            name="checkmark.circle.fill"
-                            size={18}
-                            color="black"
-                          />
-                        </View>
-                      )}
-                      <Text
+              <View style={styles.presetAmountsContainer}>
+                <View style={styles.presetAmounts}>
+                  {PRESET_AMOUNTS.map((amount) => {
+                    const isSelected = selectedAmount === amount;
+                    return (
+                      <TouchableOpacity
+                        key={amount}
                         style={[
-                          styles.amountButtonText,
+                          styles.amountButton,
                           {
-                            color: isSelected ? "black" : colors.text,
-                            fontWeight: isSelected ? "700" : "600",
+                            backgroundColor: isSelected
+                              ? colors.tint
+                              : colors.background,
+                            borderColor: isSelected
+                              ? colors.tint
+                              : colors.border,
                           },
+                          isSelected && styles.amountButtonSelected,
                         ]}
+                        onPress={() => handleAmountSelect(amount)}
+                        activeOpacity={0.7}
                       >
-                        {amount}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        {isSelected && (
+                          <View style={styles.checkmarkContainer}>
+                            <IconSymbol
+                              name="checkmark.circle.fill"
+                              size={18}
+                              color="black"
+                            />
+                          </View>
+                        )}
+                        <Text
+                          style={[
+                            styles.amountButtonText,
+                            {
+                              color: isSelected ? "black" : colors.text,
+                              fontWeight: isSelected ? "700" : "600",
+                            },
+                          ]}
+                        >
+                          {amount}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
 
-              {/* Divider */}
-              <View style={styles.dividerContainer}>
-                <View
-                  style={[styles.divider, { backgroundColor: colors.border }]}
-                />
-                <Text
-                  style={[styles.dividerText, { color: colors.tabIconDefault }]}
-                >
-                  {t("or")}
-                </Text>
-                <View
-                  style={[styles.divider, { backgroundColor: colors.border }]}
-                />
+              {/* Divider - Only show between preset and custom */}
+              <View style={styles.dividerWrapper}>
+                <View style={styles.dividerContainer}>
+                  <View
+                    style={[styles.divider, { backgroundColor: colors.border }]}
+                  />
+                  <Text
+                    style={[
+                      styles.dividerText,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {t("or")}
+                  </Text>
+                  <View
+                    style={[styles.divider, { backgroundColor: colors.border }]}
+                  />
+                </View>
               </View>
 
               {/* Custom Amount Input */}
@@ -669,12 +677,17 @@ const styles = StyleSheet.create({
     fontSize: Typography.xxxl,
     fontWeight: "700",
   },
+  // Preset Amounts Container
+  presetAmountsContainer: {
+    width: "100%",
+    marginBottom: 0,
+  },
   // Preset Amounts
   presetAmounts: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.md,
-    marginBottom: Spacing.lg,
+    width: "100%",
   },
   amountButton: {
     flex: 1,
@@ -701,20 +714,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   // Divider
+  dividerWrapper: {
+    width: "100%",
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: 0,
+  },
   dividerContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: Spacing.lg,
-    gap: Spacing.md,
+    width: "100%",
+    gap: Spacing.sm,
   },
   divider: {
     flex: 1,
     height: 1,
+    maxHeight: 1,
   },
   dividerText: {
     fontSize: Typography.sm,
     fontWeight: "600",
     textTransform: "uppercase",
+    paddingHorizontal: Spacing.sm,
+    flexShrink: 0,
   },
   // Custom Amount
   customAmountSection: {

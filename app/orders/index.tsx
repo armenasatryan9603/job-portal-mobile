@@ -1048,20 +1048,15 @@ export default function OrdersScreen() {
 
             {/* Delete Button - Only show for user's own orders */}
             {isMyOrders && order.status !== "pending" && (
-              <TouchableOpacity
-                style={styles.deleteButton}
+              <Button
+                variant="outline"
+                icon="trash"
+                iconSize={16}
+                iconPosition="left"
+                title={t("delete")}
+                textColor="#FF3B30"
                 onPress={() => handleDeleteOrder(order)}
-              >
-                <IconSymbol name="trash" size={16} color="#FF3B30" />
-                <Text
-                  style={[
-                    styles.deleteButtonText,
-                    { color: colors.textInverse },
-                  ]}
-                >
-                  {t("delete")}
-                </Text>
-              </TouchableOpacity>
+              />
             )}
           </View>
         </ResponsiveCard>

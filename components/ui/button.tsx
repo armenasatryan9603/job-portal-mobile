@@ -50,40 +50,46 @@ export const Button: React.FC<ButtonProps> = ({
   const getButtonColors = () => {
     let bg: string;
     let text: string;
+    let border: string;
 
     switch (variant) {
       case "primary":
         bg = backgroundColor || colors.tint;
         text = textColor || "#fff";
+        border = "transparent";
         break;
       case "secondary":
         bg = backgroundColor || colors.secondary;
         text = textColor || colors.textInverse;
+        border = "transparent";
         break;
       case "outline":
         bg = "transparent";
+        border = textColor || colors.tint;
         text = textColor || colors.tint;
         break;
       case "ghost":
         bg = "transparent";
         text = textColor || colors.text;
+        border = "transparent";
         break;
       default:
         bg = backgroundColor || colors.tint;
         text = textColor || colors.textInverse;
+        border = "transparent";
     }
 
-    return { bg, text };
+    return { bg, text, border };
   };
 
-  const { bg, text } = getButtonColors();
+  const { bg, text, border } = getButtonColors();
 
   const buttonStyle: StyleProp<ViewStyle> = [
     styles.button,
     {
-      backgroundColor: variant === "outline" ? "transparent" : bg,
+      backgroundColor: bg,
       borderWidth: variant === "outline" ? 1 : 0,
-      borderColor: variant === "outline" ? bg : "transparent",
+      borderColor: border,
       opacity: disabled || loading ? 0.6 : 1,
     },
     style,
@@ -92,12 +98,12 @@ export const Button: React.FC<ButtonProps> = ({
   const finalTextStyle: StyleProp<TextStyle> = [
     styles.text,
     {
-      color: variant === "outline" ? bg : text,
+      color: text,
     },
     textStyle,
   ];
 
-  const iconColor = textColor || (variant === "outline" ? bg : text);
+  const iconColor = textColor || text;
 
   return (
     <TouchableOpacity

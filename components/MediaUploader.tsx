@@ -366,13 +366,11 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       </ScrollView>
 
       {mediaFiles.length > 0 && (
-        <View style={styles.mediaInfo}>
-          <Text
-            style={[styles.mediaInfoText, { color: colors.tabIconDefault }]}
-          >
-            {mediaFiles.length} {t("filesSelected")}
-          </Text>
-        </View>
+        // <View>
+        <Text style={[styles.mediaInfoText, { color: colors.tabIconDefault }]}>
+          {mediaFiles.length} {t("filesSelected")}
+        </Text>
+        // </View>
       )}
     </View>
   );
@@ -468,11 +466,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  mediaInfo: {
-    alignItems: "center",
-  },
   mediaInfoText: {
     fontSize: 12,
+    marginTop: 5,
     fontStyle: "italic",
   },
   bannerImage: {

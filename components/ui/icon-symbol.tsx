@@ -77,6 +77,14 @@ const MAPPING = {
   "gift.fill": "card-giftcard",
   "lock.fill": "lock",
   "creditcard.fill": "credit-card",
+  // Payment and money icons
+  "dollarsign.circle.fill": "attach-money",
+  "dollarsign.circle": "attach-money",
+  // Edit icons
+  "pencil.circle.fill": "edit",
+  // Info icons
+  "info.circle.fill": "info",
+  "envelope.fill": "email",
 } as IconMapping;
 
 /**
