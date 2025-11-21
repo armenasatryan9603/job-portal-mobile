@@ -5,10 +5,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   Alert,
   ActivityIndicator,
   ScrollView,
+  Keyboard,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
@@ -91,8 +93,13 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
           <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.orderInfo}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView 
+            style={styles.content} 
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.orderInfo}>
             <Text style={[styles.orderTitle, { color: colors.text }]}>
               {order.title}
             </Text>
@@ -203,7 +210,8 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               )}
             </TouchableOpacity>
           </View>
-        </ScrollView>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </View>
     </Modal>
   );

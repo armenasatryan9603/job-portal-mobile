@@ -8,6 +8,7 @@ import {
   Image,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button } from "@/components/ui/button";
 import { Service } from "@/services/api";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -47,15 +48,14 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
           {t("skillsAndServices")}
         </Text>
         {!userId && (
-          <TouchableOpacity
-            style={[styles.editButton, { backgroundColor: colors.primary }]}
+          <Button
             onPress={onEditSkills}
-          >
-            <IconSymbol name="pencil" size={14} color="white" />
-            <Text style={[styles.editButtonText, { color: "white" }]}>
-              {t("edit")}
-            </Text>
-          </TouchableOpacity>
+            title={t("edit")}
+            variant="primary"
+            icon="pencil"
+            iconSize={14}
+            backgroundColor={colors.primary}
+          />
         )}
       </View>
 
@@ -71,16 +71,14 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
           <Text style={[styles.errorText, { color: colors.textSecondary }]}>
             {servicesError}
           </Text>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+          <Button
             onPress={onRetry}
-          >
-            <Text
-              style={[styles.retryButtonText, { color: colors.textInverse }]}
-            >
-              {t("retry")}
-            </Text>
-          </TouchableOpacity>
+            title={t("retry")}
+            variant="primary"
+            style={styles.retryButton}
+            textColor={colors.textInverse}
+            backgroundColor={colors.primary}
+          />
         </View>
       ) : userServices.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -100,15 +98,16 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
               : t("thisUserHasntAddedSkills")}
           </Text>
           {!userId && (
-            <TouchableOpacity
-              style={[styles.addButton, { backgroundColor: colors.primary }]}
+            <Button
               onPress={onEditSkills}
-            >
-              <IconSymbol name="plus" size={16} color="white" />
-              <Text style={[styles.addButtonText, { color: "white" }]}>
-                {t("addSkills")}
-              </Text>
-            </TouchableOpacity>
+              title={t("addSkills")}
+              variant="primary"
+              icon="plus"
+              iconSize={16}
+              // style={styles.addButton}
+              // textColor={colors.textInverse}
+              // backgroundColor={colors.primary}
+            />
           )}
         </View>
       ) : (
@@ -223,20 +222,6 @@ const styles = StyleSheet.create({
     flex: 1,
     flexShrink: 1,
   },
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    gap: 4,
-    flexShrink: 0,
-    marginLeft: 8,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
   loadingContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -257,13 +242,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   retryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  retryButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
+    // Button component handles padding and styling
   },
   emptyContainer: {
     alignItems: "center",
@@ -279,17 +258,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 6,
     marginTop: 10,
-  },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
   skillsList: {
     gap: 12,

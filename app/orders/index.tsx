@@ -826,7 +826,10 @@ export default function OrdersScreen() {
     const [imageError, setImageError] = useState(false);
 
     return (
-      <TouchableOpacity onPress={() => handleOrderPress(order)}>
+      <TouchableOpacity
+        onPress={() => handleOrderPress(order)}
+        activeOpacity={1}
+      >
         <ResponsiveCard>
           {/* Banner Image */}
           {order.BannerImage && (
@@ -1130,7 +1133,6 @@ export default function OrdersScreen() {
               left: 0,
               right: 0,
               zIndex: 1,
-              backgroundColor: colors.background,
             }}
           >
             <ResponsiveCard padding={Spacing.md}>
@@ -1188,7 +1190,7 @@ export default function OrdersScreen() {
                 styles.fab,
                 {
                   backgroundColor: colors.primary, // Use primary color which is consistent in both themes
-                  bottom: 80 + insets.bottom, // Account for footer tabs + safe area
+                  bottom: 70 + insets.bottom, // Account for footer tabs + safe area
                 },
               ]}
               onPress={handleCreateOrder}

@@ -5,10 +5,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   Alert,
   ActivityIndicator,
   ScrollView,
+  Keyboard,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -121,130 +123,136 @@ export function HiringDialog({
           <View style={styles.placeholder} />
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.specialistInfo}>
-            <Text style={[styles.specialistName, { color: colors.text }]}>
-              {t("hiringSpecialist")} {specialistName}
-            </Text>
-          </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.content}>
+            <View style={styles.specialistInfo}>
+              <Text style={[styles.specialistName, { color: colors.text }]}>
+                {t("hiringSpecialist")} {specialistName}
+              </Text>
+            </View>
 
-          <View style={styles.orderSection}>
-            <Text style={[styles.orderLabel, { color: colors.text }]}>
-              {t("selectOrder")} (
-              {userOrders.filter((order) => order.status === "open").length})
-            </Text>
-            <ScrollView
-              style={styles.orderScrollView}
-              showsVerticalScrollIndicator={false}
-            >
-              <View style={styles.orderList}>
-                {userOrders
-                  .filter((order) => order.status === "open")
-                  .map((order) => (
-                    <TouchableOpacity
-                      key={order.id}
+            <View style={styles.orderSection}>
+              <Text style={[styles.orderLabel, { color: colors.text }]}>
+                {t("selectOrder")} (
+                {userOrders.filter((order) => order.status === "open").length})
+              </Text>
+              <ScrollView
+                style={styles.orderScrollView}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.orderList}>
+                  {userOrders
+                    .filter((order) => order.status === "open")
+                    .map((order) => (
+                      <TouchableOpacity
+                        key={order.id}
+                        style={[
+                          styles.orderItem,
+                          {
+                            backgroundColor:
+                              selectedOrderId === order.id
+                                ? colors.tint + "15"
+                                : "transparent",
+                            borderColor:
+                              selectedOrderId === order.id
+                                ? colors.tint
+                                : colors.border,
+                          },
+                        ]}
+                        onPress={() => setSelectedOrderId(order.id)}
+                      >
+                        <View style={styles.orderContent}>
+                          <View style={styles.orderTitleRow}>
+                            <Text
+                              style={[
+                                styles.orderTitle,
+                                { color: colors.text },
+                              ]}
+                            >
+                              {order.title}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.orderCost,
+                                { color: colors.tabIconDefault },
+                              ]}
+                            >
+                              ${order.budget || 0}
+                            </Text>
+                          </View>
+                        </View>
+                        {selectedOrderId === order.id && (
+                          <IconSymbol
+                            name="checkmark"
+                            size={16}
+                            color={colors.tint}
+                            style={styles.checkIcon}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* Hiring Status Message */}
+            {selectedOrderId && (
+              <View style={styles.statusSection}>
+                {checkingStatus ? (
+                  <View style={styles.statusContainer}>
+                    <ActivityIndicator size="small" color={colors.tint} />
+                    <Text style={[styles.statusText, { color: colors.text }]}>
+                      {t("checkingHiringStatus")}
+                    </Text>
+                  </View>
+                ) : hiringStatusMessage ? (
+                  <View style={styles.statusContainer}>
+                    <IconSymbol
+                      name={
+                        isAlreadyHired
+                          ? "exclamationmark.triangle"
+                          : "checkmark.circle"
+                      }
+                      size={16}
+                      color={isAlreadyHired ? "#FF6B6B" : "#4CAF50"}
+                    />
+                    <Text
                       style={[
-                        styles.orderItem,
+                        styles.statusText,
                         {
-                          backgroundColor:
-                            selectedOrderId === order.id
-                              ? colors.tint + "15"
-                              : "transparent",
-                          borderColor:
-                            selectedOrderId === order.id
-                              ? colors.tint
-                              : colors.border,
+                          color: isAlreadyHired ? "#FF6B6B" : "#4CAF50",
                         },
                       ]}
-                      onPress={() => setSelectedOrderId(order.id)}
                     >
-                      <View style={styles.orderContent}>
-                        <View style={styles.orderTitleRow}>
-                          <Text
-                            style={[styles.orderTitle, { color: colors.text }]}
-                          >
-                            {order.title}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.orderCost,
-                              { color: colors.tabIconDefault },
-                            ]}
-                          >
-                            ${order.budget || 0}
-                          </Text>
-                        </View>
-                      </View>
-                      {selectedOrderId === order.id && (
-                        <IconSymbol
-                          name="checkmark"
-                          size={16}
-                          color={colors.tint}
-                          style={styles.checkIcon}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                      {hiringStatusMessage}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
-            </ScrollView>
-          </View>
+            )}
 
-          {/* Hiring Status Message */}
-          {selectedOrderId && (
-            <View style={styles.statusSection}>
-              {checkingStatus ? (
-                <View style={styles.statusContainer}>
-                  <ActivityIndicator size="small" color={colors.tint} />
-                  <Text style={[styles.statusText, { color: colors.text }]}>
-                    {t("checkingHiringStatus")}
-                  </Text>
-                </View>
-              ) : hiringStatusMessage ? (
-                <View style={styles.statusContainer}>
-                  <IconSymbol
-                    name={
-                      isAlreadyHired
-                        ? "exclamationmark.triangle"
-                        : "checkmark.circle"
-                    }
-                    size={16}
-                    color={isAlreadyHired ? "#FF6B6B" : "#4CAF50"}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      {
-                        color: isAlreadyHired ? "#FF6B6B" : "#4CAF50",
-                      },
-                    ]}
-                  >
-                    {hiringStatusMessage}
-                  </Text>
-                </View>
-              ) : null}
+            <View style={styles.messageSection}>
+              <TextInput
+                style={[
+                  styles.messageInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder={t("writeYourMessage")}
+                placeholderTextColor={colors.tabIconDefault}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                numberOfLines={3}
+                textAlignVertical="top"
+              />
             </View>
-          )}
-
-          <View style={styles.messageSection}>
-            <TextInput
-              style={[
-                styles.messageInput,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: colors.border,
-                  color: colors.text,
-                },
-              ]}
-              placeholder={t("writeYourMessage")}
-              placeholderTextColor={colors.tabIconDefault}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              numberOfLines={3}
-              textAlignVertical="top"
-            />
           </View>
-        </View>
+        </TouchableWithoutFeedback>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <TouchableOpacity
@@ -264,7 +272,6 @@ export function HiringDialog({
           <TouchableOpacity
             style={[
               styles.footerButton,
-              styles.submitButton,
               { backgroundColor: colors.tint },
               (loading ||
                 !message.trim() ||
@@ -384,6 +391,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     borderTopWidth: 1,
+    marginBottom: 30,
   },
   footerButton: {
     flex: 1,
@@ -395,9 +403,6 @@ const styles = StyleSheet.create({
   cancelButton: {
     borderWidth: 1,
   },
-  submitButton: {
-    // No additional styles needed
-  },
   submitButtonDisabled: {
     opacity: 0.5,
   },
@@ -407,8 +412,7 @@ const styles = StyleSheet.create({
   },
   statusSection: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
-    marginTop: 8,
+    marginBottom: 24,
   },
   statusContainer: {
     flexDirection: "row",

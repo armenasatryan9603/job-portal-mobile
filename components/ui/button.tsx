@@ -6,6 +6,7 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
+  StyleProp,
 } from "react-native";
 import { IconSymbol } from "./icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -13,7 +14,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 
 export interface ButtonProps {
   onPress: () => void;
-  title: string;
+  title?: string;
   variant?: "primary" | "secondary" | "outline" | "ghost";
   icon?: string;
   iconSize?: number;
@@ -24,6 +25,7 @@ export interface ButtonProps {
   textStyle?: TextStyle;
   backgroundColor?: string;
   textColor?: string;
+  children?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -39,6 +41,7 @@ export const Button: React.FC<ButtonProps> = ({
   textStyle,
   backgroundColor,
   textColor,
+  children,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -51,7 +54,7 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case "primary":
         bg = backgroundColor || colors.tint;
-        text = textColor || colors.textInverse;
+        text = textColor || "#fff";
         break;
       case "secondary":
         bg = backgroundColor || colors.secondary;
@@ -75,7 +78,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const { bg, text } = getButtonColors();
 
-  const buttonStyle: ViewStyle = [
+  const buttonStyle: StyleProp<ViewStyle> = [
     styles.button,
     {
       backgroundColor: variant === "outline" ? "transparent" : bg,
@@ -86,7 +89,7 @@ export const Button: React.FC<ButtonProps> = ({
     style,
   ];
 
-  const finalTextStyle: TextStyle = [
+  const finalTextStyle: StyleProp<TextStyle> = [
     styles.text,
     {
       color: variant === "outline" ? bg : text,
@@ -110,7 +113,7 @@ export const Button: React.FC<ButtonProps> = ({
           {icon && iconPosition === "left" && (
             <IconSymbol name={icon as any} size={iconSize} color={iconColor} />
           )}
-          <Text style={finalTextStyle}>{title}</Text>
+          {children || <Text style={finalTextStyle}>{title}</Text>}
           {icon && iconPosition === "right" && (
             <IconSymbol name={icon as any} size={iconSize} color={iconColor} />
           )}
@@ -125,8 +128,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 8,
     gap: 6,
   },
@@ -135,4 +138,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-

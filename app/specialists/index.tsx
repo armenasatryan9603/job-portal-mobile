@@ -294,7 +294,10 @@ export default function SpecialistsScreen() {
 
   const renderSpecialistItem = useCallback(
     ({ item: specialist }: { item: SpecialistProfile }) => (
-      <TouchableOpacity onPress={() => handleSpecialistPress(specialist.id)}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => handleSpecialistPress(specialist.id)}
+      >
         <ResponsiveCard padding={0}>
           <View style={styles.specialistCard}>
             <View style={styles.specialistHeader}>

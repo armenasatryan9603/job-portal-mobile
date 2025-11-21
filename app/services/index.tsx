@@ -201,7 +201,10 @@ const ServicesScreen = () => {
   }
 
   const renderServiceItem = ({ item: service }: { item: Service }) => (
-    <TouchableOpacity onPress={() => handleServicePress(service.id)}>
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={() => handleServicePress(service.id)}
+    >
       <ResponsiveCard padding={16}>
         {service.imageUrl && (
           <Image

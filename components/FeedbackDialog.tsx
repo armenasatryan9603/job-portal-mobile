@@ -4,11 +4,13 @@ import {
   Text,
   Modal,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   TextInput,
   StyleSheet,
   Alert,
   ScrollView,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -134,14 +136,16 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View
-            style={[styles.container, { backgroundColor: colors.background }]}
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
+            <View
+              style={[styles.container, { backgroundColor: colors.background }]}
+            >
             <View style={styles.header}>
               <Text style={[styles.title, { color: colors.text }]}>
                 {title}
@@ -282,7 +286,8 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             </View>
           </View>
         </ScrollView>
-      </View>
+        </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 };

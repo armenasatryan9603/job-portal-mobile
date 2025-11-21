@@ -24,6 +24,7 @@ import {
   Image,
 } from "react-native";
 import { apiService, Service } from "@/services/api";
+import { Button } from "@/components/ui/button";
 
 export default function ServiceDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -333,66 +334,30 @@ export default function ServiceDetailScreen() {
           {/* Action Buttons */}
           <ResponsiveCard>
             <View style={styles.actionButtonsVertical}>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: colors.tint }]}
+              <Button
                 onPress={handleCreateOrder}
-              >
-                <IconSymbol
-                  name="plus.circle.fill"
-                  size={20}
-                  color={colors.background}
-                />
-                <Text
-                  style={[
-                    styles.primaryButtonText,
-                    { color: colors.background },
-                  ]}
-                >
-                  {t("postJob")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.secondaryButton,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.tint,
-                    borderWidth: 1,
-                  },
-                ]}
+                variant="primary"
+                iconSize={14}
+                title={t("postJob")}
+                icon="plus.circle.fill"
+                backgroundColor={colors.primary}
+              />
+              <Button
                 onPress={handleBrowseSpecialists}
-              >
-                <IconSymbol
-                  name="person.2.fill"
-                  size={20}
-                  color={colors.tint}
-                />
-                <Text
-                  style={[styles.secondaryButtonText, { color: colors.tint }]}
-                >
-                  {t("browseSpecialists")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.tertiaryButton,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    borderWidth: 1,
-                  },
-                ]}
+                variant="primary"
+                iconSize={14}
+                title={t("browseSpecialists")}
+                icon="person.2.fill"
+                backgroundColor={colors.primary}
+              />
+              <Button
                 onPress={handleBrowseOrders}
-              >
-                <IconSymbol name="list.bullet" size={20} color={colors.tint} />
-                <Text
-                  style={[styles.tertiaryButtonText, { color: colors.text }]}
-                >
-                  {t("browseOrders") || "Browse Orders"}
-                </Text>
-              </TouchableOpacity>
+                variant="primary"
+                iconSize={14}
+                title={t("browseOrders")}
+                icon="list.bullet"
+                backgroundColor={colors.primary}
+              />
             </View>
           </ResponsiveCard>
         </ResponsiveContainer>

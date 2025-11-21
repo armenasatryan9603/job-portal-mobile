@@ -5,9 +5,11 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Keyboard,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -80,8 +82,10 @@ export default function DeleteAccountDialog({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <View style={styles.overlay}>
-        <View style={[styles.dialog, { backgroundColor: colors.background }]}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={[styles.dialog, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={styles.header}>
             <View
@@ -213,8 +217,10 @@ export default function DeleteAccountDialog({
               )}
             </TouchableOpacity>
           </View>
+          </View>
+        </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }

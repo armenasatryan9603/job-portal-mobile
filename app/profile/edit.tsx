@@ -26,6 +26,7 @@ import { apiService, UserProfile, UpdateUserProfileData } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { fileUploadService } from "@/services/fileUpload";
+import { Button } from "@/components/ui/button";
 
 export default function EditProfileScreen() {
   const colorScheme = useColorScheme();
@@ -320,15 +321,11 @@ export default function EditProfileScreen() {
                 <TouchableOpacity
                   style={[
                     styles.editIconButton,
-                    { backgroundColor: colors.tint },
+                    { backgroundColor: colors.primary },
                   ]}
                   onPress={handleChangePhoto}
                 >
-                  <IconSymbol
-                    name="pencil"
-                    size={14}
-                    color={colors.background}
-                  />
+                  <IconSymbol name="camera.fill" size={16} color="white" />
                 </TouchableOpacity>
               </View>
 
@@ -434,18 +431,13 @@ export default function EditProfileScreen() {
                 </View>
               </View>
             </View>
-          </ResponsiveCard>
 
-          {/* Fixed Save Button */}
-          <View style={styles.fixedSaveButton}>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { backgroundColor: colors.tint },
-                saving && { opacity: 0.7 },
-              ]}
-              onPress={handleSave}
+            <Button
               disabled={saving}
+              onPress={handleSave}
+              variant="primary"
+              iconSize={14}
+              backgroundColor={colors.primary}
             >
               {saving ? (
                 <ActivityIndicator size="small" color={colors.background} />
@@ -456,8 +448,8 @@ export default function EditProfileScreen() {
                   {t("saveChanges")}
                 </Text>
               )}
-            </TouchableOpacity>
-          </View>
+            </Button>
+          </ResponsiveCard>
         </ResponsiveContainer>
       </ScrollView>
 
@@ -495,15 +487,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "white",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 5,
   },
-
   // Form Section
   formSection: {
     width: "100%",

@@ -32,7 +32,7 @@ export default function ProfileHelpScreen() {
         Linking.openURL("mailto:support@jobportal.com?subject=Support Request");
         break;
       case "phone":
-        Linking.openURL("tel:+1234567890");
+        Linking.openURL("tel:+37477754955");
         break;
       case "website":
         Linking.openURL("https://jobportal.com/support");
@@ -151,13 +151,6 @@ export default function ProfileHelpScreen() {
       type: "email",
     },
     {
-      title: t("liveChat"),
-      description: t("chatWithSupportTeam"),
-      icon: "message.fill",
-      action: t("startChat"),
-      type: "chat",
-    },
-    {
       title: t("phoneSupport"),
       description: t("callForImmediateHelp"),
       icon: "phone.fill",
@@ -244,6 +237,17 @@ export default function ProfileHelpScreen() {
                         borderBottomWidth: 0,
                       },
                     ]}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/profile/help/[id]",
+                        params: {
+                          id: `${sectionIndex}-${itemIndex}`,
+                          title: item.title,
+                          description: item.description,
+                          sectionTitle: section.title,
+                        },
+                      })
+                    }
                   >
                     <View style={styles.helpItemContent}>
                       <Text

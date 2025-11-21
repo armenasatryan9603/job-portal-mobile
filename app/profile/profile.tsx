@@ -5,6 +5,7 @@ import {
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button } from "@/components/ui/button";
 import {
   BorderRadius,
   Spacing,
@@ -12,7 +13,6 @@ import {
   Typography,
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreditCard } from "@/contexts/CreditCardContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -41,7 +41,6 @@ export default function ProfileScreen() {
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { creditCards } = useCreditCard();
 
   // Get URL parameters for handling refresh from edit screen and viewing other users
   const { refreshUserId, userId } = useLocalSearchParams();
@@ -490,18 +489,6 @@ export default function ProfileScreen() {
                   <Text style={[styles.profileName, { color: colors.text }]}>
                     {profile.name}
                   </Text>
-                  {!userId && (
-                    <TouchableOpacity
-                      style={styles.editProfileButton}
-                      onPress={handleEditProfile}
-                    >
-                      <IconSymbol
-                        name="pencil"
-                        size={16}
-                        color={colors.primary}
-                      />
-                    </TouchableOpacity>
-                  )}
                 </View>
 
                 <Text
@@ -547,9 +534,21 @@ export default function ProfileScreen() {
           {/* Contact Information - Only show if user has active chat or is viewing own profile */}
           {hasActiveChat && (
             <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("contactInformation")}
-              </Text>
+              <View style={styles.contactInfoHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("contactInformation")}
+                </Text>
+                {!userId && (
+                  <Button
+                    onPress={handleEditProfile}
+                    title={t("edit")}
+                    variant="primary"
+                    icon="pencil"
+                    iconSize={14}
+                    backgroundColor={colors.primary}
+                  />
+                )}
+              </View>
               <View style={styles.contactInfo}>
                 <View style={styles.contactItem}>
                   <IconSymbol
@@ -680,12 +679,14 @@ export default function ProfileScreen() {
                 {t("about")}
               </Text>
               {!userId && !isEditingBio && (
-                <TouchableOpacity
-                  style={styles.editBioButton}
+                <Button
                   onPress={handleStartEditBio}
-                >
-                  <IconSymbol name="pencil" size={16} color={colors.primary} />
-                </TouchableOpacity>
+                  title={t("edit")}
+                  variant="primary"
+                  icon="pencil"
+                  iconSize={14}
+                  backgroundColor={colors.primary}
+                />
               )}
             </View>
 
@@ -1035,8 +1036,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
   },
-  editProfileButton: {
-    padding: 4,
+  contactInfoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
   profileTitle: {
     fontSize: 16,
@@ -1144,7 +1148,10 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   editBioButton: {
-    padding: 4,
+    padding: 0,
+    minWidth: 32,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
   },
   bioEditContainer: {
     gap: 12,

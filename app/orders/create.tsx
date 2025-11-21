@@ -331,10 +331,6 @@ export default function CreateOrderScreen() {
               return false;
             }
           });
-          if (pastDates.length > 0) {
-            return t("noPastDates") || "Cannot select dates in the past";
-          }
-          // Times are also optional - no validation error if no times selected
         }
         // Return empty string if no dates selected (completely optional)
         return "";
@@ -1003,7 +999,12 @@ export default function CreateOrderScreen() {
 
           {/* Action Buttons */}
           <ResponsiveCard>
-            <View style={styles.actionButtons}>
+            <View
+              style={[
+                styles.actionButtons,
+                !orderId && styles.singleButtonContainer,
+              ]}
+            >
               {orderId && (
                 <TouchableOpacity
                   style={[
@@ -1023,11 +1024,7 @@ export default function CreateOrderScreen() {
               )}
               <Button
                 onPress={handleApply}
-                title={
-                  orderId
-                    ? t("save") || "Save"
-                    : t("apply") || "Apply"
-                }
+                title={orderId ? t("save") || "Save" : t("apply") || "Apply"}
                 variant="primary"
                 disabled={isSubmitting}
                 loading={isSubmitting}
@@ -1074,6 +1071,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
     gap: 12,
+  },
+  singleButtonContainer: {
+    justifyContent: "center",
   },
   applyButton: {
     paddingHorizontal: 32,
