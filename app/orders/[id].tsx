@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -32,11 +33,38 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 export default function EditOrderScreen() {
   const { id, myJobs } = useLocalSearchParams();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { user, isLoading: userLoading } = useAuth();
   const { showLoginModal } = useModal();
   const isMyJobs = myJobs === "true";
+
+  // Helper function to get localized title/description
+  const getLocalizedText = (
+    field: "title" | "description",
+    language: string,
+    order: Order | null
+  ): string => {
+    if (!order) return "";
+    const fieldKey = field === "title" ? "title" : "description";
+    const langKey = language === "en" ? "En" : language === "ru" ? "Ru" : "Hy";
+    const multilingualKey = `${fieldKey}${langKey}` as
+      | "titleEn"
+      | "titleRu"
+      | "titleHy"
+      | "descriptionEn"
+      | "descriptionRu"
+      | "descriptionHy";
+
+    // Try multilingual field first
+    if (order[multilingualKey]) {
+      return order[multilingualKey]!;
+    }
+
+    // Fallback to original field
+    return order[fieldKey] || "";
+  };
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
@@ -397,7 +425,7 @@ export default function EditOrderScreen() {
                   {t("orderOverview")}
                 </Text>
                 <Text style={[styles.orderTitle, { color: colors.text }]}>
-                  {order?.title}
+                  {getLocalizedText("title", language, order)}
                 </Text>
                 <Text
                   style={[
@@ -405,7 +433,7 @@ export default function EditOrderScreen() {
                     { color: colors.tabIconDefault },
                   ]}
                 >
-                  {order?.description}
+                  {getLocalizedText("description", language, order)}
                 </Text>
 
                 {/* Apply Button or Applied Status */}

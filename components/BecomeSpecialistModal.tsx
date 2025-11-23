@@ -57,11 +57,7 @@ export function BecomeSpecialistModal({
         await AsyncStorage.setItem(DONT_SHOW_AGAIN_KEY, "true");
       }
 
-      Alert.alert(
-        t("success"),
-        t("roleUpdatedToSpecialist") ||
-          "Your role has been updated to Specialist!"
-      );
+      Alert.alert(t("success"), t("roleUpdatedToSpecialist"));
 
       onClose();
     } catch (error) {
@@ -121,9 +117,7 @@ export function BecomeSpecialistModal({
             <View style={styles.iconContainer}>
               <IconSymbol name="person.2.fill" size={28} color="white" />
             </View>
-            <Text style={styles.title}>
-              {t("becomeASpecialist") || "Become a Specialist"}
-            </Text>
+            <Text style={styles.title}>{t("becomeASpecialist")}</Text>
           </View>
 
           <ScrollView
@@ -148,7 +142,7 @@ export function BecomeSpecialistModal({
                 </View>
                 <View style={styles.benefitText}>
                   <Text style={[styles.benefitTitle, { color: colors.text }]}>
-                    {t("beVisible") || "Be Visible"}
+                    {t("beVisible")}
                   </Text>
                   <Text
                     style={[
@@ -156,8 +150,7 @@ export function BecomeSpecialistModal({
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t("appearInSpecialistsList") ||
-                      "Appear in the specialists list and get discovered by clients"}
+                    {t("appearInSpecialistsList")}
                   </Text>
                 </View>
               </View>
@@ -177,7 +170,7 @@ export function BecomeSpecialistModal({
                 </View>
                 <View style={styles.benefitText}>
                   <Text style={[styles.benefitTitle, { color: colors.text }]}>
-                    {t("getFound") || "Get Found"}
+                    {t("getFound")}
                   </Text>
                   <Text
                     style={[
@@ -185,8 +178,7 @@ export function BecomeSpecialistModal({
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t("searchableByClients") ||
-                      "Be searchable by clients looking for your expertise"}
+                    {t("searchableByClients")}
                   </Text>
                 </View>
               </View>
@@ -206,7 +198,7 @@ export function BecomeSpecialistModal({
                 </View>
                 <View style={styles.benefitText}>
                   <Text style={[styles.benefitTitle, { color: colors.text }]}>
-                    {t("receiveOrders") || "Receive Orders"}
+                    {t("receiveOrders")}
                   </Text>
                   <Text
                     style={[
@@ -214,31 +206,24 @@ export function BecomeSpecialistModal({
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t("getHiredForProjects") ||
-                      "Get hired for projects that match your skills"}
+                    {t("getHiredForProjects")}
                   </Text>
                 </View>
               </View>
             </View>
-
-            {/* Note */}
-            <View
-              style={[
-                styles.noteContainer,
-                { backgroundColor: colors.border + "30" },
-              ]}
-            >
-              <IconSymbol
-                name="info.circle.fill"
-                size={16}
-                color={colors.primary}
-              />
-              <Text style={[styles.note, { color: colors.textSecondary }]}>
-                {t("youCanEditRoleInProfile") ||
-                  "You can edit your role anytime in the Profile section."}
-              </Text>
-            </View>
           </ScrollView>
+
+          {/* Note */}
+          <View style={[styles.noteContainer]}>
+            <IconSymbol
+              name="info.circle.fill"
+              size={24}
+              color={colors.primary}
+            />
+            <Text style={[styles.note, { color: colors.text }]}>
+              {t("youCanEditRoleInProfile")}
+            </Text>
+          </View>
 
           {/* Don't show again checkbox */}
           <View
@@ -265,7 +250,7 @@ export function BecomeSpecialistModal({
                 )}
               </View>
               <Text style={[styles.checkboxLabel, { color: colors.text }]}>
-                {t("dontShowAgain") || "Don't show again"}
+                {t("dontShowAgain")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -273,8 +258,8 @@ export function BecomeSpecialistModal({
           {/* Actions */}
           <View style={[styles.actions, { borderTopColor: colors.border }]}>
             <Button
-              variant="outline"
-              title={t("maybeLater") || "Maybe Later"}
+              variant="ghost"
+              title={t("maybeLater")}
               onPress={handleClose}
               backgroundColor={colors.background}
               textColor={colors.text}
@@ -283,12 +268,12 @@ export function BecomeSpecialistModal({
             />
             <Button
               variant="primary"
-              title={t("becomeSpecialist") || "Become Specialist"}
+              title={t("becomeSpecialist")}
               onPress={handleBecomeSpecialist}
               backgroundColor={colors.primary}
               textColor="white"
               disabled={isUpdating}
-              style={styles.actionButton}
+              style={styles.primaryActionButton}
             />
           </View>
         </View>
@@ -382,19 +367,20 @@ const styles = StyleSheet.create({
   noteContainer: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 12,
-    borderRadius: 8,
-    gap: 8,
-    marginBottom: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 10,
   },
   note: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     flex: 1,
+    fontWeight: "500",
   },
   checkboxSection: {
     paddingHorizontal: 20,
     paddingVertical: 12,
+    paddingTop: 16,
     borderTopWidth: 1,
   },
   checkboxContainer: {
@@ -416,13 +402,16 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
     padding: 20,
     paddingTop: 16,
     borderTopWidth: 1,
   },
   actionButton: {
     flex: 1,
+  },
+  primaryActionButton: {
+    flexShrink: 0,
   },
 });
 

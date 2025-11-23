@@ -140,6 +140,7 @@ class FileUploadService {
       availableDates?: string[];
       location?: string;
       skills?: string[];
+      useAIEnhancement?: boolean;
     },
     files: MediaFile[],
     onProgress?: (completed: number, total: number) => void

@@ -16,7 +16,10 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -68,6 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({
   } = useNavigation();
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
   const [imageError, setImageError] = React.useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
 
   // Handle sidebar animation when visibility changes
   React.useEffect(() => {
@@ -116,6 +120,35 @@ export const Layout: React.FC<LayoutProps> = ({
   React.useEffect(() => {
     setImageError(false);
   }, [user?.avatarUrl]);
+
+  // Track keyboard visibility globally
+  React.useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => {
+        setIsKeyboardVisible(true);
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        setIsKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
+  // Handle outside click when keyboard is visible - dismiss keyboard and prevent other actions
+  const handleOutsidePress = React.useCallback(() => {
+    if (isKeyboardVisible) {
+      Keyboard.dismiss();
+    }
+  }, [isKeyboardVisible]);
 
   const handleImageError = () => {
     setImageError(true);

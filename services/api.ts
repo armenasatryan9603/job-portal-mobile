@@ -204,6 +204,12 @@ export interface Order {
   serviceId?: number;
   title: string;
   description: string;
+  titleEn?: string;
+  titleRu?: string;
+  titleHy?: string;
+  descriptionEn?: string;
+  descriptionRu?: string;
+  descriptionHy?: string;
   budget: number;
   status: string;
   location?: string;
@@ -697,6 +703,7 @@ class ApiService {
     location?: string;
     skills?: string[];
     availableDates?: string[];
+    useAIEnhancement?: boolean;
   }): Promise<any> {
     return this.request(
       `/orders/create`,
@@ -721,6 +728,13 @@ class ApiService {
       location?: string;
       skills?: string[];
       availableDates?: string[];
+      useAIEnhancement?: boolean;
+      titleEn?: string;
+      titleRu?: string;
+      titleHy?: string;
+      descriptionEn?: string;
+      descriptionRu?: string;
+      descriptionHy?: string;
     }
   ): Promise<any> {
     return this.request(
@@ -758,6 +772,37 @@ class ApiService {
       },
       true
     ); // requireAuth: true
+  }
+
+  async previewAIEnhancement(orderData: {
+    title: string;
+    description: string;
+  }): Promise<{
+    original: {
+      title: string;
+      description: string;
+    };
+    enhanced: {
+      titleEn: string;
+      titleRu: string;
+      titleHy: string;
+      descriptionEn: string;
+      descriptionRu: string;
+      descriptionHy: string;
+      detectedLanguage: string;
+    };
+  }> {
+    return this.request(
+      `/orders/preview-ai-enhancement`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      },
+      true
+    ); // Auth required
   }
 
   async getMyOrders(): Promise<any> {

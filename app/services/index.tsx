@@ -11,15 +11,21 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 import { router } from "expo-router";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import {
   FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Alert,
   RefreshControl,
   ActivityIndicator,
   Image,
@@ -35,6 +41,8 @@ const ServicesScreen = () => {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string | string[] | { min: number; max: number }>
   >({});
@@ -42,36 +50,61 @@ const ServicesScreen = () => {
   // Use TanStack Query for data fetching
   const [currentPage, setCurrentPage] = useState(1);
   const [allServices, setAllServices] = useState<Service[]>([]);
+
+  // Use keyboard-aware press handler
+  const { wrapPressHandler } = useKeyboardAwarePress();
+
+  // Debounce search query to avoid API calls on every keystroke
+  useEffect(() => {
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    // Cleanup function
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Use unified hook that handles both search and regular listing
   const {
-    data: servicesData,
-    isLoading,
-    isFetching,
-    error,
-    refetch,
-  } = useServices(currentPage, 20, undefined, language);
+    data: activeData,
+    isLoading: activeIsLoading,
+    isFetching: activeIsFetching,
+    error: activeError,
+    refetch: activeRefetch,
+  } = useServices(currentPage, 20, undefined, language, debouncedSearchQuery);
+
   const { data: rootServices } = useRootServices(language);
-  // Fetch all services for filter dropdown with correct language
-  // const { data: allServicesForFilter } = useServices(
-  //   1,
-  //   1000,
-  //   undefined,
-  //   language
-  // );
+
+  // Reset page when debounced search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+    setAllServices([]);
+  }, [debouncedSearchQuery]);
 
   // Accumulate services from all pages
   useEffect(() => {
-    if (servicesData?.services) {
+    if (activeData?.services) {
       if (currentPage === 1) {
-        setAllServices(servicesData.services);
+        setAllServices(activeData.services);
       } else {
-        setAllServices((prev) => [...prev, ...servicesData.services]);
+        setAllServices((prev) => [...prev, ...activeData.services]);
       }
     }
-  }, [servicesData, currentPage]);
+  }, [activeData, currentPage]);
 
   const services = allServices;
   const mainServices = rootServices || [];
-  const pagination = servicesData?.pagination || {
+  const pagination = activeData?.pagination || {
     page: 1,
     limit: 20,
     total: 0,
@@ -81,8 +114,8 @@ const ServicesScreen = () => {
   };
 
   // Show loading only on initial load (page 1)
-  const isInitialLoading = isLoading && currentPage === 1;
-  const isLoadingMore = isFetching && currentPage > 1;
+  const isInitialLoading = activeIsLoading && currentPage === 1;
+  const isLoadingMore = activeIsFetching && currentPage > 1;
 
   const loadMoreServices = useCallback(() => {
     if (pagination.hasNextPage) {
@@ -91,20 +124,12 @@ const ServicesScreen = () => {
   }, [pagination.hasNextPage]);
 
   const onRefresh = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
+    await activeRefetch();
+  }, [activeRefetch]);
 
-  // Filter services based on search, category, and services
+  // Filter services based on category and services (search is handled by backend)
   const filteredServices = useMemo(() => {
     return services.filter((service) => {
-      const matchesSearch =
-        !searchQuery ||
-        service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (service.description &&
-          service.description
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()));
-
       const selectedCategories = selectedFilters["Categories"];
       const matchesCategory =
         !selectedCategories ||
@@ -125,13 +150,16 @@ const ServicesScreen = () => {
         (Array.isArray(selectedServices) &&
           selectedServices.includes(service.id.toString()));
 
-      return matchesSearch && matchesCategory && matchesService;
+      return matchesCategory && matchesService;
     });
-  }, [services, searchQuery, selectedFilters]);
+  }, [services, selectedFilters]);
 
-  const handleServicePress = (serviceId: number) => {
+  const handleServicePress = useCallback((serviceId: number) => {
     router.push(`/services/${serviceId}`);
-  };
+  }, []);
+
+  // Wrap the handler to dismiss keyboard first if visible
+  const wrappedHandleServicePress = wrapPressHandler(handleServicePress);
 
   const handleCreateOrder = () => {
     router.push("/orders/create");
@@ -152,18 +180,13 @@ const ServicesScreen = () => {
           })),
         ],
       },
-      // {
-      //   key: "services",
-      //   title: t("services") || "Services",
-      //   multiSelect: true,
-      //   options: (allServicesForFilter?.services || []).map((service) => ({
-      //     key: service.id.toString(),
-      //     label: service.name,
-      //   })),
-      // },
     ],
     [t, mainServices, services]
   );
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+  }, []);
 
   const handleFilterChange = (
     sectionKey: string,
@@ -187,14 +210,14 @@ const ServicesScreen = () => {
   );
 
   // Show error state
-  if (error) {
+  if (activeError) {
     return (
       <Layout header={header}>
         <EmptyPage
           type="error"
-          title={error.message || t("failedToLoadServices")}
+          title={activeError.message || t("failedToLoadServices")}
           buttonText={t("retry")}
-          onRetry={() => refetch()}
+          onRetry={() => activeRefetch()}
         />
       </Layout>
     );
@@ -203,7 +226,7 @@ const ServicesScreen = () => {
   const renderServiceItem = ({ item: service }: { item: Service }) => (
     <TouchableOpacity
       activeOpacity={1}
-      onPress={() => handleServicePress(service.id)}
+      onPress={() => wrappedHandleServicePress(service.id)}
     >
       <ResponsiveCard padding={16}>
         {service.imageUrl && (
@@ -309,11 +332,11 @@ const ServicesScreen = () => {
           <ResponsiveCard padding={Spacing.md}>
             <Filter
               searchPlaceholder={t("searchServices")}
-              onSearchChange={setSearchQuery}
+              onSearchChange={handleSearchChange}
               filterSections={filterSections}
               selectedFilters={selectedFilters}
               onFilterChange={handleFilterChange}
-              loading={isLoading}
+              loading={!!debouncedSearchQuery.trim() && activeIsLoading}
             />
           </ResponsiveCard>
         </View>
@@ -343,13 +366,15 @@ const ServicesScreen = () => {
             onEndReachedThreshold={0.1}
             refreshControl={
               <RefreshControl
-                refreshing={isLoading}
+                refreshing={activeIsLoading}
                 onRefresh={onRefresh}
                 tintColor={colors.tint}
               />
             }
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+            keyboardShouldPersistTaps="never"
+            keyboardDismissMode="on-drag"
           />
         )}
       </View>

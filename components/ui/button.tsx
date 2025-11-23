@@ -119,7 +119,11 @@ export const Button: React.FC<ButtonProps> = ({
           {icon && iconPosition === "left" && (
             <IconSymbol name={icon as any} size={iconSize} color={iconColor} />
           )}
-          {children || <Text style={finalTextStyle}>{title}</Text>}
+          {children || (
+            <Text style={finalTextStyle} numberOfLines={1}>
+              {title}
+            </Text>
+          )}
           {icon && iconPosition === "right" && (
             <IconSymbol name={icon as any} size={iconSize} color={iconColor} />
           )}

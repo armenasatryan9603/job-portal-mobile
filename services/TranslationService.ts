@@ -1,9 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Device from "expo-device";
 import TRANSLATION_CONFIG, {
   getCacheKey,
   isLanguageSupported,
 } from "../config/translations";
 import { getApiBaseUrl } from "../config/api";
+
+// Import local translation files
+import enTranslations from "../translations/en.json";
+import ruTranslations from "../translations/ru.json";
+import hyTranslations from "../translations/hy.json";
 
 export interface TranslationData {
   [key: string]: string;
@@ -25,6 +31,61 @@ class TranslationService {
       TranslationService.instance = new TranslationService();
     }
     return TranslationService.instance;
+  }
+
+  /**
+   * Check if running on simulator/emulator
+   */
+  private isSimulator(): boolean {
+    return !Device.isDevice;
+  }
+
+  /**
+   * Load translations from local JSON files
+   */
+  private loadFromLocal(language: string): TranslationData | null {
+    try {
+      if (!isLanguageSupported(language)) {
+        console.warn(`❌ Language not supported: ${language}`);
+        return null;
+      }
+
+      let translations: TranslationData | null = null;
+
+      switch (language) {
+        case "en":
+          translations = enTranslations as TranslationData;
+          break;
+        case "ru":
+          translations = ruTranslations as TranslationData;
+          break;
+        case "hy":
+          translations = hyTranslations as TranslationData;
+          break;
+        default:
+          console.warn(
+            `❌ No local translation file for language: ${language}`
+          );
+          return null;
+      }
+
+      if (translations && Object.keys(translations).length > 0) {
+        console.log(
+          `✅ [TRANSLATION] Loaded ${
+            Object.keys(translations).length
+          } translations from local file for ${language}`
+        );
+        return translations;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(
+        `❌ [TRANSLATION] Failed to load local translations for ${language}:`,
+        error
+      );
+      return null;
+    }
   }
 
   /**
@@ -157,6 +218,17 @@ class TranslationService {
       return this.cache.get(language)!;
     }
 
+    // If running on simulator, use local files
+    if (this.isSimulator()) {
+      const localTranslations = this.loadFromLocal(language);
+      if (localTranslations && Object.keys(localTranslations).length > 0) {
+        // Store in memory cache
+        this.cache.set(language, localTranslations);
+        return localTranslations;
+      }
+      // If local load fails, fall through to backend/cache
+    }
+
     // Try to get from AsyncStorage cache
     let translations = await this.getCachedTranslations(language);
 
@@ -201,7 +273,7 @@ class TranslationService {
   }
 
   /**
-   * Refresh translations (reloads from backend)
+   * Refresh translations (reloads from backend or local files)
    */
   public async refreshTranslations(language: string): Promise<TranslationData> {
     try {
@@ -211,6 +283,15 @@ class TranslationService {
         await AsyncStorage.removeItem(cacheKey);
       }
       this.cache.delete(language);
+
+      // If running on simulator, use local files
+      if (this.isSimulator()) {
+        const localTranslations = this.loadFromLocal(language);
+        if (localTranslations && Object.keys(localTranslations).length > 0) {
+          this.cache.set(language, localTranslations);
+          return localTranslations;
+        }
+      }
 
       // Fetch fresh translations from backend
       const translations = await this.fetchFromBackend(language);

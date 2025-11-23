@@ -12,7 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -22,6 +23,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Keyboard,
 } from "react-native";
 import { apiService, Service } from "@/services/api";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,14 @@ export default function ServiceDetailScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const serviceId = parseInt(id as string);
+
+  // Dismiss keyboard when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      // Dismiss keyboard when navigating to this screen
+      Keyboard.dismiss();
+    }, [])
+  );
 
   // Fetch service details from API
   useEffect(() => {

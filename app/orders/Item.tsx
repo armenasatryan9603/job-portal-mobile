@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Order } from "@/services/api";
 
@@ -38,11 +39,39 @@ const OrderItem = ({
 }: OrderItemProps) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const { user } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+
+  // Helper function to get localized title/description
+  const getLocalizedText = (
+    field: "title" | "description",
+    language: string
+  ): string => {
+    const fieldKey = field === "title" ? "title" : "description";
+    const langKey = language === "en" ? "En" : language === "ru" ? "Ru" : "Hy";
+    const multilingualKey = `${fieldKey}${langKey}` as
+      | "titleEn"
+      | "titleRu"
+      | "titleHy"
+      | "descriptionEn"
+      | "descriptionRu"
+      | "descriptionHy";
+
+    // Try multilingual field first
+    if (order[multilingualKey]) {
+      return order[multilingualKey]!;
+    }
+
+    // Fallback to original field
+    return order[fieldKey] || "";
+  };
+
+  const displayTitle = getLocalizedText("title", language);
+  const displayDescription = getLocalizedText("description", language);
 
   // Status configuration
   const statusConfig = {
@@ -139,7 +168,7 @@ const OrderItem = ({
         )}
         <View style={styles.orderHeader}>
           <Text style={[styles.orderTitle, { color: colors.text }]}>
-            {order.title}
+            {displayTitle}
           </Text>
           <View
             style={[
@@ -162,7 +191,7 @@ const OrderItem = ({
           style={[styles.orderDescription, { color: colors.tabIconDefault }]}
           numberOfLines={5}
         >
-          {order.description}
+          {displayDescription}
         </Text>
 
         <View style={styles.orderDetails}>

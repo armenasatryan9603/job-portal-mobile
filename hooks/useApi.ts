@@ -162,14 +162,23 @@ export const useServices = (
   page: number = 1,
   limit: number = 10,
   parentId?: number,
-  language: string = "en"
+  language: string = "en",
+  searchQuery?: string
 ) => {
   const { isOnline } = useNetworkStatus();
+  const trimmedQuery = searchQuery?.trim();
+  const hasSearchQuery = !!trimmedQuery;
+
   return useQuery({
-    queryKey: ["services", page, limit, parentId, language],
-    queryFn: () => apiService.getAllServices(page, limit, parentId, language),
-    staleTime: CACHE_TTL.STATIC,
-    enabled: true,
+    queryKey: hasSearchQuery
+      ? ["services", "search", trimmedQuery, page, limit, language]
+      : ["services", page, limit, parentId, language],
+    queryFn: () =>
+      hasSearchQuery
+        ? apiService.searchServices(trimmedQuery, page, limit, language)
+        : apiService.getAllServices(page, limit, parentId, language),
+    staleTime: hasSearchQuery ? CACHE_TTL.DYNAMIC : CACHE_TTL.STATIC,
+    enabled: true, // Always enabled - hook handles both search and regular listing
     retry: isOnline,
   });
 };

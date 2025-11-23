@@ -8,6 +8,7 @@ import { ServiceSelector } from "@/components/ServiceSelector";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { MediaUploader } from "@/components/MediaUploader";
+import { AIPreviewModal } from "@/components/AIPreviewModal";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -22,7 +23,6 @@ import {
   View,
   Image,
   Modal,
-  ActivityIndicator,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
@@ -69,6 +69,21 @@ export default function CreateOrderScreen() {
   );
   const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
+  const [useAIEnhancement, setUseAIEnhancement] = useState<boolean>(false); // Unchecked by default (checked only for new orders)
+  const [showAIPreview, setShowAIPreview] = useState(false);
+  const [aiPreviewData, setAiPreviewData] = useState<{
+    original: { title: string; description: string };
+    enhanced: {
+      titleEn: string;
+      titleRu: string;
+      titleHy: string;
+      descriptionEn: string;
+      descriptionRu: string;
+      descriptionHy: string;
+      detectedLanguage: string;
+    };
+  } | null>(null);
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null);
 
   // Refs for scrolling to error fields
   const scrollViewRef = useRef<ScrollView>(null);
@@ -107,10 +122,15 @@ export default function CreateOrderScreen() {
     if (serviceId) {
       const serviceIdNum = parseInt(serviceId as string);
       setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
+      // Set AI enhancement to true for new orders (checked by default)
+      setUseAIEnhancement(true);
     }
 
     // If orderId is provided, load existing order for editing
     if (orderId) {
+      // Set AI enhancement to false when editing (not checked by default)
+      setUseAIEnhancement(false);
+
       const loadOrderForEdit = async () => {
         try {
           const orderData = await apiService.getOrderById(
@@ -541,6 +561,7 @@ export default function CreateOrderScreen() {
           formatAllDatesWithTimes().length > 0
             ? formatAllDatesWithTimes()
             : undefined,
+        useAIEnhancement: useAIEnhancement, // For both new and existing orders
       };
 
       // If orderId exists, update the order; otherwise create a new one
@@ -557,9 +578,27 @@ export default function CreateOrderScreen() {
 
       // Order posted successfully
       router.replace("/orders");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error posting order:", error);
-      Alert.alert(t("error"), t("failedToCreateOrder"));
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : t("unknownError");
+
+      // Check if it's an insufficient credits error and AI enhancement was enabled
+      if (
+        (errorMessage.includes("Insufficient credit balance") ||
+          errorMessage.includes("insufficient credit")) &&
+        useAIEnhancement
+      ) {
+        // Directly navigate to credit refill page
+        router.push("/profile/refill-credits");
+      } else {
+        Alert.alert(t("error"), t("failedToCreateOrder"));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -684,29 +723,107 @@ export default function CreateOrderScreen() {
       return;
     }
 
+    // Prepare base order data
+    const baseOrderData = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      budget: parseFloat(formData.budget),
+      serviceId: formData.serviceId!,
+      location: selectedLocation
+        ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
+        : formData.location.trim() || undefined,
+      skills: formData.skills.trim()
+        ? formData.skills
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s)
+        : undefined,
+      availableDates:
+        formatAllDatesWithTimes().length > 0
+          ? formatAllDatesWithTimes()
+          : undefined,
+    };
+
+    // If AI enhancement is enabled, show preview first
+    if (useAIEnhancement) {
+      setIsSubmitting(true);
+      try {
+        // Call preview endpoint
+        const preview = await apiService.previewAIEnhancement({
+          title: baseOrderData.title,
+          description: baseOrderData.description,
+        });
+
+        // Store preview data and order data
+        setAiPreviewData(preview);
+        setPendingOrderData(baseOrderData);
+        setShowAIPreview(true);
+        setIsSubmitting(false);
+        return;
+      } catch (error: any) {
+        setIsSubmitting(false);
+        console.error("Error getting AI preview:", error);
+
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === "string"
+            ? error
+            : t("unknownError");
+
+        // Check if it's an insufficient credits error
+        if (
+          (errorMessage.includes("Insufficient credit balance") ||
+            errorMessage.includes("insufficient credit")) &&
+          useAIEnhancement
+        ) {
+          // Directly navigate to credit refill page
+          router.push("/profile/refill-credits");
+          return;
+        }
+
+        Alert.alert(
+          t("error") || "Error",
+          t("failedToGetAIPreview") ||
+            "Failed to get AI preview: " + errorMessage
+        );
+        return;
+      }
+    }
+
+    // If no AI enhancement, proceed with normal save
+    await saveOrder(baseOrderData, false);
+  };
+
+  // Helper function to save order (used by preview modal and direct save)
+  const saveOrder = async (
+    orderData: any,
+    useEnhanced: boolean = false,
+    enhancedData?: {
+      titleEn: string;
+      titleRu: string;
+      titleHy: string;
+      descriptionEn: string;
+      descriptionRu: string;
+      descriptionHy: string;
+    }
+  ) => {
     setIsSubmitting(true);
 
     try {
-      // Prepare data for API call
-      const orderData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        budget: parseFloat(formData.budget),
-        serviceId: formData.serviceId!,
-        location: selectedLocation
-          ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
-          : formData.location.trim() || undefined,
-        skills: formData.skills.trim()
-          ? formData.skills
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s)
-          : undefined,
-        availableDates:
-          formatAllDatesWithTimes().length > 0
-            ? formatAllDatesWithTimes()
-            : undefined,
-      };
+      // Add enhanced fields if using enhanced data
+      const finalOrderData = { ...orderData };
+      if (useEnhanced && enhancedData) {
+        finalOrderData.titleEn = enhancedData.titleEn;
+        finalOrderData.titleRu = enhancedData.titleRu;
+        finalOrderData.titleHy = enhancedData.titleHy;
+        finalOrderData.descriptionEn = enhancedData.descriptionEn;
+        finalOrderData.descriptionRu = enhancedData.descriptionRu;
+        finalOrderData.descriptionHy = enhancedData.descriptionHy;
+        finalOrderData.useAIEnhancement = true;
+      } else {
+        finalOrderData.useAIEnhancement = false;
+      }
 
       const currentOrderId = orderId ? parseInt(orderId as string) : null;
 
@@ -724,7 +841,7 @@ export default function CreateOrderScreen() {
         }
 
         // Update the order
-        await apiService.updateOrder(currentOrderId, orderData);
+        await apiService.updateOrder(currentOrderId, finalOrderData);
 
         // Handle banner image update
         // Auto-select first image if no banner is selected
@@ -820,7 +937,7 @@ export default function CreateOrderScreen() {
         // Use transactional order creation with media files
         if (mediaFiles.length > 0) {
           const { order } = await fileUploadService.createOrderWithMedia(
-            orderData,
+            finalOrderData,
             mediaFiles
           );
 
@@ -855,7 +972,7 @@ export default function CreateOrderScreen() {
           router.replace("/orders");
         } else {
           // No media files, use regular order creation
-          await apiService.createOrder(orderData);
+          await apiService.createOrder(finalOrderData);
 
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -873,6 +990,17 @@ export default function CreateOrderScreen() {
           : typeof error === "string"
           ? error
           : t("unknownError");
+
+      // Check if it's an insufficient credits error and AI enhancement was enabled
+      if (
+        (errorMessage.includes("Insufficient credit balance") ||
+          errorMessage.includes("insufficient credit")) &&
+        useEnhanced
+      ) {
+        // Directly navigate to credit refill page
+        router.push("/profile/refill-credits");
+        return;
+      }
 
       // Check if it's an authentication error
       if (
@@ -903,6 +1031,69 @@ export default function CreateOrderScreen() {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Preview modal handlers
+  const handleAcceptAI = async (enhanced: any) => {
+    if (!pendingOrderData) return;
+    setShowAIPreview(false);
+    await saveOrder(pendingOrderData, true, enhanced);
+  };
+
+  const handleRejectAI = async () => {
+    if (!pendingOrderData) return;
+    setShowAIPreview(false);
+    await saveOrder(pendingOrderData, false);
+  };
+
+  const handleCancelAI = () => {
+    // Just close the modal without saving - user can continue editing
+    setShowAIPreview(false);
+    setAiPreviewData(null);
+    setPendingOrderData(null);
+  };
+
+  const handleRetryAI = async (title: string, description: string) => {
+    try {
+      // Call preview endpoint with edited text
+      const preview = await apiService.previewAIEnhancement({
+        title: title,
+        description: description,
+      });
+
+      // Update preview data with new results
+      const newPreviewData = {
+        original: {
+          title: title,
+          description: description,
+        },
+        enhanced: preview.enhanced,
+      };
+      setAiPreviewData(newPreviewData);
+
+      // Also update pending order data with edited text
+      if (pendingOrderData) {
+        setPendingOrderData({
+          ...pendingOrderData,
+          title: title,
+          description: description,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error retrying AI:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : t("unknownError");
+
+      Alert.alert(
+        t("error") || "Error",
+        t("failedToGetAIPreview") || "Failed to get AI preview: " + errorMessage
+      );
+      throw error;
     }
   };
 
@@ -998,9 +1189,56 @@ export default function CreateOrderScreen() {
 
           {/* Action Buttons */}
           <ResponsiveCard>
+            {/* AI Enhancement Option - Show for both new and existing orders */}
+            <View style={styles.aiEnhancementContainer}>
+              <TouchableOpacity
+                style={styles.checkboxContainer}
+                onPress={() => setUseAIEnhancement(!useAIEnhancement)}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      backgroundColor: useAIEnhancement
+                        ? colors.primary
+                        : "transparent",
+                      borderColor: useAIEnhancement
+                        ? colors.primary
+                        : colors.border,
+                    },
+                  ]}
+                >
+                  {useAIEnhancement && (
+                    <IconSymbol name="checkmark" size={14} color="white" />
+                  )}
+                </View>
+                <Text style={[styles.checkboxLabel, { color: colors.text }]}>
+                  {t("improveWithAI") || "Improve with AI"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert(
+                    t("aiEnhancement") || "AI Enhancement",
+                    t("aiEnhancementDescription") ||
+                      "AI will detect the language of your text, fix transliteration issues (e.g., Armenian written with Latin characters), translate to all three languages (English, Russian, Armenian), and improve grammar and clarity. This service costs 2 credits.",
+                    [{ text: t("ok") || "OK" }]
+                  );
+                }}
+                style={styles.infoButton}
+              >
+                <IconSymbol
+                  name="info.circle"
+                  size={18}
+                  color={colors.tabIconDefault}
+                />
+              </TouchableOpacity>
+            </View>
             <View
               style={[
                 styles.actionButtons,
+                { borderTopColor: colors.border },
                 !orderId && styles.singleButtonContainer,
               ]}
             >
@@ -1047,6 +1285,20 @@ export default function CreateOrderScreen() {
           />
         </TouchableOpacity>
       </Modal>
+
+      {/* AI Preview Modal */}
+      {aiPreviewData && (
+        <AIPreviewModal
+          visible={showAIPreview}
+          onClose={handleCancelAI}
+          original={aiPreviewData.original}
+          enhanced={aiPreviewData.enhanced}
+          onAccept={handleAcceptAI}
+          onReject={handleRejectAI}
+          onRetryAI={handleRetryAI}
+          loading={isSubmitting}
+        />
+      )}
     </Layout>
   );
 }
@@ -1059,6 +1311,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButtons: {
+    paddingTop: 20,
+    borderTopWidth: 1,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
@@ -1122,5 +1376,33 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 8,
     opacity: 0.7,
+  },
+  aiEnhancementContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingBottom: 12,
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    flex: 1,
+  },
+  infoButton: {
+    padding: 4,
+    marginLeft: 8,
   },
 });

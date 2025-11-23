@@ -284,7 +284,7 @@ export const Filter: React.FC<FilterProps> = ({
             value={searchQuery}
             onChangeText={handleSearchChange}
             returnKeyType="search"
-            editable={!loading}
+            blurOnSubmit={false}
           />
           {loading ? (
             <ActivityIndicator size="small" color={colors.tint} />
