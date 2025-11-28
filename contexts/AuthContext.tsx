@@ -175,7 +175,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return false;
     } catch (error) {
       console.error("Error during OTP verification:", error);
-      return false;
+      // Re-throw the error so the calling component can handle it
+      throw error;
     } finally {
       setIsLoading(false);
     }

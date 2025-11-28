@@ -3,6 +3,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   StyleSheet,
   Text,
   TextInput,
@@ -16,6 +17,7 @@ interface OTPVerificationProps {
   onResendOTP: () => void;
   isLoading?: boolean;
   showTitle?: boolean;
+  error?: string | null;
 }
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
@@ -24,10 +26,12 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   onResendOTP,
   isLoading = false,
   showTitle = true,
+  error,
 }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(0);
   const inputRefs = useRef<TextInput[]>([]);
+  const shakeAnimation = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -39,9 +43,72 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
     }
   }, [resendTimer]);
 
+  // Handle error: clear OTP and trigger shake animation
+  useEffect(() => {
+    if (error) {
+      // Clear OTP inputs
+      setOtp(["", "", "", "", "", ""]);
+      // Focus first input
+      inputRefs.current[0]?.focus();
+
+      // Trigger shake animation
+      Animated.sequence([
+        Animated.timing(shakeAnimation, {
+          toValue: 10,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: -10,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 10,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shakeAnimation, {
+          toValue: 0,
+          duration: 50,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [error, shakeAnimation]);
+
   const handleOTPChange = (value: string, index: number) => {
+    // Check if user pasted a code (value length > 1 indicates paste)
+    if (value.length > 1) {
+      // Extract only digits from the pasted value
+      const digits = value.replace(/\D/g, "").slice(0, 6);
+
+      if (digits.length > 0) {
+        // Always fill from the first input, regardless of which input received the paste
+        const newOtp = [...otp];
+        for (let i = 0; i < digits.length && i < 6; i++) {
+          newOtp[i] = digits[i];
+        }
+        setOtp(newOtp);
+
+        // Focus the next empty input or the last one
+        const nextIndex = Math.min(digits.length, 5);
+        inputRefs.current[nextIndex]?.focus();
+
+        // Auto-submit if we have 6 digits
+        if (digits.length === 6) {
+          setTimeout(() => {
+            onOTPSubmit(digits);
+          }, 100);
+        }
+        return;
+      }
+    }
+
+    // Normal single character input
     const newOtp = [...otp];
-    newOtp[index] = value;
+    // Only take the first character for normal typing
+    newOtp[index] = value.charAt(0);
     setOtp(newOtp);
 
     // Auto-focus next input
@@ -112,7 +179,14 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         </Text>
       )}
 
-      <View style={styles.otpContainer}>
+      <Animated.View
+        style={[
+          styles.otpContainer,
+          {
+            transform: [{ translateX: shakeAnimation }],
+          },
+        ]}
+      >
         {otp.map((digit, index) => (
           <TextInput
             key={index}
@@ -122,11 +196,14 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
             style={[
               styles.otpInput,
               {
-                borderColor: colors.border,
+                borderColor: error
+                  ? "#EF4444"
+                  : digit
+                  ? colors.tint
+                  : colors.border,
                 color: colors.text,
                 backgroundColor: colors.background,
               },
-              digit && { borderColor: colors.tint },
             ]}
             value={digit}
             onChangeText={(value) => handleOTPChange(value, index)}
@@ -134,12 +211,18 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
               handleKeyPress(nativeEvent.key, index)
             }
             keyboardType="numeric"
-            maxLength={1}
+            maxLength={6}
             textAlign="center"
             editable={!isLoading}
           />
         ))}
-      </View>
+      </Animated.View>
+
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, { color: "#EF4444" }]}>{error}</Text>
+        </View>
+      )}
 
       <TouchableOpacity
         style={styles.resendContainer}
@@ -218,5 +301,15 @@ const styles = StyleSheet.create({
   resendButton: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  errorContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+    alignItems: "center",
+  },
+  errorText: {
+    fontSize: 14,
+    fontWeight: "500",
+    textAlign: "center",
   },
 });

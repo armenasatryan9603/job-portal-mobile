@@ -102,11 +102,9 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
               onPress={onEditSkills}
               title={t("addSkills")}
               variant="primary"
+              backgroundColor={colors.primary}
               icon="plus"
               iconSize={16}
-              // style={styles.addButton}
-              // textColor={colors.textInverse}
-              // backgroundColor={colors.primary}
             />
           )}
         </View>

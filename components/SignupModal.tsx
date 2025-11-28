@@ -37,6 +37,7 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
   const [step, setStep] = useState<"phone" | "name" | "otp">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [name, setName] = useState("");
+  const [otpError, setOtpError] = useState<string | null>(null);
   const { login, sendOTP, resetOTP, isLoading } = useAuth();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -44,6 +45,7 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
 
   const handlePhoneNumberSubmit = async (phone: string) => {
     setPhoneNumber(phone);
+    setOtpError(null); // Clear any previous errors
 
     try {
       const success = await sendOTP(phone);
@@ -66,20 +68,85 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
   };
 
   const handleOTPSubmit = async (otp: string) => {
+    setOtpError(null); // Clear previous errors
+
     try {
       const success = await login(phoneNumber, otp);
       if (success) {
+        setOtpError(null); // Clear error on success
         onClose();
         router.replace("/");
-      } else {
-        Alert.alert(t("invalidOTP"), t("verificationCodeIncorrect"));
       }
     } catch (error) {
-      Alert.alert(t("error"), t("somethingWentWrong"));
+      console.log("Signup OTP error:", error);
+
+      // Parse error message to determine the type
+      let errorMessage: string | null = null;
+
+      if (error instanceof Error && error.message) {
+        let errorMsg = error.message;
+
+        // Remove HTTP error prefix if present
+        errorMsg = errorMsg.replace(/^HTTP error! status: \d+, message: /, "");
+
+        // Try to extract JSON error message if present
+        try {
+          // Check if error message is JSON or contains JSON
+          if (errorMsg.trim().startsWith("{")) {
+            const errorJson = JSON.parse(errorMsg);
+            errorMsg = errorJson.message || errorJson.error || errorMsg;
+          } else {
+            // Check if error message contains JSON
+            const jsonMatch = errorMsg.match(/\{.*\}/);
+            if (jsonMatch) {
+              const errorJson = JSON.parse(jsonMatch[0]);
+              errorMsg = errorJson.message || errorJson.error || errorMsg;
+            }
+          }
+        } catch (e) {
+          // Not JSON, use original message
+        }
+
+        const errorMsgLower = errorMsg.toLowerCase();
+
+        // Check for specific error types
+        if (
+          errorMsgLower.includes("invalid otp") ||
+          (errorMsgLower.includes("otp") && !errorMsgLower.includes("phone"))
+        ) {
+          // Wrong OTP code
+          errorMessage = t("wrongOTP");
+        } else if (
+          errorMsgLower.includes("invalid phone number") ||
+          errorMsgLower.includes("phone number") ||
+          errorMsgLower.includes("otp not requested")
+        ) {
+          // Wrong phone number or OTP not requested for this number
+          errorMessage = t("wrongPhoneNumber");
+        } else if (errorMsgLower.includes("expired")) {
+          // OTP expired
+          errorMessage = t("otpExpired");
+        } else if (
+          errorMsgLower.includes("internal server error") ||
+          errorMsgLower.includes("500")
+        ) {
+          // Server error - show generic message
+          errorMessage = t("somethingWentWrong");
+        } else {
+          // Use the actual error message or fallback to generic
+          errorMessage = errorMsg || t("verificationCodeIncorrect");
+        }
+      } else {
+        // Default error
+        errorMessage = t("verificationCodeIncorrect");
+      }
+
+      setOtpError(errorMessage);
     }
   };
 
   const handleResendOTP = async () => {
+    setOtpError(null); // Clear error when resending
     try {
       const success = await sendOTP(phoneNumber);
       if (!success) {
@@ -104,9 +171,13 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
   const handleBack = () => {
     if (step === "otp") {
       setStep("name");
+      setOtpError(null); // Clear error when going back
     } else if (step === "name") {
+      // Go all the way back to phone step and reset everything
       setStep("phone");
       setPhoneNumber("");
+      setName("");
+      setOtpError(null);
     }
   };
 
@@ -114,6 +185,7 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
     setStep("phone");
     setPhoneNumber("");
     setName("");
+    setOtpError(null); // Clear error on close
     onClose();
   };
 
@@ -214,12 +286,12 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
           >
             {step === "phone" && (
               <View>
-              <PhoneNumberInput
-                onPhoneNumberSubmit={handlePhoneNumberSubmit}
-                isLoading={isLoading}
-                buttonText={t("sendOTP")}
-                showTitle={false}
-              />
+                <PhoneNumberInput
+                  onPhoneNumberSubmit={handlePhoneNumberSubmit}
+                  isLoading={isLoading}
+                  buttonText={t("sendOTP")}
+                  showTitle={false}
+                />
                 <ReferralCodeInput showStatus={true} />
               </View>
             )}
@@ -233,6 +305,7 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
                 onResendOTP={handleResendOTP}
                 isLoading={isLoading}
                 showTitle={false}
+                error={otpError}
               />
             )}
           </ScrollView>

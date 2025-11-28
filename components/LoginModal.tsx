@@ -42,6 +42,7 @@ export function LoginModal({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userName, setUserName] = useState("");
   const [isNewUser, setIsNewUser] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
   const {
     login,
     sendOTP,
@@ -51,6 +52,7 @@ export function LoginModal({
     hasIncompleteProfile,
     setUser,
     setHasIncompleteProfile,
+    logout,
   } = useAuth();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -85,6 +87,7 @@ export function LoginModal({
 
   const handlePhoneSubmit = async (phone: string) => {
     setPhoneNumber(phone);
+    setOtpError(null); // Clear any previous errors
 
     try {
       const success = await sendOTP(phone);
@@ -99,33 +102,82 @@ export function LoginModal({
   };
 
   const handleOTPSubmit = async (otp: string) => {
+    setOtpError(null); // Clear previous errors
+
     try {
       // Try to login with the OTP
       const success = await login(phoneNumber, otp);
       if (success) {
         // The useEffect will handle checking if user has a name
         // and transitioning to the appropriate step
+        setOtpError(null); // Clear error on success
         return;
       }
     } catch (error) {
       console.log("Login error:", error);
 
-      // Check if it's an OTP error
+      // Parse error message to determine the type
+      let errorMessage: string | null = null;
+
       if (error instanceof Error && error.message) {
+        let errorMsg = error.message;
+
+        // Remove HTTP error prefix if present
+        errorMsg = errorMsg.replace(/^HTTP error! status: \d+, message: /, "");
+
+        // Try to extract JSON error message if present
+        try {
+          // Check if error message is JSON or contains JSON
+          if (errorMsg.trim().startsWith("{")) {
+            const errorJson = JSON.parse(errorMsg);
+            errorMsg = errorJson.message || errorJson.error || errorMsg;
+          } else {
+            // Check if error message contains JSON
+            const jsonMatch = errorMsg.match(/\{.*\}/);
+            if (jsonMatch) {
+              const errorJson = JSON.parse(jsonMatch[0]);
+              errorMsg = errorJson.message || errorJson.error || errorMsg;
+            }
+          }
+        } catch (e) {
+          // Not JSON, use original message
+        }
+
+        const errorMsgLower = errorMsg.toLowerCase();
+
+        // Check for specific error types
         if (
-          error.message.includes("OTP") ||
-          error.message.includes("verification")
+          errorMsgLower.includes("invalid otp") ||
+          (errorMsgLower.includes("otp") && !errorMsgLower.includes("phone"))
         ) {
-          // Invalid OTP
-          Alert.alert(t("invalidOTP"), t("verificationCodeIncorrect"));
+          // Wrong OTP code
+          errorMessage = t("wrongOTP");
+        } else if (
+          errorMsgLower.includes("invalid phone number") ||
+          errorMsgLower.includes("phone number") ||
+          errorMsgLower.includes("otp not requested")
+        ) {
+          // Wrong phone number or OTP not requested for this number
+          errorMessage = t("wrongPhoneNumber");
+        } else if (errorMsgLower.includes("expired")) {
+          // OTP expired
+          errorMessage = t("otpExpired");
+        } else if (
+          errorMsgLower.includes("internal server error") ||
+          errorMsgLower.includes("500")
+        ) {
+          // Server error - show generic message
+          errorMessage = t("somethingWentWrong");
         } else {
-          // Other error, show generic error
-          Alert.alert(t("error"), t("somethingWentWrong"));
+          // Use the actual error message or fallback to generic
+          errorMessage = errorMsg || t("verificationCodeIncorrect");
         }
       } else {
         // Default error
-        Alert.alert(t("error"), t("somethingWentWrong"));
+        errorMessage = t("verificationCodeIncorrect");
       }
+
+      setOtpError(errorMessage);
     }
   };
 
@@ -171,6 +223,7 @@ export function LoginModal({
   };
 
   const handleResendOTP = async () => {
+    setOtpError(null); // Clear error when resending
     try {
       const success = await sendOTP(phoneNumber);
       if (!success) {
@@ -197,10 +250,29 @@ export function LoginModal({
     setPhoneNumber("");
     setUserName("");
     setIsNewUser(false);
+    setOtpError(null); // Clear error when going back
   };
 
   const handleBackToOTP = () => {
     setStep("otp");
+  };
+
+  const handleBackFromName = async () => {
+    // Go all the way back to phone step and reset everything
+    // Logout to fully restart the login/signup process
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Continue with reset even if logout fails
+    }
+
+    setStep("phone");
+    setPhoneNumber("");
+    setUserName("");
+    setIsNewUser(false);
+    setOtpError(null);
+    setHasIncompleteProfile(false);
   };
 
   const handleClose = () => {
@@ -213,6 +285,7 @@ export function LoginModal({
     setPhoneNumber("");
     setUserName("");
     setIsNewUser(false);
+    setOtpError(null); // Clear error on close
     onClose();
   };
 
@@ -242,7 +315,9 @@ export function LoginModal({
             )}
             {(step === "otp" || step === "name") && (
               <TouchableOpacity
-                onPress={step === "otp" ? handleBackToPhone : handleBackToOTP}
+                onPress={
+                  step === "otp" ? handleBackToPhone : handleBackFromName
+                }
                 style={styles.backButton}
               >
                 <IconSymbol name="chevron.left" size={18} color={colors.text} />
@@ -321,6 +396,7 @@ export function LoginModal({
                 onResendOTP={handleResendOTP}
                 isLoading={isLoading}
                 showTitle={false}
+                error={otpError}
               />
             ) : (
               <View>

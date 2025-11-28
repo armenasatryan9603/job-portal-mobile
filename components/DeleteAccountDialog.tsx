@@ -4,17 +4,20 @@ import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   TouchableWithoutFeedback,
   StyleSheet,
   Alert,
   ActivityIndicator,
   Keyboard,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "./ui/button";
 
 interface DeleteAccountDialogProps {
   visible: boolean;
@@ -37,7 +40,9 @@ export default function DeleteAccountDialog({
   const [isLoading, setIsLoading] = useState(false);
 
   const requiredText = "DELETE";
-  const isConfirmationValid = confirmationText === requiredText;
+  // Normalize both to uppercase for case-insensitive comparison
+  const isConfirmationValid =
+    confirmationText.toUpperCase().trim() === requiredText;
 
   const handleConfirm = async () => {
     if (!isConfirmationValid) {
@@ -82,150 +87,179 @@ export default function DeleteAccountDialog({
       animationType="fade"
       onRequestClose={handleClose}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={[styles.dialog, { backgroundColor: colors.background }]}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View
-              style={[
-                styles.iconContainer,
-                { backgroundColor: "#FF3B30" + "20" },
-              ]}
-            >
-              <IconSymbol
-                name="exclamationmark.triangle.fill"
-                size={24}
-                color="#FF3B30"
-              />
-            </View>
-            <Text style={[styles.title, { color: colors.text }]}>
-              {t("deleteAccount")}
-            </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              {t("thisActionCannotBeUndone")}
-            </Text>
-          </View>
-
-          {/* Warning Content */}
-          <View style={styles.content}>
-            <View style={styles.warningBox}>
-              <IconSymbol
-                name="exclamationmark.triangle"
-                size={20}
-                color="#FF9500"
-              />
-              <Text style={[styles.warningText, { color: colors.text }]}>
-                {t("accountDeletionWarning")}
-              </Text>
-            </View>
-
-            {userEmail && (
-              <View style={styles.emailBox}>
-                <Text
-                  style={[styles.emailLabel, { color: colors.textSecondary }]}
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.overlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View
+                style={[styles.dialog, { backgroundColor: colors.background }]}
+              >
+                <ScrollView
+                  contentContainerStyle={styles.scrollContent}
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
                 >
-                  {t("accountEmail")}:
-                </Text>
-                <Text style={[styles.emailText, { color: colors.text }]}>
-                  {userEmail}
-                </Text>
+                  {/* Header */}
+                  <View style={styles.header}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        { backgroundColor: "#FF3B30" + "20" },
+                      ]}
+                    >
+                      <IconSymbol
+                        name="exclamationmark.triangle.fill"
+                        size={24}
+                        color="#FF3B30"
+                      />
+                    </View>
+                    <Text style={[styles.title, { color: colors.text }]}>
+                      {t("deleteAccount")}
+                    </Text>
+                    <Text
+                      style={[styles.subtitle, { color: colors.textSecondary }]}
+                    >
+                      {t("thisActionCannotBeUndone")}
+                    </Text>
+                  </View>
+
+                  {/* Warning Content */}
+                  <View style={styles.content}>
+                    <View style={styles.warningBox}>
+                      <IconSymbol
+                        name="exclamationmark.triangle"
+                        size={20}
+                        color="#FF9500"
+                      />
+                      <Text
+                        style={[styles.warningText, { color: colors.text }]}
+                      >
+                        {t("accountDeletionWarning")}
+                      </Text>
+                    </View>
+
+                    {userEmail && (
+                      <View style={styles.emailBox}>
+                        <Text
+                          style={[
+                            styles.emailLabel,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {t("accountEmail")}:
+                        </Text>
+                        <Text
+                          style={[styles.emailText, { color: colors.text }]}
+                        >
+                          {userEmail}
+                        </Text>
+                      </View>
+                    )}
+
+                    {!userEmail && (
+                      <View style={styles.noEmailBox}>
+                        <IconSymbol
+                          name="person.circle"
+                          size={20}
+                          color={colors.textSecondary}
+                        />
+                        <Text
+                          style={[
+                            styles.noEmailText,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {t("accountWithoutEmail")}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.confirmationBox}>
+                      <Text
+                        style={[
+                          styles.confirmationLabel,
+                          { color: colors.text },
+                        ]}
+                      >
+                        {t("typeDeleteToConfirm")}:
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.confirmationInput,
+                          {
+                            backgroundColor: colors.backgroundSecondary,
+                            borderColor: isConfirmationValid
+                              ? "#34C759"
+                              : colors.border,
+                            color: colors.text,
+                          },
+                        ]}
+                        value={confirmationText}
+                        onChangeText={(text) => {
+                          // Convert to uppercase automatically
+                          setConfirmationText(text.toUpperCase());
+                        }}
+                        placeholder={requiredText}
+                        placeholderTextColor={colors.textSecondary}
+                        autoCapitalize="characters"
+                        autoCorrect={false}
+                        autoComplete="off"
+                      />
+                    </View>
+                  </View>
+                </ScrollView>
+
+                {/* Actions */}
+                <View style={styles.actions}>
+                  <Button
+                    title={t("cancel")}
+                    variant="outline"
+                    icon="xmark"
+                    iconSize={16}
+                    backgroundColor={colors.background}
+                    textColor={colors.text}
+                    onPress={handleClose}
+                    disabled={isLoading}
+                    style={styles.actionButton}
+                  />
+
+                  {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    </View>
+                  ) : (
+                    <Button
+                      disabled={!isConfirmationValid}
+                      title={t("deleteAccount")}
+                      variant="primary"
+                      icon="trash.fill"
+                      iconSize={16}
+                      backgroundColor={
+                        isConfirmationValid ? "#FF3B30" : colors.border
+                      }
+                      textColor="#FFFFFF"
+                      onPress={handleConfirm}
+                      style={styles.actionButton}
+                    />
+                  )}
+                </View>
               </View>
-            )}
-
-            {!userEmail && (
-              <View style={styles.noEmailBox}>
-                <IconSymbol
-                  name="person.circle"
-                  size={20}
-                  color={colors.textSecondary}
-                />
-                <Text
-                  style={[styles.noEmailText, { color: colors.textSecondary }]}
-                >
-                  {t("accountWithoutEmail")}
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.confirmationBox}>
-              <Text style={[styles.confirmationLabel, { color: colors.text }]}>
-                {t("typeDeleteToConfirm")}:
-              </Text>
-              <TextInput
-                style={[
-                  styles.confirmationInput,
-                  {
-                    backgroundColor: colors.backgroundSecondary,
-                    borderColor: isConfirmationValid
-                      ? "#34C759"
-                      : colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={confirmationText}
-                onChangeText={setConfirmationText}
-                placeholder={requiredText}
-                placeholderTextColor={colors.textSecondary}
-                autoCapitalize="characters"
-                autoCorrect={false}
-                autoComplete="off"
-              />
-            </View>
-          </View>
-
-          {/* Actions */}
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.cancelButton,
-                { borderColor: colors.border },
-              ]}
-              onPress={handleClose}
-              disabled={isLoading}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                {t("cancel")}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.button,
-                styles.deleteButton,
-                {
-                  backgroundColor: isConfirmationValid
-                    ? "#FF3B30"
-                    : colors.border,
-                  opacity: isConfirmationValid ? 1 : 0.5,
-                },
-              ]}
-              onPress={handleConfirm}
-              disabled={!isConfirmationValid || isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <IconSymbol name="trash.fill" size={16} color="#FFFFFF" />
-                  <Text style={styles.deleteButtonText}>
-                    {t("deleteAccount")}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
+            </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -237,12 +271,14 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 400,
     borderRadius: 16,
-    padding: 24,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
+  },
+  scrollContent: {
+    padding: 24,
   },
   header: {
     alignItems: "center",
@@ -331,29 +367,15 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     gap: 12,
+    padding: 24,
   },
-  button: {
+  actionButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+  },
+  loadingContainer: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-  },
-  cancelButton: {
-    borderWidth: 1,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  deleteButton: {
-    // backgroundColor set dynamically
-  },
-  deleteButtonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    paddingVertical: 12,
   },
 });

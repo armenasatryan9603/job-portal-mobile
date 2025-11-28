@@ -17,12 +17,15 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Order } from "@/services/api";
+import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 
 interface OrderItemProps {
   order: Order;
   isMyOrders?: boolean;
   isMyJobs?: boolean;
   hasAppliedToOrder?: (orderId: number) => boolean;
+  isViewed?: boolean;
+  onOrderViewed?: (orderId: number) => void;
   onApplyToOrder?: (order: Order) => void;
   onCancelProposal?: (order: Order) => void;
   onDeleteOrder?: (order: Order) => void;
@@ -33,6 +36,8 @@ const OrderItem = ({
   isMyOrders = false,
   isMyJobs = false,
   hasAppliedToOrder = () => false,
+  isViewed = false,
+  onOrderViewed,
   onApplyToOrder,
   onCancelProposal,
   onDeleteOrder,
@@ -89,7 +94,16 @@ const OrderItem = ({
   const getStatusIcon = (status: string) =>
     statusConfig[status as keyof typeof statusConfig]?.icon || "circle";
 
-  const handleOrderPress = (order: Order) => {
+  const handleOrderPress = async (order: Order) => {
+    // Mark order as viewed when opening (only for non-myOrders)
+    if (!isMyOrders) {
+      await markOrderAsViewed(order.id);
+      // Update parent state immediately for instant visual feedback
+      if (onOrderViewed) {
+        onOrderViewed(order.id);
+      }
+    }
+    
     if (isMyOrders) {
       // For user's own orders, open in edit mode (create.tsx)
       router.push(`/orders/create?orderId=${order.id}`);
@@ -119,7 +133,7 @@ const OrderItem = ({
 
   return (
     <TouchableOpacity onPress={() => handleOrderPress(order)} activeOpacity={1}>
-      <ResponsiveCard>
+      <ResponsiveCard style={isViewed ? styles.viewedCard : undefined}>
         {/* Banner Image */}
         {order.BannerImage && (
           <View style={styles.bannerImageContainer}>
@@ -497,6 +511,9 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  viewedCard: {
+    opacity: 0.85,
   },
 });
 

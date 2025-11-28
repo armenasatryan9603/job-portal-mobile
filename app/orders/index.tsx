@@ -16,7 +16,7 @@ import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { apiService, Order, OrderListResponse } from "@/services/api";
 import { chatService } from "@/services/chatService";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import React, {
   useState,
   useEffect,
@@ -35,6 +35,7 @@ import {
   useDeleteOrder,
   useServices,
 } from "@/hooks/useApi";
+import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import {
   FlatList,
   StyleSheet,
@@ -263,6 +264,9 @@ export default function OrdersScreen() {
   // Track applied orders (fetched from backend)
   const [appliedOrders, setAppliedOrders] = useState<Set<number>>(new Set());
 
+  // Track viewed orders (stored locally)
+  const [viewedOrders, setViewedOrders] = useState<Set<number>>(new Set());
+
   // Refresh state
   const [refreshing, setRefreshing] = useState(false);
 
@@ -280,6 +284,16 @@ export default function OrdersScreen() {
   const hasAppliedToOrder = (orderId: number): boolean => {
     return appliedOrders.has(orderId);
   };
+
+  // Helper function to check if an order has been viewed
+  const isOrderViewed = (orderId: number): boolean => {
+    return viewedOrders.has(orderId);
+  };
+
+  // Callback to mark an order as viewed in state immediately
+  const handleOrderViewed = useCallback((orderId: number) => {
+    setViewedOrders((prev) => new Set(prev).add(orderId));
+  }, []);
 
   // Fetch user's applied orders from backend
   const loadAppliedOrders = async () => {
@@ -300,6 +314,17 @@ export default function OrdersScreen() {
       );
     } catch (error) {
       console.error("Error loading applied orders:", error);
+    }
+  };
+
+  // Load viewed orders from local storage
+  const loadViewedOrders = async () => {
+    try {
+      const viewed = await getViewedOrders();
+      setViewedOrders(viewed);
+      console.log("Loaded viewed orders from storage:", Array.from(viewed));
+    } catch (error) {
+      console.error("Error loading viewed orders:", error);
     }
   };
 
@@ -543,8 +568,9 @@ export default function OrdersScreen() {
     // Invalidate and refetch all order queries
     await queryClient.refetchQueries({ queryKey: ["orders"] });
 
-    // Also reload applied orders
+    // Also reload applied orders and viewed orders
     await loadAppliedOrders();
+    await loadViewedOrders();
 
     // Reset pagination
     if (isMyOrders || isMyJobs) {
@@ -556,7 +582,7 @@ export default function OrdersScreen() {
     setRefreshing(false);
   }, [queryClient, isMyOrders, isMyJobs]);
 
-  // Load applied orders on component mount
+  // Load applied orders and viewed orders on component mount
   useEffect(() => {
     // If user is trying to access "My Orders" or "My Jobs" but not authenticated, redirect to login
     if ((isMyOrders || isMyJobs) && !user?.id) {
@@ -565,7 +591,15 @@ export default function OrdersScreen() {
     }
 
     loadAppliedOrders();
+    loadViewedOrders();
   }, [isMyOrders, isMyJobs, user?.id]);
+
+  // Reload viewed orders when component comes into focus (to catch newly viewed orders)
+  useFocusEffect(
+    useCallback(() => {
+      loadViewedOrders();
+    }, [])
+  );
 
   // Filter orders locally for additional filtering (if needed)
   // const filteredOrders = orders.filter(() => {
@@ -895,6 +929,8 @@ export default function OrdersScreen() {
                   isMyOrders={isMyOrders}
                   isMyJobs={isMyJobs}
                   hasAppliedToOrder={hasAppliedToOrder}
+                  isViewed={isOrderViewed(item.id)}
+                  onOrderViewed={handleOrderViewed}
                   onApplyToOrder={handleApplyToOrder}
                   onCancelProposal={handleCancelProposal}
                   onDeleteOrder={handleDeleteOrder}

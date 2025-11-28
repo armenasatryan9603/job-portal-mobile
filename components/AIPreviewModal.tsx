@@ -155,7 +155,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
               <IconSymbol name="sparkles" size={18} color="white" />
             </View>
             <Text style={[styles.headerTitle, { color: colors.text }]}>
-              {t("aiPreview") || "AI Preview"}
+              {t("aiPreview")}
             </Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -230,7 +230,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                 <Text
                   style={[styles.compactLabel, { color: colors.textSecondary }]}
                 >
-                  {t("originalText") || "Original"}
+                  {t("originalText")}
                 </Text>
                 {!isEditing && (
                   <TouchableOpacity
@@ -245,7 +245,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                     <Text
                       style={[styles.editButtonText, { color: colors.primary }]}
                     >
-                      {t("edit") || "Edit"}
+                      {t("edit")}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -259,7 +259,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                     ]}
                     value={editedTitle}
                     onChangeText={setEditedTitle}
-                    placeholder={t("title") || "Title"}
+                    placeholder={t("title")}
                     placeholderTextColor={colors.textSecondary}
                     multiline={false}
                   />
@@ -271,7 +271,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                     ]}
                     value={editedDescription}
                     onChangeText={setEditedDescription}
-                    placeholder={t("description") || "Description"}
+                    placeholder={t("description")}
                     placeholderTextColor={colors.textSecondary}
                     multiline={true}
                     numberOfLines={4}
@@ -292,7 +292,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                       <Text
                         style={[styles.cancelEditText, { color: colors.text }]}
                       >
-                        {t("cancel") || "Cancel"}
+                        {t("cancel")}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -317,7 +317,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                             color="white"
                           />
                           <Text style={styles.retryButtonText}>
-                            {t("retryAI") || "Retry AI"}
+                            {t("retryAI")}
                           </Text>
                         </>
                       )}
@@ -353,7 +353,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
               <View style={styles.compactHeader}>
                 <IconSymbol name="sparkles" size={14} color={colors.primary} />
                 <Text style={[styles.compactLabel, { color: colors.primary }]}>
-                  {t("aiEnhancedText") || "AI Enhanced"}
+                  {t("aiEnhancedText")}
                 </Text>
               </View>
               <Text style={[styles.compactTitle, { color: colors.text }]}>

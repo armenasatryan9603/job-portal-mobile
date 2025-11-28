@@ -153,6 +153,10 @@
   "somethingWentWrong": "Something went wrong. Please try again.",
   "invalidOTP": "Invalid OTP",
   "incorrectOTP": "The verification code you entered is incorrect.",
+  "wrongOTP": "The verification code is incorrect. Please try again.",
+  "wrongPhoneNumber": "The phone number doesn't match. Please check and try again.",
+  "otpExpired": "The verification code has expired. Please request a new one.",
+  "otpNotRequested": "No verification code was sent to this number. Please request a new code.",
   "failedToResendOTP": "Failed to resend OTP. Please try again.",
   "failedToResetOTP": "Failed to reset OTP. Please try again.",
   "resetOTP": "Reset OTP",
@@ -886,8 +890,14 @@
   "rejectUseOriginal": "Use Original",
   "editAndSave": "Edit & Save",
   "editAndRetry": "Edit & Retry",
-  "edit": "Edit",
   "retryAI": "Retry AI",
   "failedToGetAIPreview": "Failed to get AI preview",
-  "reviewAndChoose": "Review the enhanced text and choose your option"
+  "reviewAndChoose": "Review the enhanced text and choose your option",
+  "aiEnhancementNotAvailable": "AI enhancement is not available. Please contact support.",
+  "aiServiceNotConfigured": "AI service is not configured. Please set OPENAI_API_KEY environment variable.",
+  "descriptionRequiredForAI": "Description is required for AI enhancement",
+  "failedToEnhanceOrderText": "Failed to enhance order text: {error}",
+  "titleAndDescriptionRequiredForAI": "Title and description are required for AI enhancement",
+  "titleRequiredForAI": "Title is required for AI enhancement",
+  "insufficientCreditBalance": "Insufficient credit balance. Required: {cost} credits, Available: {balance} credits"
 }
