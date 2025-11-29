@@ -22,6 +22,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { apiService } from "@/services/api";
+import { Button } from "@/components/ui/button";
 
 type PaymentHistoryStatus = "completed" | "pending" | "failed";
 
@@ -272,45 +273,23 @@ export default function PaymentsScreen() {
             </View>
 
             <View style={styles.summaryActions}>
-              <TouchableOpacity
-                style={[
-                  styles.summaryActionButton,
-                  { backgroundColor: colors.primary },
-                ]}
+              <Button
+                title={t("refillCredits")}
+                variant="primary"
+                icon="plus"
+                iconSize={14}
+                backgroundColor={colors.primary}
                 onPress={() => router.push("/profile/refill-credits")}
-              >
-                <IconSymbol name="plus" size={14} color={colors.textInverse} />
-                <Text
-                  style={[
-                    styles.summaryActionText,
-                    { color: colors.textInverse },
-                  ]}
-                >
-                  {t("refillCredits")}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.summaryActionButton,
-                  {
-                    borderColor: colors.border,
-                    borderWidth: 1,
-                    backgroundColor: colors.surface,
-                  },
-                ]}
+              />
+
+              <Button
+                title={t("addCreditCard")}
+                variant="outline"
+                icon="creditcard.fill"
+                iconSize={14}
+                backgroundColor={colors.surface}
                 onPress={() => router.push("/profile/add-credit-card")}
-              >
-                <IconSymbol
-                  name="creditcard.fill"
-                  size={14}
-                  color={colors.text}
-                />
-                <Text
-                  style={[styles.summaryActionText, { color: colors.text }]}
-                >
-                  {t("addCreditCard")}
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
           </ResponsiveCard>
 
@@ -330,23 +309,15 @@ export default function PaymentsScreen() {
                   {t("addAndManagePaymentOptions")}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.addCardButton,
-                  { backgroundColor: colors.primary },
-                ]}
+
+              <Button
+                title={t("addCreditCard")}
+                variant="primary"
+                icon="plus"
+                iconSize={14}
+                backgroundColor={colors.primary}
                 onPress={() => router.push("/profile/add-credit-card")}
-              >
-                <IconSymbol name="plus" size={16} color={colors.textInverse} />
-                <Text
-                  style={[
-                    styles.addCardButtonText,
-                    { color: colors.textInverse },
-                  ]}
-                >
-                  {t("addCreditCard")}
-                </Text>
-              </TouchableOpacity>
+              />
             </View>
 
             {creditCards.length === 0 ? (
@@ -725,6 +696,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   summaryActions: {
+    flexWrap: "wrap",
     flexDirection: "row",
     gap: Spacing.md,
     marginTop: Spacing.lg,

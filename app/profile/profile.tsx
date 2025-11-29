@@ -676,7 +676,7 @@ export default function ProfileScreen() {
                     {t("managePaymentsCta")}
                   </Text>
                   <IconSymbol
-                    name="chevron.right"
+                   name="chevron.right"
                     size={16}
                     color={colors.primary}
                   />

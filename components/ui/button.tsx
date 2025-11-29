@@ -54,7 +54,7 @@ export const Button: React.FC<ButtonProps> = ({
 
     switch (variant) {
       case "primary":
-        bg = backgroundColor || colors.tint;
+        bg = backgroundColor || colors.primary;
         text = textColor || "#fff";
         border = "transparent";
         break;

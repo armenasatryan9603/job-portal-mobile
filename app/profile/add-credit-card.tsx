@@ -31,6 +31,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Button } from "@/components/ui/button";
 
 export default function AddCreditCardScreen() {
   const { isDark } = useTheme();
@@ -431,23 +432,15 @@ export default function AddCreditCardScreen() {
             </View>
 
             {/* Submit Button */}
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: isLoading ? 0.6 : 1,
-                },
-              ]}
+            <Button
+              title={isLoading ? t("addingCard") : t("addCreditCard")}
+              variant="primary"
+              icon="plus"
+              iconSize={14}
+              style={{ paddingBlock: 16 }}
               onPress={handleSubmit}
               disabled={isLoading}
-            >
-              <ThemedText
-                style={[styles.submitButtonText, { color: colors.textInverse }]}
-              >
-                {isLoading ? t("addingCard") : t("addCreditCard")}
-              </ThemedText>
-            </TouchableOpacity>
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
