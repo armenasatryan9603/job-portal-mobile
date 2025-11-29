@@ -198,6 +198,14 @@ export interface MediaFile {
   createdAt: string;
 }
 
+export interface OrderQuestion {
+  id: number;
+  orderId: number;
+  question: string;
+  order: number;
+  createdAt: string;
+}
+
 export interface Order {
   id: number;
   clientId: number;
@@ -229,6 +237,7 @@ export interface Order {
   Proposals?: any[];
   Reviews?: any[];
   MediaFiles?: MediaFile[];
+  questions?: OrderQuestion[];
   _count: {
     Proposals: number;
     Reviews: number;
@@ -609,6 +618,7 @@ class ApiService {
   async applyToOrder(proposalData: {
     orderId: number;
     message?: string;
+    questionAnswers?: Array<{ questionId: number; answer: string }>;
   }): Promise<any> {
     return this.request(
       `/order-proposals/apply`,
@@ -715,6 +725,7 @@ class ApiService {
     skills?: string[];
     availableDates?: string[];
     useAIEnhancement?: boolean;
+    questions?: string[];
   }): Promise<any> {
     return this.request(
       `/orders/create`,
@@ -746,6 +757,7 @@ class ApiService {
       descriptionEn?: string;
       descriptionRu?: string;
       descriptionHy?: string;
+      questions?: string[];
     }
   ): Promise<any> {
     return this.request(

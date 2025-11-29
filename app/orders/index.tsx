@@ -726,7 +726,10 @@ export default function OrdersScreen() {
     setShowApplyModal(true);
   };
 
-  const handleSubmitApplication = async (message: string) => {
+  const handleSubmitApplication = async (
+    message: string,
+    questionAnswers?: Array<{ questionId: number; answer: string }>
+  ) => {
     if (!selectedOrder) return;
 
     setApplyLoading(true);
@@ -736,6 +739,7 @@ export default function OrdersScreen() {
       await applyToOrderMutation.mutateAsync({
         orderId: selectedOrder.id,
         message: message,
+        questionAnswers: questionAnswers,
       });
 
       // Add order to applied orders set

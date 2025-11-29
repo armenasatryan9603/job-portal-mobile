@@ -425,8 +425,11 @@ export const useCreateProposal = () => {
 export const useApplyToOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { orderId: number; message?: string }) =>
-      apiService.applyToOrder(data),
+    mutationFn: (data: {
+      orderId: number;
+      message?: string;
+      questionAnswers?: Array<{ questionId: number; answer: string }>;
+    }) => apiService.applyToOrder(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["proposals"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });

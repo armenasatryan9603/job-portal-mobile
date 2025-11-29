@@ -842,5 +842,8 @@
   "failedToEnhanceOrderText": "Не удалось улучшить текст заказа: {error}",
   "titleAndDescriptionRequiredForAI": "Заголовок и описание обязательны для улучшения с помощью ИИ",
   "titleRequiredForAI": "Заголовок обязателен для улучшения с помощью ИИ",
-  "insufficientCreditBalance": "Недостаточно кредитов. Требуется: {cost} кредитов, Доступно: {balance} кредитов"
+  "insufficientCreditBalance": "Недостаточно кредитов. Требуется: {cost} кредитов, Доступно: {balance} кредитов",
+  "pleaseAnswerQuestions": "Пожалуйста, ответьте на следующие вопросы",
+  "pleaseAnswerQuestion": "Пожалуйста, ответьте на этот вопрос",
+  "enterYourAnswer": "Введите ваш ответ..."
 }

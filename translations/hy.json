@@ -891,5 +891,8 @@
   "failedToEnhanceOrderText": "Չհաջողվեց բարելավել պատվերի տեքստը: {error}",
   "titleAndDescriptionRequiredForAI": "Վերնագիրը և նկարագրությունը պարտադիր են AI-ով բարելավման համար",
   "titleRequiredForAI": "Վերնագիրը պարտադիր է AI-ով բարելավման համար",
-  "insufficientCreditBalance": "Անբավարար կրեդիտային մնացորդ: Պահանջվում է: {cost} կրեդիտ, Հասանելի է: {balance} կրեդիտ"
+  "insufficientCreditBalance": "Անբավարար կրեդիտային մնացորդ: Պահանջվում է: {cost} կրեդիտ, Հասանելի է: {balance} կրեդիտ",
+  "pleaseAnswerQuestions": "Խնդրում ենք պատասխանել հետևյալ հարցերին",
+  "pleaseAnswerQuestion": "Խնդրում ենք պատասխանել այս հարցին",
+  "enterYourAnswer": "Մուտքագրեք ձեր պատասխանը..."
 }

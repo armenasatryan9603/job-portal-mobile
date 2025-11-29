@@ -23,6 +23,7 @@ import {
   View,
   Image,
   Modal,
+  TextInput,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,7 @@ export default function CreateOrderScreen() {
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
   const [useAIEnhancement, setUseAIEnhancement] = useState<boolean>(false); // Unchecked by default (checked only for new orders)
   const [showAIPreview, setShowAIPreview] = useState(false);
+  const [questions, setQuestions] = useState<string[]>([]);
   const [aiPreviewData, setAiPreviewData] = useState<{
     original: { title: string; description: string };
     enhanced: {
@@ -212,6 +214,14 @@ export default function CreateOrderScreen() {
                 setSelectedBannerIndex(bannerIndex);
               }
             }
+          }
+
+          // Load existing questions
+          if (orderData.questions && orderData.questions.length > 0) {
+            const sortedQuestions = orderData.questions.sort(
+              (a: any, b: any) => a.order - b.order
+            );
+            setQuestions(sortedQuestions.map((q: any) => q.question));
           }
         } catch (error) {
           console.error("Error loading order for edit:", error);
@@ -562,6 +572,7 @@ export default function CreateOrderScreen() {
             ? formatAllDatesWithTimes()
             : undefined,
         useAIEnhancement: useAIEnhancement, // For both new and existing orders
+        questions: questions.filter((q) => q.trim().length > 0),
       };
 
       // If orderId exists, update the order; otherwise create a new one
@@ -742,6 +753,7 @@ export default function CreateOrderScreen() {
         formatAllDatesWithTimes().length > 0
           ? formatAllDatesWithTimes()
           : undefined,
+      questions: questions.filter((q) => q.trim().length > 0),
     };
 
     // If AI enhancement is enabled, show preview first
@@ -1187,6 +1199,69 @@ export default function CreateOrderScreen() {
             )}
           </ResponsiveCard>
 
+          {/* Questions Section */}
+          <ResponsiveCard>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("questionsForSpecialists") || "Questions for Specialists"}
+              </Text>
+              <Text
+                style={[
+                  styles.sectionSubtitle,
+                  { color: colors.tabIconDefault },
+                ]}
+              >
+                {t("addQuestionsForApplicants") ||
+                  "Add questions that specialists must answer when applying"}
+              </Text>
+            </View>
+
+            {questions.map((question, index) => (
+              <View key={index} style={styles.questionItem}>
+                <TextInput
+                  style={[
+                    styles.questionInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder={t("enterQuestion") || "Enter question..."}
+                  placeholderTextColor={colors.tabIconDefault}
+                  value={question}
+                  onChangeText={(text) => {
+                    const newQuestions = [...questions];
+                    newQuestions[index] = text;
+                    setQuestions(newQuestions);
+                  }}
+                  multiline
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    const newQuestions = questions.filter(
+                      (_, i) => i !== index
+                    );
+                    setQuestions(newQuestions);
+                  }}
+                  style={styles.deleteQuestionButton}
+                >
+                  <IconSymbol name="trash" size={18} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            ))}
+
+            <TouchableOpacity
+              onPress={() => setQuestions([...questions, ""])}
+              style={[styles.addQuestionButton, { borderColor: colors.border }]}
+            >
+              <IconSymbol name="plus.circle" size={20} color={colors.tint} />
+              <Text style={[styles.addQuestionText, { color: colors.tint }]}>
+                {t("addQuestion") || "Add Question"}
+              </Text>
+            </TouchableOpacity>
+          </ResponsiveCard>
+
           {/* Action Buttons */}
           <ResponsiveCard>
             {/* AI Enhancement Option - Show for both new and existing orders */}
@@ -1356,11 +1431,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#FF3B30",
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 20,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.9)",
@@ -1404,5 +1474,50 @@ const styles = StyleSheet.create({
   infoButton: {
     padding: 4,
     marginLeft: 8,
+  },
+  sectionHeader: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  questionItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+    gap: 8,
+  },
+  questionInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 44,
+  },
+  deleteQuestionButton: {
+    padding: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addQuestionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    gap: 8,
+    marginTop: 8,
+  },
+  addQuestionText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

@@ -899,5 +899,8 @@
   "failedToEnhanceOrderText": "Failed to enhance order text: {error}",
   "titleAndDescriptionRequiredForAI": "Title and description are required for AI enhancement",
   "titleRequiredForAI": "Title is required for AI enhancement",
-  "insufficientCreditBalance": "Insufficient credit balance. Required: {cost} credits, Available: {balance} credits"
+  "insufficientCreditBalance": "Insufficient credit balance. Required: {cost} credits, Available: {balance} credits",
+  "pleaseAnswerQuestions": "Please answer the following questions",
+  "pleaseAnswerQuestion": "Please answer this question",
+  "enterYourAnswer": "Enter your answer..."
 }

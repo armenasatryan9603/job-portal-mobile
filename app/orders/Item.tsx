@@ -103,7 +103,7 @@ const OrderItem = ({
         onOrderViewed(order.id);
       }
     }
-    
+
     if (isMyOrders) {
       // For user's own orders, open in edit mode (create.tsx)
       router.push(`/orders/create?orderId=${order.id}`);
@@ -293,58 +293,43 @@ const OrderItem = ({
           {!isMyOrders &&
             order.status === "open" &&
             !hasAppliedToOrder(order.id) &&
-            user?.id !== order.clientId && (
+            user?.id !== order.clientId &&
+            order.creditCost && (
               <Button
                 onPress={() => handleApplyToOrder(order)}
-                title={`${t("apply")} (${order.creditCost || 1} ${t(
-                  "credit"
-                )})`}
+                title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
                 icon="paperplane.fill"
                 variant="primary"
-                textColor={colors.background}
               />
             )}
 
           {/* Applied Status - Show when user has already applied */}
+
           {!isMyOrders &&
             order.status === "open" &&
             hasAppliedToOrder(order.id) &&
             user?.id !== order.clientId && (
-              <View
-                style={[
-                  styles.appliedButton,
-                  { backgroundColor: colors.tabIconDefault },
-                ]}
-              >
-                <IconSymbol
-                  name="checkmark.circle.fill"
-                  size={16}
-                  color="white"
-                />
-                <Text
-                  style={[
-                    styles.appliedButtonText,
-                    { color: colors.textInverse },
-                  ]}
-                >
-                  {t("applied")}
-                </Text>
-              </View>
+              <Button
+                onPress={() => handleApplyToOrder(order)}
+                variant="primary"
+                icon="checkmark.circle.fill"
+                iconSize={16}
+                iconPosition="left"
+                title={t("applied")}
+              />
             )}
 
           {/* Cancel Button - Only show for My Jobs */}
           {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
-            <TouchableOpacity
-              style={styles.cancelButton}
+            <Button
+              variant="outline"
               onPress={() => handleCancelProposal(order)}
-            >
-              <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
-              <Text
-                style={[styles.cancelButtonText, { color: colors.textInverse }]}
-              >
-                {t("cancel")}
-              </Text>
-            </TouchableOpacity>
+              icon="xmark.circle"
+              iconSize={16}
+              iconPosition="left"
+              title={t("cancel")}
+              textColor="#FF3B30"
+            />
           )}
 
           {/* Delete Button - Only show for user's own orders */}

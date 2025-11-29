@@ -22,7 +22,10 @@ interface ApplyModalProps {
   visible: boolean;
   onClose: () => void;
   order: Order | null;
-  onSubmit: (message: string) => Promise<void>;
+  onSubmit: (
+    message: string,
+    questionAnswers?: Array<{ questionId: number; answer: string }>
+  ) => Promise<void>;
   loading?: boolean;
 }
 
@@ -38,20 +41,56 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const { t } = useTranslation();
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState("");
+  const [questionAnswers, setQuestionAnswers] = useState<{
+    [questionId: number]: string;
+  }>({});
+  const [questionErrors, setQuestionErrors] = useState<{
+    [questionId: number]: string;
+  }>({});
 
   const handleSubmit = async () => {
     // Clear previous errors
     setMessageError("");
+    setQuestionErrors({});
 
+    // Validate message
     if (message.trim().length < 10) {
       setMessageError(t("messageTooShort"));
       return;
     }
 
+    // Validate question answers
+    const errors: { [questionId: number]: string } = {};
+    if (order?.questions && order.questions.length > 0) {
+      for (const question of order.questions) {
+        const answer = questionAnswers[question.id];
+        if (!answer || !answer.trim()) {
+          errors[question.id] =
+            t("pleaseAnswerQuestion") || "Please answer this question";
+        }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setQuestionErrors(errors);
+      return;
+    }
+
     try {
-      await onSubmit(message.trim());
+      // Prepare question answers array
+      const questionAnswersArray =
+        order?.questions && order.questions.length > 0
+          ? order.questions.map((q) => ({
+              questionId: q.id,
+              answer: questionAnswers[q.id].trim(),
+            }))
+          : undefined;
+
+      await onSubmit(message.trim(), questionAnswersArray);
       setMessage("");
       setMessageError("");
+      setQuestionAnswers({});
+      setQuestionErrors({});
       onClose();
     } catch (error) {
       console.error("Error submitting application:", error);
@@ -62,6 +101,8 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const handleClose = () => {
     setMessage("");
     setMessageError("");
+    setQuestionAnswers({});
+    setQuestionErrors({});
     onClose();
   };
 
@@ -94,122 +135,186 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
         </View>
 
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView 
-            style={styles.content} 
+          <ScrollView
+            style={styles.content}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.orderInfo}>
-            <Text style={[styles.orderTitle, { color: colors.text }]}>
-              {order.title}
-            </Text>
-            <Text
-              style={[
-                styles.orderDescription,
-                { color: colors.tabIconDefault },
-              ]}
-            >
-              {order.description}
-            </Text>
-            <View style={styles.orderDetails}>
-              <View style={styles.detailRow}>
-                <IconSymbol
-                  name="dollarsign.circle.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  ${order.budget.toLocaleString()}
-                </Text>
-              </View>
-              {order.location && (
+              <Text style={[styles.orderTitle, { color: colors.text }]}>
+                {order.title}
+              </Text>
+              <Text
+                style={[
+                  styles.orderDescription,
+                  { color: colors.tabIconDefault },
+                ]}
+              >
+                {order.description}
+              </Text>
+              <View style={styles.orderDetails}>
                 <View style={styles.detailRow}>
                   <IconSymbol
-                    name="location.fill"
+                    name="dollarsign.circle.fill"
                     size={16}
                     color={colors.tint}
                   />
                   <Text style={[styles.detailText, { color: colors.text }]}>
-                    {order.location}
+                    ${order.budget.toLocaleString()}
                   </Text>
                 </View>
-              )}
+                {order.location && (
+                  <View style={styles.detailRow}>
+                    <IconSymbol
+                      name="location.fill"
+                      size={16}
+                      color={colors.tint}
+                    />
+                    <Text style={[styles.detailText, { color: colors.text }]}>
+                      {order.location}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          <View style={styles.messageSection}>
-            <Text style={[styles.messageLabel, { color: colors.text }]}>
-              {t("messageToClient")}
-            </Text>
-            <TextInput
-              style={[
-                styles.messageInput,
-                {
-                  backgroundColor: colors.background,
-                  borderColor: messageError ? "#FF3B30" : colors.border,
-                  color: colors.text,
-                },
-              ]}
-              placeholder={t("writeMessageToClient")}
-              placeholderTextColor={colors.tabIconDefault}
-              value={message}
-              onChangeText={handleMessageChange}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-            {messageError && (
-              <Text style={[styles.errorText, { color: "#FF3B30" }]}>
-                {messageError}
-              </Text>
+            {/* Questions Section */}
+            {order?.questions && order.questions.length > 0 && (
+              <View style={styles.questionsSection}>
+                <Text style={[styles.questionsLabel, { color: colors.text }]}>
+                  {t("pleaseAnswerQuestions") ||
+                    "Please answer the following questions"}
+                </Text>
+                {order.questions
+                  .sort((a, b) => a.order - b.order)
+                  .map((question) => (
+                    <View key={question.id} style={styles.questionItem}>
+                      <Text
+                        style={[styles.questionText, { color: colors.text }]}
+                      >
+                        {question.question}
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.questionInput,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: questionErrors[question.id]
+                              ? "#FF3B30"
+                              : colors.border,
+                            color: colors.text,
+                          },
+                        ]}
+                        placeholder={
+                          t("enterYourAnswer") || "Enter your answer..."
+                        }
+                        placeholderTextColor={colors.tabIconDefault}
+                        value={questionAnswers[question.id] || ""}
+                        onChangeText={(text) => {
+                          setQuestionAnswers((prev) => ({
+                            ...prev,
+                            [question.id]: text,
+                          }));
+                          // Clear error when user starts typing
+                          if (questionErrors[question.id]) {
+                            setQuestionErrors((prev) => {
+                              const newErrors = { ...prev };
+                              delete newErrors[question.id];
+                              return newErrors;
+                            });
+                          }
+                        }}
+                        multiline
+                        numberOfLines={3}
+                        textAlignVertical="top"
+                      />
+                      {questionErrors[question.id] && (
+                        <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+                          {questionErrors[question.id]}
+                        </Text>
+                      )}
+                    </View>
+                  ))}
+              </View>
             )}
-          </View>
 
-          <View style={styles.creditInfo}>
-            <View style={styles.creditRow}>
-              <IconSymbol
-                name="creditcard.fill"
-                size={16}
-                color={colors.tint}
+            <View style={styles.messageSection}>
+              <Text style={[styles.messageLabel, { color: colors.text }]}>
+                {t("messageToClient")}
+              </Text>
+              <TextInput
+                style={[
+                  styles.messageInput,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: messageError ? "#FF3B30" : colors.border,
+                    color: colors.text,
+                  },
+                ]}
+                placeholder={t("writeMessageToClient")}
+                placeholderTextColor={colors.tabIconDefault}
+                value={message}
+                onChangeText={handleMessageChange}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
               />
-              <Text style={[styles.creditText, { color: colors.text }]}>
-                {t("applicationCost")}: 1 {t("credit")}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.cancelButton, { borderColor: colors.border }]}
-              onPress={handleClose}
-              disabled={loading}
-            >
-              <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                {t("cancel")}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.submitButton,
-                { backgroundColor: colors.tint },
-                loading && styles.submitButtonDisabled,
-              ]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <>
-                  <IconSymbol name="paperplane.fill" size={16} color="black" />
-                  <Text style={styles.submitButtonText}>
-                    {t("submitApplication")}
-                  </Text>
-                </>
+              {messageError && (
+                <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+                  {messageError}
+                </Text>
               )}
-            </TouchableOpacity>
-          </View>
+            </View>
+
+            <View style={styles.creditInfo}>
+              <View style={styles.creditRow}>
+                <IconSymbol
+                  name="creditcard.fill"
+                  size={16}
+                  color={colors.tint}
+                />
+                <Text style={[styles.creditText, { color: colors.text }]}>
+                  {t("applicationCost")}: 1 {t("credit")}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.cancelButton, { borderColor: colors.border }]}
+                onPress={handleClose}
+                disabled={loading}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+                  {t("cancel")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  { backgroundColor: colors.tint },
+                  loading && styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmit}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <>
+                    <IconSymbol
+                      name="paperplane.fill"
+                      size={16}
+                      color="black"
+                    />
+                    <Text style={styles.submitButtonText}>
+                      {t("submitApplication")}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </TouchableWithoutFeedback>
       </View>
@@ -344,5 +449,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: "black",
+  },
+  questionsSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  questionsLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: Spacing.md,
+  },
+  questionItem: {
+    marginBottom: Spacing.md,
+  },
+  questionText: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: Spacing.sm,
+  },
+  questionInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: Spacing.md,
+    fontSize: 16,
+    minHeight: 40,
   },
 });

@@ -5,6 +5,7 @@ import {
   Modal,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  Pressable,
   TextInput,
   StyleSheet,
   Alert,
@@ -47,7 +48,21 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
   const [selectedReasons, setSelectedReasons] = useState<number[]>([]);
 
   // Use TanStack Query for reasons
-  const { data: reasons, isLoading: loadingReasons } = useReasons();
+  const {
+    data: reasons,
+    isLoading: loadingReasons,
+    error: reasonsError,
+  } = useReasons();
+
+  // Debug: Log when rating changes or reasons are loaded
+  React.useEffect(() => {
+    if (rating > 0 && rating <= 2) {
+      console.log("Rating is 1 or 2, showing reasons section");
+      console.log("Reasons data:", reasons);
+      console.log("Loading reasons:", loadingReasons);
+      console.log("Reasons error:", reasonsError);
+    }
+  }, [rating, reasons, loadingReasons, reasonsError]);
 
   const handleSubmit = () => {
     if (rating === 0) {
@@ -138,154 +153,174 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
     >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.overlay}>
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
+          <TouchableWithoutFeedback onPress={() => {}}>
             <View
               style={[styles.container, { backgroundColor: colors.background }]}
             >
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                {title}
-              </Text>
-              {subtitle && (
-                <Text
-                  style={[styles.subtitle, { color: colors.textSecondary }]}
-                >
-                  {subtitle}
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.content}>
-              <View style={styles.ratingSection}>
-                <Text style={[styles.ratingLabel, { color: colors.text }]}>
-                  {t("rating")}
-                </Text>
-                <View style={styles.starsContainer}>{renderStars()}</View>
-                <Text style={[styles.ratingText, { color: colors.primary }]}>
-                  {getRatingText(rating)}
-                </Text>
-              </View>
-
-              {/* Show reasons for negative ratings (≤2 stars) */}
-              {rating > 0 && rating <= 2 && (
-                <View style={styles.reasonsSection}>
-                  <Text style={[styles.reasonsLabel, { color: colors.text }]}>
-                    {t("whatWentWrong")}
+              <ScrollView
+                contentContainerStyle={styles.scrollContentInner}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.header}>
+                  <Text style={[styles.title, { color: colors.text }]}>
+                    {title}
                   </Text>
-                  {loadingReasons ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <ScrollView
-                      style={styles.reasonsScrollView}
-                      showsVerticalScrollIndicator={false}
-                      nestedScrollEnabled={true}
+                  {subtitle && (
+                    <Text
+                      style={[styles.subtitle, { color: colors.textSecondary }]}
                     >
-                      <View style={styles.reasonsList}>
-                        {(reasons || []).map((reason: Reason) => {
-                          const isSelected = selectedReasons.includes(
-                            reason.id
-                          );
-                          return (
-                            <TouchableOpacity
-                              key={reason.id}
-                              style={[
-                                styles.reasonItem,
-                                {
-                                  backgroundColor: isSelected
-                                    ? colors.primary + "20"
-                                    : colors.backgroundSecondary,
-                                  borderColor: isSelected
-                                    ? colors.primary
-                                    : colors.border,
-                                },
-                              ]}
-                              onPress={() => toggleReason(reason.id)}
-                            >
-                              <View style={styles.checkboxContainer}>
-                                {isSelected && (
-                                  <IconSymbol
-                                    name="checkmark"
-                                    size={16}
-                                    color={colors.primary}
-                                  />
-                                )}
-                              </View>
-                              <Text
-                                style={[
-                                  styles.reasonText,
-                                  { color: colors.text },
-                                ]}
-                              >
-                                {getReasonName(reason)}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    </ScrollView>
+                      {subtitle}
+                    </Text>
                   )}
                 </View>
-              )}
 
-              <View style={styles.feedbackSection}>
-                <Text style={[styles.feedbackLabel, { color: colors.text }]}>
-                  {t("feedback")} ({t("optional")})
-                </Text>
-                <TextInput
-                  style={[
-                    styles.feedbackInput,
-                    {
-                      backgroundColor: colors.backgroundSecondary,
-                      color: colors.text,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  placeholder={t("writeYourFeedback")}
-                  placeholderTextColor={colors.textSecondary}
-                  value={feedback}
-                  onChangeText={setFeedback}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
+                <View style={styles.content}>
+                  <View style={styles.ratingSection}>
+                    <Text style={[styles.ratingLabel, { color: colors.text }]}>
+                      {t("rating")}
+                    </Text>
+                    <View style={styles.starsContainer}>{renderStars()}</View>
+                    <Text
+                      style={[styles.ratingText, { color: colors.primary }]}
+                    >
+                      {getRatingText(rating)}
+                    </Text>
+                  </View>
+
+                  {/* Show reasons for negative ratings (≤2 stars) */}
+                  {rating > 0 && rating <= 2 && (
+                    <View style={styles.reasonsSection}>
+                      <Text
+                        style={[styles.reasonsLabel, { color: colors.text }]}
+                      >
+                        {t("whatWentWrong")}
+                      </Text>
+                      {loadingReasons ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.primary}
+                        />
+                      ) : reasons && reasons.length > 0 ? (
+                        <ScrollView
+                          style={styles.reasonsScrollView}
+                          showsVerticalScrollIndicator={false}
+                          nestedScrollEnabled={true}
+                        >
+                          <View style={styles.reasonsList}>
+                            {reasons.map((reason: Reason) => {
+                              const isSelected = selectedReasons.includes(
+                                reason.id
+                              );
+                              return (
+                                <TouchableOpacity
+                                  key={reason.id}
+                                  style={[
+                                    styles.reasonItem,
+                                    {
+                                      backgroundColor: isSelected
+                                        ? colors.primary + "20"
+                                        : colors.backgroundSecondary,
+                                      borderColor: isSelected
+                                        ? colors.primary
+                                        : colors.border,
+                                    },
+                                  ]}
+                                  onPress={() => toggleReason(reason.id)}
+                                >
+                                  <View style={styles.checkboxContainer}>
+                                    {isSelected && (
+                                      <IconSymbol
+                                        name="checkmark"
+                                        size={16}
+                                        color={colors.primary}
+                                      />
+                                    )}
+                                  </View>
+                                  <Text
+                                    style={[
+                                      styles.reasonText,
+                                      { color: colors.text },
+                                    ]}
+                                  >
+                                    {getReasonName(reason)}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
+                        </ScrollView>
+                      ) : (
+                        <Text
+                          style={[
+                            styles.noReasonsText,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {t("noReasonsAvailable") || "No reasons available"}
+                        </Text>
+                      )}
+                    </View>
+                  )}
+
+                  <View style={styles.feedbackSection}>
+                    <Text
+                      style={[styles.feedbackLabel, { color: colors.text }]}
+                    >
+                      {t("feedback")} ({t("optional")})
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.feedbackInput,
+                        {
+                          backgroundColor: colors.backgroundSecondary,
+                          color: colors.text,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                      placeholder={t("writeYourFeedback")}
+                      placeholderTextColor={colors.textSecondary}
+                      value={feedback}
+                      onChangeText={setFeedback}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.buttons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      styles.cancelButton,
+                      { borderColor: colors.border },
+                    ]}
+                    onPress={handleClose}
+                    disabled={loading}
+                  >
+                    <Text style={[styles.buttonText, { color: colors.text }]}>
+                      {t("cancel")}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      { backgroundColor: colors.primary },
+                      loading && styles.disabledButton,
+                    ]}
+                    onPress={handleSubmit}
+                    disabled={loading}
+                  >
+                    <Text style={[styles.buttonText, { color: "white" }]}>
+                      {loading ? t("submitting") : t("submit")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
             </View>
-
-            <View style={styles.buttons}>
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.cancelButton,
-                  { borderColor: colors.border },
-                ]}
-                onPress={handleClose}
-                disabled={loading}
-              >
-                <Text style={[styles.buttonText, { color: colors.text }]}>
-                  {t("cancel")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.button,
-                  { backgroundColor: colors.primary },
-                  loading && styles.disabledButton,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                <Text style={[styles.buttonText, { color: "white" }]}>
-                  {loading ? t("submitting") : t("submit")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
+          </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
     </Modal>
@@ -305,8 +340,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 8,
   },
+  scrollContentInner: {
+    flexGrow: 1,
+  },
   container: {
-    width: "100%",
+    width: "90%",
+    maxWidth: 500,
     borderRadius: 12,
     padding: 20,
     elevation: 8,
@@ -314,6 +353,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    alignSelf: "center",
+    maxHeight: "90%",
   },
   header: {
     marginBottom: 16,
@@ -426,5 +467,11 @@ const styles = StyleSheet.create({
   reasonText: {
     fontSize: 14,
     flex: 1,
+  },
+  noReasonsText: {
+    fontSize: 14,
+    fontStyle: "italic",
+    textAlign: "center",
+    padding: 10,
   },
 });

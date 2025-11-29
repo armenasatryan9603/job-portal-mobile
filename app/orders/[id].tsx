@@ -439,6 +439,7 @@ export default function EditOrderScreen() {
                 {/* Apply Button or Applied Status */}
                 {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
                   <Button
+                    style={{ paddingVertical: 12 }}
                     onPress={handleApplyToOrder}
                     title={`${t("apply")} (${order.creditCost || 1} ${t(
                       "credit"
@@ -447,42 +448,28 @@ export default function EditOrderScreen() {
                     variant="primary"
                   />
                 ) : order?.status === "open" && hasAppliedToOrder(order.id) ? (
-                  <View
-                    style={[
-                      styles.appliedButton,
-                      { backgroundColor: colors.tabIconDefault },
-                    ]}
-                  >
-                    <IconSymbol
-                      name="checkmark.circle.fill"
-                      size={16}
-                      color="white"
-                    />
-                    <Text
-                      style={[
-                        styles.appliedButtonText,
-                        { color: colors.textInverse },
-                      ]}
-                    >
-                      {t("applied")}
-                    </Text>
-                  </View>
+                  <Button
+                    style={{ paddingVertical: 12 }}
+                    onPress={() => {}}
+                    title={t("applied")}
+                    icon="checkmark.circle.fill"
+                    iconSize={16}
+                    iconPosition="left"
+                    variant="primary"
+                  />
                 ) : null}
 
                 {/* Cancel Button - Only show for My Jobs */}
                 {isMyJobs && order?.Proposals && order.Proposals.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.cancelButton}
+                  <Button
                     onPress={handleCancelProposal}
-                    activeOpacity={0.8}
-                  >
-                    <IconSymbol name="xmark.circle" size={16} color="#FF3B30" />
-                    <Text
-                      style={[styles.cancelButtonText, { color: "#FF3B30" }]}
-                    >
-                      {t("cancel")}
-                    </Text>
-                  </TouchableOpacity>
+                    title={t("cancel")}
+                    icon="xmark.circle"
+                    iconSize={16}
+                    iconPosition="left"
+                    variant="outline"
+                    textColor="#FF3B30"
+                  />
                 )}
               </View>
             </ResponsiveCard>
@@ -889,6 +876,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   orderDescription: {
+    marginBottom: 10,
     fontSize: 17,
     lineHeight: 26,
     opacity: 0.9,

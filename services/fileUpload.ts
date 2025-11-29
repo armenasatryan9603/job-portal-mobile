@@ -141,6 +141,7 @@ class FileUploadService {
       location?: string;
       skills?: string[];
       useAIEnhancement?: boolean;
+      questions?: string[];
     },
     files: MediaFile[],
     onProgress?: (completed: number, total: number) => void
