@@ -24,6 +24,8 @@ import {
   View,
   ActivityIndicator,
   Modal,
+  Share,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { apiService, Order } from "@/services/api";
@@ -31,7 +33,7 @@ import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 
 export default function EditOrderScreen() {
-  const { id, myJobs } = useLocalSearchParams();
+  const { id, myJobs, preview } = useLocalSearchParams();
   const { t } = useTranslation();
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
@@ -114,7 +116,8 @@ export default function EditOrderScreen() {
         setOrder(orderData);
 
         // Check if current user is the owner - if so, redirect to create.tsx for editing
-        if (user?.id === orderData.clientId) {
+        // Unless preview mode is enabled (preview=true in URL params)
+        if (user?.id === orderData.clientId && preview !== "true") {
           router.replace(`/orders/create?orderId=${id}`);
           return;
         }
@@ -250,6 +253,128 @@ export default function EditOrderScreen() {
         },
       },
     ]);
+  };
+
+  // Generate shareable order link
+  const generateOrderLink = (): string => {
+    const orderId = order?.id;
+    if (!orderId) return "";
+
+    // Use deep link for mobile app
+    const deepLink = `jobportalmobile://orders/${orderId}`;
+
+    // Fallback to web URL if available (you can customize this)
+    const webUrl = `https://yourapp.com/orders/${orderId}`;
+
+    // Return deep link for now, but you could also return webUrl or both
+    return deepLink;
+  };
+
+  // Share order link
+  const handleShareOrderLink = async () => {
+    if (!order) return;
+
+    try {
+      const orderLink = generateOrderLink();
+      const orderTitle = getLocalizedText("title", language, order);
+
+      const shareMessage = `${t(
+        "shareOrderMessage"
+      )}: ${orderTitle}\n\n${orderLink}`;
+
+      const result = await Share.share({
+        message: shareMessage,
+        title: t("shareOrder"),
+      });
+
+      if (result.action === Share.sharedAction) {
+        // User shared successfully
+        if (result.activityType) {
+          // Shared with activity type of result.activityType
+          console.log("Shared with activity type:", result.activityType);
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // User dismissed the share sheet
+        console.log("Share dismissed");
+      }
+    } catch (error: any) {
+      console.error("Error sharing order link:", error);
+      Alert.alert(t("error"), t("failedToShareOrder"));
+    }
+  };
+
+  // Social sharing with order details
+  const handleSocialShare = async () => {
+    if (!order) return;
+
+    try {
+      const orderTitle = getLocalizedText("title", language, order);
+      const orderDescription = getLocalizedText("description", language, order);
+      const orderLink = generateOrderLink();
+
+      // Format the share message with order details
+      let shareMessage = `${t("shareOrderMessage")}\n\n`;
+      shareMessage += `📋 ${orderTitle}\n\n`;
+
+      if (orderDescription) {
+        // Truncate description if too long
+        const maxDescriptionLength = 200;
+        const truncatedDescription =
+          orderDescription.length > maxDescriptionLength
+            ? orderDescription.substring(0, maxDescriptionLength) + "..."
+            : orderDescription;
+        shareMessage += `${truncatedDescription}\n\n`;
+      }
+
+      if (order.budget) {
+        shareMessage += `💰 ${t(
+          "budget"
+        )}: $${order.budget.toLocaleString()}\n`;
+      }
+
+      if (order.location) {
+        shareMessage += `📍 ${t("location")}: ${order.location}\n`;
+      }
+
+      shareMessage += `\n${orderLink}`;
+
+      const result = await Share.share({
+        message: shareMessage,
+        title: t("shareOrder"),
+      });
+
+      if (result.action === Share.sharedAction) {
+        console.log("Order shared successfully");
+      }
+    } catch (error: any) {
+      console.error("Error sharing order:", error);
+      Alert.alert(t("error"), t("failedToShareOrder"));
+    }
+  };
+
+  // Show share options menu
+  const handleShare = () => {
+    if (!order) return;
+
+    Alert.alert(
+      t("shareOrder"),
+      t("chooseShareOption"),
+      [
+        {
+          text: t("shareOrderLink"),
+          onPress: handleShareOrderLink,
+        },
+        {
+          text: `${t("shareOrder")} ${t("details")}`,
+          onPress: handleSocialShare,
+        },
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   // Handle automatic Apply after login
@@ -395,6 +520,19 @@ export default function EditOrderScreen() {
       subtitle={order?.title}
       showBackButton={true}
       onBackPress={() => router.back()}
+      rightComponent={
+        <TouchableOpacity
+          onPress={handleShare}
+          style={styles.shareButton}
+          activeOpacity={0.7}
+        >
+          <IconSymbol
+            name="square.and.arrow.up"
+            size={Platform.OS === "android" ? 24 : 20}
+            color={colors.tint}
+          />
+        </TouchableOpacity>
+      }
     />
   );
 
@@ -1104,5 +1242,9 @@ const styles = StyleSheet.create({
   modalImage: {
     width: "90%",
     height: "90%",
+  },
+  shareButton: {
+    padding: 8,
+    marginRight: -8,
   },
 });

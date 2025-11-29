@@ -1318,15 +1318,27 @@ export default function CreateOrderScreen() {
               ]}
             >
               {orderId && (
-                <Button
-                  variant="outline"
-                  icon="trash"
-                  iconSize={16}
-                  iconPosition="left"
-                  title={t("delete")}
-                  textColor="#FF3B30"
-                  onPress={handleDeleteOrder}
-                />
+                <>
+                  <Button
+                    variant="outline"
+                    icon="trash"
+                    iconSize={16}
+                    iconPosition="left"
+                    title={t("delete")}
+                    textColor="#FF3B30"
+                    onPress={handleDeleteOrder}
+                  />
+                  <Button
+                    variant="outline"
+                    icon="eye"
+                    iconSize={16}
+                    iconPosition="left"
+                    title={t("preview") || "Preview"}
+                    onPress={() => {
+                      router.push(`/orders/${orderId}?preview=true`);
+                    }}
+                  />
+                </>
               )}
               <Button
                 onPress={handleApply}
@@ -1334,7 +1346,6 @@ export default function CreateOrderScreen() {
                 variant="primary"
                 disabled={isSubmitting}
                 loading={isSubmitting}
-                textColor={colors.background}
               />
             </View>
           </ResponsiveCard>
