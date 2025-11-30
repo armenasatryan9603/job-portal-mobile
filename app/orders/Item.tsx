@@ -16,7 +16,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Order } from "@/services/api";
+import { Order, apiService } from "@/services/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 
 interface OrderItemProps {
@@ -25,10 +25,12 @@ interface OrderItemProps {
   isMyJobs?: boolean;
   hasAppliedToOrder?: (orderId: number) => boolean;
   isViewed?: boolean;
+  isSaved?: boolean;
   onOrderViewed?: (orderId: number) => void;
   onApplyToOrder?: (order: Order) => void;
   onCancelProposal?: (order: Order) => void;
   onDeleteOrder?: (order: Order) => void;
+  onSaveToggle?: (orderId: number, isSaved: boolean) => void;
 }
 
 const OrderItem = ({
@@ -37,10 +39,12 @@ const OrderItem = ({
   isMyJobs = false,
   hasAppliedToOrder = () => false,
   isViewed = false,
+  isSaved = false,
   onOrderViewed,
   onApplyToOrder,
   onCancelProposal,
   onDeleteOrder,
+  onSaveToggle,
 }: OrderItemProps) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -50,6 +54,8 @@ const OrderItem = ({
 
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
+  const [saved, setSaved] = useState(isSaved);
+  const [saving, setSaving] = useState(false);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -94,6 +100,28 @@ const OrderItem = ({
   const getStatusIcon = (status: string) =>
     statusConfig[status as keyof typeof statusConfig]?.icon || "circle";
 
+  const handleSaveToggle = async (e: any) => {
+    e.stopPropagation(); // Prevent triggering order press
+    if (!user?.id) return;
+
+    setSaving(true);
+    try {
+      if (saved) {
+        await apiService.unsaveOrder(order.id);
+        setSaved(false);
+        onSaveToggle?.(order.id, false);
+      } else {
+        await apiService.saveOrder(order.id);
+        setSaved(true);
+        onSaveToggle?.(order.id, true);
+      }
+    } catch (error) {
+      console.error("Error toggling save:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleOrderPress = async (order: Order) => {
     // Mark order as viewed when opening (only for non-myOrders)
     if (!isMyOrders) {
@@ -130,6 +158,11 @@ const OrderItem = ({
       onDeleteOrder(order);
     }
   };
+
+  // Update saved state when isSaved prop changes
+  React.useEffect(() => {
+    setSaved(isSaved);
+  }, [isSaved]);
 
   return (
     <TouchableOpacity onPress={() => handleOrderPress(order)} activeOpacity={1}>
@@ -181,9 +214,30 @@ const OrderItem = ({
           </View>
         )}
         <View style={styles.orderHeader}>
-          <Text style={[styles.orderTitle, { color: colors.text }]}>
-            {displayTitle}
-          </Text>
+          <View style={styles.orderTitleContainer}>
+            <Text style={[styles.orderTitle, { color: colors.text }]}>
+              {displayTitle}
+            </Text>
+            {/* Bookmark Button - Only show for authenticated users and not for own orders */}
+            {user?.id && !isMyOrders && user.id !== order.clientId && (
+              <TouchableOpacity
+                onPress={handleSaveToggle}
+                style={styles.bookmarkButton}
+                disabled={saving}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {saving ? (
+                  <ActivityIndicator size="small" color={colors.tint} />
+                ) : (
+                  <IconSymbol
+                    name={saved ? "bookmark.fill" : "bookmark"}
+                    size={20}
+                    color={saved ? colors.tint : colors.tabIconDefault}
+                  />
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
           <View
             style={[
               styles.statusBadge,
@@ -239,7 +293,8 @@ const OrderItem = ({
           <View style={styles.detailItem}>
             <IconSymbol name="person.fill" size={16} color={colors.tint} />
             <Text style={[styles.detailText, { color: colors.text }]}>
-              {order._count.Proposals} {t("application")}
+              {order._count?.Proposals ?? order.Proposals?.length ?? 0}{" "}
+              {t("application")}
             </Text>
           </View>
         </View>
@@ -385,12 +440,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
+  orderTitleContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flex: 1,
+    marginRight: 12,
+  },
   orderTitle: {
     fontSize: 18,
     fontWeight: "700",
     flex: 1,
-    marginRight: 12,
     lineHeight: 26,
+  },
+  bookmarkButton: {
+    padding: 4,
+    marginLeft: 8,
   },
   statusBadge: {
     flexDirection: "row",

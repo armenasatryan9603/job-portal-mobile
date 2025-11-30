@@ -377,6 +377,21 @@ export const useSearchOrders = (
   });
 };
 
+export const useSavedOrders = (
+  page: number = 1,
+  limit: number = 20
+) => {
+  const { isOnline } = useNetworkStatus();
+  const { isAuthenticated } = useAuth();
+  return useQuery({
+    queryKey: ["orders", "saved", page, limit],
+    queryFn: () => apiService.getSavedOrders(page, limit),
+    staleTime: CACHE_TTL.USER_DATA,
+    enabled: isAuthenticated,
+    retry: isOnline,
+  });
+};
+
 export const useCreateOrder = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -739,6 +739,45 @@ class ApiService {
     );
   }
 
+  async saveOrder(orderId: number): Promise<any> {
+    return this.request(
+      `/orders/${orderId}/save`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async unsaveOrder(orderId: number): Promise<any> {
+    return this.request(
+      `/orders/${orderId}/save`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async getSavedOrders(
+    page: number = 1,
+    limit: number = 20
+  ): Promise<OrderListResponse> {
+    return this.request<OrderListResponse>(
+      `/orders/saved/all?page=${page}&limit=${limit}`,
+      {},
+      true
+    );
+  }
+
+  async isOrderSaved(orderId: number): Promise<{ isSaved: boolean }> {
+    return this.request<{ isSaved: boolean }>(
+      `/orders/${orderId}/is-saved`,
+      {},
+      true
+    );
+  }
+
   async getAllOrders(
     page: number = 1,
     limit: number = 10,

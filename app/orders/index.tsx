@@ -31,6 +31,7 @@ import {
   useAllOrders,
   usePublicOrders,
   useSearchOrders,
+  useSavedOrders,
   useApplyToOrder,
   useDeleteOrder,
   useServices,
@@ -50,7 +51,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OrderItem from "./Item";
 
 export default function OrdersScreen() {
-  const { myOrders, myJobs, serviceId } = useLocalSearchParams();
+  const { myOrders, myJobs, saved, serviceId } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
@@ -61,6 +62,7 @@ export default function OrdersScreen() {
   const insets = useSafeAreaInsets();
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
+  const isSavedOrders = saved === "true";
   const filterServiceId = serviceId
     ? isNaN(parseInt(serviceId as string))
       ? null
@@ -72,7 +74,7 @@ export default function OrdersScreen() {
   const [selectedFilters, setSelectedFilters] = useState<
     Record<string, string | string[] | { min: number; max: number }>
   >({
-    status: isMyJobs ? "all" : "open",
+    status: isMyJobs || isSavedOrders ? "all" : "open",
     services: filterServiceId ? [filterServiceId.toString()] : [],
     priceRange: { min: 0, max: 100000 },
     sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
@@ -99,6 +101,8 @@ export default function OrdersScreen() {
   // TanStack Query hooks
   const myOrdersQuery = useMyOrders();
   const myJobsQuery = useMyJobs();
+  // For saved orders, fetch all at once (like My Orders/My Jobs) since users typically don't have many saved orders
+  const savedOrdersQuery = useSavedOrders(1, 100);
   const allOrdersQuery = useAllOrders(
     currentPage,
     limit,
@@ -129,16 +133,19 @@ export default function OrdersScreen() {
   const activeQuery = useMemo(() => {
     if (isMyOrders) return myOrdersQuery;
     if (isMyJobs) return myJobsQuery;
+    if (isSavedOrders) return savedOrdersQuery;
     if (searchQuery.trim()) return searchOrdersQuery;
     if (user?.id) return allOrdersQuery;
     return publicOrdersQuery;
   }, [
     isMyOrders,
     isMyJobs,
+    isSavedOrders,
     searchQuery,
     user?.id,
     myOrdersQuery,
     myJobsQuery,
+    savedOrdersQuery,
     searchOrdersQuery,
     allOrdersQuery,
     publicOrdersQuery,
@@ -189,14 +196,24 @@ export default function OrdersScreen() {
     }
   }, [filterServiceId, isMyOrders, isMyJobs]);
 
+  // Update status filter when switching to saved orders view
+  useEffect(() => {
+    if (isSavedOrders) {
+      setSelectedFilters((prev) => ({
+        ...prev,
+        status: "all", // Always show all statuses for saved orders
+      }));
+    }
+  }, [isSavedOrders]);
+
   // Reset to page 1 when filters change
   useEffect(() => {
-    if (isMyOrders || isMyJobs) {
+    if (isMyOrders || isMyJobs || isSavedOrders) {
       setClientSidePage(1);
     } else {
       setCurrentPage(1);
     }
-  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs]);
+  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs, isSavedOrders]);
 
   // Extract data from active query
   const queryData = activeQuery.data as OrderListResponse | undefined;
@@ -269,7 +286,7 @@ export default function OrdersScreen() {
   const error = activeQuery.error ? (activeQuery.error as Error).message : null;
   const isInitialLoad = activeQuery.isLoading && currentPage === 1;
 
-  // For My Orders/My Jobs: client-side pagination
+  // For My Orders/My Jobs/Saved Orders: client-side pagination
   const [allUserOrders, setAllUserOrders] = useState<Order[]>([]);
   const [clientSidePage, setClientSidePage] = useState(1);
 
@@ -278,6 +295,9 @@ export default function OrdersScreen() {
 
   // Track viewed orders (stored locally)
   const [viewedOrders, setViewedOrders] = useState<Set<number>>(new Set());
+
+  // Track saved orders (fetched from backend)
+  const [savedOrders, setSavedOrders] = useState<Set<number>>(new Set());
 
   // Refresh state
   const [refreshing, setRefreshing] = useState(false);
@@ -300,6 +320,11 @@ export default function OrdersScreen() {
   // Helper function to check if an order has been viewed
   const isOrderViewed = (orderId: number): boolean => {
     return viewedOrders.has(orderId);
+  };
+
+  // Helper function to check if an order is saved
+  const isOrderSaved = (orderId: number): boolean => {
+    return savedOrders.has(orderId);
   };
 
   // Callback to mark an order as viewed in state immediately
@@ -328,6 +353,80 @@ export default function OrdersScreen() {
       console.error("Error loading applied orders:", error);
     }
   };
+
+  // Fetch user's saved orders from backend
+  const loadSavedOrders = async () => {
+    if (!user?.id) {
+      return;
+    }
+
+    try {
+      // Get all saved orders (we'll fetch the IDs from the first page)
+      const savedOrdersData = await apiService.getSavedOrders(1, 100);
+      const savedOrderIds = new Set<number>(
+        savedOrdersData.orders.map((order: Order) => order.id)
+      );
+      setSavedOrders(savedOrderIds);
+    } catch (error) {
+      console.error("Error loading saved orders:", error);
+    }
+  };
+
+  // Load saved status for displayed orders
+  const loadSavedStatusForOrders = async (orderIds: number[]) => {
+    if (!user?.id || orderIds.length === 0) {
+      return;
+    }
+
+    try {
+      // Check saved status for each order
+      const savedStatusPromises = orderIds.map((orderId) =>
+        apiService.isOrderSaved(orderId).catch(() => ({ isSaved: false }))
+      );
+      const savedStatuses = await Promise.all(savedStatusPromises);
+
+      const newSavedOrders = new Set(savedOrders);
+      savedStatuses.forEach((status, index) => {
+        if (status.isSaved) {
+          newSavedOrders.add(orderIds[index]);
+        } else {
+          newSavedOrders.delete(orderIds[index]);
+        }
+      });
+      setSavedOrders(newSavedOrders);
+    } catch (error) {
+      console.error("Error loading saved status:", error);
+    }
+  };
+
+  // Handle save toggle
+  const handleSaveToggle = useCallback(
+    (orderId: number, isSaved: boolean) => {
+      // Update saved orders set
+      setSavedOrders((prev) => {
+        const newSet = new Set(prev);
+        if (isSaved) {
+          newSet.add(orderId);
+        } else {
+          newSet.delete(orderId);
+        }
+        return newSet;
+      });
+
+      // If unsaving and we're viewing saved orders, remove from the list immediately
+      if (!isSaved && isSavedOrders) {
+        setAllUserOrders((prev) =>
+          prev.filter((order) => order.id !== orderId)
+        );
+        // Invalidate saved orders query to refetch from server
+        queryClient.invalidateQueries({ queryKey: ["orders", "saved"] });
+      } else if (isSaved) {
+        // If saving, invalidate to refresh the saved orders list
+        queryClient.invalidateQueries({ queryKey: ["orders", "saved"] });
+      }
+    },
+    [isSavedOrders, queryClient]
+  );
 
   // Load viewed orders from local storage
   const loadViewedOrders = async () => {
@@ -384,10 +483,13 @@ export default function OrdersScreen() {
   const filterOrdersByPriceRange = useCallback(
     (orders: Order[], priceRange: { min: number; max: number }): Order[] => {
       if (!priceRange) return orders;
-      return orders.filter(
-        (order: Order) =>
-          order.budget >= priceRange.min && order.budget <= priceRange.max
-      );
+      return orders.filter((order: Order) => {
+        // If order has no budget, include it (don't filter out orders without budgets)
+        if (order.budget == null || order.budget === undefined) {
+          return true;
+        }
+        return order.budget >= priceRange.min && order.budget <= priceRange.max;
+      });
     },
     []
   );
@@ -465,7 +567,7 @@ export default function OrdersScreen() {
     []
   );
 
-  // Sync allUserOrders with query data for My Orders/My Jobs
+  // Sync allUserOrders with query data for My Orders/My Jobs/Saved Orders
   useEffect(() => {
     if (isMyOrders && myOrdersQuery.data) {
       const data = myOrdersQuery.data as OrderListResponse;
@@ -473,8 +575,20 @@ export default function OrdersScreen() {
     } else if (isMyJobs && myJobsQuery.data) {
       const data = myJobsQuery.data as OrderListResponse;
       setAllUserOrders(data.orders || []);
+    } else if (isSavedOrders && savedOrdersQuery.data) {
+      const data = savedOrdersQuery.data as OrderListResponse;
+      // Filter out any null/undefined orders (in case an order was deleted)
+      const validOrders = (data.orders || []).filter((order) => order != null);
+      setAllUserOrders(validOrders);
     }
-  }, [isMyOrders, isMyJobs, myOrdersQuery.data, myJobsQuery.data]);
+  }, [
+    isMyOrders,
+    isMyJobs,
+    isSavedOrders,
+    myOrdersQuery.data,
+    myJobsQuery.data,
+    savedOrdersQuery.data,
+  ]);
 
   // Extract price range from filters
   const priceRange = useMemo(() => {
@@ -497,8 +611,8 @@ export default function OrdersScreen() {
       : [];
     const sortBy = (selectedFilters.sortBy as string) || "relevance";
 
-    if (isMyOrders || isMyJobs) {
-      // Client-side pagination for My Orders/My Jobs
+    if (isMyOrders || isMyJobs || isSavedOrders) {
+      // Client-side pagination for My Orders/My Jobs/Saved Orders
       // Note: These queries don't support server-side service filtering yet
       let filteredOrders = allUserOrders;
 
@@ -521,7 +635,10 @@ export default function OrdersScreen() {
       }
 
       // Apply price range filter (client-side for My Orders/My Jobs)
-      filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
+      // Skip price filter for saved orders - show all saved orders regardless of price
+      if (!isSavedOrders) {
+        filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
+      }
 
       // Apply sorting
       filteredOrders = sortOrders(filteredOrders, sortBy);
@@ -544,6 +661,7 @@ export default function OrdersScreen() {
   }, [
     isMyOrders,
     isMyJobs,
+    isSavedOrders,
     allUserOrders,
     searchQuery,
     status,
@@ -560,13 +678,13 @@ export default function OrdersScreen() {
     getPaginatedOrders,
   ]);
 
-  // Compute pagination for My Orders/My Jobs
+  // Compute pagination for My Orders/My Jobs/Saved Orders
   const displayedPagination = useMemo(() => {
     const selectedServices = Array.isArray(selectedFilters.services)
       ? selectedFilters.services
       : [];
 
-    if (isMyOrders || isMyJobs) {
+    if (isMyOrders || isMyJobs || isSavedOrders) {
       const filteredOrders = (() => {
         let filtered = allUserOrders;
         if (searchQuery.trim()) {
@@ -611,7 +729,7 @@ export default function OrdersScreen() {
 
   // Load more orders (pagination)
   const loadMoreOrders = useCallback(() => {
-    if (isMyOrders || isMyJobs) {
+    if (isMyOrders || isMyJobs || isSavedOrders) {
       // Client-side pagination
       if (displayedPagination.hasNextPage) {
         setClientSidePage((prev) => prev + 1);
@@ -625,6 +743,7 @@ export default function OrdersScreen() {
   }, [
     isMyOrders,
     isMyJobs,
+    isSavedOrders,
     loadingMore,
     displayedPagination.hasNextPage,
     isInitialLoad,
@@ -637,19 +756,20 @@ export default function OrdersScreen() {
     // Invalidate and refetch all order queries
     await queryClient.refetchQueries({ queryKey: ["orders"] });
 
-    // Also reload applied orders and viewed orders
+    // Also reload applied orders, viewed orders, and saved orders
     await loadAppliedOrders();
     await loadViewedOrders();
+    await loadSavedOrders();
 
     // Reset pagination
-    if (isMyOrders || isMyJobs) {
+    if (isMyOrders || isMyJobs || isSavedOrders) {
       setClientSidePage(1);
     } else {
       setCurrentPage(1);
     }
 
     setRefreshing(false);
-  }, [queryClient, isMyOrders, isMyJobs]);
+  }, [queryClient, isMyOrders, isMyJobs, isSavedOrders]);
 
   // Load applied orders and viewed orders on component mount
   useEffect(() => {
@@ -661,7 +781,16 @@ export default function OrdersScreen() {
 
     loadAppliedOrders();
     loadViewedOrders();
+    loadSavedOrders();
   }, [isMyOrders, isMyJobs, user?.id]);
+
+  // Load saved status when orders change
+  useEffect(() => {
+    if (user?.id && displayedOrders.length > 0) {
+      const orderIds = displayedOrders.map((order) => order.id);
+      loadSavedStatusForOrders(orderIds);
+    }
+  }, [displayedOrders, user?.id]);
 
   // Reload viewed orders when component comes into focus (to catch newly viewed orders)
   useFocusEffect(
@@ -885,12 +1014,22 @@ export default function OrdersScreen() {
 
   const header = (
     <Header
-      title={isMyOrders ? t("myOrders") : isMyJobs ? t("myJobs") : t("orders")}
+      title={
+        isMyOrders
+          ? t("myOrders")
+          : isMyJobs
+          ? t("myJobs")
+          : isSavedOrders
+          ? t("savedOrders")
+          : t("orders")
+      }
       subtitle={
         isMyOrders
           ? t("myOrdersDesc")
           : isMyJobs
           ? t("myJobsDesc")
+          : isSavedOrders
+          ? t("savedOrdersDesc")
           : t("browseAvailableJobOrders")
       }
       showNotificationsButton={isAuthenticated}
@@ -1003,10 +1142,12 @@ export default function OrdersScreen() {
                   isMyJobs={isMyJobs}
                   hasAppliedToOrder={hasAppliedToOrder}
                   isViewed={isOrderViewed(item.id)}
+                  isSaved={isOrderSaved(item.id)}
                   onOrderViewed={handleOrderViewed}
                   onApplyToOrder={handleApplyToOrder}
                   onCancelProposal={handleCancelProposal}
                   onDeleteOrder={handleDeleteOrder}
+                  onSaveToggle={handleSaveToggle}
                 />
               )}
               keyExtractor={(item) => item.id.toString()}

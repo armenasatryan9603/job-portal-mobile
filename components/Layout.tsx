@@ -67,6 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({
     navigateToSettings,
     navigateToMyOrders,
     navigateToMyJobs,
+    navigateToSavedOrders,
     navigateToHelp,
   } = useNavigation();
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
@@ -324,6 +325,22 @@ export const Layout: React.FC<LayoutProps> = ({
                   />
                   <Text style={[styles.menuItemText, { color: colors.text }]}>
                     {t("myJobs")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    { borderBottomColor: colors.border },
+                  ]}
+                  onPress={navigateToSavedOrders}
+                >
+                  <IconSymbol
+                    name="bookmark.fill"
+                    size={20}
+                    color={colors.tint}
+                  />
+                  <Text style={[styles.menuItemText, { color: colors.text }]}>
+                    {t("savedOrders")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

@@ -18,6 +18,7 @@ interface NavigationContextType {
   navigateToSettings: () => void;
   navigateToMyOrders: () => void;
   navigateToMyJobs: () => void;
+  navigateToSavedOrders: () => void;
   navigateToHelp: () => void;
 }
 
@@ -79,6 +80,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     router.push("/orders?myJobs=true");
   };
 
+  const navigateToSavedOrders = () => {
+    closeSidebar();
+    router.push("/orders?saved=true");
+  };
+
   const navigateToHelp = () => {
     closeSidebar();
     router.push("/profile/help");
@@ -96,6 +102,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     navigateToSettings,
     navigateToMyOrders,
     navigateToMyJobs,
+    navigateToSavedOrders,
     navigateToHelp,
   };
 

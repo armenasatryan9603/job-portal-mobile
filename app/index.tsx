@@ -69,6 +69,14 @@ export default function WelcomeScreen() {
       gradient: ["#FF9800", "#F57C00"],
     },
     {
+      title: t("savedOrders"),
+      description: t("savedOrdersDesc"),
+      icon: "bookmark.fill",
+      route: "/orders?saved=true",
+      color: "#E91E63",
+      gradient: ["#E91E63", "#C2185B"],
+    },
+    {
       title: t("findSpecialistsTitle"),
       description: t("findSpecialistsDesc"),
       icon: "person.2.fill",
