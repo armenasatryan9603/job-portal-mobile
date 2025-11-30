@@ -903,5 +903,11 @@
   "insufficientCreditBalance": "Անբավարար կրեդիտային մնացորդ: Պահանջվում է: {cost} կրեդիտ, Հասանելի է: {balance} կրեդիտ",
   "pleaseAnswerQuestions": "Խնդրում ենք պատասխանել հետևյալ հարցերին",
   "pleaseAnswerQuestion": "Խնդրում ենք պատասխանել այս հարցին",
-  "enterYourAnswer": "Մուտքագրեք ձեր պատասխանը..."
+  "enterYourAnswer": "Մուտքագրեք ձեր պատասխանը...",
+  "sortBy": "Տեսակավորել ըստ",
+  "relevance": "Ուղղակիություն",
+  "newestFirst": "Նորերը նախ",
+  "oldestFirst": "Հիները նախ",
+  "highestPrice": "Բարձր գին",
+  "lowestPrice": "Ցածր գին"
 }

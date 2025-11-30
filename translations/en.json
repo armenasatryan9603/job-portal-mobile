@@ -911,5 +911,11 @@
   "insufficientCreditBalance": "Insufficient credit balance. Required: {cost} credits, Available: {balance} credits",
   "pleaseAnswerQuestions": "Please answer the following questions",
   "pleaseAnswerQuestion": "Please answer this question",
-  "enterYourAnswer": "Enter your answer..."
+  "enterYourAnswer": "Enter your answer...",
+  "sortBy": "Sort By",
+  "relevance": "Relevance",
+  "newestFirst": "Newest First",
+  "oldestFirst": "Oldest First",
+  "highestPrice": "Highest Price",
+  "lowestPrice": "Lowest Price"
 }

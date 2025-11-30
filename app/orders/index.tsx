@@ -75,6 +75,7 @@ export default function OrdersScreen() {
     status: isMyJobs ? "all" : "open",
     services: filterServiceId ? [filterServiceId.toString()] : [],
     priceRange: { min: 0, max: 100000 },
+    sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
   });
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -215,6 +216,17 @@ export default function OrdersScreen() {
   // Filter configuration
   const filterSections = useMemo<FilterSection[]>(
     () => [
+      {
+        key: "sortBy",
+        title: t("sortBy") || "Sort By",
+        options: [
+          { key: "relevance", label: t("relevance") || "Relevance" },
+          { key: "date_desc", label: t("newestFirst") || "Newest First" },
+          { key: "date_asc", label: t("oldestFirst") || "Oldest First" },
+          { key: "price_desc", label: t("highestPrice") || "Highest Price" },
+          { key: "price_asc", label: t("lowestPrice") || "Lowest Price" },
+        ],
+      },
       {
         key: "status",
         title: t("filterByStatus"),
@@ -380,6 +392,53 @@ export default function OrdersScreen() {
     []
   );
 
+  // Helper function to sort orders
+  const sortOrders = useCallback((orders: Order[], sortBy: string): Order[] => {
+    if (!sortBy || sortBy === "relevance") {
+      // For relevance, maintain original order (or could implement relevance scoring)
+      return orders;
+    }
+
+    const sorted = [...orders];
+
+    switch (sortBy) {
+      case "date_desc":
+        // Newest first
+        return sorted.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+
+      case "date_asc":
+        // Oldest first
+        return sorted.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateA - dateB;
+        });
+
+      case "price_desc":
+        // Highest price first
+        return sorted.sort((a, b) => {
+          const priceA = a.budget || 0;
+          const priceB = b.budget || 0;
+          return priceB - priceA;
+        });
+
+      case "price_asc":
+        // Lowest price first
+        return sorted.sort((a, b) => {
+          const priceA = a.budget || 0;
+          const priceB = b.budget || 0;
+          return priceA - priceB;
+        });
+
+      default:
+        return orders;
+    }
+  }, []);
+
   // Helper function to get paginated orders from a filtered list
   const getPaginatedOrders = useCallback(
     (filteredOrders: Order[], page: number, limit: number) => {
@@ -436,6 +495,7 @@ export default function OrdersScreen() {
     const selectedServices = Array.isArray(selectedFilters.services)
       ? selectedFilters.services
       : [];
+    const sortBy = (selectedFilters.sortBy as string) || "relevance";
 
     if (isMyOrders || isMyJobs) {
       // Client-side pagination for My Orders/My Jobs
@@ -463,16 +523,23 @@ export default function OrdersScreen() {
       // Apply price range filter (client-side for My Orders/My Jobs)
       filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
 
+      // Apply sorting
+      filteredOrders = sortOrders(filteredOrders, sortBy);
+
       // Get paginated results
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
 
-    // For regular orders, apply price filter client-side
+    // For regular orders, apply price filter and sorting client-side
     // (Server-side price filtering can be added later)
     let filteredOrders = orders;
     if (priceRange.min !== 0 || priceRange.max !== 100000) {
       filteredOrders = filterOrdersByPriceRange(orders, priceRange);
     }
+
+    // Apply sorting
+    filteredOrders = sortOrders(filteredOrders, sortBy);
+
     return filteredOrders;
   }, [
     isMyOrders,
@@ -481,6 +548,7 @@ export default function OrdersScreen() {
     searchQuery,
     status,
     selectedFilters.services,
+    selectedFilters.sortBy,
     priceRange,
     clientSidePage,
     orders,
@@ -488,6 +556,7 @@ export default function OrdersScreen() {
     filterOrdersByStatus,
     filterOrdersByServices,
     filterOrdersByPriceRange,
+    sortOrders,
     getPaginatedOrders,
   ]);
 

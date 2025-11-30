@@ -854,5 +854,11 @@
   "insufficientCreditBalance": "Недостаточно кредитов. Требуется: {cost} кредитов, Доступно: {balance} кредитов",
   "pleaseAnswerQuestions": "Пожалуйста, ответьте на следующие вопросы",
   "pleaseAnswerQuestion": "Пожалуйста, ответьте на этот вопрос",
-  "enterYourAnswer": "Введите ваш ответ..."
+  "enterYourAnswer": "Введите ваш ответ...",
+  "sortBy": "Сортировать по",
+  "relevance": "Релевантность",
+  "newestFirst": "Сначала новые",
+  "oldestFirst": "Сначала старые",
+  "highestPrice": "Высокая цена",
+  "lowestPrice": "Низкая цена"
 }
