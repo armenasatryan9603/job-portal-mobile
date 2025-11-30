@@ -116,6 +116,21 @@ export interface UpdateUserProfileData {
   role?: string;
 }
 
+// Portfolio Types
+export interface PortfolioItem {
+  id: number;
+  userId: number;
+  fileName: string;
+  fileUrl: string;
+  fileType: string;
+  mimeType: string;
+  fileSize: number;
+  title?: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Review Types
 export interface ReviewUser {
   id: number;
@@ -1087,6 +1102,85 @@ class ApiService {
         body: JSON.stringify({
           notificationsEnabled,
         }),
+      },
+      true
+    );
+  }
+
+  // Portfolio methods
+  async getPortfolio(userId: number): Promise<PortfolioItem[]> {
+    return this.request<PortfolioItem[]>(
+      `/users/${userId}/portfolio`,
+      {},
+      false
+    );
+  }
+
+  async uploadPortfolioItem(
+    file: { uri: string; type: string; name: string },
+    title?: string,
+    description?: string
+  ): Promise<PortfolioItem> {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: file.uri,
+      type: file.type,
+      name: file.name,
+    } as any);
+    if (title) {
+      formData.append("title", title);
+    }
+    if (description) {
+      formData.append("description", description);
+    }
+
+    const token = await this.getAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/portfolio/upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+        // Use errorText as is
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  async updatePortfolioItem(
+    id: number,
+    title?: string,
+    description?: string
+  ): Promise<PortfolioItem> {
+    return this.request<PortfolioItem>(
+      `/users/portfolio/${id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ title, description }),
+      },
+      true
+    );
+  }
+
+  async deletePortfolioItem(id: number): Promise<void> {
+    return this.request<void>(
+      `/users/portfolio/${id}`,
+      {
+        method: "DELETE",
       },
       true
     );

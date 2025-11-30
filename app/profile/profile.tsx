@@ -37,6 +37,7 @@ import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { useSkills } from "@/hooks/useSkills";
 import { ContactInfo } from "@/components/ContactInfo";
 import { AccountInfo } from "@/components/AccountInfo";
+import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 
 export default function ProfileScreen() {
   const { user, updateUser } = useAuth();
@@ -676,7 +677,7 @@ export default function ProfileScreen() {
                     {t("managePaymentsCta")}
                   </Text>
                   <IconSymbol
-                   name="chevron.right"
+                    name="chevron.right"
                     size={16}
                     color={colors.primary}
                   />
@@ -700,6 +701,17 @@ export default function ProfileScreen() {
               serviceNotifications={skills.serviceNotifications}
             />
           </ResponsiveCard>
+
+          {/* Work Samples Section (for specialists only) */}
+          {profile.role === "specialist" && (
+            <ResponsiveCard>
+              <WorkSamplesSection
+                userId={userId ? targetUserId : user?.id}
+                colors={colors}
+                isOwnProfile={!userId}
+              />
+            </ResponsiveCard>
+          )}
 
           {/* Reviews Given */}
           <ResponsiveCard>
