@@ -31,9 +31,7 @@
         "NSLocationWhenInUseUsageDescription": "This app needs access to location to show your current location on the map and help you set your profile location.",
         "NSCameraUsageDescription": "This app needs access to camera to take photos and videos for your orders.",
         "NSPhotoLibraryUsageDescription": "This app needs access to photo library to upload images and videos for your orders.",
-        "UIBackgroundModes": [
-          "remote-notification"
-        ]
+        "UIBackgroundModes": ["remote-notification"]
       }
     },
     "android": {
@@ -70,6 +68,7 @@
     "plugins": [
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withFirebaseAnalytics.js",
       "./plugins/withFirebaseConditionalInit.js",
       "./plugins/withIosEntitlements.js",
       "./plugins/withPodfileModularHeaders.js",

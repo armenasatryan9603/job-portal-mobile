@@ -34,10 +34,14 @@ import { TranslationProvider } from "@/contexts/TranslationContext";
 import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
+import AnalyticsService from "@/services/AnalyticsService";
 
 export const unstable_settings = {
   initialRouteName: "index",
 };
+
+// Initialize Analytics Service
+const analytics = AnalyticsService.getInstance();
 
 function AppContent() {
   const { isDark } = useTheme();

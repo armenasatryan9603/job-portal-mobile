@@ -23,8 +23,11 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function WelcomeScreen() {
+  // Track screen view
+  useAnalytics("Welcome");
   const { user, logout, isAuthenticated } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();

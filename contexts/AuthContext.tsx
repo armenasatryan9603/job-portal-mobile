@@ -11,6 +11,7 @@ import { apiService } from "@/services/api";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
 import PhoneVerificationService from "@/services/PhoneVerificationService";
 import NotificationService from "@/services/NotificationService";
+import AnalyticsService from "@/services/AnalyticsService";
 
 interface User {
   id: number;
@@ -160,6 +161,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setTimeout(() => {
             setJustSignedUp(false);
           }, 10000);
+          // Track signup event
+          await AnalyticsService.getInstance().logSignUp("phone");
+          await AnalyticsService.getInstance().setUserId(result.user.id.toString());
+          await AnalyticsService.getInstance().setUserProperties({
+            user_role: result.user.role,
+            user_verified: result.user.verified ? "true" : "false",
+          });
+        } else {
+          // Track login event
+          await AnalyticsService.getInstance().logLogin("phone");
+          await AnalyticsService.getInstance().setUserId(result.user.id.toString());
         }
 
         // Send FCM token to backend after login
@@ -205,6 +217,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setTimeout(() => {
           setJustSignedUp(false);
         }, 10000);
+
+        // Track signup event
+        await AnalyticsService.getInstance().logSignUp("email");
+        await AnalyticsService.getInstance().setUserId(result.user.id.toString());
+        await AnalyticsService.getInstance().setUserProperties({
+          user_role: result.user.role,
+          user_verified: result.user.verified ? "true" : "false",
+        });
 
         // Send FCM token to backend after signup
         try {
@@ -318,6 +338,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Continue with local logout even if backend call fails
         }
       }
+
+      // Reset analytics data on logout
+      await AnalyticsService.getInstance().resetAnalyticsData();
+      await AnalyticsService.getInstance().setUserId(null);
 
       // Clear local state and storage
       setUser(null);

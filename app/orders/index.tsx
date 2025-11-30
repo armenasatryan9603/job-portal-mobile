@@ -37,6 +37,7 @@ import {
   useServices,
 } from "@/hooks/useApi";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
+import AnalyticsService from "@/services/AnalyticsService";
 import {
   FlatList,
   StyleSheet,
@@ -1197,11 +1198,18 @@ export default function OrdersScreen() {
 
     try {
       // Use TanStack Query mutation
-      await applyToOrderMutation.mutateAsync({
+      const result = await applyToOrderMutation.mutateAsync({
         orderId: selectedOrder.id,
         message: message,
         questionAnswers: questionAnswers,
       });
+
+      // Track proposal submission
+      const proposalId = result?.id || result?.proposalId || "unknown";
+      await AnalyticsService.getInstance().logProposalSubmitted(
+        selectedOrder.id.toString(),
+        proposalId.toString()
+      );
 
       // Add order to applied orders set
       setAppliedOrders((prev) => new Set(prev).add(selectedOrder.id));

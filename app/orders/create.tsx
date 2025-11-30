@@ -32,6 +32,7 @@ import { fileUploadService, MediaFile } from "@/services/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
+import AnalyticsService from "@/services/AnalyticsService";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -944,14 +945,16 @@ export default function CreateOrderScreen() {
 
         // Application submitted successfully
         router.replace("/orders");
-      } else {
-        // Creating a new order
-        // Use transactional order creation with media files
-        if (mediaFiles.length > 0) {
-          const { order } = await fileUploadService.createOrderWithMedia(
-            finalOrderData,
-            mediaFiles
-          );
+        } else {
+          // Creating a new order
+          let createdOrder;
+          // Use transactional order creation with media files
+          if (mediaFiles.length > 0) {
+            const { order } = await fileUploadService.createOrderWithMedia(
+              finalOrderData,
+              mediaFiles
+            );
+            createdOrder = order;
 
           // Auto-select first image if no banner is selected
           let bannerIndexToUse = selectedBannerIndex;
@@ -977,6 +980,15 @@ export default function CreateOrderScreen() {
             }
           }
 
+          // Track order creation
+          if (createdOrder?.id) {
+            await AnalyticsService.getInstance().logOrderCreated(
+              createdOrder.id.toString(),
+              finalOrderData.budget,
+              "USD"
+            );
+          }
+
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
@@ -984,7 +996,16 @@ export default function CreateOrderScreen() {
           router.replace("/orders");
         } else {
           // No media files, use regular order creation
-          await apiService.createOrder(finalOrderData);
+          createdOrder = await apiService.createOrder(finalOrderData);
+
+          // Track order creation
+          if (createdOrder?.id) {
+            await AnalyticsService.getInstance().logOrderCreated(
+              createdOrder.id.toString(),
+              finalOrderData.budget,
+              "USD"
+            );
+          }
 
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });

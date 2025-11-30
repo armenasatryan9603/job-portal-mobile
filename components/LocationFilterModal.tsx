@@ -40,7 +40,6 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
   onConfirm,
   initialLocation,
 }) => {
-  console.log("LocationFilterModal render - visible:", visible);
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -86,7 +85,6 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
         // Get current location or use default
         getCurrentLocation().catch(() => {
           // If location fails, at least show the default region
-          console.log("Location fetch failed, using default region");
         });
       }
     }
@@ -149,7 +147,6 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
         1000
       );
     } catch (error) {
-      console.error("Error getting location:", error);
       Alert.alert(t("error"), t("couldNotGetLocation"));
     } finally {
       setLoading(false);
@@ -176,7 +173,6 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
 
       setSelectedLocation({ latitude, longitude, address });
     } catch (error) {
-      console.error("Error getting address:", error);
       setSelectedLocation({
         latitude,
         longitude,
