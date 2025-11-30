@@ -31,8 +31,11 @@ import { Image } from "expo-image";
 import { apiService, Order, OrderChangeHistory } from "@/services/api";
 import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function EditOrderScreen() {
+  useAnalytics("OrderDetail");
   const { id, myJobs, preview } = useLocalSearchParams();
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -206,6 +209,11 @@ export default function EditOrderScreen() {
       return;
     }
 
+    // Track apply to order
+    AnalyticsService.getInstance().logEvent("apply_to_order_clicked", {
+      order_id: id?.toString() || "unknown",
+    });
+
     // Navigate to proposal creation
     router.push(`/proposals/create?orderId=${id}`);
   };
@@ -225,6 +233,13 @@ export default function EditOrderScreen() {
         comment: feedback,
         feedbackType: "canceled",
         reasonIds,
+      });
+
+      // Track feedback submitted
+      AnalyticsService.getInstance().logEvent("order_feedback_submitted", {
+        order_id: order?.id.toString() || "unknown",
+        rating,
+        feedback_type: "canceled",
       });
 
       Alert.alert(t("success"), t("feedbackSubmitted"));
@@ -268,6 +283,12 @@ export default function EditOrderScreen() {
             }
 
             await apiService.cancelProposal(userProposal.id);
+
+            // Track proposal cancelled
+            AnalyticsService.getInstance().logEvent("proposal_cancelled", {
+              order_id: order?.id.toString() || "unknown",
+              proposal_id: userProposal.id.toString(),
+            });
 
             // Show feedback dialog after successful cancellation
             setFeedbackDialogVisible(true);
@@ -313,6 +334,11 @@ export default function EditOrderScreen() {
       });
 
       if (result.action === Share.sharedAction) {
+        // Track order shared
+        AnalyticsService.getInstance().logEvent("order_shared", {
+          order_id: order?.id.toString() || "unknown",
+          share_type: "link",
+        });
         // User shared successfully
         if (result.activityType) {
           // Shared with activity type of result.activityType
@@ -369,6 +395,11 @@ export default function EditOrderScreen() {
       });
 
       if (result.action === Share.sharedAction) {
+        // Track order shared with details
+        AnalyticsService.getInstance().logEvent("order_shared", {
+          order_id: order?.id.toString() || "unknown",
+          share_type: "details",
+        });
         console.log("Order shared successfully");
       }
     } catch (error: any) {

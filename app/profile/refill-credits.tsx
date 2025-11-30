@@ -32,6 +32,7 @@ import {
 const PRESET_AMOUNTS = [10, 25, 50, 100, 200, 500];
 
 export default function RefillCreditsScreen() {
+  useAnalytics("RefillCredits");
   const { isDark } = useTheme();
   const { t, refreshTranslations } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
@@ -173,6 +174,13 @@ export default function RefillCreditsScreen() {
         return;
       }
 
+      // Track payment initiated
+      AnalyticsService.getInstance().logPaymentInitiated(
+        result.transactionId || `refill_${Date.now()}`,
+        amount,
+        "USD"
+      );
+
       // Store payment details and show WebView
       setPaymentUrl(url || null);
       setPendingAmount(amount);
@@ -186,6 +194,13 @@ export default function RefillCreditsScreen() {
   };
 
   const handlePaymentSuccess = async () => {
+    // Track payment completed
+    AnalyticsService.getInstance().logPaymentCompleted(
+      `refill_${Date.now()}`,
+      pendingAmount,
+      "USD"
+    );
+
     // Refresh balance after successful payment
     await fetchCurrentBalance();
 

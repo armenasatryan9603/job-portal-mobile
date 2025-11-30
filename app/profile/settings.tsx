@@ -32,6 +32,8 @@ import {
 } from "react-native";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Enable LayoutAnimation on Android
 if (
@@ -42,6 +44,7 @@ if (
 }
 
 export default function ProfileSettingsScreen() {
+  useAnalytics("Settings");
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
@@ -52,6 +55,10 @@ export default function ProfileSettingsScreen() {
 
   // Smooth theme toggle with animation
   const handleThemeToggle = () => {
+    // Track theme change
+    AnalyticsService.getInstance().logEvent("theme_changed", {
+      new_theme: isDark ? "light" : "dark",
+    });
     // Configure animation for smooth transition
     LayoutAnimation.configureNext({
       duration: 300,
@@ -167,16 +174,28 @@ export default function ProfileSettingsScreen() {
   };
 
   const handlePushNotificationToggle = async (value: boolean) => {
+    AnalyticsService.getInstance().logEvent("notification_preference_changed", {
+      preference_type: "push",
+      enabled: value,
+    });
     setPushNotificationsEnabled(value);
     await saveNotificationPreferences(value, emailNotificationsEnabled);
   };
 
   const handleEmailNotificationToggle = async (value: boolean) => {
+    AnalyticsService.getInstance().logEvent("notification_preference_changed", {
+      preference_type: "email",
+      enabled: value,
+    });
     setEmailNotificationsEnabled(value);
     await saveNotificationPreferences(pushNotificationsEnabled, value);
   };
 
   const handleLanguageChange = (newLanguage: string) => {
+    AnalyticsService.getInstance().logEvent("language_changed", {
+      new_language: newLanguage,
+      old_language: language,
+    });
     setLanguage(newLanguage as any);
     setShowLanguageModal(false);
   };

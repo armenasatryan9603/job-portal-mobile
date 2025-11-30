@@ -10,6 +10,8 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   ScrollView,
   StyleSheet,
@@ -21,12 +23,18 @@ import {
 } from "react-native";
 
 export default function ProfileHelpScreen() {
+  useAnalytics("Help");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
   const handleContactSupport = (type: string) => {
+    // Track contact support action
+    AnalyticsService.getInstance().logEvent("contact_support", {
+      contact_type: type,
+    });
+
     switch (type) {
       case "email":
         Linking.openURL("mailto:support@jobportal.com?subject=Support Request");

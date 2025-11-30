@@ -38,8 +38,11 @@ import { useSkills } from "@/hooks/useSkills";
 import { ContactInfo } from "@/components/ContactInfo";
 import { AccountInfo } from "@/components/AccountInfo";
 import { WorkSamplesSection } from "@/components/WorkSamplesSection";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function ProfileScreen() {
+  useAnalytics("Profile");
   const { user, updateUser } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -271,6 +274,11 @@ export default function ProfileScreen() {
                   avatarUrl: uploadResult.fileUrl,
                 });
 
+                // Track profile update
+                AnalyticsService.getInstance().logEvent("profile_updated", {
+                  update_type: "avatar",
+                });
+
                 // Update the user object in AuthContext with the new avatarUrl
                 await updateUser({
                   avatarUrl: uploadResult.fileUrl,
@@ -330,6 +338,11 @@ export default function ProfileScreen() {
       // Update profile on backend
       const updatedProfile = await apiService.updateUserProfile({
         bio: bioText.trim() || undefined,
+      });
+
+      // Track profile update
+      AnalyticsService.getInstance().logEvent("profile_updated", {
+        update_type: "bio",
       });
 
       // Update local profile state

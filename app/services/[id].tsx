@@ -27,8 +27,11 @@ import {
 } from "react-native";
 import { apiService, Service } from "@/services/api";
 import { Button } from "@/components/ui/button";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import AnalyticsService from "@/services/AnalyticsService";
 
 export default function ServiceDetailScreen() {
+  useAnalytics("ServiceDetail");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
@@ -66,6 +69,11 @@ export default function ServiceDetailScreen() {
 
       const serviceData = await apiService.getServiceById(serviceId);
       setService(serviceData);
+      // Track service view
+      AnalyticsService.getInstance().logServiceViewed(
+        serviceId.toString(),
+        serviceData.name
+      );
     } catch (err) {
       console.error("Error fetching service details:", err);
       setError("Failed to load service details. Please try again.");
@@ -148,18 +156,38 @@ export default function ServiceDetailScreen() {
       showLoginModal();
       return;
     }
+    AnalyticsService.getInstance().logEvent("button_clicked", {
+      button_name: "create_order",
+      location: "service_detail",
+      service_id: serviceId.toString(),
+    });
     router.push(`/orders/create?serviceId=${serviceId}`);
   };
 
   const handleBrowseSpecialists = () => {
+    AnalyticsService.getInstance().logEvent("button_clicked", {
+      button_name: "browse_specialists",
+      location: "service_detail",
+      service_id: serviceId.toString(),
+    });
     router.push(`/specialists?serviceId=${serviceId}`);
   };
 
   const handleSubServicePress = (subServiceId: number) => {
+    AnalyticsService.getInstance().logEvent("service_clicked", {
+      service_id: subServiceId.toString(),
+      location: "service_detail",
+      parent_service_id: serviceId.toString(),
+    });
     router.push(`/services/${subServiceId}`);
   };
 
   const handleBrowseOrders = () => {
+    AnalyticsService.getInstance().logEvent("button_clicked", {
+      button_name: "browse_orders",
+      location: "service_detail",
+      service_id: serviceId.toString(),
+    });
     router.push(`/orders?serviceId=${serviceId}`);
   };
 

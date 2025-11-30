@@ -22,8 +22,11 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { apiService, SpecialistProfile } from "@/services/api";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import AnalyticsService from "@/services/AnalyticsService";
 
 export default function SpecialistDetailScreen() {
+  useAnalytics("SpecialistDetail");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -52,6 +55,10 @@ export default function SpecialistDetailScreen() {
 
       console.log("specialistData:", JSON.stringify(specialistData, null, 2));
       setSpecialist(specialistData);
+      // Track specialist view
+      AnalyticsService.getInstance().logSpecialistViewed(
+        specialistId.toString()
+      );
     } catch (err) {
       console.error("Error fetching specialist details:", err);
       setError(t("failedToLoadSpecialistDetails"));

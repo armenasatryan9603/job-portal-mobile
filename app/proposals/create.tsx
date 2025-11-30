@@ -20,6 +20,8 @@ import {
   View,
 } from "react-native";
 import { apiService } from "@/services/api";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Dummy data for the order being applied to
 const dummyOrderData = {
@@ -69,6 +71,7 @@ const dummySpecialistProfile = {
 };
 
 export default function CreateProposalScreen() {
+  useAnalytics("CreateProposal");
   const { orderId } = useLocalSearchParams();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -133,7 +136,13 @@ export default function CreateProposalScreen() {
         // userId: currentUser.id,
       };
 
-      await apiService.createProposal(proposalData);
+      const result = await apiService.createProposal(proposalData);
+
+      // Track proposal submitted
+      AnalyticsService.getInstance().logProposalSubmitted(
+        orderIdNum.toString(),
+        result.id?.toString() || "pending"
+      );
 
       // Proposal submitted successfully
       router.replace(`/orders/${orderId}`);

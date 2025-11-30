@@ -28,8 +28,11 @@ import { HiringDialog } from "@/components/HiringDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useModal } from "@/contexts/ModalContext";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function SpecialistsScreen() {
+  useAnalytics("Specialists");
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
@@ -116,12 +119,28 @@ export default function SpecialistsScreen() {
     sectionKey: string,
     value: string | string[] | { min: number; max: number }
   ) => {
-    // alert("handleFilterChange");
+    AnalyticsService.getInstance().logEvent("filter_changed", {
+      filter_type: sectionKey,
+      location: "specialists_screen",
+      has_value: value !== null && value !== undefined,
+    });
     setSelectedFilters((prev) => ({
       ...prev,
       [sectionKey]: value,
     }));
   };
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    // Track search when user stops typing (debounced)
+    if (text.trim().length > 0) {
+      setTimeout(() => {
+        AnalyticsService.getInstance().logSearch(text.trim(), {
+          search_type: "specialists",
+        });
+      }, 500);
+    }
+  }, []);
 
   // Filter specialists based on search and filters
   const filteredSpecialists = useMemo(
@@ -187,10 +206,19 @@ export default function SpecialistsScreen() {
   );
 
   const handleSpecialistPress = (specialistId: number) => {
+    AnalyticsService.getInstance().logEvent("specialist_clicked", {
+      specialist_id: specialistId.toString(),
+      location: "specialists_list",
+    });
     router.push(`/specialists/${specialistId}`);
   };
 
   const handleHireSpecialist = (specialist: SpecialistProfile) => {
+    // Track hire specialist action
+    AnalyticsService.getInstance().logEvent("hire_specialist_initiated", {
+      specialist_id: specialist.id.toString(),
+    });
+
     // Check if user is authenticated
     if (!isAuthenticated) {
       // User is not logged in, show login modal
@@ -218,6 +246,12 @@ export default function SpecialistsScreen() {
         specialistId: selectedSpecialist.id,
         message,
         orderId,
+      });
+
+      // Track successful hiring
+      AnalyticsService.getInstance().logEvent("specialist_hired", {
+        specialist_id: selectedSpecialist.id.toString(),
+        order_id: orderId.toString(),
       });
 
       // Navigate to the conversation after successful hiring
@@ -544,7 +578,7 @@ export default function SpecialistsScreen() {
         <ResponsiveCard padding={Spacing.md}>
           <Filter
             searchPlaceholder={t("searchSpecialistsSkills")}
-            onSearchChange={setSearchQuery}
+            onSearchChange={handleSearchChange}
             filterSections={filterSections}
             selectedFilters={selectedFilters}
             onFilterChange={handleFilterChange}

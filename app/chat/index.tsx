@@ -22,8 +22,11 @@ import { chatService, Conversation } from "@/services/chatService";
 import { pusherService } from "@/services/pusherService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/contexts/ConversationsContext";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function ChatScreen() {
+  useAnalytics("ChatList");
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -210,6 +213,11 @@ export default function ChatScreen() {
       console.error("Failed to mark as read:", err);
     }
 
+    // Track conversation opened
+    AnalyticsService.getInstance().logEvent("conversation_opened", {
+      conversation_id: conversation.id.toString(),
+    });
+
     // Navigate to chat detail
     router.push(`/chat/${conversation.id}`);
   };
@@ -242,6 +250,9 @@ export default function ChatScreen() {
           style: "destructive",
           onPress: async () => {
             try {
+              AnalyticsService.getInstance().logEvent("conversation_deleted", {
+                conversation_id: conversation.id.toString(),
+              });
               await chatService.deleteConversation(conversation.id);
               // Remove conversation from local state
               removeConversation(conversation.id);
@@ -447,7 +458,16 @@ export default function ChatScreen() {
               placeholder={t("searchConversations")}
               placeholderTextColor={colors.tabIconDefault}
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                if (text.trim().length > 0) {
+                  setTimeout(() => {
+                    AnalyticsService.getInstance().logSearch(text.trim(), {
+                      search_type: "conversations",
+                    });
+                  }, 500);
+                }
+              }}
             />
           </View>
         </ResponsiveCard>

@@ -22,6 +22,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { apiService } from "@/services/api";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 
 type PaymentHistoryStatus = "completed" | "pending" | "failed";
@@ -44,6 +46,7 @@ type PaymentHistoryItem = {
 };
 
 export default function PaymentsScreen() {
+  useAnalytics("Payments");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
@@ -279,7 +282,13 @@ export default function PaymentsScreen() {
                 icon="plus"
                 iconSize={14}
                 backgroundColor={colors.primary}
-                onPress={() => router.push("/profile/refill-credits")}
+                onPress={() => {
+                  AnalyticsService.getInstance().logEvent("button_clicked", {
+                    button_name: "refill_credits",
+                    location: "payments_screen",
+                  });
+                  router.push("/profile/refill-credits");
+                }}
               />
 
               <Button
@@ -288,7 +297,13 @@ export default function PaymentsScreen() {
                 icon="creditcard.fill"
                 iconSize={14}
                 backgroundColor={colors.surface}
-                onPress={() => router.push("/profile/add-credit-card")}
+                onPress={() => {
+                  AnalyticsService.getInstance().logEvent("button_clicked", {
+                    button_name: "add_credit_card",
+                    location: "payments_screen",
+                  });
+                  router.push("/profile/add-credit-card");
+                }}
               />
             </View>
           </ResponsiveCard>
@@ -410,7 +425,16 @@ export default function PaymentsScreen() {
                             styles.actionButton,
                             { borderColor: colors.border },
                           ]}
-                          onPress={() => setDefaultCard(card.id)}
+                          onPress={async () => {
+                            AnalyticsService.getInstance().logEvent(
+                              "credit_card_action",
+                              {
+                                action: "set_default",
+                                card_id: card.id.toString(),
+                              }
+                            );
+                            await setDefaultCard(card.id);
+                          }}
                           disabled={isLoading}
                         >
                           <Text
@@ -429,7 +453,16 @@ export default function PaymentsScreen() {
                           styles.removeButton,
                           { borderColor: colors.error },
                         ]}
-                        onPress={() => removeCreditCard(card.id)}
+                        onPress={async () => {
+                          AnalyticsService.getInstance().logEvent(
+                            "credit_card_action",
+                            {
+                              action: "remove",
+                              card_id: card.id.toString(),
+                            }
+                          );
+                          await removeCreditCard(card.id);
+                        }}
                         disabled={isLoading}
                       >
                         <Text

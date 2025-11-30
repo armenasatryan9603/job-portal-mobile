@@ -38,6 +38,7 @@ import {
 } from "@/hooks/useApi";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   FlatList,
   StyleSheet,
@@ -53,6 +54,15 @@ import OrderItem from "./Item";
 import { LocationFilterModal } from "@/components/LocationFilterModal";
 
 export default function OrdersScreen() {
+  const screenName =
+    useLocalSearchParams().myOrders === "true"
+      ? "MyOrders"
+      : useLocalSearchParams().myJobs === "true"
+      ? "MyJobs"
+      : useLocalSearchParams().saved === "true"
+      ? "SavedOrders"
+      : "Orders";
+  useAnalytics(screenName);
   const { myOrders, myJobs, saved, serviceId } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -366,6 +376,8 @@ export default function OrdersScreen() {
   // Callback to mark an order as viewed in state immediately
   const handleOrderViewed = useCallback((orderId: number) => {
     setViewedOrders((prev) => new Set(prev).add(orderId));
+    // Track order view
+    AnalyticsService.getInstance().logOrderViewed(orderId.toString());
   }, []);
 
   // Fetch user's applied orders from backend
@@ -438,6 +450,12 @@ export default function OrdersScreen() {
   // Handle save toggle
   const handleSaveToggle = useCallback(
     (orderId: number, isSaved: boolean) => {
+      // Track save/unsave action
+      if (isSaved) {
+        AnalyticsService.getInstance().logOrderSaved(orderId.toString());
+      } else {
+        AnalyticsService.getInstance().logOrderUnsaved(orderId.toString());
+      }
       // Update saved orders set
       setSavedOrders((prev) => {
         const newSet = new Set(prev);
@@ -1070,6 +1088,10 @@ export default function OrdersScreen() {
   // });
 
   const handleCreateOrder = () => {
+    AnalyticsService.getInstance().logEvent("button_clicked", {
+      button_name: "create_order",
+      location: "orders_screen",
+    });
     router.push("/orders/create");
   };
 
@@ -1091,6 +1113,11 @@ export default function OrdersScreen() {
         style: "destructive",
         onPress: async () => {
           try {
+            // Track order deletion
+            AnalyticsService.getInstance().logEvent("order_deleted", {
+              order_id: order.id.toString(),
+              order_status: order.status,
+            });
             // Use TanStack Query mutation
             await deleteOrderMutation.mutateAsync(order.id);
             // The mutation will automatically invalidate queries and refetch
@@ -1160,6 +1187,12 @@ export default function OrdersScreen() {
             }
 
             await apiService.cancelProposal(userProposal.id);
+
+            // Track proposal cancellation
+            AnalyticsService.getInstance().logEvent("proposal_cancelled", {
+              order_id: order.id.toString(),
+              proposal_id: userProposal.id.toString(),
+            });
 
             // Invalidate queries to refetch orders
             queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -1270,27 +1303,47 @@ export default function OrdersScreen() {
         }
       | null
   ) => {
+    // Track filter change
+    AnalyticsService.getInstance().logEvent("filter_changed", {
+      filter_type: sectionKey,
+      has_value: value !== null,
+    });
     setSelectedFilters((prev) => ({
       ...prev,
       [sectionKey]: value,
     }));
   };
 
-  const handleSearchChange = useCallback((text: string) => {
-    // Set typing flag to prevent re-renders
-    isTypingRef.current = true;
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      // Set typing flag to prevent re-renders
+      isTypingRef.current = true;
 
-    // Clear any existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+      // Clear any existing timeout
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
 
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      isTypingRef.current = false;
-      setSearchQuery(text);
-    }, 300);
-  }, []);
+      // Set new timeout for debounced search
+      searchTimeoutRef.current = setTimeout(() => {
+        isTypingRef.current = false;
+        setSearchQuery(text);
+        // Track search when user stops typing
+        if (text.trim().length > 0) {
+          AnalyticsService.getInstance().logSearch(text.trim(), {
+            filter_type: isMyOrders
+              ? "my_orders"
+              : isMyJobs
+              ? "my_jobs"
+              : isSavedOrders
+              ? "saved"
+              : "all",
+          });
+        }
+      }, 300);
+    },
+    [isMyOrders, isMyJobs, isSavedOrders]
+  );
 
   const header = (
     <Header

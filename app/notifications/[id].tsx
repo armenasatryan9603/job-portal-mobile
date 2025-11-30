@@ -8,6 +8,8 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   ScrollView,
   StyleSheet,
@@ -29,6 +31,7 @@ interface NotificationDetail {
 }
 
 export default function NotificationDetailScreen() {
+  useAnalytics("NotificationDetail");
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -126,6 +129,13 @@ export default function NotificationDetailScreen() {
 
   const handleAction = () => {
     if (!notification) return;
+
+    // Track notification action
+    AnalyticsService.getInstance().logEvent("notification_action_clicked", {
+      notification_id: notification.id,
+      notification_type: notification.type,
+      action_type: notification.type,
+    });
 
     switch (notification.type) {
       case "proposal":

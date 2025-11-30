@@ -7,6 +7,8 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   Alert,
   Image,
@@ -112,6 +114,7 @@ const dummyProposals = [
 ];
 
 export default function OrderProposalsScreen() {
+  useAnalytics("OrderProposals");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -132,6 +135,11 @@ export default function OrderProposalsScreen() {
           text: t("accept"),
           style: "default",
           onPress: () => {
+            // Track proposal accepted
+            AnalyticsService.getInstance().logEvent("proposal_chosen", {
+              order_id: orderId.toString(),
+              proposal_id: proposalId.toString(),
+            });
             // Handle proposal acceptance
             // Proposal accepted
           },
@@ -150,6 +158,11 @@ export default function OrderProposalsScreen() {
           text: t("reject"),
           style: "destructive",
           onPress: () => {
+            // Track proposal rejected
+            AnalyticsService.getInstance().logEvent("proposal_rejected", {
+              order_id: orderId.toString(),
+              proposal_id: proposalId.toString(),
+            });
             // Handle proposal rejection
             // Proposal rejected
           },

@@ -27,6 +27,8 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Review } from "@/services/api";
 import { pusherService } from "@/services/pusherService";
 import { useChatReminder } from "@/contexts/ChatReminderContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import AnalyticsService from "@/services/AnalyticsService";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -143,6 +145,7 @@ const TypingIndicator = ({
 };
 
 export default function ChatDetailScreen() {
+  useAnalytics("ChatDetail");
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -750,6 +753,11 @@ export default function ChatDetailScreen() {
         messageType: "text",
       });
 
+      // Track chat message sent
+      AnalyticsService.getInstance().logChatMessageSent(
+        conversation.id.toString()
+      );
+
       setMessages((prev) => {
         // Check if message already exists (avoid duplicates from Pusher)
         const exists = prev.some((msg) => msg.id === newMessageData.id);
@@ -818,6 +826,10 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.rejectApplication(conversation.Order!.id);
+            // Track rejection
+            AnalyticsService.getInstance().logEvent("proposal_rejected", {
+              order_id: conversation.Order!.id.toString(),
+            });
             // Reload conversation to get updated status
             await loadConversation();
           } catch (error) {
@@ -847,6 +859,10 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.chooseApplication(conversation.Order!.id);
+            // Track choosing application
+            AnalyticsService.getInstance().logEvent("proposal_chosen", {
+              order_id: conversation.Order!.id.toString(),
+            });
             // Reload conversation to get updated status
             await loadConversation();
           } catch (error) {
@@ -905,6 +921,10 @@ export default function ChatDetailScreen() {
           try {
             setActionLoading(true);
             await chatService.completeOrder(conversation.Order!.id);
+            // Track order completion
+            AnalyticsService.getInstance().logEvent("order_completed", {
+              order_id: conversation.Order!.id.toString(),
+            });
             // Reload conversation to get updated status
             await loadConversation();
             // The useEffect will automatically show the feedback dialog

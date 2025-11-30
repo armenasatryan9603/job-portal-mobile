@@ -23,11 +23,12 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAnalytics, useAnalyticsService } from "@/hooks/useAnalytics";
 
 export default function WelcomeScreen() {
   // Track screen view
   useAnalytics("Welcome");
+  const analytics = useAnalyticsService();
   const { user, logout, isAuthenticated } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -41,7 +42,10 @@ export default function WelcomeScreen() {
       {
         text: t("logout"),
         style: "destructive",
-        onPress: logout,
+        onPress: async () => {
+          analytics.logEvent("logout_initiated");
+          await logout();
+        },
       },
     ]);
   };
@@ -176,7 +180,13 @@ export default function WelcomeScreen() {
               <View style={styles.heroActions}>
                 <TouchableOpacity
                   style={styles.primaryButton}
-                  onPress={() => router.push("/services")}
+                  onPress={() => {
+                    analytics.logEvent("button_clicked", {
+                      button_name: "browse_services",
+                      location: "home_hero",
+                    });
+                    router.push("/services");
+                  }}
                 >
                   <IconSymbol
                     name="briefcase.fill"
@@ -191,7 +201,13 @@ export default function WelcomeScreen() {
                 {!user && (
                   <TouchableOpacity
                     style={styles.primaryButton}
-                    onPress={showLoginModal}
+                    onPress={() => {
+                      analytics.logEvent("button_clicked", {
+                        button_name: "login",
+                        location: "home_hero",
+                      });
+                      showLoginModal();
+                    }}
                   >
                     <IconSymbol
                       name="person.fill"
@@ -223,7 +239,13 @@ export default function WelcomeScreen() {
                       ...createThemeShadow(isDark, 2),
                     },
                   ]}
-                  onPress={() => router.push(action.route as any)}
+                  onPress={() => {
+                    analytics.logEvent("quick_action_clicked", {
+                      action_name: action.title,
+                      route: action.route,
+                    });
+                    router.push(action.route as any);
+                  }}
                 >
                   <View
                     style={[

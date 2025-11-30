@@ -7,6 +7,8 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   FlatList,
   StyleSheet,
@@ -26,6 +28,7 @@ interface Notification {
 }
 
 export default function NotificationsScreen() {
+  useAnalytics("Notifications");
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -97,9 +100,18 @@ export default function NotificationsScreen() {
   };
 
   const handleNotificationPress = async (notification: Notification) => {
+    // Track notification view
+    AnalyticsService.getInstance().logEvent("notification_viewed", {
+      notification_id: notification.id,
+      notification_type: notification.type,
+    });
+
     // Mark as read if unread
     if (!notification.isRead) {
       await NotificationService.getInstance().markAsRead(notification.id);
+      AnalyticsService.getInstance().logEvent("notification_marked_read", {
+        notification_id: notification.id,
+      });
       await loadNotifications(); // Refresh the list
       await refreshNotificationCount(); // Refresh the badge count
     }
@@ -109,12 +121,14 @@ export default function NotificationsScreen() {
   };
 
   const markAllAsRead = async () => {
+    AnalyticsService.getInstance().logEvent("notifications_marked_all_read");
     await NotificationService.getInstance().markAllAsRead();
     await loadNotifications(); // Refresh the list
     await refreshNotificationCount(); // Refresh the badge count
   };
 
   const clearAllNotifications = async () => {
+    AnalyticsService.getInstance().logEvent("notifications_cleared_all");
     await NotificationService.getInstance().clearAllNotifications();
     await loadNotifications(); // Refresh the list
     await refreshNotificationCount(); // Refresh the badge count
@@ -125,49 +139,49 @@ export default function NotificationsScreen() {
     const isUnread = !item.isRead;
 
     return (
-    <TouchableOpacity
-      style={[
-        styles.notificationItem,
-        {
-          backgroundColor: colors.surface,
+      <TouchableOpacity
+        style={[
+          styles.notificationItem,
+          {
+            backgroundColor: colors.surface,
             borderLeftColor: isUnread ? iconColor : "transparent",
             shadowColor: "#000",
-        },
-      ]}
-      onPress={() => handleNotificationPress(item)}
+          },
+        ]}
+        onPress={() => handleNotificationPress(item)}
         activeOpacity={0.6}
-    >
-      <View style={styles.notificationContent}>
-        <View
-          style={[
+      >
+        <View style={styles.notificationContent}>
+          <View
+            style={[
               styles.notificationIconContainer,
               {
                 backgroundColor: iconColor + (isUnread ? "20" : "10"),
                 borderWidth: isUnread ? 2 : 0,
                 borderColor: iconColor + "40",
               },
-          ]}
-        >
-          <IconSymbol
-            name={getNotificationIcon(item.type) as any}
+            ]}
+          >
+            <IconSymbol
+              name={getNotificationIcon(item.type) as any}
               size={24}
               color={iconColor}
-          />
-        </View>
+            />
+          </View>
           <View style={styles.notificationTextContainer}>
             <View style={styles.notificationHeader}>
               <View style={styles.titleContainer}>
-          <Text
-            style={[
-              styles.notificationTitle,
-              { color: colors.text },
+                <Text
+                  style={[
+                    styles.notificationTitle,
+                    { color: colors.text },
                     isUnread && styles.unreadText,
-            ]}
+                  ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"
-          >
-            {item.title}
-          </Text>
+                >
+                  {item.title}
+                </Text>
                 {isUnread && (
                   <View
                     style={[styles.unreadBadge, { backgroundColor: iconColor }]}
@@ -185,20 +199,20 @@ export default function NotificationsScreen() {
                 {item.timestamp}
               </Text>
             </View>
-          <Text
-            style={[
-              styles.notificationMessage,
-              { color: colors.textSecondary },
-            ]}
-            numberOfLines={2}
+            <Text
+              style={[
+                styles.notificationMessage,
+                { color: colors.textSecondary },
+              ]}
+              numberOfLines={2}
               ellipsizeMode="tail"
-          >
-            {item.message}
-          </Text>
+            >
+              {item.message}
+            </Text>
           </View>
-      </View>
-    </TouchableOpacity>
-  );
+        </View>
+      </TouchableOpacity>
+    );
   };
 
   // Show loading state

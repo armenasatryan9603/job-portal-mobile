@@ -21,6 +21,8 @@ import {
 } from "@/utils/creditCardValidation";
 import { router } from "expo-router";
 import React, { useState } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -34,6 +36,7 @@ import {
 import { Button } from "@/components/ui/button";
 
 export default function AddCreditCardScreen() {
+  useAnalytics("AddCreditCard");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { addCreditCard, isLoading } = useCreditCard();
@@ -147,6 +150,10 @@ export default function AddCreditCardScreen() {
       });
 
       if (success) {
+        // Track credit card added
+        AnalyticsService.getInstance().logEvent("credit_card_added", {
+          card_type: "credit_card",
+        });
         // Credit card added successfully
         router.back();
       } else {

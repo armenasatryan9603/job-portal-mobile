@@ -32,8 +32,11 @@ import {
 } from "react-native";
 import { Service } from "@/services/api";
 import { useServices, useRootServices } from "@/hooks/useApi";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const ServicesScreen = () => {
+  useAnalytics("Services");
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
@@ -155,6 +158,10 @@ const ServicesScreen = () => {
   }, [services, selectedFilters]);
 
   const handleServicePress = useCallback((serviceId: number) => {
+    AnalyticsService.getInstance().logEvent("service_clicked", {
+      service_id: serviceId.toString(),
+      location: "services_list",
+    });
     router.push(`/services/${serviceId}`);
   }, []);
 
@@ -162,6 +169,10 @@ const ServicesScreen = () => {
   const wrappedHandleServicePress = wrapPressHandler(handleServicePress);
 
   const handleCreateOrder = () => {
+    AnalyticsService.getInstance().logEvent("button_clicked", {
+      button_name: "create_order",
+      location: "services_screen",
+    });
     router.push("/orders/create");
   };
 
@@ -186,12 +197,25 @@ const ServicesScreen = () => {
 
   const handleSearchChange = useCallback((text: string) => {
     setSearchQuery(text);
+    // Track search when user stops typing (debounced)
+    if (text.trim().length > 0) {
+      setTimeout(() => {
+        AnalyticsService.getInstance().logSearch(text.trim(), {
+          search_type: "services",
+        });
+      }, 500);
+    }
   }, []);
 
   const handleFilterChange = (
     sectionKey: string,
     value: string | string[] | { min: number; max: number }
   ) => {
+    AnalyticsService.getInstance().logEvent("filter_changed", {
+      filter_type: sectionKey,
+      location: "services_screen",
+      has_value: value !== null && value !== undefined,
+    });
     setSelectedFilters((prev) => ({
       ...prev,
       [sectionKey]: value,
