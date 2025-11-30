@@ -28,7 +28,7 @@ import {
   Platform,
 } from "react-native";
 import { Image } from "expo-image";
-import { apiService, Order } from "@/services/api";
+import { apiService, Order, OrderChangeHistory } from "@/services/api";
 import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 
@@ -83,6 +83,10 @@ export default function EditOrderScreen() {
   // Avatar image error state
   const [avatarImageError, setAvatarImageError] = useState(false);
 
+  // Change history state
+  const [changeHistory, setChangeHistory] = useState<OrderChangeHistory[]>([]);
+  const [changeHistoryLoading, setChangeHistoryLoading] = useState(false);
+
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
     return appliedOrders.has(orderId);
@@ -121,6 +125,11 @@ export default function EditOrderScreen() {
           router.replace(`/orders/create?orderId=${id}`);
           return;
         }
+
+        // Load change history if user is authenticated
+        if (user?.id) {
+          loadChangeHistory(parseInt(id as string));
+        }
       } catch (error) {
         console.error("Error loading order:", error);
         Alert.alert(t("error"), t("failedToLoadOrder"));
@@ -135,6 +144,22 @@ export default function EditOrderScreen() {
       loadAppliedOrders();
     }
   }, [id, user]);
+
+  // Load change history
+  const loadChangeHistory = async (orderId: number) => {
+    if (!user?.id) return;
+
+    try {
+      setChangeHistoryLoading(true);
+      const history = await apiService.getOrderChangeHistory(orderId);
+      setChangeHistory(history);
+    } catch (error) {
+      console.error("Error loading change history:", error);
+      // Don't show error to user - change history is optional
+    } finally {
+      setChangeHistoryLoading(false);
+    }
+  };
 
   // Reload applied orders when screen comes into focus
   useFocusEffect(
@@ -390,6 +415,187 @@ export default function EditOrderScreen() {
       return () => clearTimeout(timer);
     }
   }, [user?.id, pendingApply, order, userLoading, id]);
+
+  // Get field badge color
+  const getFieldColor = (field: string, newValue?: string | null): string => {
+    switch (field.toLowerCase()) {
+      case "status":
+        // Status-specific colors based on new value
+        if (newValue) {
+          const status = newValue.toLowerCase();
+          switch (status) {
+            case "open":
+              return "#007AFF"; // Blue
+            case "in_progress":
+              return "#FF9500"; // Orange/Yellow
+            case "completed":
+              return "#34C759"; // Green
+            case "cancelled":
+            case "closed":
+              return "#FF3B30"; // Red
+          }
+        }
+        return "#007AFF"; // Default blue for status
+      case "title":
+        return "#5856D6"; // Purple
+      case "budget":
+        return "#FF9500"; // Orange
+      default:
+        return colors.tint;
+    }
+  };
+
+  // Format field name for display
+  const formatFieldName = (field: string): string => {
+    const fieldMap: { [key: string]: string } = {
+      status: t("status") || "Status",
+      title: t("title") || "Title",
+      budget: t("budget") || "Budget",
+    };
+    return fieldMap[field] || field.charAt(0).toUpperCase() + field.slice(1);
+  };
+
+  // Format value for display
+  const formatValue = (
+    field: string,
+    value: string | null | undefined
+  ): string => {
+    if (!value) return "-";
+
+    if (field === "budget") {
+      return `$${parseFloat(value).toLocaleString()}`;
+    }
+
+    if (field === "status") {
+      return value
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+
+    return value;
+  };
+
+  // Render change history
+  const renderChangeHistory = () => {
+    // Only show change history for authenticated users
+    if (!user?.id) {
+      return null;
+    }
+
+    return (
+      <ResponsiveCard>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {t("orderChangeHistory") || "Order Change History"}
+        </Text>
+        {changeHistoryLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={colors.tint}
+            style={{ marginTop: 12 }}
+          />
+        ) : !changeHistory || changeHistory.length === 0 ? (
+          <Text
+            style={[styles.emptyHistoryText, { color: colors.tabIconDefault }]}
+          >
+            {t("noChangeHistory") || "No change history available"}
+          </Text>
+        ) : (
+          <View style={styles.changeHistoryContainer}>
+            {changeHistory.map((item, index) => (
+              <View key={item.id} style={styles.changeHistoryItem}>
+                <View style={styles.changeHistoryContent}>
+                  <View
+                    style={[
+                      styles.fieldBadge,
+                      {
+                        backgroundColor: getFieldColor(
+                          item.fieldChanged,
+                          item.newValue
+                        ),
+                      },
+                    ]}
+                  >
+                    <Text style={styles.fieldBadgeText}>
+                      {formatFieldName(item.fieldChanged)}
+                    </Text>
+                  </View>
+                  <View style={styles.changeHistoryDetails}>
+                    <View style={styles.changeValueRow}>
+                      <Text
+                        style={[
+                          styles.changeLabel,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("from") || "From"}:
+                      </Text>
+                      <Text
+                        style={[styles.changeValue, { color: colors.text }]}
+                      >
+                        {formatValue(item.fieldChanged, item.oldValue)}
+                      </Text>
+                    </View>
+                    <View style={styles.changeValueRow}>
+                      <Text
+                        style={[
+                          styles.changeLabel,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("to") || "To"}:
+                      </Text>
+                      <Text
+                        style={[
+                          styles.changeValue,
+                          { color: colors.text, fontWeight: "600" },
+                        ]}
+                      >
+                        {formatValue(item.fieldChanged, item.newValue)}
+                      </Text>
+                    </View>
+                    <Text
+                      style={[styles.changeTimestamp, { color: colors.text }]}
+                    >
+                      {new Date(item.createdAt).toLocaleString()}
+                    </Text>
+                    {item.ChangedBy && (
+                      <Text
+                        style={[
+                          styles.changeChangedBy,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("changedBy") || "Changed by"}: {item.ChangedBy.name}
+                      </Text>
+                    )}
+                    {item.reason && (
+                      <Text
+                        style={[
+                          styles.changeReason,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {item.reason}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                {index < changeHistory.length - 1 && (
+                  <View
+                    style={[
+                      styles.changeHistoryConnector,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+      </ResponsiveCard>
+    );
+  };
 
   // Reusable Media Files Display Component
   const renderMediaFiles = (mediaFiles: any[], canDelete: boolean = false) => {
@@ -706,6 +912,9 @@ export default function EditOrderScreen() {
               </View>
             </ResponsiveCard>
 
+            {/* Media Files */}
+            {renderMediaFiles(order?.MediaFiles || [], false)}
+
             {/* Required Skills */}
             {order?.skills && order.skills.length > 0 && (
               <ResponsiveCard>
@@ -823,9 +1032,6 @@ export default function EditOrderScreen() {
                 ) : null;
               })()}
 
-            {/* Media Files */}
-            {renderMediaFiles(order?.MediaFiles || [], false)}
-
             {/* Client Information */}
             {order?.Client && (
               <ResponsiveCard>
@@ -922,6 +1128,9 @@ export default function EditOrderScreen() {
                 </TouchableOpacity>
               </ResponsiveCard>
             )}
+
+            {/* Change History */}
+            {renderChangeHistory()}
           </>
         </ResponsiveContainer>
       </ScrollView>
@@ -1246,5 +1455,77 @@ const styles = StyleSheet.create({
   shareButton: {
     padding: 8,
     marginRight: -8,
+  },
+  // Change History Styles
+  changeHistoryContainer: {
+    gap: 16,
+  },
+  changeHistoryItem: {
+    gap: 8,
+  },
+  changeHistoryContent: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  fieldBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 80,
+    alignItems: "center",
+  },
+  fieldBadgeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  changeHistoryDetails: {
+    flex: 1,
+    gap: 6,
+  },
+  changeValueRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  changeLabel: {
+    fontSize: 13,
+    opacity: 0.7,
+    minWidth: 40,
+  },
+  changeValue: {
+    fontSize: 14,
+    flex: 1,
+  },
+  changeTimestamp: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 2,
+    opacity: 0.8,
+  },
+  changeChangedBy: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  changeReason: {
+    fontSize: 12,
+    fontStyle: "italic",
+    marginTop: 2,
+    opacity: 0.8,
+  },
+  changeHistoryConnector: {
+    width: 2,
+    height: 16,
+    marginLeft: 50,
+    marginTop: 4,
+  },
+  emptyHistoryText: {
+    fontSize: 14,
+    textAlign: "center",
+    paddingVertical: 20,
+    opacity: 0.7,
+    fontStyle: "italic",
   },
 });

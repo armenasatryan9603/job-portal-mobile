@@ -244,6 +244,23 @@ export interface Order {
   };
 }
 
+export interface OrderChangeHistory {
+  id: number;
+  orderId: number;
+  fieldChanged: string;
+  oldValue?: string;
+  newValue?: string;
+  changedBy: number;
+  reason?: string;
+  createdAt: string;
+  ChangedBy: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+}
+
 export interface OrderListResponse {
   orders: Order[];
   pagination: {
@@ -712,6 +729,14 @@ class ApiService {
   // Orders API methods
   async getOrderById(id: number): Promise<Order> {
     return this.request<Order>(`/orders/${id}`, {}, false);
+  }
+
+  async getOrderChangeHistory(orderId: number): Promise<OrderChangeHistory[]> {
+    return this.request<OrderChangeHistory[]>(
+      `/orders/${orderId}/change-history`,
+      {},
+      true
+    );
   }
 
   async getAllOrders(
