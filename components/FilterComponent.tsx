@@ -28,12 +28,13 @@ export interface FilterSection {
   key?: string;
   options?: FilterOption[];
   multiSelect?: boolean;
-  type?: "options" | "range";
+  type?: "options" | "range" | "text" | "stars" | "location";
   rangeConfig?: {
     min: number;
     max: number;
     step: number;
   };
+  onLocationPress?: () => void; // Callback for location filter button
 }
 
 export interface FilterProps {
@@ -42,13 +43,23 @@ export interface FilterProps {
   filterSections: FilterSection[];
   selectedFilters: Record<
     string,
-    string | string[] | { min: number; max: number }
+    | string
+    | string[]
+    | { min: number; max: number }
+    | { latitude: number; longitude: number; address: string; radius: number }
+    | null
   >;
   onFilterChange: (
     sectionKey: string,
-    value: string | string[] | { min: number; max: number }
+    value:
+      | string
+      | string[]
+      | { min: number; max: number }
+      | { latitude: number; longitude: number; address: string; radius: number }
+      | null
   ) => void;
   loading?: boolean;
+  hideModalForLocation?: boolean; // Hide filter modal when location modal is open
 }
 
 export const Filter: React.FC<FilterProps> = ({
@@ -58,6 +69,7 @@ export const Filter: React.FC<FilterProps> = ({
   selectedFilters,
   onFilterChange,
   loading = false,
+  hideModalForLocation = false,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -139,6 +151,16 @@ export const Filter: React.FC<FilterProps> = ({
       return currentValue.length;
     }
 
+    // Handle location filter (object with latitude, longitude, address, radius)
+    if (
+      typeof currentValue === "object" &&
+      "latitude" in currentValue &&
+      "longitude" in currentValue &&
+      "radius" in currentValue
+    ) {
+      return 1;
+    }
+
     // Handle range filters (objects with min/max)
     if (
       typeof currentValue === "object" &&
@@ -184,6 +206,10 @@ export const Filter: React.FC<FilterProps> = ({
       const defaultMin = section.rangeConfig?.min || 0;
       const defaultMax = section.rangeConfig?.max || 10000000;
       onFilterChange(sectionKey, { min: defaultMin, max: defaultMax });
+    } else if (section?.type === "stars") {
+      onFilterChange(sectionKey, []);
+    } else if (section?.type === "location") {
+      onFilterChange(sectionKey, null);
     } else {
       onFilterChange(sectionKey, "");
     }
@@ -210,13 +236,6 @@ export const Filter: React.FC<FilterProps> = ({
     });
   };
 
-  const toggleSection = (sectionKey: string) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey],
-    }));
-  };
-
   const isSectionExpanded = (sectionKey: string, inModal: boolean = false) => {
     // In modal, expand all sections by default for better UX
     if (inModal) {
@@ -225,6 +244,20 @@ export const Filter: React.FC<FilterProps> = ({
     // Auto-expand if section has active filters, otherwise check state
     const hasFilters = getSelectedCount(sectionKey) > 0;
     return expandedSections[sectionKey] ?? hasFilters;
+  };
+
+  const toggleSection = (sectionKey: string, inModal: boolean = false) => {
+    setExpandedSections((prev) => {
+      // Get the current expanded state (using the same logic as isSectionExpanded)
+      const currentlyExpanded = inModal
+        ? prev[sectionKey] ?? true
+        : prev[sectionKey] ?? getSelectedCount(sectionKey) > 0;
+
+      return {
+        ...prev,
+        [sectionKey]: !currentlyExpanded,
+      };
+    });
   };
 
   const totalFilterCount = getTotalSelectedCount();
@@ -349,7 +382,7 @@ export const Filter: React.FC<FilterProps> = ({
 
       {/* Filter Modal */}
       <Modal
-        visible={filterModalVisible}
+        visible={filterModalVisible && !hideModalForLocation}
         animationType="none"
         transparent={true}
         onRequestClose={closeModal}
@@ -429,7 +462,7 @@ export const Filter: React.FC<FilterProps> = ({
                           <View style={styles.sectionHeader}>
                             <TouchableOpacity
                               style={styles.sectionHeaderLeft}
-                              onPress={() => toggleSection(sectionKey)}
+                              onPress={() => toggleSection(sectionKey, true)}
                               activeOpacity={0.7}
                             >
                               <Text
@@ -460,7 +493,7 @@ export const Filter: React.FC<FilterProps> = ({
                                 </View>
                               )}
                               <TouchableOpacity
-                                onPress={() => toggleSection(sectionKey)}
+                                onPress={() => toggleSection(sectionKey, true)}
                                 hitSlop={{
                                   top: 5,
                                   bottom: 5,
@@ -499,14 +532,36 @@ export const Filter: React.FC<FilterProps> = ({
                                       },
                                     ]}
                                   >
-                                    <Text
-                                      style={[
-                                        styles.pricePrefix,
-                                        { color: colors.tabIconDefault },
-                                      ]}
-                                    >
-                                      $
-                                    </Text>
+                                    {sectionKey === "priceRange" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        $
+                                      </Text>
+                                    )}
+                                    {sectionKey === "radius" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        km
+                                      </Text>
+                                    )}
+                                    {sectionKey === "rating" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        ⭐
+                                      </Text>
+                                    )}
                                     <TextInput
                                       style={[
                                         styles.priceInput,
@@ -593,14 +648,36 @@ export const Filter: React.FC<FilterProps> = ({
                                       },
                                     ]}
                                   >
-                                    <Text
-                                      style={[
-                                        styles.pricePrefix,
-                                        { color: colors.tabIconDefault },
-                                      ]}
-                                    >
-                                      $
-                                    </Text>
+                                    {sectionKey === "priceRange" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        $
+                                      </Text>
+                                    )}
+                                    {sectionKey === "radius" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        km
+                                      </Text>
+                                    )}
+                                    {sectionKey === "rating" && (
+                                      <Text
+                                        style={[
+                                          styles.pricePrefix,
+                                          { color: colors.tabIconDefault },
+                                        ]}
+                                      >
+                                        ⭐
+                                      </Text>
+                                    )}
                                     <TextInput
                                       style={[
                                         styles.priceInput,
@@ -666,6 +743,501 @@ export const Filter: React.FC<FilterProps> = ({
                       );
                     }
 
+                    // Handle star rating sections
+                    if (section.type === "stars") {
+                      const isExpanded = isSectionExpanded(sectionKey, true);
+                      const ratingFilterValue = selectedFilters[sectionKey];
+                      const selectedRatings: number[] = Array.isArray(
+                        ratingFilterValue
+                      )
+                        ? ratingFilterValue
+                            .map((r) =>
+                              typeof r === "number"
+                                ? r
+                                : typeof r === "string"
+                                ? parseInt(r, 10)
+                                : null
+                            )
+                            .filter((r): r is number => r !== null && !isNaN(r))
+                        : ratingFilterValue &&
+                          typeof ratingFilterValue === "number"
+                        ? [ratingFilterValue]
+                        : ratingFilterValue &&
+                          typeof ratingFilterValue === "string"
+                        ? [parseInt(ratingFilterValue, 10)].filter(
+                            (r) => !isNaN(r)
+                          )
+                        : [];
+                      const hasValue = selectedRatings.length > 0;
+
+                      const toggleRating = (rating: number) => {
+                        const currentRatingValue = selectedFilters[sectionKey];
+                        const currentRatings: number[] = Array.isArray(
+                          currentRatingValue
+                        )
+                          ? currentRatingValue
+                              .map((r) =>
+                                typeof r === "number"
+                                  ? r
+                                  : typeof r === "string"
+                                  ? parseInt(r, 10)
+                                  : null
+                              )
+                              .filter(
+                                (r): r is number => r !== null && !isNaN(r)
+                              )
+                          : currentRatingValue &&
+                            typeof currentRatingValue === "number"
+                          ? [currentRatingValue]
+                          : currentRatingValue &&
+                            typeof currentRatingValue === "string"
+                          ? [parseInt(currentRatingValue, 10)].filter(
+                              (r) => !isNaN(r)
+                            )
+                          : [];
+
+                        if (currentRatings.includes(rating)) {
+                          // Remove rating if already selected
+                          const newRatings = currentRatings.filter(
+                            (r) => r !== rating
+                          );
+                          onFilterChange(
+                            sectionKey,
+                            newRatings.length > 0 ? (newRatings as any) : []
+                          );
+                        } else {
+                          // Add rating if not selected
+                          const newRatings = [...currentRatings, rating].sort(
+                            (a, b) => a - b
+                          );
+                          onFilterChange(sectionKey, newRatings as any);
+                        }
+                      };
+
+                      return (
+                        <View
+                          key={sectionKey}
+                          style={[
+                            styles.filterSection,
+                            {
+                              backgroundColor:
+                                (colors as any).surface || colors.background,
+                            },
+                          ]}
+                        >
+                          <View style={styles.sectionHeader}>
+                            <TouchableOpacity
+                              style={styles.sectionHeaderLeft}
+                              onPress={() => toggleSection(sectionKey, true)}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.sectionTitle,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                {section.title}
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.sectionHeaderRight}>
+                              {hasValue && (
+                                <>
+                                  <View
+                                    style={[
+                                      styles.badge,
+                                      { backgroundColor: colors.tint },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.badgeText,
+                                        { color: colors.background },
+                                      ]}
+                                    >
+                                      {selectedRatings.length}
+                                    </Text>
+                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() =>
+                                      onFilterChange(sectionKey, [])
+                                    }
+                                    hitSlop={{
+                                      top: 5,
+                                      bottom: 5,
+                                      left: 5,
+                                      right: 5,
+                                    }}
+                                    style={styles.clearButton}
+                                  >
+                                    <IconSymbol
+                                      name="xmark.circle.fill"
+                                      size={14}
+                                      color={colors.tabIconDefault}
+                                    />
+                                  </TouchableOpacity>
+                                </>
+                              )}
+                              <TouchableOpacity
+                                onPress={() => toggleSection(sectionKey, true)}
+                                hitSlop={{
+                                  top: 5,
+                                  bottom: 5,
+                                  left: 5,
+                                  right: 5,
+                                }}
+                              >
+                                <IconSymbol
+                                  name={
+                                    isExpanded ? "chevron.up" : "chevron.down"
+                                  }
+                                  size={14}
+                                  color={colors.tabIconDefault}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          {isExpanded && (
+                            <View style={styles.starsContainer}>
+                              <View style={styles.starsRow}>
+                                {[1, 2, 3, 4, 5].map((star) => {
+                                  const isSelected =
+                                    selectedRatings.includes(star);
+                                  return (
+                                    <TouchableOpacity
+                                      key={star}
+                                      onPress={() => toggleRating(star)}
+                                      style={styles.starButton}
+                                      activeOpacity={0.7}
+                                      disabled={loading}
+                                    >
+                                      <IconSymbol
+                                        name={isSelected ? "star.fill" : "star"}
+                                        size={32}
+                                        color={
+                                          isSelected ? "#FFD700" : colors.border
+                                        }
+                                      />
+                                    </TouchableOpacity>
+                                  );
+                                })}
+                              </View>
+                              {hasValue && (
+                                <Text
+                                  style={[
+                                    styles.starsLabel,
+                                    { color: colors.textSecondary },
+                                  ]}
+                                >
+                                  {t("selectedRatings") || "Selected"}:{" "}
+                                  {selectedRatings.join(", ")}{" "}
+                                  {selectedRatings.length === 1
+                                    ? t("star") || "star"
+                                    : t("stars") || "stars"}
+                                </Text>
+                              )}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+
+                    // Handle location filter (map-based)
+                    if (section.type === "location") {
+                      const isExpanded = isSectionExpanded(sectionKey, true);
+                      const locationData = selectedFilters[sectionKey] as
+                        | {
+                            latitude: number;
+                            longitude: number;
+                            address: string;
+                            radius: number;
+                          }
+                        | null
+                        | undefined;
+                      const hasValue =
+                        locationData !== null && locationData !== undefined;
+
+                      return (
+                        <View
+                          key={sectionKey}
+                          style={[
+                            styles.filterSection,
+                            {
+                              backgroundColor:
+                                (colors as any).surface || colors.background,
+                            },
+                          ]}
+                        >
+                          <View style={styles.sectionHeader}>
+                            <TouchableOpacity
+                              style={styles.sectionHeaderLeft}
+                              onPress={() => toggleSection(sectionKey, true)}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.sectionTitle,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                {section.title}
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.sectionHeaderRight}>
+                              {hasValue && (
+                                <>
+                                  <View
+                                    style={[
+                                      styles.badge,
+                                      { backgroundColor: colors.tint },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.badgeText,
+                                        { color: colors.background },
+                                      ]}
+                                    >
+                                      1
+                                    </Text>
+                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() =>
+                                      onFilterChange(sectionKey, null)
+                                    }
+                                    hitSlop={{
+                                      top: 5,
+                                      bottom: 5,
+                                      left: 5,
+                                      right: 5,
+                                    }}
+                                    style={styles.clearButton}
+                                  >
+                                    <IconSymbol
+                                      name="xmark.circle.fill"
+                                      size={14}
+                                      color={colors.tabIconDefault}
+                                    />
+                                  </TouchableOpacity>
+                                </>
+                              )}
+                              <TouchableOpacity
+                                onPress={() => toggleSection(sectionKey, true)}
+                                hitSlop={{
+                                  top: 5,
+                                  bottom: 5,
+                                  left: 5,
+                                  right: 5,
+                                }}
+                              >
+                                <IconSymbol
+                                  name={
+                                    isExpanded ? "chevron.up" : "chevron.down"
+                                  }
+                                  size={14}
+                                  color={colors.tabIconDefault}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          {isExpanded && (
+                            <View style={styles.locationFilterContainer}>
+                              {hasValue && (
+                                <View style={styles.locationInfo}>
+                                  <IconSymbol
+                                    name="mappin.circle.fill"
+                                    size={16}
+                                    color={colors.primary}
+                                  />
+                                  <Text
+                                    style={[
+                                      styles.locationInfoText,
+                                      { color: colors.text },
+                                    ]}
+                                    numberOfLines={1}
+                                  >
+                                    {locationData.address}
+                                  </Text>
+                                  <Text
+                                    style={[
+                                      styles.locationRadiusText,
+                                      { color: colors.textSecondary },
+                                    ]}
+                                  >
+                                    {locationData.radius} km
+                                  </Text>
+                                </View>
+                              )}
+                              <TouchableOpacity
+                                style={[
+                                  styles.openMapButton,
+                                  {
+                                    backgroundColor: colors.primary,
+                                    borderColor: colors.primary,
+                                  },
+                                ]}
+                                onPress={() => {
+                                  console.log(
+                                    "Location button pressed, section.onLocationPress:",
+                                    !!section.onLocationPress
+                                  );
+                                  // Don't close the filter modal - keep it open behind the location modal
+                                  // Add a small delay to ensure the location modal renders properly on top
+                                  const onLocationPress =
+                                    section.onLocationPress;
+                                  if (onLocationPress) {
+                                    console.log(
+                                      "Calling onLocationPress callback"
+                                    );
+                                    // Call directly - the parent will hide the filter modal
+                                    onLocationPress();
+                                  } else {
+                                    console.warn(
+                                      "onLocationPress callback is not defined"
+                                    );
+                                  }
+                                }}
+                              >
+                                <IconSymbol
+                                  name="map"
+                                  size={16}
+                                  color="white"
+                                />
+                                <Text
+                                  style={[
+                                    styles.openMapButtonText,
+                                    { color: "white" },
+                                  ]}
+                                >
+                                  {hasValue
+                                    ? t("changeLocation") || "Change Location"
+                                    : t("selectLocationOnMap") ||
+                                      "Select Location on Map"}
+                                </Text>
+                              </TouchableOpacity>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+
+                    // Handle text input sections
+                    if (section.type === "text") {
+                      const isExpanded = isSectionExpanded(sectionKey, true);
+                      const currentValue =
+                        (selectedFilters[sectionKey] as string) || "";
+                      const hasValue = currentValue.trim().length > 0;
+
+                      return (
+                        <View
+                          key={sectionKey}
+                          style={[
+                            styles.filterSection,
+                            {
+                              backgroundColor:
+                                (colors as any).surface || colors.background,
+                            },
+                          ]}
+                        >
+                          <View style={styles.sectionHeader}>
+                            <TouchableOpacity
+                              style={styles.sectionHeaderLeft}
+                              onPress={() => toggleSection(sectionKey, true)}
+                              activeOpacity={0.7}
+                            >
+                              <Text
+                                style={[
+                                  styles.sectionTitle,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                {section.title}
+                              </Text>
+                            </TouchableOpacity>
+                            <View style={styles.sectionHeaderRight}>
+                              {hasValue && (
+                                <>
+                                  <View
+                                    style={[
+                                      styles.badge,
+                                      { backgroundColor: colors.tint },
+                                    ]}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.badgeText,
+                                        { color: colors.background },
+                                      ]}
+                                    >
+                                      1
+                                    </Text>
+                                  </View>
+                                  <TouchableOpacity
+                                    onPress={() =>
+                                      onFilterChange(sectionKey, "")
+                                    }
+                                    hitSlop={{
+                                      top: 5,
+                                      bottom: 5,
+                                      left: 5,
+                                      right: 5,
+                                    }}
+                                    style={styles.clearButton}
+                                  >
+                                    <IconSymbol
+                                      name="xmark.circle.fill"
+                                      size={14}
+                                      color={colors.tabIconDefault}
+                                    />
+                                  </TouchableOpacity>
+                                </>
+                              )}
+                              <TouchableOpacity
+                                onPress={() => toggleSection(sectionKey, true)}
+                                hitSlop={{
+                                  top: 5,
+                                  bottom: 5,
+                                  left: 5,
+                                  right: 5,
+                                }}
+                              >
+                                <IconSymbol
+                                  name={
+                                    isExpanded ? "chevron.up" : "chevron.down"
+                                  }
+                                  size={14}
+                                  color={colors.tabIconDefault}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          {isExpanded && (
+                            <View style={styles.textInputContainer}>
+                              <TextInput
+                                style={[
+                                  styles.textInput,
+                                  {
+                                    borderColor: colors.border,
+                                    backgroundColor: colors.background,
+                                    color: colors.text,
+                                  },
+                                ]}
+                                placeholder={
+                                  t("enterLocation") || "Enter location..."
+                                }
+                                placeholderTextColor={colors.tabIconDefault}
+                                value={currentValue}
+                                onChangeText={(text) =>
+                                  onFilterChange(sectionKey, text)
+                                }
+                                editable={!loading}
+                              />
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }
+
                     // Handle option sections
                     if (!section.options || section.options.length === 0) {
                       return null;
@@ -687,7 +1259,7 @@ export const Filter: React.FC<FilterProps> = ({
                         <View style={styles.sectionHeader}>
                           <TouchableOpacity
                             style={styles.sectionHeaderLeft}
-                            onPress={() => toggleSection(sectionKey)}
+                            onPress={() => toggleSection(sectionKey, true)}
                             activeOpacity={0.7}
                           >
                             <Text
@@ -736,7 +1308,7 @@ export const Filter: React.FC<FilterProps> = ({
                               </>
                             )}
                             <TouchableOpacity
-                              onPress={() => toggleSection(sectionKey)}
+                              onPress={() => toggleSection(sectionKey, true)}
                               hitSlop={{ top: 5, bottom: 5, left: 5, right: 5 }}
                             >
                               <IconSymbol
@@ -1069,5 +1641,70 @@ const styles = StyleSheet.create({
   priceSeparatorText: {
     fontSize: 13,
     fontWeight: "500",
+  },
+  textInputContainer: {
+    marginTop: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  starsContainer: {
+    marginTop: 8,
+    width: "100%",
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+  },
+  starButton: {
+    padding: 4,
+  },
+  starsLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  locationFilterContainer: {
+    marginTop: 8,
+    gap: 12,
+  },
+  locationInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+  },
+  locationInfoText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  locationRadiusText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  openMapButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  openMapButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

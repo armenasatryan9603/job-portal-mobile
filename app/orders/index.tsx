@@ -49,6 +49,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import OrderItem from "./Item";
+import { LocationFilterModal } from "@/components/LocationFilterModal";
 
 export default function OrdersScreen() {
   const { myOrders, myJobs, saved, serviceId } = useLocalSearchParams();
@@ -72,12 +73,26 @@ export default function OrdersScreen() {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
   const [selectedFilters, setSelectedFilters] = useState<
-    Record<string, string | string[] | { min: number; max: number }>
+    Record<
+      string,
+      | string
+      | string[]
+      | { min: number; max: number }
+      | { latitude: number; longitude: number; address: string; radius: number }
+      | null
+    >
   >({
     status: isMyJobs || isSavedOrders ? "all" : "open",
     services: filterServiceId ? [filterServiceId.toString()] : [],
     priceRange: { min: 0, max: 100000 },
     sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
+    location: null as {
+      latitude: number;
+      longitude: number;
+      address: string;
+      radius: number;
+    } | null, // Location with coordinates and radius
+    rating: [], // Selected ratings array (empty = no rating filter)
   });
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -267,6 +282,21 @@ export default function OrdersScreen() {
         },
       },
       {
+        key: "location",
+        title: t("location") || "Location",
+        type: "location",
+        onLocationPress: () => {
+          // Hide filter modal temporarily when opening location modal
+          setFilterModalHiddenForLocation(true);
+          setLocationFilterVisible(true);
+        },
+      },
+      // {
+      //   key: "rating",
+      //   title: t("minimumRating") || "Minimum Rating",
+      //   type: "stars",
+      // },
+      {
         key: "services",
         title: t("services") || "Services",
         multiSelect: true,
@@ -311,6 +341,11 @@ export default function OrdersScreen() {
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [canceledOrderId, setCanceledOrderId] = useState<number | null>(null);
+
+  // Location filter modal state
+  const [locationFilterVisible, setLocationFilterVisible] = useState(false);
+  const [filterModalHiddenForLocation, setFilterModalHiddenForLocation] =
+    useState(false);
 
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
@@ -494,6 +529,112 @@ export default function OrdersScreen() {
     []
   );
 
+  // Helper function to calculate distance between two coordinates (Haversine formula)
+  const calculateDistance = useCallback(
+    (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+      const R = 6371; // Radius of the Earth in km
+      const dLat = ((lat2 - lat1) * Math.PI) / 180;
+      const dLon = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat1 * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    },
+    []
+  );
+
+  // Helper function to parse location string to coordinates (synchronous)
+  const parseLocationCoordinates = useCallback(
+    (
+      locationString: string
+    ): { latitude: number; longitude: number } | null => {
+      if (!locationString) return null;
+
+      // Try to parse coordinates from string like "address (lat, lng)"
+      // This matches the format used in create.tsx: `${address} (${latitude}, ${longitude})`
+      const coordMatch = locationString.match(
+        /\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)/
+      );
+      if (coordMatch) {
+        const lat = parseFloat(coordMatch[1]);
+        const lng = parseFloat(coordMatch[2]);
+        // Validate coordinates
+        if (
+          !isNaN(lat) &&
+          !isNaN(lng) &&
+          lat >= -90 &&
+          lat <= 90 &&
+          lng >= -180 &&
+          lng <= 180
+        ) {
+          return {
+            latitude: lat,
+            longitude: lng,
+          };
+        }
+      }
+
+      // If no coordinates found, return null (can't calculate distance without coordinates)
+      return null;
+    },
+    []
+  );
+
+  // Helper function to filter orders by location and radius (synchronous)
+  const filterOrdersByLocation = useCallback(
+    (
+      orders: Order[],
+      locationFilter: {
+        latitude: number;
+        longitude: number;
+        address: string;
+        radius: number;
+      } | null
+    ): Order[] => {
+      if (!locationFilter || locationFilter.radius === 0) return orders;
+
+      return orders.filter((order) => {
+        if (!order.location) return false;
+
+        // Parse coordinates from order location string
+        const orderCoords = parseLocationCoordinates(order.location);
+
+        if (!orderCoords) return false; // Skip orders without valid coordinates
+
+        // Calculate distance using Haversine formula
+        const distance = calculateDistance(
+          locationFilter.latitude,
+          locationFilter.longitude,
+          orderCoords.latitude,
+          orderCoords.longitude
+        );
+
+        // Include order if distance is within radius
+        return distance <= locationFilter.radius;
+      });
+    },
+    [calculateDistance, parseLocationCoordinates]
+  );
+
+  // Helper function to filter orders by rating (client verified status as proxy)
+  const filterOrdersByRating = useCallback(
+    (orders: Order[], selectedRatings: number[]): Order[] => {
+      if (!selectedRatings || selectedRatings.length === 0) return orders;
+      // For now, use client verified status as a proxy for rating
+      // In the future, we could calculate actual average ratings from reviews
+      // If ratings are selected, only show orders from verified clients
+      // This is a simple proxy - in a real implementation, you'd calculate average ratings
+      return orders.filter((order: Order) => {
+        return order.Client?.verified === true;
+      });
+    },
+    []
+  );
+
   // Helper function to sort orders
   const sortOrders = useCallback((orders: Order[], sortBy: string): Order[] => {
     if (!sortBy || sortBy === "relevance") {
@@ -640,6 +781,47 @@ export default function OrdersScreen() {
         filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
       }
 
+      // Apply location filter using distance calculation
+      const locationFilterValue = selectedFilters.location;
+      const locationFilter =
+        locationFilterValue &&
+        typeof locationFilterValue === "object" &&
+        "latitude" in locationFilterValue &&
+        "longitude" in locationFilterValue &&
+        "address" in locationFilterValue &&
+        "radius" in locationFilterValue
+          ? (locationFilterValue as {
+              latitude: number;
+              longitude: number;
+              address: string;
+              radius: number;
+            })
+          : null;
+      if (locationFilter) {
+        filteredOrders = filterOrdersByLocation(filteredOrders, locationFilter);
+      }
+
+      // Apply rating filter
+      const ratingFilterValue = selectedFilters.rating;
+      const ratingFilter: number[] = Array.isArray(ratingFilterValue)
+        ? ratingFilterValue
+            .map((r) =>
+              typeof r === "number"
+                ? r
+                : typeof r === "string"
+                ? parseInt(r, 10)
+                : null
+            )
+            .filter((r): r is number => r !== null && !isNaN(r))
+        : ratingFilterValue && typeof ratingFilterValue === "number"
+        ? [ratingFilterValue]
+        : ratingFilterValue && typeof ratingFilterValue === "string"
+        ? [parseInt(ratingFilterValue, 10)].filter((r) => !isNaN(r))
+        : [];
+      if (ratingFilter.length > 0) {
+        filteredOrders = filterOrdersByRating(filteredOrders, ratingFilter);
+      }
+
       // Apply sorting
       filteredOrders = sortOrders(filteredOrders, sortBy);
 
@@ -652,6 +834,47 @@ export default function OrdersScreen() {
     let filteredOrders = orders;
     if (priceRange.min !== 0 || priceRange.max !== 100000) {
       filteredOrders = filterOrdersByPriceRange(orders, priceRange);
+    }
+
+    // Apply location filter using distance calculation
+    const locationFilterValue = selectedFilters.location;
+    const locationFilter =
+      locationFilterValue &&
+      typeof locationFilterValue === "object" &&
+      "latitude" in locationFilterValue &&
+      "longitude" in locationFilterValue &&
+      "address" in locationFilterValue &&
+      "radius" in locationFilterValue
+        ? (locationFilterValue as {
+            latitude: number;
+            longitude: number;
+            address: string;
+            radius: number;
+          })
+        : null;
+    if (locationFilter) {
+      filteredOrders = filterOrdersByLocation(filteredOrders, locationFilter);
+    }
+
+    // Apply rating filter
+    const ratingFilterValue = selectedFilters.rating;
+    const ratingFilter: number[] = Array.isArray(ratingFilterValue)
+      ? ratingFilterValue
+          .map((r) =>
+            typeof r === "number"
+              ? r
+              : typeof r === "string"
+              ? parseInt(r, 10)
+              : null
+          )
+          .filter((r): r is number => r !== null && !isNaN(r))
+      : ratingFilterValue && typeof ratingFilterValue === "number"
+      ? [ratingFilterValue]
+      : ratingFilterValue && typeof ratingFilterValue === "string"
+      ? [parseInt(ratingFilterValue, 10)].filter((r) => !isNaN(r))
+      : [];
+    if (ratingFilter.length > 0) {
+      filteredOrders = filterOrdersByRating(filteredOrders, ratingFilter);
     }
 
     // Apply sorting
@@ -669,11 +892,15 @@ export default function OrdersScreen() {
     selectedFilters.sortBy,
     priceRange,
     clientSidePage,
+    selectedFilters.location,
+    selectedFilters.rating,
     orders,
     filterOrdersBySearch,
     filterOrdersByStatus,
     filterOrdersByServices,
     filterOrdersByPriceRange,
+    filterOrdersByLocation,
+    filterOrdersByRating,
     sortOrders,
     getPaginatedOrders,
   ]);
@@ -697,6 +924,40 @@ export default function OrdersScreen() {
           filtered = filterOrdersByServices(filtered, selectedServices);
         }
         filtered = filterOrdersByPriceRange(filtered, priceRange);
+        const locationFilter = selectedFilters.location as {
+          latitude: number;
+          longitude: number;
+          address: string;
+          radius: number;
+        } | null;
+        if (locationFilter) {
+          // Simple text matching for now
+          filtered = filtered.filter((order) => {
+            if (!order.location) return false;
+            return order.location
+              .toLowerCase()
+              .includes(locationFilter.address.toLowerCase());
+          });
+        }
+        const ratingFilterValue = selectedFilters.rating;
+        const ratingFilter: number[] = Array.isArray(ratingFilterValue)
+          ? ratingFilterValue
+              .map((r) =>
+                typeof r === "number"
+                  ? r
+                  : typeof r === "string"
+                  ? parseInt(r, 10)
+                  : null
+              )
+              .filter((r): r is number => r !== null && !isNaN(r))
+          : ratingFilterValue && typeof ratingFilterValue === "number"
+          ? [ratingFilterValue]
+          : ratingFilterValue && typeof ratingFilterValue === "string"
+          ? [parseInt(ratingFilterValue, 10)].filter((r) => !isNaN(r))
+          : [];
+        if (ratingFilter.length > 0) {
+          filtered = filterOrdersByRating(filtered, ratingFilter);
+        }
         return filtered;
       })();
 
@@ -724,7 +985,9 @@ export default function OrdersScreen() {
     filterOrdersByStatus,
     filterOrdersByServices,
     filterOrdersByPriceRange,
+    filterOrdersByRating,
     createPaginationObject,
+    selectedFilters,
   ]);
 
   // Load more orders (pagination)
@@ -987,9 +1250,18 @@ export default function OrdersScreen() {
 
   const handleFilterChange = (
     sectionKey: string,
-    value: string | string[] | { min: number; max: number }
+    value:
+      | string
+      | string[]
+      | { min: number; max: number }
+      | {
+          latitude: number;
+          longitude: number;
+          address: string;
+          radius: number;
+        }
+      | null
   ) => {
-    console.log("sectionKey", sectionKey, value);
     setSelectedFilters((prev) => ({
       ...prev,
       [sectionKey]: value,
@@ -1113,6 +1385,7 @@ export default function OrdersScreen() {
                 selectedFilters={selectedFilters}
                 onFilterChange={handleFilterChange}
                 loading={filterLoading}
+                hideModalForLocation={filterModalHiddenForLocation}
               />
             </ResponsiveCard>
           </View>
@@ -1202,6 +1475,39 @@ export default function OrdersScreen() {
         title={t("reviewTitle")}
         subtitle={t("reviewSubtitle")}
         loading={feedbackLoading}
+      />
+
+      <LocationFilterModal
+        visible={locationFilterVisible}
+        onClose={() => {
+          setLocationFilterVisible(false);
+          // Show filter modal again when location modal closes
+          setFilterModalHiddenForLocation(false);
+        }}
+        onConfirm={(locationData) => {
+          setSelectedFilters((prev) => ({
+            ...prev,
+            location: locationData,
+          }));
+          setLocationFilterVisible(false);
+          // Show filter modal again when location is confirmed
+          setFilterModalHiddenForLocation(false);
+        }}
+        initialLocation={
+          selectedFilters.location &&
+          typeof selectedFilters.location === "object" &&
+          "latitude" in selectedFilters.location &&
+          "longitude" in selectedFilters.location &&
+          "address" in selectedFilters.location &&
+          "radius" in selectedFilters.location
+            ? (selectedFilters.location as {
+                latitude: number;
+                longitude: number;
+                address: string;
+                radius: number;
+              })
+            : undefined
+        }
       />
     </>
   );
