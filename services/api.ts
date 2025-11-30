@@ -544,6 +544,28 @@ class ApiService {
     );
   }
 
+  async getPreferences(): Promise<{ preferences: any }> {
+    return this.request<{ preferences: any }>(`/auth/preferences`, {}, true);
+  }
+
+  async updatePreferences(data: {
+    language?: "en" | "ru" | "hy";
+    theme?: "light" | "dark" | "auto";
+    pushNotificationsEnabled?: boolean;
+    emailNotificationsEnabled?: boolean;
+    timezone?: string;
+    dateFormat?: string;
+  }): Promise<{ preferences: any }> {
+    return this.request<{ preferences: any }>(
+      `/auth/preferences`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
   async updateUserById(
     id: number,
     data: UpdateUserProfileData

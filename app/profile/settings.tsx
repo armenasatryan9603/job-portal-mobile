@@ -15,7 +15,7 @@ import DeleteAccountDialog from "@/components/DeleteAccountDialog";
 import TranslationExample from "@/components/TranslationExample";
 import { ReferralModal } from "@/components/ReferralModal";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   ScrollView,
@@ -31,6 +31,7 @@ import {
   UIManager,
 } from "react-native";
 import { useLanguage } from "@/contexts/LanguageContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Enable LayoutAnimation on Android
 if (
@@ -68,12 +69,112 @@ export default function ProfileSettingsScreen() {
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [pushNotificationsEnabled, setPushNotificationsEnabled] =
+    useState(true);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] =
+    useState(true);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
 
   const languages = [
     { code: "en", name: "English", nativeName: "English" },
     { code: "ru", name: "Russian", nativeName: "Русский" },
     { code: "hy", name: "Armenian", nativeName: "Հայերեն" },
   ];
+
+  // Load notification preferences from AsyncStorage and backend
+  useEffect(() => {
+    loadNotificationPreferences();
+  }, [isAuthenticated]);
+
+  const loadNotificationPreferences = async () => {
+    try {
+      // First load from AsyncStorage for immediate UI update
+      const pushPrefs = await AsyncStorage.getItem("pushNotificationsEnabled");
+      const emailPrefs = await AsyncStorage.getItem(
+        "emailNotificationsEnabled"
+      );
+
+      if (pushPrefs !== null) {
+        setPushNotificationsEnabled(JSON.parse(pushPrefs));
+      }
+      if (emailPrefs !== null) {
+        setEmailNotificationsEnabled(JSON.parse(emailPrefs));
+      }
+
+      // Then sync with backend if user is authenticated
+      if (isAuthenticated && user?.id) {
+        try {
+          const response = await apiService.getPreferences();
+          const prefs = response.preferences || {};
+
+          if (prefs.pushNotificationsEnabled !== undefined) {
+            setPushNotificationsEnabled(prefs.pushNotificationsEnabled);
+            await AsyncStorage.setItem(
+              "pushNotificationsEnabled",
+              JSON.stringify(prefs.pushNotificationsEnabled)
+            );
+          }
+          if (prefs.emailNotificationsEnabled !== undefined) {
+            setEmailNotificationsEnabled(prefs.emailNotificationsEnabled);
+            await AsyncStorage.setItem(
+              "emailNotificationsEnabled",
+              JSON.stringify(prefs.emailNotificationsEnabled)
+            );
+          }
+        } catch (error) {
+          console.error("Error loading preferences from backend:", error);
+          // Continue with local storage values if backend fails
+        }
+      }
+    } catch (error) {
+      console.error("Error loading notification preferences:", error);
+    } finally {
+      setIsLoadingPreferences(false);
+    }
+  };
+
+  const saveNotificationPreferences = async (
+    pushEnabled: boolean,
+    emailEnabled: boolean
+  ) => {
+    try {
+      // Save to AsyncStorage immediately for offline support
+      await AsyncStorage.setItem(
+        "pushNotificationsEnabled",
+        JSON.stringify(pushEnabled)
+      );
+      await AsyncStorage.setItem(
+        "emailNotificationsEnabled",
+        JSON.stringify(emailEnabled)
+      );
+
+      // Sync with backend if user is authenticated
+      if (isAuthenticated && user?.id) {
+        try {
+          await apiService.updatePreferences({
+            pushNotificationsEnabled: pushEnabled,
+            emailNotificationsEnabled: emailEnabled,
+          });
+          console.log("✅ Preferences synced with backend");
+        } catch (error) {
+          console.error("Error syncing preferences with backend:", error);
+          // Don't show error to user - preferences are saved locally
+        }
+      }
+    } catch (error) {
+      console.error("Error saving notification preferences:", error);
+    }
+  };
+
+  const handlePushNotificationToggle = async (value: boolean) => {
+    setPushNotificationsEnabled(value);
+    await saveNotificationPreferences(value, emailNotificationsEnabled);
+  };
+
+  const handleEmailNotificationToggle = async (value: boolean) => {
+    setEmailNotificationsEnabled(value);
+    await saveNotificationPreferences(pushNotificationsEnabled, value);
+  };
 
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage as any);
@@ -288,15 +389,31 @@ export default function ProfileSettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Switch
-                value={true}
-                onValueChange={() => {}}
-                trackColor={{
-                  false: colors.border,
-                  true: colors.primary + "40",
-                }}
-                thumbColor={colors.primary}
-              />
+              {isLoadingPreferences ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Switch
+                  value={pushNotificationsEnabled}
+                  onValueChange={handlePushNotificationToggle}
+                  trackColor={{
+                    false:
+                      Platform.OS === "ios" ? colors.border : colors.border,
+                    true:
+                      Platform.OS === "ios"
+                        ? colors.primary + "80"
+                        : colors.primary + "40",
+                  }}
+                  thumbColor={
+                    Platform.OS === "ios"
+                      ? "#FFFFFF"
+                      : pushNotificationsEnabled
+                      ? colors.primary
+                      : colors.textSecondary
+                  }
+                  ios_backgroundColor={colors.border}
+                  style={styles.switch}
+                />
+              )}
             </View>
 
             <View style={styles.settingItem}>
@@ -320,15 +437,31 @@ export default function ProfileSettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Switch
-                value={true}
-                onValueChange={() => {}}
-                trackColor={{
-                  false: colors.border,
-                  true: colors.primary + "40",
-                }}
-                thumbColor={colors.primary}
-              />
+              {isLoadingPreferences ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Switch
+                  value={emailNotificationsEnabled}
+                  onValueChange={handleEmailNotificationToggle}
+                  trackColor={{
+                    false:
+                      Platform.OS === "ios" ? colors.border : colors.border,
+                    true:
+                      Platform.OS === "ios"
+                        ? colors.primary + "80"
+                        : colors.primary + "40",
+                  }}
+                  thumbColor={
+                    Platform.OS === "ios"
+                      ? "#FFFFFF"
+                      : emailNotificationsEnabled
+                      ? colors.primary
+                      : colors.textSecondary
+                  }
+                  ios_backgroundColor={colors.border}
+                  style={styles.switch}
+                />
+              )}
             </View>
           </ResponsiveCard>
 

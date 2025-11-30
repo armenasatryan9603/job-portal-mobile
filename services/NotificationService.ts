@@ -84,9 +84,7 @@ class NotificationService {
     this.activeConversationId = conversationId;
   }
 
-  onChatReminder(
-    listener: (payload: ChatReminderPayload) => void
-  ): () => void {
+  onChatReminder(listener: (payload: ChatReminderPayload) => void): () => void {
     this.chatReminderListeners.add(listener);
     return () => {
       this.chatReminderListeners.delete(listener);
@@ -284,6 +282,17 @@ class NotificationService {
     remoteMessage: RemoteMessage
   ): Promise<void> {
     try {
+      // Check if push notifications are enabled
+      const pushEnabled = await AsyncStorage.getItem(
+        "pushNotificationsEnabled"
+      );
+      if (pushEnabled === "false") {
+        console.log(
+          "Push notifications disabled by user, ignoring notification"
+        );
+        return;
+      }
+
       const messageType = remoteMessage.data?.type;
       const conversationId = remoteMessage.data?.conversationId;
 
@@ -293,9 +302,7 @@ class NotificationService {
           remoteMessage.data?.title ||
           "New message";
         const body =
-          remoteMessage.notification?.body ||
-          remoteMessage.data?.body ||
-          "";
+          remoteMessage.notification?.body || remoteMessage.data?.body || "";
         const numericConversationId = conversationId
           ? Number(conversationId)
           : null;
@@ -630,7 +637,7 @@ class NotificationService {
     try {
       console.log("🔍 Checking FCM token status after login...");
       const authToken = await this.getAuthToken();
-      
+
       if (!authToken) {
         console.warn("⚠️  No auth token available - cannot send FCM token");
         return;
@@ -642,9 +649,13 @@ class NotificationService {
         await this.sendFCMTokenToBackend(fcmToken);
       } else {
         console.log("⏳ FCM token not ready yet");
-        console.log("   - For iOS: Token will be sent when APNS token is available");
+        console.log(
+          "   - For iOS: Token will be sent when APNS token is available"
+        );
         console.log("   - For Android: Check notification permissions");
-        console.log("   - Token will be sent automatically when available via onTokenRefresh");
+        console.log(
+          "   - Token will be sent automatically when available via onTokenRefresh"
+        );
       }
     } catch (error) {
       console.error("❌ Error ensuring FCM token is sent:", error);
