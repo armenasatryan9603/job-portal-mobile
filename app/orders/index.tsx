@@ -93,7 +93,7 @@ export default function OrdersScreen() {
       | null
     >
   >({
-    status: isMyJobs || isSavedOrders ? "all" : "open",
+    status: isMyJobs || isSavedOrders || isMyOrders ? "all" : "open",
     services: filterServiceId ? [filterServiceId.toString()] : [],
     priceRange: { min: 0, max: 100000 },
     sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
@@ -279,7 +279,12 @@ export default function OrdersScreen() {
           { key: "in_progress", label: t("inProgress") },
           { key: "completed", label: t("completed") },
           { key: "cancelled", label: t("cancelled") },
-          ...(isMyOrders ? [{ key: "pending", label: t("pending") }] : []),
+          ...(isMyOrders
+            ? [
+                { key: "pending_review", label: t("pendingReview") },
+                { key: "rejected", label: t("rejected") },
+              ]
+            : []),
         ],
       },
       {

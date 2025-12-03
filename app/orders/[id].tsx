@@ -457,12 +457,15 @@ export default function EditOrderScreen() {
           switch (status) {
             case "open":
               return "#007AFF"; // Blue
+            case "pending_review":
+              return "#FF9500"; // Orange/Yellow
             case "in_progress":
               return "#FF9500"; // Orange/Yellow
             case "completed":
               return "#34C759"; // Green
             case "cancelled":
             case "closed":
+            case "rejected":
               return "#FF3B30"; // Red
           }
         }
@@ -810,6 +813,68 @@ export default function EditOrderScreen() {
                 >
                   {getLocalizedText("description", language, order)}
                 </Text>
+
+                {/* Status Badge */}
+                {order &&
+                  (order.status === "pending_review" ||
+                    order.status === "rejected") && (
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor:
+                            order.status === "pending_review"
+                              ? "#FF9500"
+                              : "#FF3B30",
+                        },
+                      ]}
+                    >
+                      <IconSymbol
+                        name={
+                          order.status === "pending_review"
+                            ? "clock.fill"
+                            : "xmark.circle.fill"
+                        }
+                        size={14}
+                        color="white"
+                      />
+                      <Text style={styles.statusBadgeText}>
+                        {order.status === "pending_review"
+                          ? t("pendingReview") || "Pending Review"
+                          : t("rejected") || "Rejected"}
+                      </Text>
+                    </View>
+                  )}
+
+                {/* Rejection Reason */}
+                {order?.status === "rejected" && order.rejectionReason && (
+                  <View
+                    style={[
+                      styles.rejectionReasonContainer,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.rejectionReasonLabel,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {t("rejectionReason") || "Rejection Reason"}:
+                    </Text>
+                    <Text
+                      style={[
+                        styles.rejectionReasonText,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {order.rejectionReason}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Apply Button or Applied Status */}
                 {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
@@ -1558,5 +1623,36 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     opacity: 0.7,
     fontStyle: "italic",
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    gap: 6,
+  },
+  statusBadgeText: {
+    color: "white",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  rejectionReasonContainer: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  rejectionReasonLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  rejectionReasonText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

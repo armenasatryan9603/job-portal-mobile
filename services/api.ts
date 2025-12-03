@@ -222,6 +222,7 @@ export interface OrderQuestion {
 }
 
 export interface Order {
+  rejectionReason?: string | null;
   id: number;
   clientId: number;
   serviceId?: number;

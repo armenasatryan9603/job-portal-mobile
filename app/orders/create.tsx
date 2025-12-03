@@ -943,18 +943,35 @@ export default function CreateOrderScreen() {
         // Invalidate orders queries to refresh the list
         await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
-        // Application submitted successfully
-        router.replace("/orders");
+        // Order updated successfully - show message if status changed to pending_review
+        const updatedOrder = await apiService.getOrderById(currentOrderId);
+        if (updatedOrder.status === "pending_review") {
+          Alert.alert(
+            t("success") || "Success",
+            t("orderUpdatedPendingApproval") ||
+              "Order updated successfully. It will be reviewed by admin before being published.",
+            [
+              {
+                text: t("ok") || "OK",
+                onPress: () => {
+                  router.replace("/orders?myOrders=true");
+                },
+              },
+            ]
+          );
         } else {
-          // Creating a new order
-          let createdOrder;
-          // Use transactional order creation with media files
-          if (mediaFiles.length > 0) {
-            const { order } = await fileUploadService.createOrderWithMedia(
-              finalOrderData,
-              mediaFiles
-            );
-            createdOrder = order;
+          router.replace("/orders");
+        }
+      } else {
+        // Creating a new order
+        let createdOrder;
+        // Use transactional order creation with media files
+        if (mediaFiles.length > 0) {
+          const { order } = await fileUploadService.createOrderWithMedia(
+            finalOrderData,
+            mediaFiles
+          );
+          createdOrder = order;
 
           // Auto-select first image if no banner is selected
           let bannerIndexToUse = selectedBannerIndex;
@@ -992,8 +1009,20 @@ export default function CreateOrderScreen() {
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
-          // Application submitted successfully
-          router.replace("/orders");
+          // Show success message with pending approval info
+          Alert.alert(
+            t("success") || "Success",
+            t("orderCreatedPendingApproval") ||
+              "Order created successfully. It will be reviewed by admin before being published.",
+            [
+              {
+                text: t("ok") || "OK",
+                onPress: () => {
+                  router.replace("/orders?myOrders=true");
+                },
+              },
+            ]
+          );
         } else {
           // No media files, use regular order creation
           createdOrder = await apiService.createOrder(finalOrderData);
@@ -1010,8 +1039,20 @@ export default function CreateOrderScreen() {
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
-          // Application submitted successfully
-          router.replace("/orders");
+          // Show success message with pending approval info
+          Alert.alert(
+            t("success") || "Success",
+            t("orderCreatedPendingApproval") ||
+              "Order created successfully. It will be reviewed by admin before being published.",
+            [
+              {
+                text: t("ok") || "OK",
+                onPress: () => {
+                  router.replace("/orders?myOrders=true");
+                },
+              },
+            ]
+          );
         }
       }
     } catch (error: any) {
