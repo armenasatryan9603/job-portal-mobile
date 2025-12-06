@@ -27,6 +27,8 @@ import {
   View,
   ActivityIndicator,
   Alert,
+  Animated,
+  Modal,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { apiService, UserProfile, Review } from "@/services/api";
@@ -41,6 +43,10 @@ import { LanguagesSection } from "@/components/LanguagesSection";
 import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { calculateAccountCompletion } from "@/utils/accountCompletion";
+import { CircularProgress } from "@/components/CircularProgress";
+import { LocationPicker } from "@/components/LocationPicker";
+import { MapViewComponent } from "@/components/MapView";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -73,6 +79,22 @@ export default function ProfileScreen() {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
   const [savingBio, setSavingBio] = useState(false);
+
+  // Price range editing state management
+  const [isEditingPrices, setIsEditingPrices] = useState(false);
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [savingPrices, setSavingPrices] = useState(false);
+
+  // Location editing state management
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [locationText, setLocationText] = useState("");
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [showMapView, setShowMapView] = useState(false);
+  const [savingLocation, setSavingLocation] = useState(false);
+
+  // Portfolio count state management
+  const [portfolioCount, setPortfolioCount] = useState(0);
 
   // Test mode state - will use real backend data
   const [testUserId, setTestUserId] = useState(1);
@@ -154,6 +176,9 @@ export default function ProfileScreen() {
 
       // Check chat relationship for contact info visibility
       checkChatRelationship(profileData.id);
+
+      // Fetch portfolio count for completion calculation
+      fetchPortfolioCount(profileData.id);
     } catch (err) {
       console.error("Error fetching profile:", err);
       setError(t("failedToLoadProfile"));
@@ -216,6 +241,16 @@ export default function ProfileScreen() {
     } catch (err) {
       console.error("Error checking chat relationship:", err);
       setHasActiveChat(false); // Default to no access if error
+    }
+  };
+
+  const fetchPortfolioCount = async (userId: number) => {
+    try {
+      const portfolioItems = await apiService.getPortfolio(userId);
+      setPortfolioCount(portfolioItems.length);
+    } catch (err) {
+      console.error("Error fetching portfolio count:", err);
+      setPortfolioCount(0); // Default to 0 if error
     }
   };
 
@@ -320,6 +355,16 @@ export default function ProfileScreen() {
     }
   }, [profile?.bio]);
 
+  // Sync price and location fields with profile when profile changes
+  useEffect(() => {
+    if (profile) {
+      const profileAny = profile as any;
+      setPriceMin(profileAny.priceMin?.toString() || "");
+      setPriceMax(profileAny.priceMax?.toString() || "");
+      setLocationText(profileAny.location || "");
+    }
+  }, [profile]);
+
   const handleStartEditBio = () => {
     setBioText(profile?.bio || "");
     setIsEditingBio(true);
@@ -363,6 +408,156 @@ export default function ProfileScreen() {
       Alert.alert(t("error"), t("failedToUpdateProfile"));
     } finally {
       setSavingBio(false);
+    }
+  };
+
+  const handleStartEditPrices = () => {
+    const profileAny = profile as any;
+    setPriceMin(profileAny.priceMin?.toString() || "");
+    setPriceMax(profileAny.priceMax?.toString() || "");
+    setIsEditingPrices(true);
+  };
+
+  const handleCancelEditPrices = () => {
+    const profileAny = profile as any;
+    setPriceMin(profileAny.priceMin?.toString() || "");
+    setPriceMax(profileAny.priceMax?.toString() || "");
+    setIsEditingPrices(false);
+  };
+
+  const handleSavePrices = async () => {
+    if (!user || !profile) return;
+
+    // Validate prices
+    const min = priceMin.trim() ? parseFloat(priceMin.trim()) : undefined;
+    const max = priceMax.trim() ? parseFloat(priceMax.trim()) : undefined;
+
+    if (min !== undefined && isNaN(min)) {
+      Alert.alert(t("error"), t("pleaseEnterValidPrice"));
+      return;
+    }
+
+    if (max !== undefined && isNaN(max)) {
+      Alert.alert(t("error"), t("pleaseEnterValidPrice"));
+      return;
+    }
+
+    if (min !== undefined && max !== undefined && min > max) {
+      Alert.alert(t("error"), t("minimumPriceCannotBeGreaterThanMaximumPrice"));
+      return;
+    }
+
+    try {
+      setSavingPrices(true);
+
+      // Update specialist profile on backend
+      await apiService.updateSpecialistProfile(profile.id, {
+        priceMin: min,
+        priceMax: max,
+      });
+
+      // Track profile update
+      AnalyticsService.getInstance().logEvent("profile_updated", {
+        update_type: "prices",
+      });
+
+      // Update local profile state
+      const profileAny = profile as any;
+      setProfile({
+        ...profile,
+        ...(min !== undefined && { priceMin: min }),
+        ...(max !== undefined && { priceMax: max }),
+      });
+
+      setIsEditingPrices(false);
+    } catch (error: any) {
+      console.error("Error updating prices:", error);
+      const errorMessage = error?.message || t("failedToUpdateProfile");
+      Alert.alert(t("error"), errorMessage);
+    } finally {
+      setSavingPrices(false);
+    }
+  };
+
+  const handleStartEditLocation = () => {
+    const profileAny = profile as any;
+    setLocationText(profileAny.location || "");
+    setIsEditingLocation(true);
+  };
+
+  const handleCancelEditLocation = () => {
+    const profileAny = profile as any;
+    setLocationText(profileAny.location || "");
+    setIsEditingLocation(false);
+    setShowLocationPicker(false);
+  };
+
+  const handleLocationSelect = (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => {
+    console.log("Location selected:", location);
+    setLocationText(location.address);
+    setShowLocationPicker(false);
+    setShowMapView(false);
+  };
+
+  const handleMapLocationSelect = (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => {
+    console.log("Map location selected:", location);
+    setLocationText(location.address);
+    setShowMapView(false);
+  };
+
+  const handleSaveLocation = async () => {
+    if (!user || !profile) {
+      console.log("Cannot save location: user or profile missing", {
+        user,
+        profile,
+      });
+      return;
+    }
+
+    if (!locationText.trim()) {
+      Alert.alert(t("error"), t("pleaseEnterLocation"));
+      return;
+    }
+
+    try {
+      setSavingLocation(true);
+      console.log(
+        "Saving location:",
+        locationText.trim(),
+        "for user:",
+        profile.id
+      );
+
+      // Update specialist profile on backend
+      const result = await apiService.updateSpecialistProfile(profile.id, {
+        location: locationText.trim(),
+      });
+
+      console.log("Location update result:", result);
+
+      // Track profile update
+      AnalyticsService.getInstance().logEvent("profile_updated", {
+        update_type: "location",
+      });
+
+      // Refresh profile to get updated data
+      await fetchProfile();
+
+      setIsEditingLocation(false);
+    } catch (error: any) {
+      console.error("Error updating location:", error);
+      const errorMessage = error?.message || t("failedToUpdateProfile");
+      Alert.alert(t("error"), errorMessage);
+    } finally {
+      setSavingLocation(false);
     }
   };
 
@@ -459,42 +654,123 @@ export default function ProfileScreen() {
           <ResponsiveCard>
             <View style={styles.profileHeader}>
               <View style={styles.avatarContainer}>
-                {profilePicture || profile.avatarUrl ? (
-                  <Image
-                    source={{ uri: profilePicture || profile.avatarUrl }}
-                    style={styles.avatar}
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.avatar,
-                      styles.defaultAvatar,
-                      { backgroundColor: colors.border },
-                    ]}
-                  >
-                    <IconSymbol
-                      name="person.fill"
-                      size={30}
-                      color={colors.textSecondary}
-                    />
-                  </View>
-                )}
-                {!userId && (
-                  <TouchableOpacity
-                    style={[
-                      styles.editImageButton,
-                      { backgroundColor: colors.primary },
-                    ]}
-                    onPress={handleProfilePictureUpload}
-                    disabled={uploadingPicture}
-                  >
-                    {uploadingPicture ? (
-                      <ActivityIndicator size={16} color="white" />
-                    ) : (
-                      <IconSymbol name="camera.fill" size={16} color="white" />
-                    )}
-                  </TouchableOpacity>
-                )}
+                {(() => {
+                  const completionPercentage =
+                    !userId && profile
+                      ? calculateAccountCompletion(
+                          profile,
+                          skills.userServices.length,
+                          portfolioCount
+                        )
+                      : 100;
+
+                  return (
+                    <>
+                      {/* Circular Progress Ring */}
+                      {!userId && profile && (
+                        <View style={styles.progressWrapper}>
+                          <CircularProgress
+                            percentage={completionPercentage}
+                            size={88}
+                            strokeWidth={4}
+                            backgroundColor={colors.border}
+                            progressColor={
+                              completionPercentage === 100
+                                ? "#4CAF50"
+                                : colors.primary
+                            }
+                          />
+                        </View>
+                      )}
+                      {!userId ? (
+                        <TouchableOpacity
+                          onPress={handleProfilePictureUpload}
+                          disabled={uploadingPicture}
+                          activeOpacity={0.7}
+                        >
+                          {profilePicture || profile.avatarUrl ? (
+                            <Image
+                              source={{
+                                uri: profilePicture || profile.avatarUrl,
+                              }}
+                              style={styles.avatar}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                styles.avatar,
+                                styles.defaultAvatar,
+                                { backgroundColor: colors.border },
+                              ]}
+                            >
+                              <IconSymbol
+                                name="person.fill"
+                                size={30}
+                                color={colors.textSecondary}
+                              />
+                            </View>
+                          )}
+                          {uploadingPicture && (
+                            <View style={styles.uploadingOverlay}>
+                              <ActivityIndicator size="small" color="white" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        <>
+                          {profilePicture || profile.avatarUrl ? (
+                            <Image
+                              source={{
+                                uri: profilePicture || profile.avatarUrl,
+                              }}
+                              style={styles.avatar}
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                styles.avatar,
+                                styles.defaultAvatar,
+                                { backgroundColor: colors.border },
+                              ]}
+                            >
+                              <IconSymbol
+                                name="person.fill"
+                                size={30}
+                                color={colors.textSecondary}
+                              />
+                            </View>
+                          )}
+                        </>
+                      )}
+                      {/* Completion Percentage Badge */}
+                      {!userId && profile && (
+                        <View
+                          style={[
+                            styles.completionBadge,
+                            {
+                              backgroundColor:
+                                completionPercentage === 100
+                                  ? "#4CAF50"
+                                  : colors.primary,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.completionBadgeText,
+                              {
+                                color: "#FFFFFF",
+                                fontSize: completionPercentage === 100 ? 9 : 11,
+                              },
+                            ]}
+                          >
+                            {completionPercentage}%
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
               </View>
 
               <View style={styles.profileInfo}>
@@ -725,6 +1001,284 @@ export default function ProfileScreen() {
             />
           </ResponsiveCard>
 
+          {/* Price Range Section (for specialists only) */}
+          {profile.role === "specialist" && !userId && (
+            <ResponsiveCard>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("priceRange")}
+                </Text>
+                {!isEditingPrices && (
+                  <Button
+                    onPress={handleStartEditPrices}
+                    title={t("edit")}
+                    variant="primary"
+                    icon="pencil"
+                    iconSize={14}
+                    backgroundColor={colors.primary}
+                  />
+                )}
+              </View>
+
+              {isEditingPrices ? (
+                <View style={styles.priceEditContainer}>
+                  <View style={styles.priceInputRow}>
+                    <View style={styles.priceInputGroup}>
+                      <Text style={[styles.priceLabel, { color: colors.text }]}>
+                        {t("minimumPrice")} (USD)
+                      </Text>
+                      <View
+                        style={[
+                          styles.priceInputContainer,
+                          { borderColor: colors.border },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pricePrefix,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          $
+                        </Text>
+                        <TextInput
+                          style={[styles.priceInput, { color: colors.text }]}
+                          value={priceMin}
+                          onChangeText={setPriceMin}
+                          placeholder="0"
+                          placeholderTextColor={colors.tabIconDefault}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.priceInputGroup}>
+                      <Text style={[styles.priceLabel, { color: colors.text }]}>
+                        {t("maximumPrice")} (USD)
+                      </Text>
+                      <View
+                        style={[
+                          styles.priceInputContainer,
+                          { borderColor: colors.border },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pricePrefix,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          $
+                        </Text>
+                        <TextInput
+                          style={[styles.priceInput, { color: colors.text }]}
+                          value={priceMax}
+                          onChangeText={setPriceMax}
+                          placeholder="0"
+                          placeholderTextColor={colors.tabIconDefault}
+                          keyboardType="numeric"
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={styles.priceEditActions}>
+                    <Button
+                      variant="outline"
+                      icon="xmark"
+                      iconSize={14}
+                      title={t("cancel")}
+                      iconPosition="left"
+                      backgroundColor={colors.background}
+                      textColor={colors.text}
+                      onPress={handleCancelEditPrices}
+                      disabled={savingPrices}
+                    />
+                    <Button
+                      variant="primary"
+                      icon="checkmark"
+                      iconSize={14}
+                      title={t("save")}
+                      iconPosition="left"
+                      backgroundColor={colors.primary}
+                      textColor="white"
+                      onPress={handleSavePrices}
+                      disabled={savingPrices}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.priceDisplayContainer}>
+                  {(() => {
+                    const profileAny = profile as any;
+                    const min = profileAny.priceMin;
+                    const max = profileAny.priceMax;
+                    if (min || max) {
+                      return (
+                        <Text
+                          style={[styles.priceDisplay, { color: colors.text }]}
+                        >
+                          {min ? `$${min}` : t("notSet")} -{" "}
+                          {max ? `$${max}` : t("notSet")}
+                        </Text>
+                      );
+                    } else {
+                      return (
+                        <Text
+                          style={[
+                            styles.priceDisplay,
+                            {
+                              color: colors.textSecondary,
+                              fontStyle: "italic",
+                            },
+                          ]}
+                        >
+                          {t("noPriceRangeSet")}
+                        </Text>
+                      );
+                    }
+                  })()}
+                </View>
+              )}
+            </ResponsiveCard>
+          )}
+
+          {/* Location Section (for specialists only) */}
+          {profile.role === "specialist" && !userId && (
+            <ResponsiveCard>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("location")}
+                </Text>
+                {!isEditingLocation && (
+                  <Button
+                    onPress={handleStartEditLocation}
+                    title={t("edit")}
+                    variant="primary"
+                    icon="pencil"
+                    iconSize={14}
+                    backgroundColor={colors.primary}
+                  />
+                )}
+              </View>
+
+              {isEditingLocation ? (
+                <View style={styles.locationEditContainer}>
+                  <View style={styles.locationInputContainer}>
+                    <TextInput
+                      style={[
+                        styles.locationInput,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                          color: colors.text,
+                        },
+                      ]}
+                      value={locationText}
+                      onChangeText={setLocationText}
+                      placeholder={t("locationPlaceholder")}
+                      placeholderTextColor={colors.tabIconDefault}
+                    />
+                    <TouchableOpacity
+                      style={[
+                        styles.locationPickerButton,
+                        { borderColor: colors.primary },
+                      ]}
+                      onPress={() => setShowLocationPicker(true)}
+                    >
+                      <IconSymbol name="map" size={18} color={colors.primary} />
+                      <Text
+                        style={[
+                          styles.locationPickerButtonText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {t("selectOnMap")}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.locationEditActions}>
+                    <Button
+                      variant="outline"
+                      icon="xmark"
+                      iconSize={14}
+                      title={t("cancel")}
+                      iconPosition="left"
+                      backgroundColor={colors.background}
+                      textColor={colors.text}
+                      onPress={handleCancelEditLocation}
+                      disabled={savingLocation}
+                    />
+                    <Button
+                      variant="primary"
+                      icon="checkmark"
+                      iconSize={14}
+                      title={t("save")}
+                      iconPosition="left"
+                      backgroundColor={colors.primary}
+                      textColor="white"
+                      onPress={handleSaveLocation}
+                      disabled={savingLocation}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.locationDisplayContainer}>
+                  {(() => {
+                    const profileAny = profile as any;
+                    const location = profileAny.location;
+                    if (location && location.trim().length > 0) {
+                      return (
+                        <View style={styles.locationDisplayRow}>
+                          <IconSymbol
+                            name="location.fill"
+                            size={18}
+                            color={colors.primary}
+                          />
+                          <Text
+                            style={[
+                              styles.locationDisplay,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {location}
+                          </Text>
+                        </View>
+                      );
+                    } else {
+                      return (
+                        <Text
+                          style={[
+                            styles.locationDisplay,
+                            {
+                              color: colors.textSecondary,
+                              fontStyle: "italic",
+                            },
+                          ]}
+                        >
+                          {t("noLocationSet")}
+                        </Text>
+                      );
+                    }
+                  })()}
+                </View>
+              )}
+            </ResponsiveCard>
+          )}
+
           {/* Work Samples Section (for specialists only) */}
           {profile.role === "specialist" && (
             <ResponsiveCard>
@@ -893,6 +1447,59 @@ export default function ProfileScreen() {
         onSearchChange={skills.setSearchQuery}
         onToggleService={skills.toggleServiceSelection}
       />
+
+      {/* Location Picker Modal (for manual entry) */}
+      <LocationPicker
+        visible={showLocationPicker}
+        onClose={() => {
+          console.log("LocationPicker closed");
+          setShowLocationPicker(false);
+        }}
+        onLocationSelect={(location) => {
+          console.log("LocationPicker onLocationSelect called:", location);
+          handleLocationSelect(location);
+        }}
+        initialLocation={
+          locationText
+            ? {
+                latitude: 0,
+                longitude: 0,
+                address: locationText,
+              }
+            : undefined
+        }
+      />
+
+      {/* Map View Modal (direct map selection) */}
+      {showMapView && (
+        <Modal
+          visible={showMapView}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => {
+            console.log("MapView closed");
+            setShowMapView(false);
+          }}
+        >
+          <MapViewComponent
+            initialLocation={
+              locationText
+                ? {
+                    latitude: 0,
+                    longitude: 0,
+                    address: locationText,
+                  }
+                : undefined
+            }
+            onLocationSelect={handleMapLocationSelect}
+            onClose={() => {
+              console.log("MapView onClose called");
+              setShowMapView(false);
+            }}
+            showCurrentLocationButton={true}
+          />
+        </Modal>
+      )}
     </Layout>
   );
 }
@@ -906,21 +1513,63 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: "relative",
+    width: 88,
+    height: 88,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressWrapper: {
+    position: "absolute",
+    width: 88,
+    height: 88,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 0,
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
+    zIndex: 2,
   },
-  editImageButton: {
+  defaultAvatar: {
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 2,
+  },
+  completionBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    bottom: -2,
+    right: -2,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 3,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  completionBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  uploadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 4,
   },
   profileInfo: {
     flex: 1,
@@ -957,6 +1606,33 @@ const styles = StyleSheet.create({
   location: {
     fontSize: 14,
     fontWeight: "500",
+  },
+
+  // Account completion
+  completionContainer: {
+    paddingVertical: 4,
+  },
+  completionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  completionPercentage: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  progressBarContainer: {
+    height: 8,
+    borderRadius: 4,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  completionHint: {
+    fontSize: 12,
+    fontStyle: "italic",
   },
 
   // Section titles
@@ -1017,10 +1693,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   // New styles for updated profile
-  defaultAvatar: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
   bioText: {
     fontSize: 15,
     lineHeight: 22,
@@ -1220,5 +1892,125 @@ const styles = StyleSheet.create({
   paymentsCtaText: {
     fontSize: Typography.md,
     fontWeight: Typography.semibold,
+  },
+  // Price range styles
+  priceEditContainer: {
+    gap: 16,
+  },
+  priceInputRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  priceInputGroup: {
+    flex: 1,
+    gap: 8,
+  },
+  priceLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  priceInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: "transparent",
+  },
+  pricePrefix: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginRight: 4,
+  },
+  priceInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
+    paddingVertical: 0,
+  },
+  priceEditActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  priceDisplayContainer: {
+    paddingVertical: 8,
+  },
+  priceDisplay: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  // Location styles
+  locationEditContainer: {
+    gap: 16,
+  },
+  locationInputContainer: {
+    gap: 12,
+  },
+  locationInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  locationPickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  locationPickerButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  locationEditActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  locationDisplayContainer: {
+    paddingVertical: 8,
+  },
+  locationDisplayRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  locationDisplay: {
+    fontSize: 16,
+    fontWeight: "500",
+    flex: 1,
+  },
+  // Missing fields styles
+  missingFieldsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  missingFieldsTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  missingFieldsDescription: {
+    fontSize: 14,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  missingFieldsList: {
+    gap: 8,
+  },
+  missingFieldItem: {
+    paddingLeft: 12,
+    borderLeftWidth: 3,
+    paddingVertical: 4,
+  },
+  missingFieldText: {
+    fontSize: 15,
+    lineHeight: 22,
   },
 });

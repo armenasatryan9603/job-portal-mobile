@@ -32,6 +32,7 @@ export function ContactInfo({
   const [formData, setFormData] = useState({
     email: profile.email || "",
     phone: profile.phone || "",
+    experienceYears: profile.experienceYears?.toString() || "",
   });
 
   // Sync form data when profile changes
@@ -39,13 +40,15 @@ export function ContactInfo({
     setFormData({
       email: profile.email || "",
       phone: profile.phone || "",
+      experienceYears: profile.experienceYears?.toString() || "",
     });
-  }, [profile.email, profile.phone]);
+  }, [profile.email, profile.phone, profile.experienceYears]);
 
   const handleStartEdit = () => {
     setFormData({
       email: profile.email || "",
       phone: profile.phone || "",
+      experienceYears: profile.experienceYears?.toString() || "",
     });
     setIsEditing(true);
   };
@@ -54,6 +57,7 @@ export function ContactInfo({
     setFormData({
       email: profile.email || "",
       phone: profile.phone || "",
+      experienceYears: profile.experienceYears?.toString() || "",
     });
     setIsEditing(false);
   };
@@ -64,10 +68,24 @@ export function ContactInfo({
     try {
       setSaving(true);
 
+      // Parse experienceYears
+      const experienceYears = formData.experienceYears.trim()
+        ? parseInt(formData.experienceYears.trim(), 10)
+        : undefined;
+
+      if (
+        formData.experienceYears.trim() &&
+        (isNaN(experienceYears!) || experienceYears! < 0)
+      ) {
+        Alert.alert(t("error"), t("pleaseEnterValidExperienceYears"));
+        return;
+      }
+
       // Update profile on backend
       const updatedProfile = await apiService.updateUserProfile({
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim() || undefined,
+        experienceYears: experienceYears,
       });
 
       // Update user in AuthContext
@@ -182,6 +200,28 @@ export function ContactInfo({
             />
           </View>
 
+          {/* Experience Years Input */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              {t("yearsOfExperience")}
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={formData.experienceYears}
+              onChangeText={(value) => updateField("experienceYears", value)}
+              placeholder={t("enterYearsOfExperience")}
+              placeholderTextColor={colors.tabIconDefault}
+              keyboardType="numeric"
+            />
+          </View>
+
           <View style={styles.editActions}>
             <Button
               variant="outline"
@@ -225,12 +265,15 @@ export function ContactInfo({
 
           <View style={styles.contactItem}>
             <IconSymbol
-              name="dollarsign.circle.fill"
+              name="briefcase.fill"
               size={16}
               color={colors.primary}
             />
             <Text style={[styles.contactText, { color: colors.text }]}>
-              {t("creditBalance")}: {(profile.creditBalance || 0).toFixed(2)}
+              {t("yearsOfExperience")}:{" "}
+              {profile.experienceYears
+                ? `${profile.experienceYears} ${t("years")}`
+                : t("notProvided")}
             </Text>
           </View>
         </View>

@@ -51,14 +51,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   const [showMap, setShowMap] = useState(false);
 
   useEffect(() => {
-    if (visible && !location) {
-      requestLocationPermission();
+    if (visible && !location && !initialLocation) {
+      // Only request location if no initial location is provided
+      // Don't auto-open map to avoid hanging
     }
-    // Auto-open map when LocationPicker opens
-    if (visible) {
-      setShowMap(true);
-    }
-  }, [visible]);
+  }, [visible, location, initialLocation]);
 
   const requestLocationPermission = async () => {
     try {

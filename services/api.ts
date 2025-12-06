@@ -112,6 +112,10 @@ export interface UserProfile {
   verified: boolean;
   languages?: UserLanguage[];
   createdAt: string;
+  experienceYears?: number;
+  priceMin?: number;
+  priceMax?: number;
+  location?: string;
 }
 
 export interface UpdateUserProfileData {
@@ -122,6 +126,7 @@ export interface UpdateUserProfileData {
   bio?: string;
   role?: string;
   languages?: UserLanguage[];
+  experienceYears?: number;
 }
 
 // Portfolio Types
@@ -622,6 +627,29 @@ class ApiService {
 
   async getUserById(id: number): Promise<UserProfile> {
     return this.request<UserProfile>(`/users/${id}`);
+  }
+
+  async updateSpecialistProfile(
+    id: number,
+    data: {
+      serviceId?: number;
+      experienceYears?: number;
+      priceMin?: number;
+      priceMax?: number;
+      location?: string;
+    }
+  ): Promise<any> {
+    return this.request<any>(
+      `/users/specialists/${id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
   }
 
   async updatePassword(
