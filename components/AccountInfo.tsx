@@ -6,7 +6,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { apiService, UserProfile } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from "react";
-import { Alert, StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet, Text, TextInput, View, TouchableOpacity } from "react-native";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 
 interface AccountInfoProps {
@@ -30,19 +30,25 @@ export function AccountInfo({
   const [selectedRole, setSelectedRole] = useState<string>(
     profile.role || "client"
   );
+  const [experienceYears, setExperienceYears] = useState<string>(
+    profile.experienceYears?.toString() || ""
+  );
 
-  // Sync selected role when profile changes
+  // Sync form data when profile changes
   useEffect(() => {
     setSelectedRole(profile.role || "client");
-  }, [profile.role]);
+    setExperienceYears(profile.experienceYears?.toString() || "");
+  }, [profile.role, profile.experienceYears]);
 
   const handleStartEdit = () => {
     setSelectedRole(profile.role || "client");
+    setExperienceYears(profile.experienceYears?.toString() || "");
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setSelectedRole(profile.role || "client");
+    setExperienceYears(profile.experienceYears?.toString() || "");
     setIsEditing(false);
   };
 
@@ -52,9 +58,23 @@ export function AccountInfo({
     try {
       setSaving(true);
 
+      // Parse experienceYears
+      const experienceYearsNum = experienceYears.trim()
+        ? parseInt(experienceYears.trim(), 10)
+        : undefined;
+
+      if (
+        experienceYears.trim() &&
+        (isNaN(experienceYearsNum!) || experienceYearsNum! < 0)
+      ) {
+        Alert.alert(t("error"), t("pleaseEnterValidExperienceYears"));
+        return;
+      }
+
       // Update profile on backend
       const updatedProfile = await apiService.updateUserProfile({
         role: selectedRole,
+        experienceYears: experienceYearsNum,
       });
 
       // Update user in AuthContext
@@ -146,6 +166,28 @@ export function AccountInfo({
             </View>
           </View>
 
+          {/* Experience Years Input */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: colors.text }]}>
+              {t("yearsOfExperience")}
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                },
+              ]}
+              value={experienceYears}
+              onChangeText={setExperienceYears}
+              placeholder={t("enterYearsOfExperience")}
+              placeholderTextColor={colors.tabIconDefault}
+              keyboardType="numeric"
+            />
+          </View>
+
           <View style={styles.editActions}>
             <Button
               variant="outline"
@@ -209,6 +251,19 @@ export function AccountInfo({
               {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
             </Text>
           </View>
+          <View style={styles.accountItem}>
+            <IconSymbol
+              name="briefcase.fill"
+              size={16}
+              color={colors.primary}
+            />
+            <Text style={[styles.accountText, { color: colors.text }]}>
+              {t("yearsOfExperience")}:{" "}
+              {profile.experienceYears
+                ? `${profile.experienceYears} ${t("years")}`
+                : t("notProvided")}
+            </Text>
+          </View>
         </View>
       )}
     </ResponsiveCard>
@@ -250,6 +305,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: "500",
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
   },
   roleOptionsContainer: {
     flexDirection: "row",
