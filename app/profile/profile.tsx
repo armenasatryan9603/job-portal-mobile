@@ -37,6 +37,7 @@ import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { useSkills } from "@/hooks/useSkills";
 import { ContactInfo } from "@/components/ContactInfo";
 import { AccountInfo } from "@/components/AccountInfo";
+import { LanguagesSection } from "@/components/LanguagesSection";
 import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -643,6 +644,15 @@ export default function ProfileScreen() {
               </>
             )}
           </ResponsiveCard>
+
+          {/* Languages Section */}
+          <LanguagesSection
+            profile={profile}
+            userId={userId ? targetUserId : undefined}
+            onProfileUpdate={(updatedProfile) => {
+              setProfile(updatedProfile);
+            }}
+          />
 
           {/* Contact Information */}
           <ContactInfo

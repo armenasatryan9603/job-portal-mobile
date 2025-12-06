@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import * as Device from "expo-device";
-import { apiService } from "@/services/api";
+import { apiService, UserLanguage } from "@/services/api";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
 import PhoneVerificationService from "@/services/PhoneVerificationService";
 import NotificationService from "@/services/NotificationService";
@@ -20,6 +20,7 @@ interface User {
   phone?: string;
   role: string;
   avatarUrl?: string;
+  languages?: UserLanguage[];
   bio?: string;
   creditBalance: number;
   verified: boolean;
@@ -163,7 +164,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }, 10000);
           // Track signup event
           await AnalyticsService.getInstance().logSignUp("phone");
-          await AnalyticsService.getInstance().setUserId(result.user.id.toString());
+          await AnalyticsService.getInstance().setUserId(
+            result.user.id.toString()
+          );
           await AnalyticsService.getInstance().setUserProperties({
             user_role: result.user.role,
             user_verified: result.user.verified ? "true" : "false",
@@ -171,7 +174,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         } else {
           // Track login event
           await AnalyticsService.getInstance().logLogin("phone");
-          await AnalyticsService.getInstance().setUserId(result.user.id.toString());
+          await AnalyticsService.getInstance().setUserId(
+            result.user.id.toString()
+          );
         }
 
         // Send FCM token to backend after login
@@ -220,7 +225,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Track signup event
         await AnalyticsService.getInstance().logSignUp("email");
-        await AnalyticsService.getInstance().setUserId(result.user.id.toString());
+        await AnalyticsService.getInstance().setUserId(
+          result.user.id.toString()
+        );
         await AnalyticsService.getInstance().setUserProperties({
           user_role: result.user.role,
           user_verified: result.user.verified ? "true" : "false",

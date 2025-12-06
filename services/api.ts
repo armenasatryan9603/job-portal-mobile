@@ -93,6 +93,12 @@ export interface SpecialistListResponse {
   };
 }
 
+// User Language Types
+export interface UserLanguage {
+  code: string; // ISO 639-1 language code
+  level: string; // Proficiency level
+}
+
 // User Profile Types
 export interface UserProfile {
   id: number;
@@ -104,6 +110,7 @@ export interface UserProfile {
   bio?: string;
   creditBalance: number;
   verified: boolean;
+  languages?: UserLanguage[];
   createdAt: string;
 }
 
@@ -114,6 +121,7 @@ export interface UpdateUserProfileData {
   avatarUrl?: string;
   bio?: string;
   role?: string;
+  languages?: UserLanguage[];
 }
 
 // Portfolio Types
