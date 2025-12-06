@@ -274,9 +274,25 @@ export const useAllOrders = (
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "all", page, limit, status, serviceId, serviceIds, clientId],
+    queryKey: [
+      "orders",
+      "all",
+      page,
+      limit,
+      status,
+      serviceId,
+      serviceIds,
+      clientId,
+    ],
     queryFn: () =>
-      apiService.getAllOrders(page, limit, status, serviceId, serviceIds, clientId),
+      apiService.getAllOrders(
+        page,
+        limit,
+        status,
+        serviceId,
+        serviceIds,
+        clientId
+      ),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: true,
     retry: isOnline,
@@ -352,9 +368,25 @@ export const usePublicOrders = (
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "public", page, limit, status, serviceId, serviceIds, clientId],
+    queryKey: [
+      "orders",
+      "public",
+      page,
+      limit,
+      status,
+      serviceId,
+      serviceIds,
+      clientId,
+    ],
     queryFn: () =>
-      apiService.getPublicOrders(page, limit, status, serviceId, serviceIds, clientId),
+      apiService.getPublicOrders(
+        page,
+        limit,
+        status,
+        serviceId,
+        serviceIds,
+        clientId
+      ),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: true,
     retry: isOnline,
@@ -377,10 +409,7 @@ export const useSearchOrders = (
   });
 };
 
-export const useSavedOrders = (
-  page: number = 1,
-  limit: number = 20
-) => {
+export const useSavedOrders = (page: number = 1, limit: number = 20) => {
   const { isOnline } = useNetworkStatus();
   const { isAuthenticated } = useAuth();
   return useQuery({
@@ -444,6 +473,8 @@ export const useApplyToOrder = () => {
       orderId: number;
       message?: string;
       questionAnswers?: Array<{ questionId: number; answer: string }>;
+      peerIds?: number[];
+      teamId?: number;
     }) => apiService.applyToOrder(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["proposals"] });

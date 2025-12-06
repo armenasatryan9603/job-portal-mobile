@@ -205,12 +205,17 @@ class ChatService {
 
   /**
    * Create conversation for order
+   * proposalId is optional and used to include peers in group applications
    */
-  async createOrderConversation(orderId: number): Promise<Conversation> {
+  async createOrderConversation(
+    orderId: number,
+    proposalId?: number
+  ): Promise<Conversation> {
     return this.makeRequest<Conversation>(
       `/chat/orders/${orderId}/conversation`,
       {
         method: "POST",
+        body: proposalId ? JSON.stringify({ proposalId }) : undefined,
       }
     );
   }
@@ -228,10 +233,20 @@ class ChatService {
 
   /**
    * Reject application and refund credit
+   * proposalId and rejectPeerIds are optional for individual peer rejection
    */
-  async rejectApplication(orderId: number): Promise<any> {
+  async rejectApplication(
+    orderId: number,
+    proposalId?: number,
+    rejectPeerIds?: number[]
+  ): Promise<any> {
+    const body: any = {};
+    if (proposalId) body.proposalId = proposalId;
+    if (rejectPeerIds && rejectPeerIds.length > 0)
+      body.rejectPeerIds = rejectPeerIds;
     return this.makeRequest<any>(`/chat/orders/${orderId}/reject`, {
       method: "POST",
+      body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
     });
   }
 

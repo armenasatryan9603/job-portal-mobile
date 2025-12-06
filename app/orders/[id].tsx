@@ -896,6 +896,7 @@ export default function EditOrderScreen() {
                     iconSize={16}
                     iconPosition="left"
                     variant="primary"
+                    disabled={true}
                   />
                 ) : null}
 

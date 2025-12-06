@@ -11,12 +11,16 @@ import {
   ActivityIndicator,
   ScrollView,
   Keyboard,
+  Switch,
+  Platform,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Order } from "@/services/api";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { PeerSelector } from "./PeerSelector";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ApplyModalProps {
   visible: boolean;
@@ -24,7 +28,9 @@ interface ApplyModalProps {
   order: Order | null;
   onSubmit: (
     message: string,
-    questionAnswers?: Array<{ questionId: number; answer: string }>
+    questionAnswers?: Array<{ questionId: number; answer: string }>,
+    peerIds?: number[],
+    teamId?: number
   ) => Promise<void>;
   loading?: boolean;
 }
@@ -39,6 +45,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState("");
   const [questionAnswers, setQuestionAnswers] = useState<{
@@ -47,6 +54,9 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const [questionErrors, setQuestionErrors] = useState<{
     [questionId: number]: string;
   }>({});
+  const [applyWithPeers, setApplyWithPeers] = useState(false);
+  const [selectedPeerIds, setSelectedPeerIds] = useState<number[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
 
   const handleSubmit = async () => {
     // Clear previous errors
@@ -86,11 +96,29 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
             }))
           : undefined;
 
-      await onSubmit(message.trim(), questionAnswersArray);
+      // Determine peer IDs: if team is selected, use selectedPeerIds (populated by team selection)
+      // Otherwise use individual selected peer IDs
+      const peerIdsToSubmit =
+        applyWithPeers && selectedPeerIds.length > 0
+          ? selectedPeerIds
+          : undefined;
+
+      // Pass teamId if a team is selected
+      const teamIdToSubmit = selectedTeamId || undefined;
+
+      await onSubmit(
+        message.trim(),
+        questionAnswersArray,
+        peerIdsToSubmit,
+        teamIdToSubmit
+      );
       setMessage("");
       setMessageError("");
       setQuestionAnswers({});
       setQuestionErrors({});
+      setApplyWithPeers(false);
+      setSelectedPeerIds([]);
+      setSelectedTeamId(undefined);
       onClose();
     } catch (error) {
       console.error("Error submitting application:", error);
@@ -103,6 +131,9 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
     setMessageError("");
     setQuestionAnswers({});
     setQuestionErrors({});
+    setApplyWithPeers(false);
+    setSelectedPeerIds([]);
+    setSelectedTeamId(undefined);
     onClose();
   };
 
@@ -176,6 +207,66 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                   </View>
                 )}
               </View>
+            </View>
+
+            {/* Peer Selection Section */}
+            <View style={styles.peerSection}>
+              <View style={styles.peerToggleRow}>
+                <View style={styles.peerToggleInfo}>
+                  <Text
+                    style={[styles.peerToggleLabel, { color: colors.text }]}
+                  >
+                    {t("applyWithPeers")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.peerToggleDescription,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {t("applyWithPeersDescription")}
+                  </Text>
+                </View>
+                <Switch
+                  value={applyWithPeers}
+                  onValueChange={setApplyWithPeers}
+                  trackColor={{
+                    false:
+                      Platform.OS === "ios" ? colors.border : colors.border,
+                    true:
+                      Platform.OS === "ios"
+                        ? colors.primary + "80"
+                        : colors.primary + "40",
+                  }}
+                  thumbColor={
+                    Platform.OS === "ios" ? "#FFFFFF" : colors.primary
+                  }
+                  ios_backgroundColor={colors.border}
+                />
+              </View>
+              {applyWithPeers && (
+                <PeerSelector
+                  selectedPeerIds={selectedPeerIds}
+                  onPeersChange={(peerIds) => {
+                    // If individual peers are selected, clear team selection
+                    if (peerIds.length > 0 && selectedTeamId) {
+                      setSelectedTeamId(undefined);
+                    }
+                    setSelectedPeerIds(peerIds);
+                  }}
+                  maxPeers={5}
+                  currentUserId={user?.id}
+                  onTeamSelect={(teamId) => {
+                    // If team is selected, clear individual peer selections
+                    if (teamId) {
+                      setSelectedPeerIds([]);
+                    }
+                    setSelectedTeamId(teamId);
+                  }}
+                  selectedTeamId={selectedTeamId}
+                  hideSearchAndAdd={true}
+                />
+              )}
             </View>
 
             {/* Questions Section */}
@@ -300,7 +391,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color="black" />
                 ) : (
                   <>
                     <IconSymbol
@@ -473,5 +564,26 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     fontSize: 16,
     minHeight: 40,
+  },
+  peerSection: {
+    padding: Spacing.lg,
+  },
+  peerToggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  peerToggleInfo: {
+    flex: 1,
+    marginRight: Spacing.md,
+  },
+  peerToggleLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  peerToggleDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

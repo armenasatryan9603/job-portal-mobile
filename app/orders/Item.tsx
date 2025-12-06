@@ -365,12 +365,12 @@ const OrderItem = ({
             hasAppliedToOrder(order.id) &&
             user?.id !== order.clientId && (
               <Button
-                onPress={() => handleApplyToOrder(order)}
                 variant="primary"
                 icon="checkmark.circle.fill"
                 iconSize={16}
                 iconPosition="left"
                 title={t("applied")}
+                disabled={true}
               />
             )}
 

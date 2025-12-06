@@ -1228,7 +1228,9 @@ export default function OrdersScreen() {
 
   const handleSubmitApplication = async (
     message: string,
-    questionAnswers?: Array<{ questionId: number; answer: string }>
+    questionAnswers?: Array<{ questionId: number; answer: string }>,
+    peerIds?: number[],
+    teamId?: number
   ) => {
     if (!selectedOrder) return;
 
@@ -1240,6 +1242,8 @@ export default function OrdersScreen() {
         orderId: selectedOrder.id,
         message: message,
         questionAnswers: questionAnswers,
+        peerIds: peerIds,
+        teamId: teamId,
       });
 
       // Track proposal submission
@@ -1252,11 +1256,12 @@ export default function OrdersScreen() {
       // Add order to applied orders set
       setAppliedOrders((prev) => new Set(prev).add(selectedOrder.id));
 
-      // Create a chat conversation with the client
+      // Create a chat conversation with the client (include peers if group application)
       // The proposal message will be automatically sent as the first message by the backend
       try {
         const conversation = await chatService.createOrderConversation(
-          selectedOrder.id
+          selectedOrder.id,
+          typeof proposalId === "number" ? proposalId : undefined
         );
 
         Alert.alert(t("success"), t("applicationSubmittedSuccessfully"), [

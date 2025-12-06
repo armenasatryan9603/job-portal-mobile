@@ -949,6 +949,43 @@ export default function ProfileScreen() {
             }}
           />
 
+          {/* Peers & Teams entry point - Only for specialists */}
+          {!userId && profile?.role === "specialist" && (
+            <ResponsiveCard>
+              <View style={styles.paymentsPreview}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                    {t("peersAndTeams") || "Peers & Teams"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.paymentsPreviewSubtitle,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("managePeersAndTeamsDescription") ||
+                      "Manage your peer connections and teams for group applications"}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                  onPress={() => router.push("/profile/peers")}
+                >
+                  <Text
+                    style={[styles.paymentsCtaText, { color: colors.text }]}
+                  >
+                    {t("managePeers") || "Manage"}
+                  </Text>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.primary}
+                  />
+                </TouchableOpacity>
+              </View>
+            </ResponsiveCard>
+          )}
+
           {/* Payments entry point */}
           {!userId && (
             <ResponsiveCard>

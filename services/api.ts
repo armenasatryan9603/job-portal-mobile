@@ -710,6 +710,8 @@ class ApiService {
     orderId: number;
     message?: string;
     questionAnswers?: Array<{ questionId: number; answer: string }>;
+    peerIds?: number[];
+    teamId?: number;
   }): Promise<any> {
     return this.request(
       `/order-proposals/apply`,
@@ -1422,6 +1424,141 @@ class ApiService {
     return this.request(
       `/credit/transactions?page=${page}&limit=${limit}`,
       {},
+      true
+    );
+  }
+
+  // Peer Relationships API methods
+  async addPeer(peerId: number): Promise<any> {
+    return this.request(
+      `/peers`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ peerId }),
+      },
+      true
+    );
+  }
+
+  async removePeer(peerId: number): Promise<any> {
+    return this.request(
+      `/peers/${peerId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async getPeers(): Promise<User[]> {
+    return this.request(`/peers`, {}, true);
+  }
+
+  async getTeams(): Promise<any[]> {
+    // Teams endpoint is now accessible without authentication
+    // Will use auth token if available, but won't fail if not authenticated
+    return this.request(`/peers/teams`, {}, false);
+  }
+
+  async createTeam(name: string): Promise<any> {
+    return this.request(
+      `/peers/teams`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      },
+      true
+    );
+  }
+
+  async addTeamMember(teamId: number, userId: number): Promise<any> {
+    return this.request(
+      `/peers/teams/${teamId}/members`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      },
+      true
+    );
+  }
+
+  async removeTeamMember(teamId: number, userId: number): Promise<any> {
+    return this.request(
+      `/peers/teams/${teamId}/members/${userId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async updateTeamName(teamId: number, name: string): Promise<any> {
+    return this.request(
+      `/peers/teams/${teamId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name }),
+      },
+      true
+    );
+  }
+
+  async getPendingPeerInvitations(): Promise<any[]> {
+    return this.request(`/peers/invitations/pending`, {}, true);
+  }
+
+  async acceptPeerInvitation(relationshipId: number): Promise<any> {
+    return this.request(
+      `/peers/invitations/${relationshipId}/accept`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async rejectPeerInvitation(relationshipId: number): Promise<any> {
+    return this.request(
+      `/peers/invitations/${relationshipId}/reject`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async getPendingTeamInvitations(): Promise<any[]> {
+    return this.request(`/peers/teams/invitations/pending`, {}, true);
+  }
+
+  async acceptTeamInvitation(teamMemberId: number): Promise<any> {
+    return this.request(
+      `/peers/teams/invitations/${teamMemberId}/accept`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async rejectTeamInvitation(teamMemberId: number): Promise<any> {
+    return this.request(
+      `/peers/teams/invitations/${teamMemberId}/reject`,
+      {
+        method: "POST",
+      },
       true
     );
   }

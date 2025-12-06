@@ -550,6 +550,14 @@ export default function ChatDetailScreen() {
 
   const getParticipantName = () => {
     if (!conversation) return t("chat");
+    
+    // If conversation has a title (set by backend for team applications), use it
+    // The backend sets title as "Team Name & Client Name" for team applications
+    if (conversation.title && conversation.title.includes(" & ")) {
+      return conversation.title;
+    }
+    
+    // Otherwise, use participant names (for regular applications)
     const otherParticipants = conversation.Participants.filter(
       (p) => p.isActive
     );

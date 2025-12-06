@@ -26,7 +26,13 @@ interface NotificationDetail {
   fullContent: string;
   timestamp: string;
   isRead: boolean;
-  type: "order" | "new_order" | "proposal" | "message" | "system";
+  type:
+    | "order"
+    | "new_order"
+    | "proposal"
+    | "message"
+    | "system"
+    | "chat_message";
   relatedData?: any;
 }
 

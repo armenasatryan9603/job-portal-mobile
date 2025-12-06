@@ -45,6 +45,12 @@ export const FooterTabs: React.FC = () => {
       icon: "person.2.fill",
       route: "/specialists",
     },
+    {
+      name: "teams",
+      title: t("teams"),
+      icon: "person.3.fill",
+      route: "/teams",
+    },
   ];
 
   const handleTabPress = (tab: TabItem) => {
