@@ -1327,6 +1327,21 @@ class ApiService {
     );
   }
 
+  async hireTeam(hireData: {
+    teamId: number;
+    message: string;
+    orderId: number;
+  }): Promise<any> {
+    return this.request(
+      `/hiring/team`,
+      {
+        method: "POST",
+        body: JSON.stringify(hireData),
+      },
+      true
+    );
+  }
+
   async cancelProposal(proposalId: number): Promise<any> {
     return this.request(
       `/order-proposals/${proposalId}`,

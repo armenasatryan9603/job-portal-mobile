@@ -19,11 +19,16 @@ import {
   View,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { apiService, User } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { HiringDialog } from "@/components/HiringDialog";
+import { useModal } from "@/contexts/ModalContext";
+import { useMyOrders } from "@/hooks/useApi";
+import AnalyticsService from "@/services/AnalyticsService";
 
 interface Team {
   id: number;
@@ -55,6 +60,8 @@ export default function TeamsScreen() {
   const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const { showLoginModal } = useModal();
+  const { data: ordersData } = useMyOrders();
 
   // Debug: Log authentication state
   useEffect(() => {
@@ -69,6 +76,11 @@ export default function TeamsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  // Hiring dialog state
+  const [hiringDialogVisible, setHiringDialogVisible] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [hiringLoading, setHiringLoading] = useState(false);
 
   const loadTeams = useCallback(async () => {
     try {
@@ -143,6 +155,70 @@ export default function TeamsScreen() {
     router.push(`/teams/${teamId}` as any);
   };
 
+  const handleHireTeam = (team: Team) => {
+    // Track hire team action
+    AnalyticsService.getInstance().logEvent("hire_team_initiated", {
+      team_id: team.id.toString(),
+    });
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // User is not logged in, show login modal
+      showLoginModal();
+      return;
+    }
+
+    const userOrders = ordersData?.orders || [];
+    // Check if user has existing orders
+    if (userOrders.length > 0) {
+      // User has orders, show hiring dialog
+      setSelectedTeam(team);
+      setHiringDialogVisible(true);
+    } else {
+      // User has no orders, redirect to create order page
+      router.push(`/orders/create?teamId=${team.id}`);
+    }
+  };
+
+  const handleHiringSubmit = async (message: string, orderId: number) => {
+    if (!selectedTeam) return;
+
+    try {
+      setHiringLoading(true);
+      const result = await apiService.hireTeam({
+        teamId: selectedTeam.id,
+        message,
+        orderId,
+      });
+
+      // Track successful hiring
+      AnalyticsService.getInstance().logEvent("team_hired", {
+        team_id: selectedTeam.id.toString(),
+        order_id: orderId.toString(),
+      });
+
+      // Navigate to the conversation after successful hiring
+      if (result.conversation?.id) {
+        router.push(`/chat/${result.conversation.id}`);
+      } else {
+        Alert.alert(t("success"), t("hiringRequestSent"));
+      }
+
+      setHiringDialogVisible(false);
+      setSelectedTeam(null);
+    } catch (error) {
+      console.error("Error hiring team:", error);
+      Alert.alert(t("error"), t("failedToSendHiringRequest"));
+    } finally {
+      setHiringLoading(false);
+    }
+  };
+
+  const handleHiringClose = () => {
+    setHiringDialogVisible(false);
+    setSelectedTeam(null);
+  };
+
   const handleImageError = (userId: number) => {
     setImageErrors((prev) => new Set(prev).add(userId));
   };
@@ -175,6 +251,11 @@ export default function TeamsScreen() {
     ({ item: team }: { item: Team }) => {
       const acceptedMembers = getAcceptedMembers(team);
       const memberCount = acceptedMembers.length;
+
+      // Check if user is part of this team (creator or member)
+      const isUserPartOfTeam =
+        team.createdBy === user?.id ||
+        acceptedMembers.some((member) => member.userId === user?.id);
 
       return (
         <TouchableOpacity
@@ -314,7 +395,9 @@ export default function TeamsScreen() {
                   style={[
                     styles.viewButton,
                     {
-                      backgroundColor: colors.tint,
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      borderWidth: 1,
                     },
                   ]}
                   onPress={(e) => {
@@ -322,22 +405,48 @@ export default function TeamsScreen() {
                     handleTeamPress(team.id);
                   }}
                 >
-                  <Text
-                    style={[
-                      styles.viewButtonText,
-                      { color: colors.background },
-                    ]}
-                  >
+                  <Text style={[styles.viewButtonText, { color: colors.text }]}>
                     {t("viewTeam")}
                   </Text>
                 </TouchableOpacity>
+                {!isUserPartOfTeam && (
+                  <TouchableOpacity
+                    style={[
+                      styles.hireButton,
+                      {
+                        backgroundColor: colors.tint,
+                      },
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleHireTeam(team);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.hireButtonText,
+                        { color: colors.background },
+                      ]}
+                    >
+                      {t("hire")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </ResponsiveCard>
         </TouchableOpacity>
       );
     },
-    [colors, t, handleTeamPress, handleImageError, imageErrors]
+    [
+      colors,
+      t,
+      user,
+      handleTeamPress,
+      handleHireTeam,
+      handleImageError,
+      imageErrors,
+    ]
   );
 
   const renderEmptyComponent = useCallback(() => {
@@ -421,6 +530,16 @@ export default function TeamsScreen() {
           renderEmptyComponent()
         )}
       </View>
+
+      <HiringDialog
+        visible={hiringDialogVisible}
+        onClose={handleHiringClose}
+        onSubmit={handleHiringSubmit}
+        specialistName={selectedTeam?.name || ""}
+        specialistId={selectedTeam?.id || 0}
+        userOrders={ordersData?.orders || []}
+        loading={hiringLoading}
+      />
     </Layout>
   );
 }
@@ -533,16 +652,29 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   teamFooter: {
+    flexDirection: "row",
+    gap: Spacing.sm,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",
   },
   viewButton: {
+    flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",
   },
   viewButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  hireButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  hireButtonText: {
     fontSize: 14,
     fontWeight: "600",
   },

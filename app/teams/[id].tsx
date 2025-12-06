@@ -24,16 +24,22 @@ import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { AddTeamMemberModal } from "@/components/AddTeamMemberModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { HiringDialog } from "@/components/HiringDialog";
+import { useModal } from "@/contexts/ModalContext";
+import { useMyOrders } from "@/hooks/useApi";
+import AnalyticsService from "@/services/AnalyticsService";
 
 export default function TeamDetailScreen() {
   useAnalytics("TeamDetail");
   const { id } = useLocalSearchParams<{ id: string }>();
   const teamId = id ? parseInt(id, 10) : undefined;
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const { showLoginModal } = useModal();
+  const { data: ordersData } = useMyOrders();
 
   const { team, loading, reloadTeam, updateTeam } = useTeamData(teamId);
   const {
@@ -54,6 +60,10 @@ export default function TeamDetailScreen() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [updatingTeamName, setUpdatingTeamName] = useState(false);
 
+  // Hiring dialog state
+  const [hiringDialogVisible, setHiringDialogVisible] = useState(false);
+  const [hiringLoading, setHiringLoading] = useState(false);
+
   const activeMembers = useMemo(() => {
     const members = team?.Members?.filter((m) => m.isActive) || [];
     return members;
@@ -63,6 +73,14 @@ export default function TeamDetailScreen() {
     () => user?.id === team?.createdBy,
     [user?.id, team?.createdBy]
   );
+
+  const isUserPartOfTeam = useMemo(() => {
+    if (!team || !user) return false;
+    return (
+      team.createdBy === user.id ||
+      activeMembers.some((member) => member.userId === user.id)
+    );
+  }, [team, user, activeMembers]);
 
   const handleAddMember = useCallback(
     async (userId: number) => {
@@ -209,6 +227,72 @@ export default function TeamDetailScreen() {
     [teamId, reloadTeam, t]
   );
 
+  const handleHireTeam = useCallback(() => {
+    if (!team) return;
+
+    // Track hire team action
+    AnalyticsService.getInstance().logEvent("hire_team_initiated", {
+      team_id: team.id.toString(),
+    });
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // User is not logged in, show login modal
+      showLoginModal();
+      return;
+    }
+
+    const userOrders = ordersData?.orders || [];
+    // Check if user has existing orders
+    if (userOrders.length > 0) {
+      // User has orders, show hiring dialog
+      setHiringDialogVisible(true);
+    } else {
+      // User has no orders, redirect to create order page
+      router.push(`/orders/create?teamId=${team.id}`);
+    }
+  }, [team, isAuthenticated, showLoginModal, ordersData]);
+
+  const handleHiringSubmit = useCallback(
+    async (message: string, orderId: number) => {
+      if (!team) return;
+
+      try {
+        setHiringLoading(true);
+        const result = await apiService.hireTeam({
+          teamId: team.id,
+          message,
+          orderId,
+        });
+
+        // Track successful hiring
+        AnalyticsService.getInstance().logEvent("team_hired", {
+          team_id: team.id.toString(),
+          order_id: orderId.toString(),
+        });
+
+        // Navigate to the conversation after successful hiring
+        if (result.conversation?.id) {
+          router.push(`/chat/${result.conversation.id}`);
+        } else {
+          Alert.alert(t("success"), t("hiringRequestSent"));
+        }
+
+        setHiringDialogVisible(false);
+      } catch (error) {
+        console.error("Error hiring team:", error);
+        Alert.alert(t("error"), t("failedToSendHiringRequest"));
+      } finally {
+        setHiringLoading(false);
+      }
+    },
+    [team, t]
+  );
+
+  const handleHiringClose = useCallback(() => {
+    setHiringDialogVisible(false);
+  }, []);
+
   const header = useMemo(
     () => (
       <Header
@@ -262,8 +346,8 @@ export default function TeamDetailScreen() {
             onSave={handleSaveTeamName}
           />
 
-          {isTeamLead && (
-            <View style={styles.section}>
+          <View style={styles.actionButtonsContainer}>
+            {isTeamLead && (
               <TouchableOpacity
                 style={[
                   styles.addButton,
@@ -279,8 +363,25 @@ export default function TeamDetailScreen() {
                   color={colors.background}
                 />
               </TouchableOpacity>
-            </View>
-          )}
+            )}
+            {!isUserPartOfTeam && (
+              <TouchableOpacity
+                style={[
+                  styles.hireButton,
+                  {
+                    backgroundColor: colors.tint,
+                  },
+                ]}
+                onPress={handleHireTeam}
+              >
+                <Text
+                  style={[styles.hireButtonText, { color: colors.background }]}
+                >
+                  {t("hire")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -324,6 +425,16 @@ export default function TeamDetailScreen() {
           }
         }}
       />
+
+      <HiringDialog
+        visible={hiringDialogVisible}
+        onClose={handleHiringClose}
+        onSubmit={handleHiringSubmit}
+        specialistName={team?.name || ""}
+        specialistId={team?.id || 0}
+        userOrders={ordersData?.orders || []}
+        loading={hiringLoading}
+      />
     </Layout>
   );
 }
@@ -363,6 +474,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: Spacing.xl,
   },
+  actionButtonsContainer: {
+    gap: Spacing.sm,
+  },
   addButton: {
     padding: Spacing.md,
     borderRadius: Spacing.md,
@@ -370,5 +484,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minWidth: 48,
     minHeight: 48,
+  },
+  hireButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: Spacing.md,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 80,
+  },
+  hireButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
