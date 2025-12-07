@@ -965,5 +965,17 @@
   "team": "Команда",
   "manageTeamMembers": "Управление участниками команды",
   "teamNotFound": "Команда не найдена",
-  "noMembers": "Нет участников"
+  "noMembers": "Нет участников",
+  "calendar": "Календарь",
+  "myApplications": "Мои заявки",
+  "applicationDate": "Подано",
+  "scheduledDate": "Запланировано",
+  "noApplications": "Нет заявок",
+  "noApplicationsOnDate": "Заявки на эту дату не найдены",
+  "noApplicationsDesc": "Вы еще не подали заявку на работу",
+  "applications": "заявки",
+  "accepted": "Принято",
+  "loginRequired": "Требуется вход",
+  "loginToViewCalendar": "Пожалуйста, войдите, чтобы просмотреть календарь ваших заявок",
+  "order": "Заказ"
 }

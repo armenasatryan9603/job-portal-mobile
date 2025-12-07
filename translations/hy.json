@@ -1014,5 +1014,17 @@
   "team": "Թիմ",
   "manageTeamMembers": "Կառավարել թիմի անդամներին",
   "teamNotFound": "Թիմը չգտնվեց",
-  "noMembers": "Անդամներ չկան"
+  "noMembers": "Անդամներ չկան",
+  "calendar": "Օրացույց",
+  "myApplications": "Իմ դիմումները",
+  "applicationDate": "Դիմել է",
+  "scheduledDate": "Պլանավորված",
+  "noApplications": "Դիմումներ չկան",
+  "noApplicationsOnDate": "Այս ամսաթվի համար դիմումներ չեն գտնվել",
+  "noApplicationsDesc": "Դուք դեռ չեք դիմել որևէ աշխատանքի",
+  "applications": "դիմումներ",
+  "accepted": "Ընդունված",
+  "loginRequired": "Մուտք անհրաժեշտ է",
+  "loginToViewCalendar": "Խնդրում ենք մուտք գործել ձեր դիմումների օրացույցը դիտելու համար",
+  "order": "Պատվեր"
 }

@@ -1022,5 +1022,17 @@
   "team": "Team",
   "manageTeamMembers": "Manage team members",
   "teamNotFound": "Team not found",
-  "noMembers": "No members"
+  "noMembers": "No members",
+  "calendar": "Calendar",
+  "myApplications": "My Applications",
+  "applicationDate": "Applied",
+  "scheduledDate": "Scheduled",
+  "noApplications": "No Applications",
+  "noApplicationsOnDate": "No applications found for this date",
+  "noApplicationsDesc": "You haven't applied to any jobs yet",
+  "applications": "applications",
+  "accepted": "Accepted",
+  "loginRequired": "Login Required",
+  "loginToViewCalendar": "Please login to view your applications calendar",
+  "order": "Order"
 }

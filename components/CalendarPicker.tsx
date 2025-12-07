@@ -10,6 +10,7 @@ import {
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
+import { CalendarGrid } from "./CalendarGrid";
 
 interface CalendarPickerProps {
   visible: boolean;
@@ -35,31 +36,6 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDayOfWeek = firstDay.getDay();
-
-    const days = [];
-
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
-    }
-
-    // Add days of the month (normalize to midnight)
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      date.setHours(0, 0, 0, 0); // Normalize to midnight
-      days.push(date);
-    }
-
-    return days;
-  };
 
   const normalizeDate = (date: Date): Date => {
     const normalized = new Date(date);
@@ -139,55 +115,27 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           </View>
 
           {/* Calendar Grid */}
-          <View style={styles.calendarGrid}>
-            {/* Day Headers */}
-            <View style={styles.dayHeaders}>
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-                <Text
-                  key={day}
-                  style={[styles.dayHeader, { color: colors.tabIconDefault }]}
-                >
-                  {day}
-                </Text>
-              ))}
-            </View>
-
-            {/* Calendar Days */}
-            <View style={styles.calendarDays}>
-              {getDaysInMonth(currentMonth).map((date, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.calendarDay,
-                    date &&
-                      isDateSelected(date) && {
-                        backgroundColor: colors.tint,
-                      },
-                    date && {
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  onPress={() => date && onDateToggle(date)}
-                  disabled={!date}
-                >
-                  {date && (
-                    <Text
-                      style={[
-                        styles.calendarDayText,
-                        {
-                          color: isDateSelected(date)
-                            ? colors.background
-                            : colors.text,
-                        },
-                      ]}
-                    >
-                      {date.getDate()}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
+          <CalendarGrid
+            currentMonth={currentMonth}
+            onMonthNavigate={onMonthNavigate}
+            onDatePress={(date) => onDateToggle(date)}
+            isDateSelected={isDateSelected}
+            showMonthNavigation={false}
+            renderDateContent={(date) => (
+              <Text
+                style={[
+                  styles.calendarDayText,
+                  {
+                    color: isDateSelected(date)
+                      ? colors.background
+                      : colors.text,
+                  },
+                ]}
+              >
+                {date.getDate()}
+              </Text>
+            )}
+          />
 
           {/* Selected Dates Summary */}
           {selectedDates.length > 0 && (
@@ -289,34 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
   },
-  calendarGrid: {
-    flex: 1,
-  },
-  dayHeaders: {
-    flexDirection: "row",
-    marginBottom: 8,
-  },
-  dayHeader: {
-    flex: 1,
-    textAlign: "center",
-    fontSize: 14,
-    fontWeight: "500",
-    paddingVertical: 8,
-  },
-  calendarDays: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  calendarDay: {
-    width: "14.28%",
-    aspectRatio: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "transparent",
-    borderRadius: 8,
-    margin: 1,
-  },
   calendarDayText: {
     fontSize: 16,
     fontWeight: "500",
@@ -325,6 +245,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     marginTop: 16,
+    marginBottom: 16,
   },
   summaryTitle: {
     fontSize: 16,

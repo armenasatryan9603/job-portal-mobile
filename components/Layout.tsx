@@ -67,6 +67,7 @@ export const Layout: React.FC<LayoutProps> = ({
     navigateToSettings,
     navigateToMyOrders,
     navigateToMyJobs,
+    navigateToCalendar,
     navigateToSavedOrders,
     navigateToHelp,
   } = useNavigation();
@@ -325,6 +326,18 @@ export const Layout: React.FC<LayoutProps> = ({
                   />
                   <Text style={[styles.menuItemText, { color: colors.text }]}>
                     {t("myJobs")}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    { borderBottomColor: colors.border },
+                  ]}
+                  onPress={navigateToCalendar}
+                >
+                  <IconSymbol name="calendar" size={20} color={colors.tint} />
+                  <Text style={[styles.menuItemText, { color: colors.text }]}>
+                    {t("calendar")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity

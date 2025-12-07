@@ -70,7 +70,7 @@ export const FooterTabs: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.tabBar, { borderTopColor: colors.border }]}>
-        {tabs.map((tab, index) => {
+        {tabs.map((tab) => {
           const active = isActive(tab);
           const isMiddleTab = tab.name === "orders";
 
@@ -184,13 +184,11 @@ const styles = StyleSheet.create({
   },
   middleTabCircle: {
     width: 64,
-    height: 64,
-    borderRadius: 32,
+    height: 52,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    position: "absolute",
-    top: -32, // Position above the container to extend upward
-    shadowColor: "#000",
+    top: -20,
   },
   tabLabel: {
     fontSize: 10,
