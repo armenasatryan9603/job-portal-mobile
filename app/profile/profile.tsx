@@ -19,6 +19,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -74,6 +75,8 @@ export default function ProfileScreen() {
   // Profile picture state management
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   // Bio editing state management
   const [isEditingBio, setIsEditingBio] = useState(false);
@@ -165,6 +168,7 @@ export default function ProfileScreen() {
 
       console.log("Profile data loaded:", profileData);
       setProfile(profileData);
+      setBannerImage((profileData as any).bannerUrl || null);
 
       // Mark that initial load is complete
       if (isInitialLoad) {
@@ -344,6 +348,153 @@ export default function ProfileScreen() {
       }
     } catch (error) {
       console.error("Error selecting profile picture:", error);
+      Alert.alert(t("error"), t("failedToSelectImage"));
+    }
+  };
+
+  const handleBannerTap = () => {
+    if (userId || uploadingBanner) return; // Don't show options for other users or while uploading
+
+    const options = [];
+    if (bannerImage) {
+      options.push({
+        text: t("removeBanner") || "Remove Banner",
+        onPress: handleBannerRemove,
+        style: "destructive" as const,
+      });
+    }
+    options.push({
+      text: t("uploadBanner") || "Upload Banner",
+      onPress: handleBannerUpload,
+    });
+
+    Alert.alert(
+      t("bannerOptions") || "Banner Options",
+      t("chooseBannerAction") || "What would you like to do?",
+      [
+        ...options,
+        {
+          text: t("cancel") || "Cancel",
+          style: "cancel" as const,
+        },
+      ]
+    );
+  };
+
+  const handleBannerRemove = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setUploadingBanner(true);
+
+      // Update profile on backend with null bannerUrl
+      await apiService.updateUserProfile({
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore backend supports bannerUrl
+        bannerUrl: null,
+      });
+
+      // Track profile update
+      AnalyticsService.getInstance().logEvent("profile_updated", {
+        update_type: "banner_removed",
+      });
+
+      // Update local state
+      setBannerImage(null);
+      if (profile) {
+        setProfile({
+          ...profile,
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore extend profile with bannerUrl
+          bannerUrl: null,
+        } as UserProfile);
+      }
+      await updateUser({
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore allow bannerUrl on user
+        bannerUrl: null,
+      } as any);
+    } catch (error) {
+      console.error("Error removing banner:", error);
+      Alert.alert(
+        t("error"),
+        t("failedToRemoveBanner") || "Failed to remove banner"
+      );
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleBannerUpload = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 1], // Banner ratio
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const mediaFile = {
+          uri: asset.uri,
+          fileName: `banner_${Date.now()}.jpg`,
+          type: "image" as const,
+          mimeType: "image/jpeg",
+          fileSize: asset.fileSize || 0,
+        };
+
+        setBannerImage(asset.uri);
+        setUploadingBanner(true);
+
+        try {
+          const uploadResult = await fileUploadService.uploadProfilePicture(
+            mediaFile
+          );
+          if (uploadResult.success && uploadResult.fileUrl) {
+            setBannerImage(uploadResult.fileUrl);
+            if (user) {
+              await apiService.updateUserProfile({
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore backend supports bannerUrl
+                bannerUrl: uploadResult.fileUrl,
+              });
+              AnalyticsService.getInstance().logEvent("profile_updated", {
+                update_type: "banner",
+              });
+              if (profile) {
+                setProfile({
+                  ...profile,
+                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                  // @ts-ignore extend profile with bannerUrl
+                  bannerUrl: uploadResult.fileUrl,
+                } as UserProfile);
+              }
+              await updateUser({
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore allow bannerUrl on user
+                bannerUrl: uploadResult.fileUrl,
+              } as any);
+            }
+          } else {
+            throw new Error(uploadResult.error || t("uploadFailed"));
+          }
+        } catch (error) {
+          console.error("Error uploading banner:", error);
+          Alert.alert(t("error"), t("failedToUploadProfilePicture"));
+        } finally {
+          setUploadingBanner(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error selecting banner:", error);
       Alert.alert(t("error"), t("failedToSelectImage"));
     }
   };
@@ -650,174 +801,222 @@ export default function ProfileScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>
-          {/* Profile Header */}
-          <ResponsiveCard>
-            <View style={styles.profileHeader}>
-              <View style={styles.avatarContainer}>
-                {(() => {
-                  const completionPercentage =
-                    !userId && profile
-                      ? calculateAccountCompletion(
-                          profile,
-                          skills.userServices.length,
-                          portfolioCount
-                        )
-                      : 100;
+          {/* Profile Header with banner background */}
+          <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
+            <ImageBackground
+              source={bannerImage ? { uri: bannerImage } : undefined}
+              style={styles.bannerBackground}
+              imageStyle={styles.bannerImage}
+            >
+              <TouchableOpacity
+                style={styles.bannerTapArea}
+                onPress={handleBannerTap}
+                activeOpacity={0.8}
+                disabled={!!userId || uploadingBanner}
+              >
+                {!bannerImage && (
+                  <View
+                    style={[
+                      styles.bannerPlaceholder,
+                      { backgroundColor: colors.border, width: "100%" },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="photo"
+                      size={28}
+                      color={colors.tabIconDefault}
+                    />
+                    <Text
+                      style={[
+                        styles.bannerPlaceholderText,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("addBanner")}
+                    </Text>
+                  </View>
+                )}
+                {uploadingBanner && (
+                  <View style={styles.bannerLoadingOverlay}>
+                    <ActivityIndicator size="small" color={colors.tint} />
+                  </View>
+                )}
+              </TouchableOpacity>
 
-                  return (
-                    <>
-                      {/* Circular Progress Ring */}
-                      {!userId && profile && (
-                        <View style={styles.progressWrapper}>
-                          <CircularProgress
-                            percentage={completionPercentage}
-                            size={88}
-                            strokeWidth={4}
-                            backgroundColor={colors.border}
-                            progressColor={
-                              completionPercentage === 100
-                                ? "#4CAF50"
-                                : colors.primary
-                            }
-                          />
-                        </View>
-                      )}
-                      {!userId ? (
-                        <TouchableOpacity
-                          onPress={handleProfilePictureUpload}
-                          disabled={uploadingPicture}
-                          activeOpacity={0.7}
-                        >
-                          {profilePicture || profile.avatarUrl ? (
-                            <Image
-                              source={{
-                                uri: profilePicture || profile.avatarUrl,
-                              }}
-                              style={styles.avatar}
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                styles.avatar,
-                                styles.defaultAvatar,
-                                { backgroundColor: colors.border },
-                              ]}
-                            >
-                              <IconSymbol
-                                name="person.fill"
-                                size={30}
-                                color={colors.textSecondary}
-                              />
-                            </View>
-                          )}
-                          {uploadingPicture && (
-                            <View style={styles.uploadingOverlay}>
-                              <ActivityIndicator size="small" color="white" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      ) : (
-                        <>
-                          {profilePicture || profile.avatarUrl ? (
-                            <Image
-                              source={{
-                                uri: profilePicture || profile.avatarUrl,
-                              }}
-                              style={styles.avatar}
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                styles.avatar,
-                                styles.defaultAvatar,
-                                { backgroundColor: colors.border },
-                              ]}
-                            >
-                              <IconSymbol
-                                name="person.fill"
-                                size={30}
-                                color={colors.textSecondary}
-                              />
-                            </View>
-                          )}
-                        </>
-                      )}
-                      {/* Completion Percentage Badge */}
-                      {!userId && profile && (
-                        <View
-                          style={[
-                            styles.completionBadge,
-                            {
-                              backgroundColor:
+              <View style={styles.profileHeader}>
+                <View style={styles.avatarContainer}>
+                  {(() => {
+                    const completionPercentage =
+                      !userId && profile
+                        ? calculateAccountCompletion(
+                            profile,
+                            skills.userServices.length,
+                            portfolioCount
+                          )
+                        : 100;
+
+                    return (
+                      <>
+                        {/* Circular Progress Ring */}
+                        {!userId && profile && (
+                          <View style={styles.progressWrapper}>
+                            <CircularProgress
+                              percentage={completionPercentage}
+                              size={88}
+                              strokeWidth={4}
+                              backgroundColor={colors.border}
+                              progressColor={
                                 completionPercentage === 100
                                   ? "#4CAF50"
-                                  : colors.primary,
-                            },
-                          ]}
-                        >
-                          <Text
+                                  : colors.primary
+                              }
+                            />
+                          </View>
+                        )}
+                        {!userId ? (
+                          <TouchableOpacity
+                            onPress={handleProfilePictureUpload}
+                            disabled={uploadingPicture}
+                            activeOpacity={0.7}
+                          >
+                            {profilePicture || profile.avatarUrl ? (
+                              <Image
+                                source={{
+                                  uri: profilePicture || profile.avatarUrl,
+                                }}
+                                style={styles.avatar}
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  styles.avatar,
+                                  styles.defaultAvatar,
+                                  { backgroundColor: colors.border },
+                                ]}
+                              >
+                                <IconSymbol
+                                  name="person.fill"
+                                  size={30}
+                                  color={colors.textSecondary}
+                                />
+                              </View>
+                            )}
+                            {uploadingPicture && (
+                              <View style={styles.uploadingOverlay}>
+                                <ActivityIndicator size="small" color="white" />
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        ) : (
+                          <>
+                            {profilePicture || profile.avatarUrl ? (
+                              <Image
+                                source={{
+                                  uri: profilePicture || profile.avatarUrl,
+                                }}
+                                style={styles.avatar}
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  styles.avatar,
+                                  styles.defaultAvatar,
+                                  { backgroundColor: colors.border },
+                                ]}
+                              >
+                                <IconSymbol
+                                  name="person.fill"
+                                  size={30}
+                                  color={colors.textSecondary}
+                                />
+                              </View>
+                            )}
+                          </>
+                        )}
+                        {/* Completion Percentage Badge */}
+                        {!userId && profile && (
+                          <View
                             style={[
-                              styles.completionBadgeText,
+                              styles.completionBadge,
                               {
-                                color: "#FFFFFF",
-                                fontSize: completionPercentage === 100 ? 9 : 11,
+                                backgroundColor:
+                                  completionPercentage === 100
+                                    ? "#4CAF50"
+                                    : colors.primary,
                               },
                             ]}
                           >
-                            {completionPercentage}%
-                          </Text>
-                        </View>
-                      )}
-                    </>
-                  );
-                })()}
-              </View>
-
-              <View style={styles.profileInfo}>
-                <View style={styles.nameAndEditContainer}>
-                  <Text style={[styles.profileName, { color: colors.text }]}>
-                    {profile.name}
-                  </Text>
+                            <Text
+                              style={[
+                                styles.completionBadgeText,
+                                {
+                                  color: "#FFFFFF",
+                                  fontSize:
+                                    completionPercentage === 100 ? 9 : 11,
+                                },
+                              ]}
+                            >
+                              {completionPercentage}%
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    );
+                  })()}
                 </View>
 
-                <Text
-                  style={[styles.profileTitle, { color: colors.textSecondary }]}
-                >
-                  {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
-                </Text>
+                <View style={styles.profileInfo}>
+                  <View style={styles.nameAndEditContainer}>
+                    <Text style={[styles.profileName, { color: colors.text }]}>
+                      {profile.name}
+                    </Text>
+                  </View>
 
-                <View style={styles.ratingContainer}>
-                  <IconSymbol
-                    name={
-                      profile.verified
-                        ? "checkmark.seal.fill"
-                        : "checkmark.seal"
-                    }
-                    size={16}
-                    color={profile.verified ? "#4CAF50" : colors.textSecondary}
-                  />
-                  <Text style={[styles.rating, { color: colors.text }]}>
-                    {profile.verified
-                      ? t("verifiedAccount")
-                      : t("unverifiedAccount")}
-                  </Text>
-                </View>
-
-                <View style={styles.locationContainer}>
-                  <IconSymbol
-                    name="calendar"
-                    size={14}
-                    color={colors.textSecondary}
-                  />
                   <Text
-                    style={[styles.location, { color: colors.textSecondary }]}
+                    style={[
+                      styles.profileTitle,
+                      { color: colors.textSecondary },
+                    ]}
                   >
-                    {t("memberSince")}{" "}
-                    {new Date(profile.createdAt).toLocaleDateString()}
+                    {profile.role.charAt(0).toUpperCase() +
+                      profile.role.slice(1)}
                   </Text>
+
+                  <View style={styles.ratingContainer}>
+                    <IconSymbol
+                      name={
+                        profile.verified
+                          ? "checkmark.seal.fill"
+                          : "checkmark.seal"
+                      }
+                      size={16}
+                      color={
+                        profile.verified ? "#4CAF50" : colors.textSecondary
+                      }
+                    />
+                    <Text style={[styles.rating, { color: colors.text }]}>
+                      {profile.verified
+                        ? t("verifiedAccount")
+                        : t("unverifiedAccount")}
+                    </Text>
+                  </View>
+
+                  <View style={styles.locationContainer}>
+                    <IconSymbol
+                      name="calendar"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                    <Text
+                      style={[styles.location, { color: colors.textSecondary }]}
+                    >
+                      {t("memberSince")}{" "}
+                      {new Date(profile.createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </View>
+            </ImageBackground>
           </ResponsiveCard>
 
           {/* Bio */}
@@ -1544,6 +1743,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   // Profile header
   profileHeader: {
+    padding: Spacing.card,
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
@@ -1607,6 +1807,43 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 4,
+  },
+  bannerBackground: {
+    paddingTop: 140,
+  },
+  bannerTapArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 140,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bannerImage: {
+    width: "100%",
+
+    height: 140,
+  },
+  bannerPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  bannerPlaceholderText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  bannerLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.15)",
   },
   profileInfo: {
     flex: 1,

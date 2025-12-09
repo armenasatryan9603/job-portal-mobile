@@ -380,6 +380,7 @@ const OrderItem = ({
             hasAppliedToOrder(order.id) &&
             user?.id !== order.clientId && (
               <Button
+                onPress={() => {}}
                 variant="primary"
                 icon="checkmark.circle.fill"
                 iconSize={16}
