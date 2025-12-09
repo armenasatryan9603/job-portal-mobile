@@ -50,6 +50,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import OrderItem from "./Item";
 import { LocationFilterModal } from "@/components/LocationFilterModal";
 
@@ -106,6 +107,14 @@ export default function OrdersScreen() {
     rating: [], // Selected ratings array (empty = no rating filter)
   });
   const queryClient = useQueryClient();
+  const filterStorageKey = useMemo(
+    () => `ordersFilters:${screenName}`,
+    [screenName]
+  );
+  const searchStorageKey = useMemo(
+    () => `ordersSearch:${screenName}`,
+    [screenName]
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 20;
   const status = selectedFilters?.status as string;
@@ -176,6 +185,56 @@ export default function OrdersScreen() {
     allOrdersQuery,
     publicOrdersQuery,
   ]);
+
+  // Load saved filters/search from local storage
+  useEffect(() => {
+    const loadSavedFilters = async () => {
+      try {
+        const savedFiltersString = await AsyncStorage.getItem(filterStorageKey);
+        const savedSearch = await AsyncStorage.getItem(searchStorageKey);
+        if (savedFiltersString) {
+          const parsed = JSON.parse(savedFiltersString);
+          setSelectedFilters((prev) => ({
+            ...prev,
+            ...parsed,
+          }));
+        }
+        if (savedSearch !== null) {
+          setSearchQuery(savedSearch);
+        }
+      } catch (error) {
+        console.error("Error loading saved filters:", error);
+      }
+    };
+    loadSavedFilters();
+  }, [filterStorageKey, searchStorageKey]);
+
+  // Persist filters to local storage
+  useEffect(() => {
+    const saveFilters = async () => {
+      try {
+        await AsyncStorage.setItem(
+          filterStorageKey,
+          JSON.stringify(selectedFilters)
+        );
+      } catch (error) {
+        console.error("Error saving filters:", error);
+      }
+    };
+    saveFilters();
+  }, [selectedFilters, filterStorageKey]);
+
+  // Persist search query to local storage
+  useEffect(() => {
+    const saveSearch = async () => {
+      try {
+        await AsyncStorage.setItem(searchStorageKey, searchQuery);
+      } catch (error) {
+        console.error("Error saving search query:", error);
+      }
+    };
+    saveSearch();
+  }, [searchQuery, searchStorageKey]);
 
   // Sync serviceId from URL parameter with selectedFilters
   // This ensures that when navigating from service detail page, the filter is applied
@@ -1451,6 +1510,7 @@ export default function OrdersScreen() {
             <ResponsiveCard padding={Spacing.md}>
               <Filter
                 searchPlaceholder={t("searchOrdersSkills")}
+                initialSearchValue={searchQuery}
                 onSearchChange={handleSearchChange}
                 filterSections={filterSections}
                 selectedFilters={selectedFilters}

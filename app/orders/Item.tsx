@@ -166,7 +166,22 @@ const OrderItem = ({
 
   return (
     <TouchableOpacity onPress={() => handleOrderPress(order)} activeOpacity={1}>
-      <ResponsiveCard style={isViewed ? styles.viewedCard : undefined}>
+      <ResponsiveCard
+        style={[
+          isViewed && styles.viewedCard,
+          isViewed && { borderWidth: 2, borderColor: colors.border },
+        ]}
+      >
+        {isViewed && (
+          <View style={[styles.viewedTag, { backgroundColor: colors.border }]}>
+            <IconSymbol name="eye" size={12} color={colors.tabIconDefault} />
+            <Text
+              style={[styles.viewedTagText, { color: colors.tabIconDefault }]}
+            >
+              {t("viewed") || "Viewed"}
+            </Text>
+          </View>
+        )}
         {/* Banner Image */}
         {order.BannerImage && (
           <View style={styles.bannerImageContainer}>
@@ -563,6 +578,22 @@ const styles = StyleSheet.create({
   },
   viewedCard: {
     opacity: 0.85,
+  },
+  viewedTag: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    zIndex: 1000,
+  },
+  viewedTagText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
 });
 

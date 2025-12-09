@@ -39,6 +39,7 @@ export interface FilterSection {
 
 export interface FilterProps {
   searchPlaceholder?: string;
+  initialSearchValue?: string;
   onSearchChange: (value: string) => void;
   filterSections: FilterSection[];
   selectedFilters: Record<
@@ -64,6 +65,7 @@ export interface FilterProps {
 
 export const Filter: React.FC<FilterProps> = ({
   searchPlaceholder = "Search...",
+  initialSearchValue = "",
   onSearchChange,
   filterSections,
   selectedFilters,
@@ -75,7 +77,7 @@ export const Filter: React.FC<FilterProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
   const textInputRef = useRef<TextInput>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialSearchValue || "");
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
   >({});
@@ -98,6 +100,10 @@ export const Filter: React.FC<FilterProps> = ({
     }
     return { min: defaultMin, max: defaultMax };
   };
+
+  useEffect(() => {
+    setSearchQuery(initialSearchValue || "");
+  }, [initialSearchValue]);
 
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
