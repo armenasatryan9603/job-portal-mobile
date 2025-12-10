@@ -53,6 +53,18 @@ export default function CreateOrderScreen() {
     serviceId: serviceId ? parseInt(serviceId as string) : null,
   });
 
+  const [currency, setCurrency] = useState<string>("USD");
+  const [rateUnit, setRateUnit] = useState<string>("per project");
+  const currencyOptions = ["USD", "EUR", "AMD"];
+  const [rateUnitOptions, setRateUnitOptions] = useState<string[]>([
+    "per project",
+    "per hour",
+    "per day",
+  ]);
+  const [showAddCustomRateUnit, setShowAddCustomRateUnit] =
+    useState<boolean>(false);
+  const [newCustomRateUnit, setNewCustomRateUnit] = useState<string>("");
+
   const [selectedLocation, setSelectedLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -87,11 +99,24 @@ export default function CreateOrderScreen() {
     };
   } | null>(null);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [showRateUnitModal, setShowRateUnitModal] = useState(false);
+
+  const formatRateUnitLabel = (value: string) => {
+    if (!value) return t("perProject") || "per project";
+    const normalized = value.replace(/_/g, " ").trim().toLowerCase();
+    if (normalized === "per hour") return t("perHour") || "per hour";
+    if (normalized === "per day") return t("perDay") || "per day";
+    if (normalized === "per project") return t("perProject") || "per project";
+    // For custom values, return the original value with proper formatting
+    return value.replace(/_/g, " ").trim();
+  };
 
   // Refs for scrolling to error fields
   const scrollViewRef = useRef<ScrollView>(null);
   const serviceSectionRef = useRef<View>(null);
   const basicInfoSectionRef = useRef<View>(null);
+  const priceSectionRef = useRef<View>(null);
   const skillsSectionRef = useRef<View>(null);
 
   // Format dates with times for form submission in JSON string format
@@ -153,6 +178,18 @@ export default function CreateOrderScreen() {
             availableDates: orderData.availableDates?.join(", ") || "",
             serviceId: orderData.serviceId || null,
           });
+
+          // Populate currency/rate unit if available
+          setCurrency((orderData as any).currency || "USD");
+          const loadedRateUnit = (orderData as any).rateUnit || "per project";
+          // Add to options if it's a custom value not already in the list
+          setRateUnitOptions((prev) => {
+            if (!prev.includes(loadedRateUnit)) {
+              return [...prev, loadedRateUnit];
+            }
+            return prev;
+          });
+          setRateUnit(loadedRateUnit);
 
           // Set selected service if available
           if (orderData.Service) {
@@ -407,7 +444,7 @@ export default function CreateOrderScreen() {
       { field: "serviceId", ref: serviceSectionRef },
       { field: "title", ref: basicInfoSectionRef },
       { field: "description", ref: basicInfoSectionRef },
-      { field: "budget", ref: basicInfoSectionRef },
+      { field: "budget", ref: priceSectionRef },
       { field: "location", ref: basicInfoSectionRef },
       { field: "skills", ref: skillsSectionRef },
       { field: "availableDates", ref: skillsSectionRef },
@@ -558,6 +595,8 @@ export default function CreateOrderScreen() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         budget: parseFloat(formData.budget),
+        currency,
+        rateUnit,
         serviceId: formData.serviceId!,
         location: selectedLocation
           ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
@@ -740,6 +779,8 @@ export default function CreateOrderScreen() {
       title: formData.title.trim(),
       description: formData.description.trim(),
       budget: parseFloat(formData.budget),
+      currency,
+      rateUnit,
       serviceId: formData.serviceId!,
       location: selectedLocation
         ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
@@ -825,7 +866,7 @@ export default function CreateOrderScreen() {
 
     try {
       // Add enhanced fields if using enhanced data
-      const finalOrderData = { ...orderData };
+      const finalOrderData = { ...orderData, currency, rateUnit };
       if (useEnhanced && enhancedData) {
         finalOrderData.titleEn = enhancedData.titleEn;
         finalOrderData.titleRu = enhancedData.titleRu;
@@ -1219,6 +1260,163 @@ export default function CreateOrderScreen() {
             </View>
           </ResponsiveCard>
 
+          {/* Price Section - Separate Card */}
+          <ResponsiveCard>
+            <View ref={priceSectionRef}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("price")}
+              </Text>
+
+              {selectedService ? (
+                <Text style={[styles.priceHint, { color: colors.tint }]}>
+                  {t("budgetSuggestionNote")} {t("youCanChangeThis")}
+                </Text>
+              ) : (
+                <Text
+                  style={[styles.priceHint, { color: colors.tabIconDefault }]}
+                >
+                  {t("selectServiceFirstForBudgetSuggestion")}
+                </Text>
+              )}
+
+              {/* Price Input Row */}
+              <View style={styles.priceInputRow}>
+                {/* Price Amount Input */}
+                <View style={styles.priceAmountContainer}>
+                  <TextInput
+                    style={[
+                      styles.priceInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderTopColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderBottomColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderLeftColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderRightColor: colors.border, // Keep inner border normal
+                        color: colors.text,
+                      },
+                    ]}
+                    value={formData.budget}
+                    onChangeText={(value) => updateField("budget", value)}
+                    placeholder={
+                      selectedService
+                        ? `${selectedService.averagePrice || 0}`
+                        : t("budgetPlaceholder") || "0"
+                    }
+                    placeholderTextColor={colors.tabIconDefault}
+                    keyboardType="numeric"
+                    editable={!!selectedService}
+                  />
+                </View>
+
+                {/* Currency Selector */}
+                <View style={styles.currencyContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorButton,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderTopColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderBottomColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderLeftColor: colors.border, // Keep inner border normal
+                        borderRightColor: colors.border, // Keep inner border normal
+                      },
+                    ]}
+                    onPress={() => setShowCurrencyModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[styles.selectorText, { color: colors.text }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {currency}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.down"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Rate Unit Selector */}
+                <View style={styles.rateUnitContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorButton,
+                      styles.rateUnitSelectorButton,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderTopColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderBottomColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderRightColor: errors.budget
+                          ? "#ff4444"
+                          : colors.border,
+                        borderLeftColor: colors.border, // Keep inner border normal
+                      },
+                    ]}
+                    onPress={() => setShowRateUnitModal(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[styles.selectorText, { color: colors.text }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {formatRateUnitLabel(rateUnit)}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.down"
+                      size={14}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {errors.budget ? (
+                <Text style={[styles.errorText, { color: "#ff4444" }]}>
+                  {errors.budget}
+                </Text>
+              ) : null}
+
+              {/* Preview Display */}
+              {formData.budget && parseFloat(formData.budget) > 0 && (
+                <View style={styles.pricePreview}>
+                  <Text
+                    style={[
+                      styles.previewLabel,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("willBeDisplayedAs")}
+                  </Text>
+                  <Text style={[styles.previewValue, { color: colors.text }]}>
+                    {`${currency.toUpperCase()} ${parseFloat(
+                      formData.budget
+                    ).toLocaleString()} • ${formatRateUnitLabel(rateUnit)}`}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </ResponsiveCard>
+
           {/* Skills and Requirements */}
           <ResponsiveCard>
             <View ref={skillsSectionRef}>
@@ -1447,6 +1645,219 @@ export default function CreateOrderScreen() {
           loading={isSubmitting}
         />
       )}
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={showCurrencyModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCurrencyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.selectorModalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {t("selectCurrency") || "Select Currency"}
+              </Text>
+              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                <IconSymbol name="xmark" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {currencyOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.modalOption,
+                  {
+                    backgroundColor:
+                      currency === option
+                        ? colors.primary + "10"
+                        : "transparent",
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setCurrency(option);
+                  setShowCurrencyModal(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                  {option}
+                </Text>
+                {currency === option && (
+                  <IconSymbol
+                    name="checkmark"
+                    size={16}
+                    color={colors.primary}
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Rate Unit Selection Modal */}
+      <Modal
+        visible={showRateUnitModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowRateUnitModal(false);
+          setShowAddCustomRateUnit(false);
+          setNewCustomRateUnit("");
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.selectorModalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {t("selectRateUnit") || "Select Rate Unit"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowRateUnitModal(false);
+                  setShowAddCustomRateUnit(false);
+                  setNewCustomRateUnit("");
+                }}
+              >
+                <IconSymbol name="xmark" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalScrollView}>
+              {rateUnitOptions.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.modalOption,
+                    {
+                      backgroundColor:
+                        rateUnit === option
+                          ? colors.primary + "10"
+                          : "transparent",
+                      borderBottomColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    setRateUnit(option);
+                    setShowRateUnitModal(false);
+                  }}
+                >
+                  <Text
+                    style={[styles.modalOptionText, { color: colors.text }]}
+                  >
+                    {formatRateUnitLabel(option)}
+                  </Text>
+                  {rateUnit === option && (
+                    <IconSymbol
+                      name="checkmark"
+                      size={16}
+                      color={colors.primary}
+                    />
+                  )}
+                </TouchableOpacity>
+              ))}
+
+              {/* Add Custom Option */}
+              {showAddCustomRateUnit ? (
+                <View style={styles.addCustomContainer}>
+                  <TextInput
+                    style={[
+                      styles.addCustomInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={newCustomRateUnit}
+                    onChangeText={setNewCustomRateUnit}
+                    placeholder={t("enterCustomRateUnit") || "e.g., per month"}
+                    placeholderTextColor={colors.tabIconDefault}
+                    autoFocus
+                  />
+                  <View style={styles.addCustomActions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.addCustomButton,
+                        { backgroundColor: colors.background },
+                      ]}
+                      onPress={() => {
+                        setShowAddCustomRateUnit(false);
+                        setNewCustomRateUnit("");
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.addCustomButtonText,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t("cancel") || "Cancel"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.addCustomButton,
+                        { backgroundColor: colors.primary },
+                      ]}
+                      onPress={() => {
+                        const trimmed = newCustomRateUnit.trim();
+                        if (trimmed && !rateUnitOptions.includes(trimmed)) {
+                          setRateUnitOptions((prev) => [...prev, trimmed]);
+                          setRateUnit(trimmed);
+                        }
+                        setShowAddCustomRateUnit(false);
+                        setNewCustomRateUnit("");
+                        setShowRateUnitModal(false);
+                      }}
+                    >
+                      <Text
+                        style={[styles.addCustomButtonText, { color: "#fff" }]}
+                      >
+                        {t("add") || "Add"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.modalOption,
+                    {
+                      borderBottomColor: colors.border,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.border,
+                    },
+                  ]}
+                  onPress={() => setShowAddCustomRateUnit(true)}
+                >
+                  <IconSymbol
+                    name="plus.circle"
+                    size={18}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[styles.modalOptionText, { color: colors.primary }]}
+                  >
+                    {t("addCustom") || "Add custom..."}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </Layout>
   );
 }
@@ -1506,13 +1917,77 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalImage: {
     width: "90%",
     height: "90%",
+  },
+  selectorModalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 40,
+    maxHeight: "50%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: "500",
+    flex: 1,
+    marginLeft: 12,
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  addCustomContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  addCustomInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  addCustomActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  addCustomButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addCustomButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
   },
   bannerHint: {
     fontSize: 12,
@@ -1559,6 +2034,85 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     fontSize: 14,
     opacity: 0.7,
+  },
+  priceHint: {
+    fontSize: 12,
+    marginBottom: 12,
+    fontStyle: "italic",
+  },
+  priceInputRow: {
+    flexDirection: "row",
+    gap: 0,
+    alignItems: "stretch",
+  },
+  priceAmountContainer: {
+    flex: 3,
+    marginRight: -1,
+  },
+  priceInput: {
+    borderWidth: 1,
+    borderTopLeftRadius: 12,
+    borderBottomLeftRadius: 12,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    fontWeight: "600",
+    // minHeight: 48,
+    height: 48,
+  },
+  currencyContainer: {
+    flex: 0.8,
+    minWidth: 70,
+    marginLeft: -1,
+    marginRight: -1,
+  },
+  rateUnitContainer: {
+    flex: 2.5,
+    marginLeft: -1,
+  },
+  selectorButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    gap: 6,
+    minHeight: 48,
+  },
+  rateUnitSelectorButton: {
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+  },
+  selectorText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
+  },
+  pricePreview: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.03)",
+  },
+  previewLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  previewValue: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
   questionItem: {
     flexDirection: "row",
