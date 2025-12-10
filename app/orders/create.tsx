@@ -25,6 +25,7 @@ import {
   Image,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsService from "@/services/AnalyticsService";
+import { API_CONFIG } from "@/config/api";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -56,6 +58,8 @@ export default function CreateOrderScreen() {
   });
 
   const [currency, setCurrency] = useState<string>("AMD");
+  const [previousCurrency, setPreviousCurrency] = useState<string | null>(null);
+  const [isConvertingCurrency, setIsConvertingCurrency] = useState(false);
   const [rateUnit, setRateUnit] = useState<string>("per project");
   const currencyOptions = ["USD", "EUR", "AMD", "RUB"];
 
@@ -198,6 +202,148 @@ export default function CreateOrderScreen() {
     fetchRateUnits();
   }, []);
 
+  // Convert currency when currency changes
+  useEffect(() => {
+    const convertCurrency = async () => {
+      // Skip conversion if:
+      // - No previous currency set (initial load)
+      // - Currency hasn't actually changed
+      // - No budget value exists
+      // - Already converting
+      if (
+        previousCurrency === null ||
+        currency === previousCurrency ||
+        !formData.budget ||
+        formData.budget.trim() === "" ||
+        isConvertingCurrency
+      ) {
+        // Update previous currency on initial load
+        if (previousCurrency === null) {
+          setPreviousCurrency(currency);
+        }
+        return;
+      }
+
+      const budgetValue = parseFloat(formData.budget);
+      if (isNaN(budgetValue) || budgetValue <= 0) {
+        setPreviousCurrency(currency);
+        return;
+      }
+
+      setIsConvertingCurrency(true);
+      try {
+        // Helper function to fetch with timeout
+        const fetchWithTimeout = async (
+          url: string,
+          timeout: number = 5000
+        ): Promise<Response> => {
+          return Promise.race([
+            fetch(url),
+            new Promise<Response>((_, reject) =>
+              setTimeout(() => reject(new Error("Request timeout")), timeout)
+            ) as Promise<Response>,
+          ]);
+        };
+
+        let rate: number | null = null;
+        let lastError: Error | null = null;
+
+        // Try Frankfurter API first (supports major currencies)
+        try {
+          const response = await fetchWithTimeout(
+            `${API_CONFIG.FRANKFURTER_API_URL}/latest?from=${previousCurrency}&to=${currency}`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            rate = data.rates?.[currency];
+            if (rate && typeof rate === "number") {
+              // Success with Frankfurter
+            }
+          } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.log(
+              "Frankfurter API response:",
+              response.status,
+              errorData
+            );
+          }
+        } catch (error) {
+          lastError = error as Error;
+          console.log("Frankfurter API failed, trying fallback:", error);
+        }
+
+        // If Frankfurter doesn't support these currencies, try exchangerate-api.com
+        if (!rate || typeof rate !== "number") {
+          try {
+            const response = await fetchWithTimeout(
+              `https://api.exchangerate-api.com/v4/latest/${previousCurrency}`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              rate = data.rates?.[currency];
+            }
+          } catch (fallbackError) {
+            console.log(
+              "ExchangeRate-API failed, trying second fallback:",
+              fallbackError
+            );
+            lastError = fallbackError as Error;
+          }
+        }
+
+        // If still no rate, try exchangerate.host (supports 170+ currencies)
+        if (!rate || typeof rate !== "number") {
+          try {
+            const response = await fetchWithTimeout(
+              `https://api.exchangerate.host/latest?base=${previousCurrency}&symbols=${currency}`
+            );
+
+            if (response.ok) {
+              const data = await response.json();
+              rate = data.rates?.[currency];
+            }
+          } catch (secondFallbackError) {
+            console.log("ExchangeRate.host failed:", secondFallbackError);
+            lastError = secondFallbackError as Error;
+          }
+        }
+
+        if (rate && typeof rate === "number") {
+          const convertedValue = budgetValue * rate;
+          // Round to 2 decimal places
+          const roundedValue = Math.round(convertedValue * 100) / 100;
+          setFormData((prev) => ({
+            ...prev,
+            budget: roundedValue.toString(),
+          }));
+        } else {
+          throw new Error(
+            `Currency conversion not available for ${previousCurrency} to ${currency}. ${
+              lastError?.message || "Please enter the price manually."
+            }`
+          );
+        }
+      } catch (error: any) {
+        console.error("Error converting currency:", error);
+        // If conversion fails, show alert but still allow currency change
+        const errorMessage =
+          error?.message ||
+          "Failed to convert currency. Please enter the price manually.";
+        Alert.alert(
+          t("error") || "Error",
+          t("currencyConversionFailed") || errorMessage
+        );
+      } finally {
+        setIsConvertingCurrency(false);
+        setPreviousCurrency(currency);
+      }
+    };
+
+    convertCurrency();
+  }, [currency, previousCurrency, formData.budget]);
+
   // Handle serviceId and orderId from URL params
   useEffect(() => {
     if (serviceId) {
@@ -233,7 +379,9 @@ export default function CreateOrderScreen() {
           });
 
           // Populate currency/rate unit if available
-          setCurrency((orderData as any).currency || "AMD");
+          const loadedCurrency = (orderData as any).currency || "AMD";
+          setCurrency(loadedCurrency);
+          setPreviousCurrency(loadedCurrency); // Set previous currency when loading order
           const loadedRateUnit = (orderData as any).rateUnit || "per project";
           // Add to options if it's a custom value not already in the list
           setRateUnitOptions((prev) => {
@@ -1327,8 +1475,13 @@ export default function CreateOrderScreen() {
                     }
                     placeholderTextColor={colors.tabIconDefault}
                     keyboardType="numeric"
-                    editable={!!selectedService}
+                    editable={!!selectedService && !isConvertingCurrency}
                   />
+                  {isConvertingCurrency && (
+                    <View style={styles.convertingIndicator}>
+                      <ActivityIndicator size="small" color={colors.tint} />
+                    </View>
+                  )}
                 </View>
 
                 {/* Currency Selector */}
@@ -1696,6 +1849,8 @@ export default function CreateOrderScreen() {
                   },
                 ]}
                 onPress={() => {
+                  // Store current currency before changing
+                  setPreviousCurrency(currency);
                   setCurrency(option);
                   setShowCurrencyModal(false);
                 }}
@@ -2075,6 +2230,12 @@ const styles = StyleSheet.create({
   },
   priceAmountContainer: {
     flex: 1,
+    position: "relative",
+  },
+  convertingIndicator: {
+    position: "absolute",
+    right: 12,
+    top: 14,
   },
   priceInput: {
     borderWidth: 1,

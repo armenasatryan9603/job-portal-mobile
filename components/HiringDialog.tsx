@@ -17,6 +17,10 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
 import { apiService } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Button } from "./ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useRateUnits } from "@/hooks/useRateUnits";
+import { formatPriceDisplay } from "@/utils/currencyRateUnit";
 
 interface HiringDialogProps {
   visible: boolean;
@@ -40,6 +44,9 @@ export function HiringDialog({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const { language } = useLanguage();
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits = rateUnitsData || [];
   const [message, setMessage] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [isAlreadyHired, setIsAlreadyHired] = useState(false);
@@ -178,7 +185,17 @@ export function HiringDialog({
                                 { color: colors.tabIconDefault },
                               ]}
                             >
-                              ${order.budget || 0}
+                              {formatPriceDisplay(
+                                order.budget,
+                                order.currency,
+                                order.rateUnit,
+                                rateUnits,
+                                language,
+                                {
+                                  defaultCurrency: "USD",
+                                  defaultRateUnit: "per project",
+                                }
+                              )}
                             </Text>
                           </View>
                         </View>
@@ -255,45 +272,22 @@ export function HiringDialog({
         </TouchableWithoutFeedback>
 
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            style={[
-              styles.footerButton,
-              styles.cancelButton,
-              { borderColor: colors.border },
-            ]}
+          <Button
+            title={t("cancel")}
             onPress={handleClose}
             disabled={loading}
-          >
-            <Text style={[styles.footerButtonText, { color: colors.text }]}>
-              {t("cancel")}
-            </Text>
-          </TouchableOpacity>
+            variant="secondary"
+          />
 
-          <TouchableOpacity
-            style={[
-              styles.footerButton,
-              { backgroundColor: colors.tint },
-              (loading ||
-                !message.trim() ||
-                !selectedOrderId ||
-                isAlreadyHired) &&
-                styles.submitButtonDisabled,
-            ]}
+          <Button
+            title={t("sendHiringRequest")}
             onPress={handleSubmit}
             disabled={
               loading || !message.trim() || !selectedOrderId || isAlreadyHired
             }
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color={colors.background} />
-            ) : (
-              <Text
-                style={[styles.footerButtonText, { color: colors.background }]}
-              >
-                {t("sendHiringRequest")}
-              </Text>
-            )}
-          </TouchableOpacity>
+            loading={loading}
+            variant="primary"
+          />
         </View>
       </View>
     </Modal>
@@ -387,6 +381,7 @@ const styles = StyleSheet.create({
     minHeight: 80,
   },
   footer: {
+    justifyContent: "center",
     flexDirection: "row",
     padding: 16,
     gap: 8,

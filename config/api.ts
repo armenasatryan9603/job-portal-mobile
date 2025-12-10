@@ -9,6 +9,10 @@ export const API_CONFIG = {
   //   ? "http://10.0.2.2:8080"
   //   : "http://localhost:8080",
 
+  // Currency conversion API
+  // Use environment variable if set, otherwise fallback to Frankfurter API
+  FRANKFURTER_API_URL: process.env.EXPO_PUBLIC_FRANKFURTER_API_URL,
+
   // Request timeouts
   TIMEOUT: 10000, // 10 seconds
 
