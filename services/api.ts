@@ -13,6 +13,8 @@ export interface Service {
   averagePrice?: number;
   minPrice?: number;
   maxPrice?: number;
+  currency?: string;
+  rateUnit?: string;
   features: { id: number; name: string; description?: string }[];
   technologies: { id: number; name: string; description?: string }[];
   completionRate?: number;
@@ -79,6 +81,8 @@ export interface SpecialistProfile {
   priceMin?: number;
   priceMax?: number;
   location?: string;
+  currency?: string;
+  rateUnit?: string;
   User: User;
   Service?: Service;
   _count?: {
@@ -256,6 +260,8 @@ export interface Order {
   descriptionRu?: string;
   descriptionHy?: string;
   budget: number;
+  currency?: string; // Optional currency code (e.g., USD)
+  rateUnit?: string; // Optional rate unit (e.g., per_hour, per_project)
   status: string;
   location?: string;
   skills: string[];
@@ -302,8 +308,8 @@ export interface OrderPricing {
   id: number;
   minBudget: number;
   maxBudget?: number | null;
-  creditCost: number;
-  teamCreditCost?: number | null;
+  creditCost: number; // Percentage (e.g., 5.0 for 5%)
+  teamCreditCost?: number | null; // Percentage (e.g., 7.0 for 7%)
   refundPercentage: number;
   teamRefundPercentage?: number | null;
   description?: string | null;
@@ -882,6 +888,8 @@ class ApiService {
     title: string;
     description: string;
     budget: number;
+    currency?: string;
+    rateUnit?: string;
     serviceId: number;
     location?: string;
     skills?: string[];
@@ -908,6 +916,8 @@ class ApiService {
       title?: string;
       description?: string;
       budget?: number;
+      currency?: string;
+      rateUnit?: string;
       status?: string;
       location?: string;
       skills?: string[];
@@ -1608,6 +1618,19 @@ class ApiService {
   // Platform statistics
   async getPlatformStats(): Promise<PlatformStats> {
     return this.request(`/stats/platform`, {}, false);
+  }
+
+  // Constants API
+  async getRateUnits(): Promise<{
+    success: boolean;
+    rateUnits: Array<{
+      value: string;
+      labelEn: string;
+      labelRu: string;
+      labelHy: string;
+    }>;
+  }> {
+    return this.request(`/constants/rate-units`, {}, false);
   }
 }
 

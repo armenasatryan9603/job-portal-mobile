@@ -100,6 +100,22 @@ const OrderItem = ({
   const getStatusIcon = (status: string) =>
     statusConfig[status as keyof typeof statusConfig]?.icon || "circle";
 
+  const formatRateUnit = (value?: string | null) => {
+    if (!value) return t("perProject") || "per project";
+    const normalized = value.replace(/_/g, " ").trim().toLowerCase();
+    if (normalized === "per hour") return t("perHour") || "per hour";
+    if (normalized === "per day") return t("perDay") || "per day";
+    if (normalized === "per project") return t("perProject") || "per project";
+    return normalized;
+  };
+
+  const currencyLabel = (order.currency || "AMD").toUpperCase();
+  const rateUnitLabel = formatRateUnit(order.rateUnit);
+  const budgetDisplay =
+    order.budget !== undefined && order.budget !== null
+      ? `${currencyLabel} ${order.budget.toLocaleString()} • ${rateUnitLabel}`
+      : t("notProvided") || "Not provided";
+
   const handleSaveToggle = async (e: any) => {
     e.stopPropagation(); // Prevent triggering order press
     if (!user?.id) return;
@@ -285,7 +301,7 @@ const OrderItem = ({
               color={colors.tint}
             />
             <Text style={[styles.detailText, { color: colors.text }]}>
-              ${order.budget.toLocaleString()}
+              {budgetDisplay}
             </Text>
           </View>
           {order.location && (
@@ -496,7 +512,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 16,
     marginBottom: 16,
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   detailItem: {
     flexDirection: "row",

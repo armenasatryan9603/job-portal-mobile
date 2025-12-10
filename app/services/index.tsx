@@ -34,6 +34,8 @@ import { Service } from "@/services/api";
 import { useServices, useRootServices } from "@/hooks/useApi";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { formatPriceDisplay } from "@/utils/currencyRateUnit";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
 
 const ServicesScreen = () => {
   useAnalytics("Services");
@@ -47,9 +49,17 @@ const ServicesScreen = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedFilters, setSelectedFilters] = useState<
-    Record<string, string | string[] | { min: number; max: number }>
+    Record<
+      string,
+      | string
+      | string[]
+      | { min: number; max: number }
+      | { latitude: number; longitude: number; address: string; radius: number }
+      | null
+    >
   >({});
-
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits = (rateUnitsData || []) as RateUnit[];
   // Use TanStack Query for data fetching
   const [currentPage, setCurrentPage] = useState(1);
   const [allServices, setAllServices] = useState<Service[]>([]);
@@ -209,7 +219,12 @@ const ServicesScreen = () => {
 
   const handleFilterChange = (
     sectionKey: string,
-    value: string | string[] | { min: number; max: number }
+    value:
+      | string
+      | string[]
+      | { min: number; max: number }
+      | { latitude: number; longitude: number; address: string; radius: number }
+      | null
   ) => {
     AnalyticsService.getInstance().logEvent("filter_changed", {
       filter_type: sectionKey,
@@ -298,7 +313,13 @@ const ServicesScreen = () => {
             />
             <Text style={[styles.statText, { color: colors.text }]}>
               {service.averagePrice
-                ? `$${service.averagePrice}`
+                ? formatPriceDisplay(
+                    service.averagePrice,
+                    service.currency,
+                    service.rateUnit,
+                    rateUnits,
+                    language
+                  )
                 : t("priceVaries")}
             </Text>
           </View>

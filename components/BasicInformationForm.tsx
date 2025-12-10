@@ -133,48 +133,6 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
 
       <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { color: colors.text }]}>
-          {t("budget")} (USD) *
-        </Text>
-        {selectedService ? (
-          <Text style={[styles.budgetSuggestion, { color: colors.tint }]}>
-            {t("budgetSuggestionNote")} {t("youCanChangeThis")}
-          </Text>
-        ) : (
-          <Text
-            style={[styles.budgetSuggestion, { color: colors.tabIconDefault }]}
-          >
-            {t("selectServiceFirstForBudgetSuggestion")}
-          </Text>
-        )}
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: colors.background,
-              borderColor: errors.budget ? "#ff4444" : colors.border,
-              color: colors.text,
-            },
-          ]}
-          value={formData.budget}
-          onChangeText={(value) => onFieldChange("budget", value)}
-          placeholder={
-            selectedService
-              ? `${selectedService.averagePrice || 0}`
-              : t("budgetPlaceholder")
-          }
-          placeholderTextColor={colors.tabIconDefault}
-          keyboardType="numeric"
-          editable={!!selectedService}
-        />
-        {errors.budget ? (
-          <Text style={[styles.errorText, { color: "#ff4444" }]}>
-            {errors.budget}
-          </Text>
-        ) : null}
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text }]}>
           {t("location")}
         </Text>
 

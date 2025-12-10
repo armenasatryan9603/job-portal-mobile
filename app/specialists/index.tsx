@@ -9,6 +9,8 @@ import { ThemeColors, Spacing } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import { router } from "expo-router";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
@@ -38,6 +40,8 @@ export default function SpecialistsScreen() {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { isAuthenticated } = useAuth();
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits = (rateUnitsData || []) as RateUnit[];
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
   const [searchQuery, setSearchQuery] = useState("");
@@ -430,7 +434,14 @@ export default function SpecialistsScreen() {
                 />
                 <Text style={[styles.detailText, { color: colors.text }]}>
                   {specialist.priceMin && specialist.priceMax
-                    ? `$${specialist.priceMin}-${specialist.priceMax}/hr`
+                    ? formatPriceRangeDisplay(
+                        specialist.priceMin,
+                        specialist.priceMax,
+                        specialist.currency,
+                        specialist.rateUnit,
+                        rateUnits,
+                        language
+                      )
                     : t("priceNegotiable")}
                 </Text>
               </View>

@@ -11,6 +11,7 @@ import { MediaUploader } from "@/components/MediaUploader";
 import { AIPreviewModal } from "@/components/AIPreviewModal";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useRef } from "react";
@@ -37,6 +38,7 @@ import AnalyticsService from "@/services/AnalyticsService";
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { isAuthenticated, user } = useAuth();
@@ -53,14 +55,19 @@ export default function CreateOrderScreen() {
     serviceId: serviceId ? parseInt(serviceId as string) : null,
   });
 
-  const [currency, setCurrency] = useState<string>("USD");
+  const [currency, setCurrency] = useState<string>("AMD");
   const [rateUnit, setRateUnit] = useState<string>("per project");
-  const currencyOptions = ["USD", "EUR", "AMD"];
-  const [rateUnitOptions, setRateUnitOptions] = useState<string[]>([
-    "per project",
-    "per hour",
-    "per day",
-  ]);
+  const currencyOptions = ["USD", "EUR", "AMD", "RUB"];
+
+  // Rate units from API with translations
+  const [rateUnitOptions, setRateUnitOptions] = useState<
+    Array<{
+      value: string;
+      labelEn: string;
+      labelRu: string;
+      labelHy: string;
+    }>
+  >([]);
   const [showAddCustomRateUnit, setShowAddCustomRateUnit] =
     useState<boolean>(false);
   const [newCustomRateUnit, setNewCustomRateUnit] = useState<string>("");
@@ -103,13 +110,43 @@ export default function CreateOrderScreen() {
   const [showRateUnitModal, setShowRateUnitModal] = useState(false);
 
   const formatRateUnitLabel = (value: string) => {
-    if (!value) return t("perProject") || "per project";
-    const normalized = value.replace(/_/g, " ").trim().toLowerCase();
-    if (normalized === "per hour") return t("perHour") || "per hour";
-    if (normalized === "per day") return t("perDay") || "per day";
-    if (normalized === "per project") return t("perProject") || "per project";
-    // For custom values, return the original value with proper formatting
+    if (!value) {
+      // Find default from API options
+      const defaultUnit = rateUnitOptions.find(
+        (u) => u.value === "per project"
+      );
+      if (defaultUnit) {
+        return getRateUnitLabelForLanguage(defaultUnit, language);
+      }
+      return t("perProject") || "per project";
+    }
+
+    // Find the rate unit in our options
+    const unit = rateUnitOptions.find(
+      (u) => u.value.toLowerCase() === value.toLowerCase()
+    );
+
+    if (unit) {
+      return getRateUnitLabelForLanguage(unit, language);
+    }
+
+    // For custom values not in the API, return the original value with proper formatting
     return value.replace(/_/g, " ").trim();
+  };
+
+  const getRateUnitLabelForLanguage = (
+    unit: { value: string; labelEn: string; labelRu: string; labelHy: string },
+    lang: string
+  ): string => {
+    switch (lang) {
+      case "ru":
+        return unit.labelRu;
+      case "hy":
+        return unit.labelHy;
+      case "en":
+      default:
+        return unit.labelEn;
+    }
   };
 
   // Refs for scrolling to error fields
@@ -144,6 +181,22 @@ export default function CreateOrderScreen() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch rate units from API on component mount
+  useEffect(() => {
+    const fetchRateUnits = async () => {
+      try {
+        const response = await apiService.getRateUnits();
+        if (response.success && response.rateUnits) {
+          setRateUnitOptions(response.rateUnits);
+        }
+      } catch (error) {
+        console.error("Error fetching rate units:", error);
+      }
+    };
+
+    fetchRateUnits();
+  }, []);
 
   // Handle serviceId and orderId from URL params
   useEffect(() => {
@@ -180,7 +233,7 @@ export default function CreateOrderScreen() {
           });
 
           // Populate currency/rate unit if available
-          setCurrency((orderData as any).currency || "USD");
+          setCurrency((orderData as any).currency || "AMD");
           const loadedRateUnit = (orderData as any).rateUnit || "per project";
           // Add to options if it's a custom value not already in the list
           setRateUnitOptions((prev) => {
@@ -287,10 +340,10 @@ export default function CreateOrderScreen() {
         const titleStr =
           typeof value === "string" ? value.trim() : value.toString();
         if (titleStr.length < 3) {
-          return t("titleTooShort") || "Title must be at least 3 characters";
+          return t("titleTooShort");
         }
         if (titleStr.length > 100) {
-          return t("titleTooLong") || "Title must be less than 100 characters";
+          return t("titleTooLong");
         }
         return "";
       case "description":
@@ -300,16 +353,10 @@ export default function CreateOrderScreen() {
         const descStr =
           typeof value === "string" ? value.trim() : value.toString();
         if (descStr.length < 10) {
-          return (
-            t("descriptionTooShort") ||
-            "Description must be at least 10 characters"
-          );
+          return t("descriptionTooShort");
         }
         if (descStr.length > 2000) {
-          return (
-            t("descriptionTooLong") ||
-            "Description must be less than 2000 characters"
-          );
+          return t("descriptionTooLong");
         }
         return "";
       case "budget":
@@ -322,17 +369,17 @@ export default function CreateOrderScreen() {
         }
         // Check if it's a valid number
         if (isNaN(parseFloat(budgetStr))) {
-          return t("budgetMustBeNumber") || "Budget must be a valid number";
+          return t("budgetMustBeNumber");
         }
         const budgetNum = parseFloat(budgetStr);
         if (budgetNum <= 0) {
-          return t("budgetMustBePositive") || "Budget must be greater than 0";
+          return t("budgetMustBePositive");
         }
         if (budgetNum < 1) {
-          return t("budgetTooLow") || "Budget must be at least $1";
+          return t("budgetTooLow");
         }
         if (budgetNum > 1000000) {
-          return t("budgetTooHigh") || "Budget must be less than $1,000,000";
+          return t("budgetTooHigh");
         }
         return "";
       case "location":
@@ -340,15 +387,10 @@ export default function CreateOrderScreen() {
         if (value && typeof value === "string" && value.trim()) {
           const locationStr = value.trim();
           if (locationStr.length < 3) {
-            return (
-              t("locationTooShort") || "Location must be at least 3 characters"
-            );
+            return t("locationTooShort");
           }
           if (locationStr.length > 200) {
-            return (
-              t("locationTooLong") ||
-              "Location must be less than 200 characters"
-            );
+            return t("locationTooLong");
           }
         }
         return "";
@@ -361,14 +403,12 @@ export default function CreateOrderScreen() {
             .map((s) => s.trim())
             .filter((s) => s);
           if (skillsArray.length > 20) {
-            return t("tooManySkills") || "Maximum 20 skills allowed";
+            return t("tooManySkills");
           }
           // Check if any skill is too long
           const longSkill = skillsArray.find((skill) => skill.length > 50);
           if (longSkill) {
-            return (
-              t("skillTooLong") || "Each skill must be less than 50 characters"
-            );
+            return t("skillTooLong");
           }
         }
         return "";
@@ -658,71 +698,58 @@ export default function CreateOrderScreen() {
   const handleDeleteOrder = () => {
     if (!orderId) return;
 
-    Alert.alert(
-      t("deleteOrder") || "Delete Order",
-      t("areYouSureDeleteOrder") ||
-        "Are you sure you want to delete this order? This action cannot be undone.",
-      [
-        {
-          text: t("cancel") || "Cancel",
-          style: "cancel",
+    Alert.alert(t("deleteOrder"), t("areYouSureDeleteOrder"), [
+      {
+        text: t("cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setIsSubmitting(true);
+            await apiService.deleteOrder(parseInt(orderId as string));
+            Alert.alert(t("success"), t("orderDeletedSuccessfully"), [
+              {
+                text: t("ok"),
+                onPress: () => {
+                  router.replace("/orders");
+                },
+              },
+            ]);
+          } catch (error: any) {
+            console.error("Error deleting order:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : typeof error === "string"
+                ? error
+                : t("unknownError");
+            Alert.alert(
+              t("error") || "Error",
+              t("failedToDeleteOrder") ||
+                "Failed to delete order: " + errorMessage
+            );
+          } finally {
+            setIsSubmitting(false);
+          }
         },
-        {
-          text: t("delete") || "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsSubmitting(true);
-              await apiService.deleteOrder(parseInt(orderId as string));
-              Alert.alert(
-                t("success") || "Success",
-                t("orderDeletedSuccessfully") || "Order deleted successfully",
-                [
-                  {
-                    text: t("ok") || "OK",
-                    onPress: () => {
-                      router.replace("/orders");
-                    },
-                  },
-                ]
-              );
-            } catch (error: any) {
-              console.error("Error deleting order:", error);
-              const errorMessage =
-                error instanceof Error
-                  ? error.message
-                  : typeof error === "string"
-                  ? error
-                  : t("unknownError");
-              Alert.alert(
-                t("error") || "Error",
-                t("failedToDeleteOrder") ||
-                  "Failed to delete order: " + errorMessage
-              );
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleApply = async () => {
     // Check if user is authenticated
     if (!isAuthenticated || !user) {
-      Alert.alert(
-        t("error") || "Error",
-        t("authenticationRequired") || "Please log in to create an order.",
-        [
-          {
-            text: t("ok") || "OK",
-            onPress: () => {
-              showLoginModal();
-            },
+      Alert.alert(t("error"), t("authenticationRequired"), [
+        {
+          text: t("ok"),
+          onPress: () => {
+            showLoginModal();
           },
-        ]
-      );
+        },
+      ]);
       return;
     }
 
@@ -836,11 +863,7 @@ export default function CreateOrderScreen() {
           return;
         }
 
-        Alert.alert(
-          t("error") || "Error",
-          t("failedToGetAIPreview") ||
-            "Failed to get AI preview: " + errorMessage
-        );
+        Alert.alert(t("error"), t("failedToGetAIPreview") || errorMessage);
         return;
       }
     }
@@ -1125,19 +1148,15 @@ export default function CreateOrderScreen() {
         errorMessage.includes("expired") ||
         error?.response?.status === 401
       ) {
-        Alert.alert(
-          t("error") || "Error",
-          t("authenticationRequired") || "Please log in again to continue.",
-          [
-            {
-              text: t("ok") || "OK",
-              onPress: () => {
-                // Optionally redirect to login
-                router.replace("/");
-              },
+        Alert.alert(t("error") || "Error", t("authenticationRequired"), [
+          {
+            text: t("ok") || "OK",
+            onPress: () => {
+              // Optionally redirect to login
+              router.replace("/");
             },
-          ]
-        );
+          },
+        ]);
       } else {
         Alert.alert(
           t("error") || "Error",
@@ -1204,10 +1223,7 @@ export default function CreateOrderScreen() {
           ? error
           : t("unknownError");
 
-      Alert.alert(
-        t("error") || "Error",
-        t("failedToGetAIPreview") || "Failed to get AI preview: " + errorMessage
-      );
+      Alert.alert(t("error"), t("failedToGetAIPreview") + ": " + errorMessage);
       throw error;
     }
   };
@@ -1391,14 +1407,14 @@ export default function CreateOrderScreen() {
                 </View>
               </View>
               {errors.budget ? (
-                <Text style={[styles.errorText, { color: "#ff4444" }]}>
+                <Text style={{ color: "#ff4444", marginBottom: 10 }}>
                   {errors.budget}
                 </Text>
               ) : null}
 
               {/* Preview Display */}
               {formData.budget && parseFloat(formData.budget) > 0 && (
-                <View style={styles.pricePreview}>
+                <View>
                   <Text
                     style={[
                       styles.previewLabel,
@@ -1463,7 +1479,7 @@ export default function CreateOrderScreen() {
           <ResponsiveCard>
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("questionsForSpecialists") || "Questions for Specialists"}
+                {t("questionsForSpecialists")}
               </Text>
               <Text
                 style={[
@@ -1471,8 +1487,7 @@ export default function CreateOrderScreen() {
                   { color: colors.tabIconDefault },
                 ]}
               >
-                {t("addQuestionsForApplicants") ||
-                  "Add questions that specialists must answer when applying"}
+                {t("addQuestionsForApplicants")}
               </Text>
             </View>
 
@@ -1487,7 +1502,7 @@ export default function CreateOrderScreen() {
                       color: colors.text,
                     },
                   ]}
-                  placeholder={t("enterQuestion") || "Enter question..."}
+                  placeholder={t("enterQuestion")}
                   placeholderTextColor={colors.tabIconDefault}
                   value={question}
                   onChangeText={(text) => {
@@ -1517,7 +1532,7 @@ export default function CreateOrderScreen() {
             >
               <IconSymbol name="plus.circle" size={20} color={colors.tint} />
               <Text style={[styles.addQuestionText, { color: colors.tint }]}>
-                {t("addQuestion") || "Add Question"}
+                {t("addQuestion")}
               </Text>
             </TouchableOpacity>
           </ResponsiveCard>
@@ -1549,16 +1564,15 @@ export default function CreateOrderScreen() {
                   )}
                 </View>
                 <Text style={[styles.checkboxLabel, { color: colors.text }]}>
-                  {t("improveWithAI") || "Improve with AI"}
+                  {t("improveWithAI")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => {
                   Alert.alert(
-                    t("aiEnhancement") || "AI Enhancement",
-                    t("aiEnhancementDescription") ||
-                      "AI will detect the language of your text, fix transliteration issues (e.g., Armenian written with Latin characters), translate to all three languages (English, Russian, Armenian), and improve grammar and clarity. This service costs 2 credits.",
-                    [{ text: t("ok") || "OK" }]
+                    t("aiEnhancement"),
+                    t("aiEnhancementDescription"),
+                    [{ text: t("ok") }]
                   );
                 }}
                 style={styles.infoButton}
@@ -1593,7 +1607,7 @@ export default function CreateOrderScreen() {
                     icon="eye"
                     iconSize={16}
                     iconPosition="left"
-                    title={t("preview") || "Preview"}
+                    title={t("preview")}
                     onPress={() => {
                       router.push(`/orders/${orderId}?preview=true`);
                     }}
@@ -1602,7 +1616,7 @@ export default function CreateOrderScreen() {
               )}
               <Button
                 onPress={handleApply}
-                title={orderId ? t("save") || "Save" : t("apply") || "Apply"}
+                title={orderId ? t("save") : t("apply")}
                 variant="primary"
                 disabled={isSubmitting}
                 loading={isSubmitting}
@@ -1662,7 +1676,7 @@ export default function CreateOrderScreen() {
           >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {t("selectCurrency") || "Select Currency"}
+                {t("selectCurrency")}
               </Text>
               <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
                 <IconSymbol name="xmark" size={20} color={colors.text} />
@@ -1722,7 +1736,7 @@ export default function CreateOrderScreen() {
           >
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {t("selectRateUnit") || "Select Rate Unit"}
+                {t("selectRateUnit")}
               </Text>
               <TouchableOpacity
                 onPress={() => {
@@ -1737,28 +1751,28 @@ export default function CreateOrderScreen() {
             <ScrollView style={styles.modalScrollView}>
               {rateUnitOptions.map((option) => (
                 <TouchableOpacity
-                  key={option}
+                  key={option.value}
                   style={[
                     styles.modalOption,
                     {
                       backgroundColor:
-                        rateUnit === option
+                        rateUnit === option.value
                           ? colors.primary + "10"
                           : "transparent",
                       borderBottomColor: colors.border,
                     },
                   ]}
                   onPress={() => {
-                    setRateUnit(option);
+                    setRateUnit(option.value);
                     setShowRateUnitModal(false);
                   }}
                 >
                   <Text
                     style={[styles.modalOptionText, { color: colors.text }]}
                   >
-                    {formatRateUnitLabel(option)}
+                    {getRateUnitLabelForLanguage(option, language)}
                   </Text>
-                  {rateUnit === option && (
+                  {rateUnit === option.value && (
                     <IconSymbol
                       name="checkmark"
                       size={16}
@@ -1782,7 +1796,7 @@ export default function CreateOrderScreen() {
                     ]}
                     value={newCustomRateUnit}
                     onChangeText={setNewCustomRateUnit}
-                    placeholder={t("enterCustomRateUnit") || "e.g., per month"}
+                    placeholder={t("enterCustomRateUnit")}
                     placeholderTextColor={colors.tabIconDefault}
                     autoFocus
                   />
@@ -1803,7 +1817,7 @@ export default function CreateOrderScreen() {
                           { color: colors.textSecondary },
                         ]}
                       >
-                        {t("cancel") || "Cancel"}
+                        {t("cancel")}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -1813,9 +1827,23 @@ export default function CreateOrderScreen() {
                       ]}
                       onPress={() => {
                         const trimmed = newCustomRateUnit.trim();
-                        if (trimmed && !rateUnitOptions.includes(trimmed)) {
-                          setRateUnitOptions((prev) => [...prev, trimmed]);
-                          setRateUnit(trimmed);
+                        if (trimmed) {
+                          const exists = rateUnitOptions.some(
+                            (u) => u.value === trimmed
+                          );
+                          if (!exists) {
+                            // Add custom rate unit with same label for all languages
+                            setRateUnitOptions((prev) => [
+                              ...prev,
+                              {
+                                value: trimmed,
+                                labelEn: trimmed,
+                                labelRu: trimmed,
+                                labelHy: trimmed,
+                              },
+                            ]);
+                            setRateUnit(trimmed);
+                          }
                         }
                         setShowAddCustomRateUnit(false);
                         setNewCustomRateUnit("");
@@ -1825,7 +1853,7 @@ export default function CreateOrderScreen() {
                       <Text
                         style={[styles.addCustomButtonText, { color: "#fff" }]}
                       >
-                        {t("add") || "Add"}
+                        {t("add")}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1850,7 +1878,7 @@ export default function CreateOrderScreen() {
                   <Text
                     style={[styles.modalOptionText, { color: colors.primary }]}
                   >
-                    {t("addCustom") || "Add custom..."}
+                    {t("addCustom")}
                   </Text>
                 </TouchableOpacity>
               )}
@@ -2046,8 +2074,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   priceAmountContainer: {
-    flex: 3,
-    marginRight: -1,
+    flex: 1,
   },
   priceInput: {
     borderWidth: 1,
@@ -2059,18 +2086,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     fontWeight: "600",
-    // minHeight: 48,
     height: 48,
   },
   currencyContainer: {
-    flex: 0.8,
-    minWidth: 70,
-    marginLeft: -1,
-    marginRight: -1,
+    flex: 1,
   },
   rateUnitContainer: {
-    flex: 2.5,
-    marginLeft: -1,
+    flex: 1,
   },
   selectorButton: {
     flexDirection: "row",
@@ -2084,7 +2106,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 14,
     gap: 6,
-    minHeight: 48,
   },
   rateUnitSelectorButton: {
     borderTopRightRadius: 12,
@@ -2095,24 +2116,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flex: 1,
   },
-  pricePreview: {
-    marginTop: 16,
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.03)",
-  },
   previewLabel: {
     fontSize: 12,
-    marginBottom: 4,
+    marginTop: 10,
   },
   previewValue: {
     fontSize: 14,
     fontWeight: "600",
-  },
-  errorText: {
-    fontSize: 12,
-    marginTop: 4,
-    marginLeft: 4,
   },
   questionItem: {
     flexDirection: "row",

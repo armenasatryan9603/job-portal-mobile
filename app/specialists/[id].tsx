@@ -8,8 +8,11 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import React, { useState, useEffect } from "react";
 import {
   Image,
@@ -29,8 +32,11 @@ export default function SpecialistDetailScreen() {
   useAnalytics("SpecialistDetail");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits: RateUnit[] = rateUnitsData || [];
 
   // API state management
   const [specialist, setSpecialist] = useState<SpecialistProfile | null>(null);
@@ -484,7 +490,14 @@ export default function SpecialistDetailScreen() {
                     style={[styles.detailCardValue, { color: colors.text }]}
                   >
                     {specialist.priceMin && specialist.priceMax
-                      ? `$${specialist.priceMin}-${specialist.priceMax}`
+                      ? formatPriceRangeDisplay(
+                          specialist.priceMin,
+                          specialist.priceMax,
+                          specialist.currency,
+                          specialist.rateUnit,
+                          rateUnits,
+                          language
+                        )
                       : t("negotiable")}
                   </Text>
                 </View>

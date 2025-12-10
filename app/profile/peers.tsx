@@ -286,7 +286,7 @@ export default function PeersScreen() {
     const isPending = peer.relationshipStatus === "pending";
     return (
       <ResponsiveCard
-        margin={0}
+        marginBlock={0}
         padding={0}
         style={[
           { marginTop: Spacing.lg },
@@ -356,7 +356,7 @@ export default function PeersScreen() {
 
   const renderTeamItem = (team: Team) => (
     <ResponsiveCard
-      margin={0}
+      marginBlock={0}
       padding={0}
       style={{ marginTop: Spacing.lg }}
       key={team.id}

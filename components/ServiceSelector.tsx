@@ -6,7 +6,6 @@ import {
   TextInput,
   ActivityIndicator,
   StyleSheet,
-  LayoutAnimation,
   Platform,
   UIManager,
   Image,
@@ -19,6 +18,8 @@ import { Service } from "@/services/api";
 import { useServices } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import { formatPriceDisplay } from "@/utils/currencyRateUnit";
 
 interface ServiceSelectorProps {
   selectedService: Service | null;
@@ -38,6 +39,8 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
 
   const { language } = useLanguage();
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits = (rateUnitsData || []) as RateUnit[];
 
   // Use cached services hook - fetches with high limit to get all services
   const {
@@ -197,7 +200,13 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               <Text
                 style={[styles.selectedServicePrice, { color: colors.primary }]}
               >
-                ${selectedService.averagePrice}/hr
+                {formatPriceDisplay(
+                  selectedService.averagePrice,
+                  selectedService.currency,
+                  selectedService.rateUnit,
+                  rateUnits,
+                  language
+                )}
               </Text>
             )}
           </View>
@@ -371,7 +380,13 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                 },
                               ]}
                             >
-                              ${service.averagePrice}/hr
+                              {formatPriceDisplay(
+                                service.averagePrice,
+                                service.currency,
+                                service.rateUnit,
+                                rateUnits,
+                                language
+                              )}
                             </Text>
                           )}
                         </View>

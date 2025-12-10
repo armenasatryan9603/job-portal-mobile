@@ -8,9 +8,12 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import { formatPriceDisplay } from "@/utils/currencyRateUnit";
 import {
   Alert,
   ScrollView,
@@ -31,6 +34,8 @@ const dummyOrderData = {
     description:
       "Need a full-stack e-commerce website with payment integration and admin panel. The website should include user authentication, product catalog, shopping cart, checkout process, and an admin dashboard for managing products, orders, and customers.",
     budget: 5000,
+    currency: "USD",
+    rateUnit: "per project",
     location: "Remote",
     skills: ["React", "Node.js", "MongoDB", "Stripe", "Express", "JWT"],
     availableDates: ["2024-01-15", "2024-01-20", "2024-01-25"],
@@ -43,6 +48,8 @@ const dummyOrderData = {
     description:
       "Looking for a React Native developer to create a food delivery app with real-time tracking, payment integration, and push notifications. The app should work on both iOS and Android platforms.",
     budget: 8000,
+    currency: "USD",
+    rateUnit: "per project",
     location: "New York, NY",
     skills: [
       "React Native",
@@ -74,8 +81,11 @@ export default function CreateProposalScreen() {
   useAnalytics("CreateProposal");
   const { orderId } = useLocalSearchParams();
   const { t } = useTranslation();
+  const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits: RateUnit[] = rateUnitsData || [];
 
   const orderIdNum = parseInt(orderId as string);
   const order = dummyOrderData[orderIdNum as keyof typeof dummyOrderData];
@@ -216,7 +226,14 @@ export default function CreateProposalScreen() {
                     color={colors.tint}
                   />
                   <Text style={[styles.detailText, { color: colors.text }]}>
-                    Budget: ${order.budget.toLocaleString()}
+                    Budget:{" "}
+                    {formatPriceDisplay(
+                      order.budget,
+                      order.currency,
+                      order.rateUnit,
+                      rateUnits,
+                      language
+                    )}
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
@@ -325,7 +342,7 @@ export default function CreateProposalScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Your Price (USD) *
+                Your Price ({order.currency || "USD"}) *
               </Text>
               <TextInput
                 style={[
@@ -345,7 +362,14 @@ export default function CreateProposalScreen() {
               <Text
                 style={[styles.helperText, { color: colors.tabIconDefault }]}
               >
-                Client budget: ${order.budget.toLocaleString()}
+                Client budget:{" "}
+                {formatPriceDisplay(
+                  order.budget,
+                  order.currency,
+                  order.rateUnit,
+                  rateUnits,
+                  language
+                )}
               </Text>
             </View>
 

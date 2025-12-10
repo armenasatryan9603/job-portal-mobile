@@ -7,10 +7,16 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import {
+  formatPriceRangeDisplay,
+  formatPriceDisplay,
+} from "@/utils/currencyRateUnit";
 import { router, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import React, { useState, useEffect, useCallback } from "react";
@@ -37,8 +43,11 @@ export default function ServiceDetailScreen() {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
+  const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { data: rateUnitsData } = useRateUnits();
+  const rateUnits = (rateUnitsData || []) as RateUnit[];
 
   // API state management
   const [service, setService] = useState<Service | null>(null);
@@ -248,7 +257,14 @@ export default function ServiceDetailScreen() {
                     color={colors.tint}
                   />
                   <Text style={[styles.statLabel, { color: colors.text }]}>
-                    ${service.minPrice} - ${service.maxPrice}/hr
+                    {formatPriceRangeDisplay(
+                      service.minPrice,
+                      service.maxPrice,
+                      service.currency,
+                      service.rateUnit,
+                      rateUnits,
+                      language
+                    )}
                   </Text>
                 </View>
                 <View style={styles.statItem}>
@@ -354,7 +370,13 @@ export default function ServiceDetailScreen() {
                       >
                         {subService.specialistCount} {t("specialists")} •
                         {subService.averagePrice
-                          ? ` $${subService.averagePrice}`
+                          ? ` ${formatPriceDisplay(
+                              subService.averagePrice,
+                              subService.currency,
+                              subService.rateUnit,
+                              rateUnits,
+                              language
+                            )}`
                           : " Price varies"}
                       </Text>
                     </View>

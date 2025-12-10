@@ -22,11 +22,19 @@ import {
 } from "react-native";
 
 const formatCurrency = (value: number) => {
-  const { t } = useTranslation();
-
-  return `${Math.round(value).toLocaleString()} ${t("credits")}`;
+  return `$${Math.round(value).toLocaleString()}`;
 };
 
+const formatCredits = (value: number) => {
+  const { t } = useTranslation();
+  return `${Math.round(value).toLocaleString()} ${t("credits") || "credits"}`;
+};
+
+// Format percentage that's already a percentage (e.g., 5.0 -> "5.0%")
+const formatPercentDirect = (value: number | null | undefined) =>
+  value === null || value === undefined ? "—" : `${value.toFixed(1)}%`;
+
+// Format decimal as percentage (e.g., 0.5 -> "50%")
 const formatPercent = (value: number | null | undefined) =>
   value === null || value === undefined ? "—" : `${Math.round(value * 100)}%`;
 
@@ -149,12 +157,15 @@ export default function PriceInfoScreen() {
 
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-        {renderRow(t("creditCostIndividual"), formatCurrency(tier.creditCost))}
         {renderRow(
-          t("creditCostTeam"),
+          t("creditCostIndividual") || "Credit cost (individual)",
+          formatPercentDirect(tier.creditCost)
+        )}
+        {renderRow(
+          t("creditCostTeam") || "Credit cost (team)",
           tier.teamCreditCost
-            ? formatCurrency(tier.teamCreditCost)
-            : t("notAvailable")
+            ? formatPercentDirect(tier.teamCreditCost)
+            : t("notAvailable") || "Not available"
         )}
         {renderRow(
           t("refundPercentageIndividual"),
