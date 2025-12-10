@@ -333,77 +333,75 @@ export default function TeamDetailScreen() {
 
   return (
     <Layout header={header}>
-      <ScrollView style={styles.container}>
-        <View
-          style={{
-            flexDirection: "row",
-            gap: Spacing.md,
-          }}
-        >
+      <View
+        style={{
+          flexDirection: "row",
+          marginBottom: Spacing.lg,
+          marginHorizontal: Spacing.xl,
+          alignItems: "center",
+          gap: Spacing.md,
+        }}
+      >
+        <View style={{ flex: 1, minWidth: 0 }}>
           <TeamInfo
             team={team}
             canEdit={isTeamLead}
             onSave={handleSaveTeamName}
           />
-
-          <View style={styles.actionButtonsContainer}>
-            {isTeamLead && (
-              <TouchableOpacity
-                style={[
-                  styles.addButton,
-                  {
-                    backgroundColor: colors.tint,
-                  },
-                ]}
-                onPress={handleOpenModal}
-              >
-                <IconSymbol
-                  name="person.badge.plus"
-                  size={20}
-                  color={colors.background}
-                />
-              </TouchableOpacity>
-            )}
-            {!isUserPartOfTeam && (
-              <TouchableOpacity
-                style={[
-                  styles.hireButton,
-                  {
-                    backgroundColor: colors.tint,
-                  },
-                ]}
-                onPress={handleHireTeam}
-              >
-                <Text
-                  style={[styles.hireButtonText, { color: colors.background }]}
-                >
-                  {t("hire")}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {t("members")} ({activeMembers.length})
-          </Text>
-          {activeMembers.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-              {t("noMembers")}
+        {isTeamLead && (
+          <TouchableOpacity
+            style={[
+              styles.addButton,
+              {
+                backgroundColor: colors.tint,
+              },
+            ]}
+            onPress={handleOpenModal}
+          >
+            <IconSymbol
+              name="person.badge.plus"
+              size={20}
+              color={colors.background}
+            />
+          </TouchableOpacity>
+        )}
+        {!isUserPartOfTeam && (
+          <TouchableOpacity
+            style={[
+              styles.hireButton,
+              {
+                backgroundColor: colors.tint,
+              },
+            ]}
+            onPress={handleHireTeam}
+          >
+            <Text style={[styles.hireButtonText, { color: colors.background }]}>
+              {t("hire")}
             </Text>
-          ) : (
-            activeMembers.map((member) => (
-              <TeamMemberItem
-                key={member.id}
-                member={member}
-                canRemove={isTeamLead && member.userId !== team.createdBy}
-                onRemove={handleRemoveMember}
-              />
-            ))
-          )}
-        </View>
-      </ScrollView>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {t("members")} ({activeMembers.length})
+        </Text>
+        {activeMembers.length === 0 ? (
+          <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
+            {t("noMembers")}
+          </Text>
+        ) : (
+          activeMembers.map((member) => (
+            <TeamMemberItem
+              key={member.id}
+              member={member}
+              canRemove={isTeamLead && member.userId !== team.createdBy}
+              onRemove={handleRemoveMember}
+            />
+          ))
+        )}
+      </View>
 
       <AddTeamMemberModal
         visible={showAddMemberModal}
@@ -440,11 +438,6 @@ export default function TeamDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: Spacing.lg,
-    marginBottom: 90,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -462,7 +455,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   section: {
-    marginBottom: Spacing.xl,
+    margin: Spacing.xl,
   },
   sectionTitle: {
     fontSize: 18,
@@ -474,16 +467,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: Spacing.xl,
   },
-  actionButtonsContainer: {
-    gap: Spacing.sm,
-  },
   addButton: {
     padding: Spacing.md,
     borderRadius: Spacing.md,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 48,
-    minHeight: 48,
+    minWidth: 40,
+    minHeight: 40,
+    flexShrink: 0,
   },
   hireButton: {
     paddingHorizontal: Spacing.lg,
@@ -492,6 +483,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minWidth: 80,
+    flexShrink: 0,
   },
   hireButtonText: {
     fontSize: 14,

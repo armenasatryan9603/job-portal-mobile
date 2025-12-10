@@ -63,8 +63,9 @@ export const TeamInfo = memo(({ team, canEdit, onSave }: TeamInfoProps) => {
   return (
     <ResponsiveCard
       padding={0}
-      margin={0}
-      style={{ marginBottom: Spacing.lg, flexGrow: 1 }}
+      marginBlock={0}
+      marginHorizontal={0}
+      style={{ flex: 1 }}
     >
       <View style={styles.teamInfo}>
         <View style={styles.teamNameRow}>

@@ -294,7 +294,7 @@ export default function TeamsScreen() {
                           { color: colors.tabIconDefault },
                         ]}
                       >
-                        {memberCount} {t("members") || "members"}
+                        {memberCount} {t("members")}
                       </Text>
                     </View>
                     {team.Creator && (
@@ -391,24 +391,6 @@ export default function TeamsScreen() {
               )}
 
               <View style={styles.teamFooter}>
-                <TouchableOpacity
-                  style={[
-                    styles.viewButton,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      borderWidth: 1,
-                    },
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleTeamPress(team.id);
-                  }}
-                >
-                  <Text style={[styles.viewButtonText, { color: colors.text }]}>
-                    {t("viewTeam")}
-                  </Text>
-                </TouchableOpacity>
                 {!isUserPartOfTeam && (
                   <TouchableOpacity
                     style={[
@@ -564,12 +546,10 @@ const styles = StyleSheet.create({
   teamCard: {
     padding: 20,
     borderRadius: 16,
-    marginBottom: 16,
   },
   teamHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
     gap: Spacing.md,
   },
   iconContainer: {
@@ -603,7 +583,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   membersContainer: {
-    marginBottom: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",
@@ -657,16 +636,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",
-  },
-  viewButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  viewButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
   hireButton: {
     flex: 1,

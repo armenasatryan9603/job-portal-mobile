@@ -1,5 +1,6 @@
 import React, { memo } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { router } from "expo-router";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
@@ -22,10 +23,20 @@ export const TeamMemberItem = memo(
     const isLead = member.role === "lead";
     const isPending = (member as any).memberStatus === "pending";
 
+    const handleMemberPress = () => {
+      router.push(`/profile/profile?userId=${member.User.id}` as any);
+    };
+
+    const handleRemovePress = (e: any) => {
+      e.stopPropagation();
+      onRemove(member.userId);
+    };
+
     return (
       <ResponsiveCard
         padding={0}
-        margin={0}
+        marginBlock={0}
+        marginHorizontal={0}
         style={[
           { marginBottom: Spacing.lg },
           isPending && {
@@ -36,44 +47,52 @@ export const TeamMemberItem = memo(
         ]}
       >
         <View style={styles.memberItem}>
-          <UserAvatar user={member.User} size={50} />
-          <View style={styles.memberInfo}>
-            <View style={styles.memberNameRow}>
-              <Text style={[styles.memberName, { color: colors.text }]}>
-                {member.User.name}
-              </Text>
-              {isLead && (
-                <View
-                  style={[
-                    styles.leadBadge,
-                    { backgroundColor: colors.tint + "20" },
-                  ]}
+          <TouchableOpacity
+            style={styles.memberContent}
+            onPress={handleMemberPress}
+            activeOpacity={0.7}
+          >
+            <UserAvatar user={member.User} size={50} />
+            <View style={styles.memberInfo}>
+              <View style={styles.memberNameRow}>
+                <Text style={[styles.memberName, { color: colors.text }]}>
+                  {member.User.name}
+                </Text>
+                {isLead && (
+                  <View
+                    style={[
+                      styles.leadBadge,
+                      { backgroundColor: colors.tint + "20" },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.leadBadgeText, { color: colors.tint }]}
+                    >
+                      {t("lead")}
+                    </Text>
+                  </View>
+                )}
+                {isPending && (
+                  <View style={styles.pendingBadge}>
+                    <IconSymbol name="clock.fill" size={12} color="#FF9500" />
+                    <Text style={styles.pendingBadgeText}>
+                      {t("pending") || "Pending"}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              {member.User.email && (
+                <Text
+                  style={[styles.memberEmail, { color: colors.tabIconDefault }]}
                 >
-                  <Text style={[styles.leadBadgeText, { color: colors.tint }]}>
-                    {t("lead")}
-                  </Text>
-                </View>
-              )}
-              {isPending && (
-                <View style={styles.pendingBadge}>
-                  <IconSymbol name="clock.fill" size={12} color="#FF9500" />
-                  <Text style={styles.pendingBadgeText}>
-                    {t("pending") || "Pending"}
-                  </Text>
-                </View>
+                  {member.User.email}
+                </Text>
               )}
             </View>
-            {member.User.email && (
-              <Text
-                style={[styles.memberEmail, { color: colors.tabIconDefault }]}
-              >
-                {member.User.email}
-              </Text>
-            )}
-          </View>
+          </TouchableOpacity>
           {canRemove && (
             <TouchableOpacity
-              onPress={() => onRemove(member.userId)}
+              onPress={handleRemovePress}
               style={styles.removeButton}
             >
               <IconSymbol name="trash" size={20} color="#FF3B30" />
@@ -92,6 +111,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     padding: Spacing.md,
+    gap: Spacing.md,
+  },
+  memberContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
     gap: Spacing.md,
   },
   memberInfo: {
