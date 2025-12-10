@@ -298,7 +298,7 @@ const ServicesScreen = () => {
             />
             <Text style={[styles.statText, { color: colors.text }]}>
               {service.averagePrice
-                ? `$${service.averagePrice}/hr ${t("avg")}`
+                ? `$${service.averagePrice}`
                 : t("priceVaries")}
             </Text>
           </View>

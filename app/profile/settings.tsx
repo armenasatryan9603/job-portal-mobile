@@ -385,6 +385,45 @@ export default function ProfileSettingsScreen() {
             </TouchableOpacity>
           </ResponsiveCard>
 
+          {/* Pricing & Fees */}
+          <ResponsiveCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t("pricingAndFees") || "Pricing & Fees"}
+            </Text>
+
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => router.push("/pricing")}
+            >
+              <View style={styles.settingInfo}>
+                <IconSymbol
+                  name="chart.bar.fill"
+                  size={20}
+                  color={colors.primary}
+                />
+                <View style={styles.settingText}>
+                  <Text style={[styles.settingTitle, { color: colors.text }]}>
+                    {t("orderPricing") || "Order pricing"}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("viewOrderPricingDetails") ||
+                      "See credit costs and refunds by budget range"}
+                  </Text>
+                </View>
+              </View>
+              <IconSymbol
+                name="chevron.right"
+                size={16}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+          </ResponsiveCard>
+
           {/* Notification Settings */}
           <ResponsiveCard>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -482,65 +521,6 @@ export default function ProfileSettingsScreen() {
                 />
               )}
             </View>
-          </ResponsiveCard>
-
-          {/* Privacy Settings */}
-          <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("privacyAndSecurity")}
-            </Text>
-
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol name="lock.fill" size={20} color={colors.primary} />
-                <View style={styles.settingText}>
-                  <Text style={[styles.settingTitle, { color: colors.text }]}>
-                    {t("changePassword")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.settingDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("updateAccountPassword")}
-                  </Text>
-                </View>
-              </View>
-              <IconSymbol
-                name="chevron.right"
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.settingItem}>
-              <View style={styles.settingInfo}>
-                <IconSymbol
-                  name="eye.slash.fill"
-                  size={20}
-                  color={colors.primary}
-                />
-                <View style={styles.settingText}>
-                  <Text style={[styles.settingTitle, { color: colors.text }]}>
-                    {t("privacySettings")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.settingDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("controlWhoCanSeeProfile")}
-                  </Text>
-                </View>
-              </View>
-              <IconSymbol
-                name="chevron.right"
-                size={16}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
           </ResponsiveCard>
 
           {/* Guest User Section - Only for non-authenticated users */}

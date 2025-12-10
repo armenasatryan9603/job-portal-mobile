@@ -41,8 +41,15 @@ export default function SpecialistsScreen() {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
   const [searchQuery, setSearchQuery] = useState("");
+  type SpecialistFilterValue =
+    | string
+    | string[]
+    | { min: number; max: number }
+    | { latitude: number; longitude: number; address: string; radius: number }
+    | null;
+
   const [selectedFilters, setSelectedFilters] = useState<
-    Record<string, string | string[] | { min: number; max: number }>
+    Record<string, SpecialistFilterValue>
   >({
     priceRange: { min: 0, max: 10000000 },
     services: [],
@@ -117,7 +124,12 @@ export default function SpecialistsScreen() {
 
   const handleFilterChange = (
     sectionKey: string,
-    value: string | string[] | { min: number; max: number }
+    value:
+      | string
+      | string[]
+      | { min: number; max: number }
+      | { latitude: number; longitude: number; address: string; radius: number }
+      | null
   ) => {
     AnalyticsService.getInstance().logEvent("filter_changed", {
       filter_type: sectionKey,

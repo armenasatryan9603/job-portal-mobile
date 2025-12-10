@@ -41,6 +41,14 @@ export interface ServiceListResponse {
   };
 }
 
+export interface PlatformStats {
+  activeSpecialists: number;
+  completedProjects: number;
+  averageRating: number;
+  totalReviews: number;
+  supportAvailability: string;
+}
+
 export interface UserService {
   id: number;
   userId: number;
@@ -288,6 +296,20 @@ export interface OrderChangeHistory {
     email: string;
     avatarUrl?: string;
   };
+}
+
+export interface OrderPricing {
+  id: number;
+  minBudget: number;
+  maxBudget?: number | null;
+  creditCost: number;
+  teamCreditCost?: number | null;
+  refundPercentage: number;
+  teamRefundPercentage?: number | null;
+  description?: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface OrderListResponse {
@@ -1353,6 +1375,11 @@ class ApiService {
     );
   }
 
+  // Order Pricing API
+  async getOrderPricing(): Promise<OrderPricing[]> {
+    return this.request("/order-pricing");
+  }
+
   // Reasons API
   async getReasons(): Promise<Reason[]> {
     return this.request("/reasons");
@@ -1576,6 +1603,11 @@ class ApiService {
       },
       true
     );
+  }
+
+  // Platform statistics
+  async getPlatformStats(): Promise<PlatformStats> {
+    return this.request(`/stats/platform`, {}, false);
   }
 }
 

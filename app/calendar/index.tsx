@@ -12,7 +12,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useProposalsByUser } from "@/hooks/useApi";
+import { useProposalsByUser, useMyOrders } from "@/hooks/useApi";
 import { router } from "expo-router";
 import React, { useState, useMemo } from "react";
 import {
@@ -75,13 +75,67 @@ export default function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  const { data, isLoading, error, refetch } = useProposalsByUser(user?.id || 0);
+  // Fetch proposals the user submitted
+  const {
+    data: userProposalsData,
+    isLoading: isLoadingUserProposals,
+    error: userProposalsError,
+    refetch: refetchUserProposals,
+  } = useProposalsByUser(user?.id || 0);
+
+  // Fetch orders the user created (to get proposals received on those orders)
+  const {
+    data: myOrdersData,
+    isLoading: isLoadingMyOrders,
+    error: myOrdersError,
+    refetch: refetchMyOrders,
+  } = useMyOrders();
+
+  // Combine loading and error states
+  const isLoading = isLoadingUserProposals || isLoadingMyOrders;
+  const error = userProposalsError || myOrdersError;
+  const refetch = () => {
+    refetchUserProposals();
+    refetchMyOrders();
+  };
 
   // Process applications and group by date (separate for applied and scheduled)
   const processedApplications = useMemo(() => {
-    if (!data?.proposals) return [];
+    // Collect proposals the user submitted
+    const userSubmittedProposals: Application[] = userProposalsData?.proposals || [];
 
-    const applications: Application[] = data.proposals;
+    // Collect proposals received on orders the user created
+    const receivedProposals: Application[] = [];
+    if (myOrdersData?.orders) {
+      myOrdersData.orders.forEach((order: any) => {
+        if (order.Proposals && Array.isArray(order.Proposals)) {
+          order.Proposals.forEach((proposal: any) => {
+            // Only include proposals that are not from the user themselves
+            // (to avoid duplicates if user applied to their own order)
+            if (proposal.userId !== user?.id && proposal.id && proposal.createdAt) {
+              receivedProposals.push({
+                id: proposal.id,
+                orderId: order.id,
+                status: proposal.status || "pending",
+                createdAt: proposal.createdAt,
+                Order: {
+                  id: order.id,
+                  title: order.title || `Order #${order.id}`,
+                  availableDates: order.availableDates || [],
+                  status: order.status || "open",
+                },
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // Combine both types of proposals
+    const applications: Application[] = [
+      ...userSubmittedProposals,
+      ...receivedProposals,
+    ];
     const appliedDateMap = new Map<string, Application[]>();
     const scheduledDateMap = new Map<string, Application[]>();
 
@@ -136,7 +190,7 @@ export default function CalendarScreen() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return grouped;
-  }, [data, dateFilterMode]);
+  }, [userProposalsData, myOrdersData, dateFilterMode, user?.id]);
 
   // Get applications for a specific date
   const getApplicationsForDate = (date: Date): Application[] => {

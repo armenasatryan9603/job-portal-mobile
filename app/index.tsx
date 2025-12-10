@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { usePlatformStats } from "@/hooks/useApi";
 
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
@@ -34,7 +35,27 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const { showLoginModal } = useModal();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const { data: platformStats, isLoading: statsLoading } = usePlatformStats();
   const colors = ThemeColors[isDark ? "dark" : "light"];
+
+  const formatCount = (value?: number) => {
+    if (value === undefined || value === null) {
+      return statsLoading ? "…" : "—";
+    }
+    return value.toLocaleString();
+  };
+
+  const formatRating = (value?: number) => {
+    if (value === undefined || value === null) {
+      return statsLoading ? "…" : "—";
+    }
+    return `${value.toFixed(1)}★`;
+  };
+
+  const supportAvailability =
+    statsLoading && !platformStats
+      ? "…"
+      : platformStats?.supportAvailability || "24/7";
 
   const handleLogout = () => {
     Alert.alert(t("logout"), t("areYouSure"), [
@@ -138,7 +159,8 @@ export default function WelcomeScreen() {
         <View style={styles.container}>
           {/* Hero Section */}
           <ResponsiveCard
-            margin={0}
+            marginBlock={0}
+            marginHorizontal={0}
             style={[styles.heroSection, { backgroundColor: colors.primary }]}
           >
             <View>
@@ -147,9 +169,10 @@ export default function WelcomeScreen() {
                   <View style={styles.heroBadge}>
                     <IconSymbol name="star.fill" size={14} color="white" />
                     <ThemedText style={styles.heroBadgeText}>
-                      Trusted by 5,000+ clients
+                      {t("trustedByClients")}
                     </ThemedText>
                   </View>
+                  {/* Trusted by 5,000+ clients */}
                   <ThemedText style={styles.heroTitle}>
                     {user
                       ? `${t("welcomeBack")}, ${user.name}!`
@@ -160,10 +183,8 @@ export default function WelcomeScreen() {
                       ? t("readyToStartNextProject")
                       : t("connectWithSkilledProfessionals")}
                   </ThemedText>
-                  {/* //// */}
                 </View>
 
-                {/* <View style={styles.heroImageContainer}> */}
                 <View style={styles.heroImage}>
                   <View style={styles.heroIconContainer}>
                     <IconSymbol name="person.2.fill" size={40} color="white" />
@@ -175,7 +196,6 @@ export default function WelcomeScreen() {
                     <IconSymbol name="star.fill" size={40} color="white" />
                   </View>
                 </View>
-                {/* </View> */}
               </View>
               <View style={styles.heroActions}>
                 <TouchableOpacity
@@ -346,7 +366,7 @@ export default function WelcomeScreen() {
                   <ThemedText
                     style={[styles.statNumber, { color: colors.primary }]}
                   >
-                    1,200+
+                    {formatCount(platformStats?.activeSpecialists)}
                   </ThemedText>
                   <ThemedText
                     style={[styles.statLabel, { color: colors.textSecondary }]}
@@ -360,7 +380,7 @@ export default function WelcomeScreen() {
                   <ThemedText
                     style={[styles.statNumber, { color: colors.primary }]}
                   >
-                    5,000+
+                    {formatCount(platformStats?.completedProjects)}
                   </ThemedText>
                   <ThemedText
                     style={[styles.statLabel, { color: colors.textSecondary }]}
@@ -376,7 +396,7 @@ export default function WelcomeScreen() {
                   <ThemedText
                     style={[styles.statNumber, { color: colors.primary }]}
                   >
-                    4.8★
+                    {formatRating(platformStats?.averageRating)}
                   </ThemedText>
                   <ThemedText
                     style={[styles.statLabel, { color: colors.textSecondary }]}
@@ -390,7 +410,7 @@ export default function WelcomeScreen() {
                   <ThemedText
                     style={[styles.statNumber, { color: colors.primary }]}
                   >
-                    24/7
+                    {supportAvailability}
                   </ThemedText>
                   <ThemedText
                     style={[styles.statLabel, { color: colors.textSecondary }]}

@@ -113,7 +113,8 @@ export const ResponsiveGrid: React.FC<{
 export const ResponsiveCard: React.FC<{
   children: React.ReactNode;
   padding?: number;
-  margin?: number;
+  marginBlock?: number;
+  marginHorizontal?: number;
   backgroundColor?: string;
   borderRadius?: number;
   shadow?: boolean;
@@ -122,7 +123,8 @@ export const ResponsiveCard: React.FC<{
 }> = ({
   children,
   padding = Spacing.card,
-  margin = Spacing.lg,
+  marginBlock = Spacing.xs,
+  marginHorizontal = Spacing.lg,
   backgroundColor,
   borderRadius = BorderRadius.lg,
   shadow = true,
@@ -139,7 +141,8 @@ export const ResponsiveCard: React.FC<{
         {
           backgroundColor: bgColor,
           padding,
-          margin,
+          marginBlock,
+          marginHorizontal,
           borderRadius,
           ...(shadow && createThemeShadow(isDark, shadowElevation)),
         },

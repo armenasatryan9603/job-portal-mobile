@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNetworkStatus } from "./useNetworkStatus";
 import { apiService } from "@/services/api";
 import { CACHE_TTL } from "@/services/queryClient";
@@ -81,6 +82,48 @@ export const useProfile = () => {
     staleTime: CACHE_TTL.USER_DATA,
     enabled: true,
     retry: isOnline,
+  });
+};
+
+const PLATFORM_STATS_CACHE_KEY = "platform_stats_cache";
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+export const usePlatformStats = () => {
+  const { isOnline } = useNetworkStatus();
+  return useQuery({
+    queryKey: ["platformStats"],
+    queryFn: async () => {
+      const now = Date.now();
+      try {
+        const cachedRaw = await AsyncStorage.getItem(PLATFORM_STATS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached?.timestamp && now - cached.timestamp < ONE_DAY_MS) {
+            return cached.data;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to read platform stats cache", e);
+      }
+
+      const fresh = await apiService.getPlatformStats();
+
+      try {
+        await AsyncStorage.setItem(
+          PLATFORM_STATS_CACHE_KEY,
+          JSON.stringify({ data: fresh, timestamp: now })
+        );
+      } catch (e) {
+        console.warn("Failed to write platform stats cache", e);
+      }
+
+      return fresh;
+    },
+    staleTime: Infinity, // rely on our 24h manual gate above
+    gcTime: CACHE_TTL.STATIC,
+    retry: isOnline,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
 };
 

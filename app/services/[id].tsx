@@ -354,7 +354,7 @@ export default function ServiceDetailScreen() {
                       >
                         {subService.specialistCount} {t("specialists")} •
                         {subService.averagePrice
-                          ? ` $${subService.averagePrice}/hr avg`
+                          ? ` $${subService.averagePrice}`
                           : " Price varies"}
                       </Text>
                     </View>

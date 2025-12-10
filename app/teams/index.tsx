@@ -503,7 +503,7 @@ export default function TeamsScreen() {
         {isLoading ? (
           <FloatingSkeleton
             count={5}
-            itemHeight={200}
+            itemHeight={220}
             showImage={false}
             showAvatar={true}
             showTitle={true}

@@ -805,43 +805,45 @@ export default function ProfileScreen() {
           <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
             <ImageBackground
               source={bannerImage ? { uri: bannerImage } : undefined}
-              style={styles.bannerBackground}
+              style={[{ paddingTop: userId && !bannerImage ? 0 : 140 }]}
               imageStyle={styles.bannerImage}
             >
-              <TouchableOpacity
-                style={styles.bannerTapArea}
-                onPress={handleBannerTap}
-                activeOpacity={0.8}
-                disabled={!!userId || uploadingBanner}
-              >
-                {!bannerImage && (
-                  <View
-                    style={[
-                      styles.bannerPlaceholder,
-                      { backgroundColor: colors.border, width: "100%" },
-                    ]}
-                  >
-                    <IconSymbol
-                      name="photo"
-                      size={28}
-                      color={colors.tabIconDefault}
-                    />
-                    <Text
+              {!userId && (
+                <TouchableOpacity
+                  style={styles.bannerTapArea}
+                  onPress={handleBannerTap}
+                  activeOpacity={0.8}
+                  disabled={!!userId || uploadingBanner}
+                >
+                  {!bannerImage && (
+                    <View
                       style={[
-                        styles.bannerPlaceholderText,
-                        { color: colors.tabIconDefault },
+                        styles.bannerPlaceholder,
+                        { backgroundColor: colors.border, width: "100%" },
                       ]}
                     >
-                      {t("addBanner")}
-                    </Text>
-                  </View>
-                )}
-                {uploadingBanner && (
-                  <View style={styles.bannerLoadingOverlay}>
-                    <ActivityIndicator size="small" color={colors.tint} />
-                  </View>
-                )}
-              </TouchableOpacity>
+                      <IconSymbol
+                        name="photo"
+                        size={28}
+                        color={colors.tabIconDefault}
+                      />
+                      <Text
+                        style={[
+                          styles.bannerPlaceholderText,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("addBanner")}
+                      </Text>
+                    </View>
+                  )}
+                  {uploadingBanner && (
+                    <View style={styles.bannerLoadingOverlay}>
+                      <ActivityIndicator size="small" color={colors.tint} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
 
               <View style={styles.profileHeader}>
                 <View style={styles.avatarContainer}>
@@ -1807,9 +1809,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     zIndex: 4,
-  },
-  bannerBackground: {
-    paddingTop: 140,
   },
   bannerTapArea: {
     position: "absolute",
