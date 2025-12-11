@@ -1279,7 +1279,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 14,
     opacity: 0.7,
   },
   errorContainer: {
@@ -1289,7 +1289,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
     marginBottom: 20,
     opacity: 0.7,
@@ -1300,7 +1300,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: "white",
   },
@@ -1309,19 +1309,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "700",
     marginBottom: 20,
   },
   orderTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: "700",
     marginBottom: 12,
     lineHeight: 32,
   },
   orderDescription: {
     marginBottom: 10,
-    fontSize: 17,
+    fontSize: 15,
     lineHeight: 26,
     opacity: 0.9,
   },
@@ -1336,7 +1336,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   appliedButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     color: "white",
   },
@@ -1350,7 +1350,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   detailsContainer: {
@@ -1365,12 +1365,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   detailLabel: {
-    fontSize: 15,
+    fontSize: 13,
     marginBottom: 4,
     opacity: 0.7,
   },
   detailValue: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "700",
   },
   skillsContainer: {
@@ -1385,7 +1385,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   skillText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   datesContainer: {
@@ -1401,7 +1401,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   dateText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
   timesContainer: {
@@ -1420,17 +1420,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   timeText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "500",
   },
   allDayText: {
-    fontSize: 14,
+    fontSize: 12,
     fontStyle: "italic",
     marginLeft: 24,
     opacity: 0.7,
   },
   noDatesText: {
-    fontSize: 16,
+    fontSize: 14,
     fontStyle: "italic",
     opacity: 0.7,
   },
@@ -1470,7 +1470,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   clientAvatarText: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
   },
   clientNameContainer: {
@@ -1478,7 +1478,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   clientName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
   },
   verifiedBadge: {
@@ -1487,7 +1487,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   verifiedText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   clientDetails: {
@@ -1499,7 +1499,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   clientDetailText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "500",
   },
   // Media Files Styles
@@ -1574,7 +1574,7 @@ const styles = StyleSheet.create({
   },
   fieldBadgeText: {
     color: "white",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
   },
   changeHistoryDetails: {
@@ -1588,26 +1588,26 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   changeLabel: {
-    fontSize: 13,
+    fontSize: 11,
     opacity: 0.7,
     minWidth: 40,
   },
   changeValue: {
-    fontSize: 14,
+    fontSize: 12,
     flex: 1,
   },
   changeTimestamp: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "500",
     marginTop: 2,
     opacity: 0.8,
   },
   changeChangedBy: {
-    fontSize: 12,
+    fontSize: 10,
     opacity: 0.7,
   },
   changeReason: {
-    fontSize: 12,
+    fontSize: 10,
     fontStyle: "italic",
     marginTop: 2,
     opacity: 0.8,
@@ -1619,7 +1619,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptyHistoryText: {
-    fontSize: 14,
+    fontSize: 12,
     textAlign: "center",
     paddingVertical: 20,
     opacity: 0.7,
@@ -1638,7 +1638,7 @@ const styles = StyleSheet.create({
   },
   statusBadgeText: {
     color: "white",
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
   },
   rejectionReasonContainer: {
@@ -1648,12 +1648,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   rejectionReasonLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     marginBottom: 4,
   },
   rejectionReasonText: {
-    fontSize: 14,
+    fontSize: 12,
     lineHeight: 20,
   },
 });

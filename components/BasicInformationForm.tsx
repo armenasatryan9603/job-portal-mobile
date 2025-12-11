@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Service } from "@/services/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MapViewComponent } from "@/components/MapView";
 import { Modal } from "react-native";
@@ -27,7 +26,6 @@ interface BasicInformationFormProps {
     budget: string;
     location: string;
   };
-  selectedService: Service | null;
   onFieldChange: (field: string, value: string) => void;
   onLocationChange?: (location: {
     latitude: number;
@@ -39,7 +37,6 @@ interface BasicInformationFormProps {
 export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
   formData,
   errors,
-  selectedService,
   onFieldChange,
   onLocationChange,
 }) => {
@@ -65,11 +62,6 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
 
   const handleOpenMap = () => {
     setMapVisible(true);
-  };
-
-  const handleClearLocation = () => {
-    setSelectedLocation(null);
-    onFieldChange("location", "");
   };
 
   return (
@@ -131,87 +123,42 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
         ) : null}
       </View>
 
-      <View style={styles.inputGroup}>
+      <View>
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           {t("location")}
         </Text>
 
-        {/* Location Display - Compact */}
-        {selectedLocation ? (
-          <View
-            style={[
-              styles.locationDisplayCompact,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            <View style={styles.locationInfoCompact}>
-              <IconSymbol
-                name="location.fill"
-                size={16}
-                color={colors.primary}
-              />
-              <Text
-                style={[styles.locationAddressCompact, { color: colors.text }]}
-              >
-                {selectedLocation.address}
-              </Text>
-              <TouchableOpacity
-                style={[
-                  styles.clearButtonCompact,
-                  { backgroundColor: colors.error },
-                ]}
-                onPress={handleClearLocation}
-              >
-                <IconSymbol name="xmark" size={12} color="white" />
-              </TouchableOpacity>
-            </View>
+        {/* Manual Location Input with Map Shortcut */}
+        <View>
+          <View style={styles.manualLocationInputWrapper}>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  paddingRight: 48,
+                },
+              ]}
+              value={formData.location}
+              onChangeText={(value) => onFieldChange("location", value)}
+              placeholder={t("locationPlaceholder")}
+              placeholderTextColor={colors.tabIconDefault}
+            />
+            <TouchableOpacity
+              style={[
+                styles.mapIconButton,
+                {
+                  backgroundColor: colors.primary,
+                  borderColor: colors.primary,
+                },
+              ]}
+              onPress={handleOpenMap}
+            >
+              <IconSymbol name="map" size={16} color="white" />
+            </TouchableOpacity>
           </View>
-        ) : null}
-
-        {/* Direct Map Access Button */}
-        <TouchableOpacity
-          style={[
-            styles.mapAccessButton,
-            {
-              backgroundColor: colors.primary,
-              borderColor: colors.primary,
-            },
-          ]}
-          onPress={handleOpenMap}
-        >
-          <IconSymbol name="map" size={20} color="white" />
-          <Text style={styles.mapAccessButtonText}>
-            {selectedLocation ? t("changeLocation") : t("pinLocationOnMap")}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Manual Location Input */}
-        <View style={styles.manualLocationContainer}>
-          <Text
-            style={[
-              styles.manualLocationLabel,
-              { color: colors.textSecondary },
-            ]}
-          >
-            {t("orEnterManually")}
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={formData.location}
-            onChangeText={(value) => onFieldChange("location", value)}
-            placeholder={t("locationPlaceholder")}
-            placeholderTextColor={colors.tabIconDefault}
-          />
         </View>
       </View>
 
@@ -272,50 +219,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginLeft: 4,
   },
-  locationDisplayCompact: {
+  manualLocationInputWrapper: {
+    position: "relative",
+  },
+  mapIconButton: {
+    position: "absolute",
+    right: 8,
+    top: "50%",
+    transform: [{ translateY: -16 }],
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-  },
-  locationInfoCompact: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  locationAddressCompact: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
-  },
-  clearButtonCompact: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    borderRadius: 6,
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
-  },
-  mapAccessButton: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  mapAccessButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "white",
-  },
-  manualLocationContainer: {
-    marginTop: 8,
-  },
-  manualLocationLabel: {
-    fontSize: 12,
-    marginBottom: 4,
-    fontStyle: "italic",
   },
 });

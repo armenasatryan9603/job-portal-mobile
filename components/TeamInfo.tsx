@@ -153,10 +153,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: "700",
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: Spacing.sm,
-    paddingHorizontal: Spacing.md,
   },
   editButton: {
     padding: Spacing.xs,

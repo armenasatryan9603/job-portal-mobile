@@ -5,6 +5,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CalendarPicker } from "./CalendarPicker";
 import { TimePicker } from "./TimePicker";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { ResponsiveCard } from "./ResponsiveContainer";
 
 interface DateTimeSelectorProps {
   selectedDates: Date[];
@@ -142,10 +143,19 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
   };
 
   return (
-    <View>
-      <Text style={[styles.inputLabel, { color: colors.text }]}>
+    <ResponsiveCard>
+      <Text
+        style={[
+          styles.sectionTitle,
+          { color: ThemeColors[colorScheme ?? "light"].text },
+        ]}
+      >
         {t("availableDates")}
       </Text>
+      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+        {t("selectAvailableDates")}
+      </Text>
+
       <TouchableOpacity
         style={[
           styles.calendarInput,
@@ -242,13 +252,17 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
         }
         formatDateForDisplay={formatDateForDisplay}
       />
-    </View>
+    </ResponsiveCard>
   );
 };
 
 const styles = StyleSheet.create({
-  inputLabel: {
+  sectionTitle: {
     fontSize: 16,
+    fontWeight: "600",
+  },
+  inputLabel: {
+    fontSize: 12,
     fontWeight: "500",
     marginBottom: 8,
   },
@@ -260,7 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    marginBottom: 8,
   },
   calendarInputText: {
     fontSize: 16,

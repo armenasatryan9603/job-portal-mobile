@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Platform,
+  LayoutAnimation,
   UIManager,
   Image,
   ScrollView,
@@ -131,6 +132,22 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   };
 
   const servicesByCategory = getServicesByCategory();
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
+    () => new Set()
+  );
+
+  const toggleCategory = (categoryId: number) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
 
   return (
     <View>
@@ -276,7 +293,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               color={colors.tabIconDefault}
             />
             <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-              {t("noServicesFound") || "No services found"}
+              {t("noServicesFound")}
             </Text>
           </View>
         ) : (
@@ -286,123 +303,139 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
-            {servicesByCategory.map((category) => (
-              <View key={category.id} style={styles.categorySection}>
-                <View style={styles.categoryHeader}>
-                  {category.imageUrl && (
-                    <Image
-                      source={{ uri: category.imageUrl }}
-                      style={styles.categoryHeaderImage}
-                      resizeMode="cover"
-                    />
-                  )}
-                  <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                    {category.name}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.categoryCount,
-                      { color: colors.tabIconDefault },
-                    ]}
+            {servicesByCategory.map((category) => {
+              const isExpanded = expandedCategories.has(category.id);
+              return (
+                <View key={category.id} style={styles.categorySection}>
+                  <TouchableOpacity
+                    style={styles.categoryHeader}
+                    onPress={() => toggleCategory(category.id)}
+                    activeOpacity={0.8}
                   >
-                    {category.subServices.length}{" "}
-                    {category.subServices.length === 1
-                      ? t("service") || "service"
-                      : t("services") || "services"}
-                  </Text>
-                </View>
-                <View style={styles.servicesList}>
-                  {category.subServices.map((service) => {
-                    const isSelected = selectedService?.id === service.id;
-                    return (
-                      <TouchableOpacity
-                        key={service.id}
-                        style={[
-                          styles.serviceListItem,
-                          {
-                            backgroundColor: isSelected
-                              ? colors.primary + "15"
-                              : colors.background,
-                            borderLeftColor: isSelected
-                              ? colors.primary
-                              : "transparent",
-                            opacity: disabled ? 0.5 : 1,
-                          },
-                        ]}
-                        onPress={() =>
-                          !disabled && handleServiceSelect(service)
-                        }
-                        activeOpacity={0.7}
-                        disabled={disabled}
-                      >
-                        {service.imageUrl ? (
-                          <Image
-                            source={{ uri: service.imageUrl }}
-                            style={styles.serviceListItemImage}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View
+                    {category.imageUrl && (
+                      <Image
+                        source={{ uri: category.imageUrl }}
+                        style={styles.categoryHeaderImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                    <Text
+                      style={[styles.categoryTitle, { color: colors.text }]}
+                    >
+                      {category.name}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.categoryCount,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {category.subServices.length}{" "}
+                      {category.subServices.length === 1
+                        ? t("service")
+                        : t("services")}
+                    </Text>
+                    <IconSymbol
+                      name={isExpanded ? "chevron.up" : "chevron.down"}
+                      size={16}
+                      color={colors.tabIconDefault}
+                    />
+                  </TouchableOpacity>
+                  {isExpanded && (
+                    <View style={styles.servicesList}>
+                      {category.subServices.map((service) => {
+                        const isSelected = selectedService?.id === service.id;
+                        return (
+                          <TouchableOpacity
+                            key={service.id}
                             style={[
-                              styles.serviceListItemImagePlaceholder,
+                              styles.serviceListItem,
                               {
-                                backgroundColor: colors.border + "40",
-                              },
-                            ]}
-                          >
-                            <IconSymbol
-                              name="gearshape.fill"
-                              size={16}
-                              color={colors.tabIconDefault}
-                            />
-                          </View>
-                        )}
-                        <View style={styles.serviceListItemContent}>
-                          <Text
-                            style={[
-                              styles.serviceListItemName,
-                              {
-                                color: isSelected
+                                backgroundColor: isSelected
+                                  ? colors.primary + "15"
+                                  : colors.background,
+                                borderLeftColor: isSelected
                                   ? colors.primary
-                                  : colors.text,
+                                  : "transparent",
+                                opacity: disabled ? 0.5 : 1,
                               },
                             ]}
-                            numberOfLines={1}
+                            onPress={() =>
+                              !disabled && handleServiceSelect(service)
+                            }
+                            activeOpacity={0.7}
+                            disabled={disabled}
                           >
-                            {service.name}
-                          </Text>
-                          {service.averagePrice && (
-                            <Text
-                              style={[
-                                styles.serviceListItemPrice,
-                                {
-                                  color: colors.tabIconDefault,
-                                },
-                              ]}
-                            >
-                              {formatPriceDisplay(
-                                service.averagePrice,
-                                service.currency,
-                                service.rateUnit,
-                                rateUnits,
-                                language
+                            {service.imageUrl ? (
+                              <Image
+                                source={{ uri: service.imageUrl }}
+                                style={styles.serviceListItemImage}
+                                resizeMode="cover"
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  styles.serviceListItemImagePlaceholder,
+                                  {
+                                    backgroundColor: colors.border + "40",
+                                  },
+                                ]}
+                              >
+                                <IconSymbol
+                                  name="gearshape.fill"
+                                  size={16}
+                                  color={colors.tabIconDefault}
+                                />
+                              </View>
+                            )}
+                            <View style={styles.serviceListItemContent}>
+                              <Text
+                                style={[
+                                  styles.serviceListItemName,
+                                  {
+                                    color: isSelected
+                                      ? colors.primary
+                                      : colors.text,
+                                  },
+                                ]}
+                                numberOfLines={1}
+                              >
+                                {service.name}
+                              </Text>
+                              {service.averagePrice && (
+                                <Text
+                                  style={[
+                                    styles.serviceListItemPrice,
+                                    {
+                                      color: colors.tabIconDefault,
+                                    },
+                                  ]}
+                                >
+                                  {formatPriceDisplay(
+                                    service.averagePrice,
+                                    service.currency,
+                                    service.rateUnit,
+                                    rateUnits,
+                                    language
+                                  )}
+                                </Text>
                               )}
-                            </Text>
-                          )}
-                        </View>
-                        {isSelected && (
-                          <IconSymbol
-                            name="checkmark.circle.fill"
-                            size={18}
-                            color={colors.primary}
-                          />
-                        )}
-                      </TouchableOpacity>
-                    );
-                  })}
+                            </View>
+                            {isSelected && (
+                              <IconSymbol
+                                name="checkmark.circle.fill"
+                                size={18}
+                                color={colors.primary}
+                              />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </ScrollView>
         )}
       </View>

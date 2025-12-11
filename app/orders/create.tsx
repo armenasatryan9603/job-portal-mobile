@@ -36,6 +36,7 @@ import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsService from "@/services/AnalyticsService";
 import { API_CONFIG } from "@/config/api";
+import { DateTimeSelector } from "@/components/DateTimeSelector";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -112,6 +113,8 @@ export default function CreateOrderScreen() {
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [showRateUnitModal, setShowRateUnitModal] = useState(false);
+  const canAddAnotherQuestion = () =>
+    questions.length === 0 || questions[questions.length - 1].trim().length > 0;
 
   const formatRateUnitLabel = (value: string) => {
     if (!value) {
@@ -1417,7 +1420,6 @@ export default function CreateOrderScreen() {
                   budget: errors.budget,
                   location: errors.location,
                 }}
-                selectedService={selectedService}
                 onFieldChange={updateField}
                 onLocationChange={handleLocationChange}
               />
@@ -1587,25 +1589,26 @@ export default function CreateOrderScreen() {
           </ResponsiveCard>
 
           {/* Skills and Requirements */}
-          <ResponsiveCard>
-            <View ref={skillsSectionRef}>
-              <SkillsAndRequirementsForm
-                formData={{
-                  skills: formData.skills,
-                  availableDates: formData.availableDates,
-                }}
-                errors={{
-                  skills: errors.skills,
-                  availableDates: errors.availableDates,
-                }}
-                selectedDates={selectedDates}
-                selectedDateTimes={selectedDateTimes}
-                onFieldChange={updateField}
-                onDatesChange={setSelectedDates}
-                onDateTimesChange={setSelectedDateTimes}
-              />
-            </View>
-          </ResponsiveCard>
+
+          <View ref={skillsSectionRef}>
+            <SkillsAndRequirementsForm
+              formData={{
+                skills: formData.skills,
+              }}
+              errors={{
+                skills: errors.skills,
+              }}
+              onFieldChange={updateField}
+            />
+          </View>
+
+          <DateTimeSelector
+            error={errors.availableDates}
+            selectedDates={selectedDates}
+            selectedDateTimes={selectedDateTimes}
+            onDatesChange={setSelectedDates}
+            onDateTimesChange={setSelectedDateTimes}
+          />
 
           {/* Media Upload */}
           <ResponsiveCard>
@@ -1672,7 +1675,14 @@ export default function CreateOrderScreen() {
                     );
                     setQuestions(newQuestions);
                   }}
-                  style={styles.deleteQuestionButton}
+                  style={[
+                    styles.deleteQuestionButton,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      borderWidth: 1,
+                    },
+                  ]}
                 >
                   <IconSymbol name="trash" size={18} color="#FF3B30" />
                 </TouchableOpacity>
@@ -1680,8 +1690,19 @@ export default function CreateOrderScreen() {
             ))}
 
             <TouchableOpacity
-              onPress={() => setQuestions([...questions, ""])}
-              style={[styles.addQuestionButton, { borderColor: colors.border }]}
+              onPress={() => {
+                if (!canAddAnotherQuestion()) return;
+                setQuestions([...questions, ""]);
+              }}
+              disabled={!canAddAnotherQuestion()}
+              style={[
+                styles.addQuestionButton,
+                {
+                  borderColor: colors.border,
+                  backgroundColor: colors.background,
+                  opacity: canAddAnotherQuestion() ? 1 : 0.5,
+                },
+              ]}
             >
               <IconSymbol name="plus.circle" size={20} color={colors.tint} />
               <Text style={[styles.addQuestionText, { color: colors.tint }]}>
@@ -2287,8 +2308,8 @@ const styles = StyleSheet.create({
   },
   questionItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 12,
+    alignItems: "center",
+    marginBottom: 6,
     gap: 8,
   },
   questionInput: {
@@ -2301,6 +2322,9 @@ const styles = StyleSheet.create({
   },
   deleteQuestionButton: {
     padding: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -2312,7 +2336,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     gap: 8,
-    marginTop: 8,
   },
   addQuestionText: {
     fontSize: 16,
