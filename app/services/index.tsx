@@ -4,6 +4,7 @@ import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
+import { ServiceCard } from "@/components/ServiceCard";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, ViewStyles } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -29,6 +30,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
+  Dimensions,
 } from "react-native";
 import { Service } from "@/services/api";
 import { useServices, useRootServices } from "@/hooks/useApi";
@@ -167,11 +169,52 @@ const ServicesScreen = () => {
     });
   }, [services, selectedFilters]);
 
+  // Get parent services only (for main grid)
+  const parentServices = useMemo(() => {
+    return mainServices.filter((service) => {
+      if (debouncedSearchQuery.trim()) {
+        return service.name
+          .toLowerCase()
+          .includes(debouncedSearchQuery.toLowerCase());
+      }
+      return true;
+    });
+  }, [mainServices, debouncedSearchQuery]);
+
+  // Chunk parent services into rows of 3 for grid layout
+  const parentServiceRows = useMemo(() => {
+    const rows: Service[][] = [];
+    for (let i = 0; i < parentServices.length; i += 3) {
+      rows.push(parentServices.slice(i, i + 3));
+    }
+    return rows;
+  }, [parentServices]);
+
+  // Get child services for a specific parent
+  const getChildServices = useCallback(
+    (parentId: number) => {
+      return filteredServices.filter(
+        (service) => service.parentId === parentId
+      );
+    },
+    [filteredServices]
+  );
+
+  // Get child services for a specific child service (grandchildren)
+  const getGrandchildServices = useCallback(
+    (childId: number) => {
+      return filteredServices.filter((service) => service.parentId === childId);
+    },
+    [filteredServices]
+  );
+
   const handleServicePress = useCallback((serviceId: number) => {
     AnalyticsService.getInstance().logEvent("service_clicked", {
       service_id: serviceId.toString(),
       location: "services_list",
     });
+
+    // Navigate to service details page
     router.push(`/services/${serviceId}`);
   }, []);
 
@@ -262,78 +305,58 @@ const ServicesScreen = () => {
     );
   }
 
-  const renderServiceItem = ({ item: service }: { item: Service }) => (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={() => wrappedHandleServicePress(service.id)}
-    >
-      <ResponsiveCard padding={16}>
-        {service.imageUrl && (
-          <Image
-            source={{ uri: service.imageUrl }}
-            style={styles.serviceImage}
-            resizeMode="cover"
-          />
-        )}
-        <View style={styles.serviceHeader}>
-          <Text style={[styles.serviceName, { color: colors.text }]}>
-            {service.name}
-          </Text>
-          {service.parentId && (
+  // Render a service card for grid view
+  const renderServiceCard = (service: Service) => {
+    const childServices = getChildServices(service.id);
+    return (
+      <ServiceCard
+        key={service.id}
+        service={service}
+        onPress={wrappedHandleServicePress}
+        childCount={childServices.length}
+        colors={{
+          surface: colors.surface,
+          text: colors.text,
+          tint: colors.tint,
+        }}
+      />
+    );
+  };
+
+  // Render a row of up to 3 service cards
+  const renderServiceRow = ({
+    item: row,
+    index,
+  }: {
+    item: Service[];
+    index: number;
+  }) => {
+    return (
+      <View key={`row-${index}`} style={styles.gridRow}>
+        {row.map((service) => renderServiceCard(service))}
+        {/* Add empty placeholders if row has less than 3 items */}
+        {row.length < 3 &&
+          Array.from({ length: 3 - row.length }).map((_, i) => (
             <View
-              style={[styles.subServiceBadge, { backgroundColor: colors.tint }]}
-            >
-              <Text
-                style={[styles.subServiceText, { color: colors.background }]}
-              >
-                {t("subService")}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <Text
-          style={[styles.serviceDescription, { color: colors.tabIconDefault }]}
-        >
-          {service.description}
-        </Text>
-
-        <View style={styles.serviceStats}>
-          <View style={styles.statItem}>
-            <IconSymbol name="person.2.fill" size={16} color={colors.tint} />
-            <Text style={[styles.statText, { color: colors.text }]}>
-              {service.specialistCount} {t("specialists")}
-            </Text>
-          </View>
-          <View style={styles.statItem}>
-            <IconSymbol
-              name="dollarsign.circle.fill"
-              size={16}
-              color={colors.tint}
+              key={`placeholder-${i}`}
+              style={{ flex: 1, marginHorizontal: Spacing.xs }}
             />
-            <Text style={[styles.statText, { color: colors.text }]}>
-              {service.averagePrice
-                ? formatPriceDisplay(
-                    service.averagePrice,
-                    service.currency,
-                    service.rateUnit,
-                    rateUnits,
-                    language
-                  )
-                : t("priceVaries")}
-            </Text>
-          </View>
-        </View>
-      </ResponsiveCard>
-    </TouchableOpacity>
-  );
+          ))}
+      </View>
+    );
+  };
 
   const renderFooter = () => {
     if (isLoadingMore) {
       return (
         <View style={styles.loadingMoreContainer}>
           <ActivityIndicator size="small" color={colors.tint} />
-          <Text style={[styles.loadingMoreText, { color: colors.text }]}>
+          <Text
+            style={[
+              styles.loadingMoreText,
+              { color: colors.text, marginLeft: 10 },
+            ]}
+          >
             {t("loadingMoreServices")}
           </Text>
         </View>
@@ -343,7 +366,7 @@ const ServicesScreen = () => {
   };
 
   const renderEmptyComponent = () => {
-    if (filteredServices.length === 0) {
+    if (parentServices.length === 0) {
       return (
         <EmptyPage
           type="empty"
@@ -402,13 +425,11 @@ const ServicesScreen = () => {
         ) : (
           <FlatList
             style={{ marginTop: 100 }}
-            data={filteredServices}
-            renderItem={renderServiceItem}
-            keyExtractor={(item) => item.id.toString()}
+            data={parentServiceRows}
+            renderItem={renderServiceRow}
+            keyExtractor={(item, index) => `row-${index}`}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmptyComponent}
-            onEndReached={loadMoreServices}
-            onEndReachedThreshold={0.1}
             refreshControl={
               <RefreshControl
                 refreshing={activeIsLoading}
@@ -417,7 +438,10 @@ const ServicesScreen = () => {
               />
             }
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+            contentContainerStyle={{
+              paddingBottom: 6 * Spacing.lg,
+              paddingHorizontal: Spacing.sm,
+            }}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"
           />
@@ -433,53 +457,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingVertical: 20,
-    gap: 10,
   },
   loadingMoreText: {
     fontSize: 14,
     opacity: 0.7,
   },
-  serviceImage: {
-    width: "100%",
-    height: 120,
-    borderRadius: 8,
-    marginBottom: 12,
-  },
-  serviceHeader: {
-    ...ViewStyles.rowBetween,
-    alignItems: "flex-start",
-    ...ViewStyles.marginBottomMd,
-  },
-  serviceName: {
-    fontSize: 18,
-    fontWeight: "700",
-    flex: 1,
-    lineHeight: 24,
-  },
-  subServiceBadge: {
-    ...ViewStyles.badge,
-    marginLeft: Spacing.md,
-  },
-  subServiceText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  serviceDescription: {
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-    opacity: 0.8,
-  },
-  serviceStats: {
-    gap: Spacing.md,
-  },
-  statItem: {
-    ...ViewStyles.row,
-    gap: Spacing.sm,
-  },
-  statText: {
-    fontSize: 13,
-    fontWeight: "600",
+  gridRow: {
+    flexDirection: "row",
+    marginBottom: Spacing.md,
   },
 });
 

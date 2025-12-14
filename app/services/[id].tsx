@@ -4,6 +4,7 @@ import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import { ServiceCard } from "@/components/ServiceCard";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -13,13 +14,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
-import {
-  formatPriceRangeDisplay,
-  formatPriceDisplay,
-} from "@/utils/currencyRateUnit";
+import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import { router, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -35,6 +33,7 @@ import { apiService, Service } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
+import { Spacing } from "@/constants/styles";
 
 export default function ServiceDetailScreen() {
   useAnalytics("ServiceDetail");
@@ -70,6 +69,17 @@ export default function ServiceDetailScreen() {
       fetchServiceDetails();
     }
   }, [serviceId]);
+
+  // Chunk child services into rows of 3 for grid layout
+  // This must be before any conditional returns to follow Rules of Hooks
+  const childServiceRows = useMemo(() => {
+    if (!service?.Children || service.Children.length === 0) return [];
+    const rows: Service[][] = [];
+    for (let i = 0; i < service.Children.length; i += 3) {
+      rows.push(service.Children.slice(i, i + 3));
+    }
+    return rows;
+  }, [service]);
 
   const fetchServiceDetails = async () => {
     try {
@@ -200,6 +210,47 @@ export default function ServiceDetailScreen() {
     router.push(`/orders?serviceId=${serviceId}`);
   };
 
+  // Render a service card for grid view (reusable for both parent and child services)
+  const renderServiceCard = (service: Service) => {
+    const childCount = service.Children?.length || 0;
+    return (
+      <ServiceCard
+        key={service.id}
+        service={service}
+        onPress={handleSubServicePress}
+        childCount={childCount}
+        colors={{
+          surface: colors.surface,
+          text: colors.text,
+          tint: colors.tint,
+        }}
+      />
+    );
+  };
+
+  // Render a row of up to 3 service cards
+  const renderServiceRow = ({
+    item: row,
+    index,
+  }: {
+    item: Service[];
+    index: number;
+  }) => {
+    return (
+      <View key={`row-${index}`} style={styles.gridRow}>
+        {row.map((childService) => renderServiceCard(childService))}
+        {/* Add empty placeholders if row has less than 3 items */}
+        {row.length < 3 &&
+          Array.from({ length: 3 - row.length }).map((_, i) => (
+            <View
+              key={`placeholder-${i}`}
+              style={{ flex: 1, marginHorizontal: Spacing.xs }}
+            />
+          ))}
+      </View>
+    );
+  };
+
   const header = (
     <Header
       title={service.name}
@@ -223,7 +274,7 @@ export default function ServiceDetailScreen() {
       >
         <ResponsiveContainer>
           {/* Service Overview */}
-          <ResponsiveCard>
+          <ResponsiveCard padding={0}>
             {service.imageUrl && (
               <Image
                 source={{ uri: service.imageUrl }}
@@ -231,92 +282,118 @@ export default function ServiceDetailScreen() {
                 resizeMode="cover"
               />
             )}
-            <View style={styles.overviewSection}>
+            <View style={{ padding: Spacing.lg }}>
               <Text style={[styles.serviceName, { color: colors.text }]}>
                 {service.name}
               </Text>
-              <Text style={[styles.serviceDescription, { color: colors.text }]}>
+              <Text
+                style={[
+                  styles.serviceDescription,
+                  { color: colors.tabIconDefault },
+                ]}
+              >
                 {service.description}
               </Text>
 
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <IconSymbol
-                    name="person.2.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.statLabel, { color: colors.text }]}>
-                    {service.specialistCount} {t("specialists")}
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <IconSymbol
-                    name="dollarsign.circle.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.statLabel, { color: colors.text }]}>
-                    {formatPriceRangeDisplay(
-                      service.minPrice,
-                      service.maxPrice,
-                      service.currency,
-                      service.rateUnit,
-                      rateUnits,
-                      language
-                    )}
-                  </Text>
-                </View>
-                <View style={styles.statItem}>
-                  <IconSymbol
-                    name="checkmark.circle.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.statLabel, { color: colors.text }]}>
-                    {service.completionRate}% {t("successRate")}
-                  </Text>
-                </View>
+              <View style={styles.statItem}>
+                <IconSymbol
+                  name="person.2.fill"
+                  size={14}
+                  color={colors.tabIconDefault}
+                />
+                <Text
+                  style={[
+                    styles.statLabel,
+                    { color: colors.tabIconDefault, marginLeft: 6 },
+                  ]}
+                >
+                  {service.specialistCount} {t("specialists")}
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <IconSymbol
+                  name="dollarsign.circle.fill"
+                  size={14}
+                  color={colors.tabIconDefault}
+                />
+                <Text
+                  style={[
+                    styles.statLabel,
+                    { color: colors.tabIconDefault, marginLeft: 6 },
+                  ]}
+                >
+                  {formatPriceRangeDisplay(
+                    service.minPrice,
+                    service.maxPrice,
+                    service.currency,
+                    service.rateUnit,
+                    rateUnits,
+                    language
+                  )}
+                </Text>
+              </View>
+              <View style={styles.statItem}>
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={14}
+                  color={colors.tabIconDefault}
+                />
+                <Text
+                  style={[
+                    styles.statLabel,
+                    { color: colors.tabIconDefault, marginLeft: 6 },
+                  ]}
+                >
+                  {service.completionRate}% {t("successRate")}
+                </Text>
               </View>
             </View>
           </ResponsiveCard>
 
           {/* Features */}
           <ResponsiveCard>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text, marginBottom: 15 },
-              ]}
-            >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("whatsIncluded")}
             </Text>
-            <View style={styles.featuresContainer}>
-              {service.features.map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <IconSymbol
-                    name="checkmark.circle.fill"
-                    size={18}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.featureText, { color: colors.text }]}>
-                    {feature.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
+            {service.features.map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={14}
+                  color={colors.tabIconDefault}
+                />
+                <Text
+                  style={[
+                    styles.featureText,
+                    { color: colors.tabIconDefault, marginLeft: 8 },
+                  ]}
+                >
+                  {feature.name}
+                </Text>
+              </View>
+            ))}
           </ResponsiveCard>
-
-          {/* Technologies */}
           <ResponsiveCard>
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: colors.text, marginBottom: 15 },
-              ]}
-            >
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("technologiesUsed")}
             </Text>
+            {service.features.map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={14}
+                  color={colors.tabIconDefault}
+                />
+                <Text
+                  style={[
+                    styles.featureText,
+                    { color: colors.tabIconDefault, marginLeft: 8 },
+                  ]}
+                >
+                  {feature.name}
+                </Text>
+              </View>
+            ))}
             <View style={styles.technologiesContainer}>
               {service.technologies.map((tech, index) => (
                 <View
@@ -329,7 +406,9 @@ export default function ServiceDetailScreen() {
                     },
                   ]}
                 >
-                  <Text style={[styles.techText, { color: colors.text }]}>
+                  <Text
+                    style={[styles.techText, { color: colors.tabIconDefault }]}
+                  >
                     {tech.name}
                   </Text>
                 </View>
@@ -337,87 +416,62 @@ export default function ServiceDetailScreen() {
             </View>
           </ResponsiveCard>
 
-          {/* Sub-services */}
+          {/* Sub-services in 3-column grid */}
           {service.Children && service.Children.length > 0 && (
-            <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("relatedServices")}
-              </Text>
-              <View style={styles.subServicesContainer}>
-                {service.Children.map((subService) => (
-                  <TouchableOpacity
-                    key={subService.id}
-                    onPress={() => handleSubServicePress(subService.id)}
-                    style={[
-                      styles.subServiceItem,
-                      {
-                        borderColor: colors.border,
-                        backgroundColor: colors.surface,
-                      },
-                    ]}
-                  >
-                    <View style={styles.subServiceInfo}>
-                      <Text
-                        style={[styles.subServiceName, { color: colors.text }]}
-                      >
-                        {subService.name}
-                      </Text>
-                      <Text
-                        style={[
-                          styles.subServiceStats,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {subService.specialistCount} {t("specialists")} •
-                        {subService.averagePrice
-                          ? ` ${formatPriceDisplay(
-                              subService.averagePrice,
-                              subService.currency,
-                              subService.rateUnit,
-                              rateUnits,
-                              language
-                            )}`
-                          : " Price varies"}
-                      </Text>
-                    </View>
-                    <IconSymbol
-                      name="chevron.right"
-                      size={16}
-                      color={colors.tabIconDefault}
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ResponsiveCard>
+            <View style={styles.gridContainer}>
+              {childServiceRows.map((row, index) => (
+                <View key={`row-${index}`}>
+                  {renderServiceRow({ item: row, index })}
+                </View>
+              ))}
+            </View>
           )}
 
           {/* Action Buttons */}
           <ResponsiveCard>
-            <View style={styles.actionButtonsVertical}>
-              <Button
-                onPress={handleCreateOrder}
-                variant="primary"
-                iconSize={14}
-                title={t("postJob")}
-                icon="plus.circle.fill"
-                backgroundColor={colors.primary}
-              />
-              <Button
-                onPress={handleBrowseSpecialists}
-                variant="primary"
-                iconSize={14}
-                title={t("browseSpecialists")}
-                icon="person.2.fill"
-                backgroundColor={colors.primary}
-              />
-              <Button
-                onPress={handleBrowseOrders}
-                variant="primary"
-                iconSize={14}
-                title={t("browseOrders")}
-                icon="list.bullet"
-                backgroundColor={colors.primary}
-              />
+            <View
+              style={{
+                flexDirection: "row",
+                gap: Spacing.sm,
+                justifyContent: "space-between",
+              }}
+            >
+              <View>
+                <Button
+                  onPress={handleCreateOrder}
+                  variant="primary"
+                  iconSize={14}
+                  title={t("postJob")}
+                  icon="plus.circle.fill"
+                  backgroundColor={colors.primary}
+                  style={{ paddingHorizontal: Spacing.sm }}
+                  textStyle={{ fontSize: 12 }}
+                />
+              </View>
+              <View>
+                <Button
+                  onPress={handleBrowseSpecialists}
+                  variant="primary"
+                  iconSize={14}
+                  title={t("specialists")}
+                  icon="person.2.fill"
+                  backgroundColor={colors.primary}
+                  style={{ paddingHorizontal: Spacing.sm }}
+                  textStyle={{ fontSize: 12 }}
+                />
+              </View>
+              <View>
+                <Button
+                  onPress={handleBrowseOrders}
+                  variant="primary"
+                  iconSize={14}
+                  title={t("orders")}
+                  icon="list.bullet"
+                  backgroundColor={colors.primary}
+                  style={{ paddingHorizontal: Spacing.sm }}
+                  textStyle={{ fontSize: 12 }}
+                />
+              </View>
             </View>
           </ResponsiveCard>
         </ResponsiveContainer>
@@ -460,96 +514,65 @@ const styles = StyleSheet.create({
   },
   serviceImage: {
     width: "100%",
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 16,
+    height: 160,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
   },
-  overviewSection: {
-    marginBottom: 20,
-  },
+  overviewSection: {},
   serviceName: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: "700",
+    marginBottom: Spacing.sm,
   },
   serviceDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 20,
-  },
-  statsContainer: {
-    gap: 12,
+    fontSize: 14,
+    marginBottom: Spacing.md,
   },
   statItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    marginBottom: Spacing.xs,
   },
   statLabel: {
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: 13,
+    fontWeight: "400",
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "600",
-  },
-  featuresContainer: {
-    gap: 12,
   },
   featureItem: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 12,
-    paddingVertical: 4,
   },
   featureText: {
-    fontSize: 15,
+    fontSize: 12,
     flex: 1,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   technologiesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
   },
   techTag: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     borderWidth: 1,
+    marginRight: 6,
+    marginBottom: 6,
   },
   techText: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 11,
+    fontWeight: "400",
   },
-  subServicesContainer: {
-    gap: 8,
+  gridContainer: {
+    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.md,
   },
-  subServiceItem: {
+  gridRow: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderRadius: 8,
-  },
-  subServiceInfo: {
-    flex: 1,
-  },
-  subServiceName: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  subServiceStats: {
-    fontSize: 14,
-  },
-  actionButtons: {
-    gap: 12,
-  },
-  actionButtonsVertical: {
-    gap: 12,
+    marginBottom: Spacing.md,
   },
   primaryButton: {
     width: "100%",
@@ -559,7 +582,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
-    gap: 6,
     minHeight: 44,
   },
   primaryButtonText: {
@@ -574,7 +596,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
-    gap: 6,
     minHeight: 44,
   },
   secondaryButtonText: {
@@ -589,7 +610,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderRadius: 8,
-    gap: 6,
     minHeight: 44,
   },
   tertiaryButtonText: {
