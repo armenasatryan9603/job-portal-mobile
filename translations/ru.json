@@ -1106,5 +1106,14 @@
   "selectPeersToAdd": "Пожалуйста, выберите хотя бы одного коллегу для добавления",
   "peersAddedSuccessfully": "{count} коллега(и) успешно добавлен(ы)",
   "partialSuccess": "Частичный успех",
-  "failedToAddPeers": "Не удалось добавить коллег"
+  "failedToAddPeers": "Не удалось добавить коллег",
+  "jobScheduledToday": "Работа запланирована на сегодня",
+  "jobScheduledTomorrow": "Работа запланирована на завтра",
+  "calendarReminder": "Напоминание календаря",
+  "noAppliedApplications": "Нет поданных заявок",
+  "noScheduledApplications": "Нет запланированных заявок",
+  "noAppliedOnDate": "Нет поданных заявок на эту дату",
+  "noAppliedDesc": "Вы еще не подавали заявки на работу",
+  "noScheduledOnDate": "Нет запланированных заявок на эту дату",
+  "noScheduledDesc": "Нет доступных запланированных дат"
 }

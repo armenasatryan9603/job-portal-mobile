@@ -411,16 +411,10 @@ const ServicesScreen = () => {
 
         {/* Show skeleton during initial load, otherwise show FlatList */}
         {isInitialLoading ? (
-          <View style={{ flex: 1, marginTop: 100 }}>
-            <FloatingSkeleton
-              count={5}
-              itemHeight={220}
-              showImage={true}
-              showTitle={true}
-              showDescription={true}
-              showDetails={true}
-              showTags={false}
-            />
+          <View
+            style={{ flex: 1, marginTop: 100, paddingHorizontal: Spacing.sm }}
+          >
+            <FloatingSkeleton count={9} variant="grid" />
           </View>
         ) : (
           <FlatList

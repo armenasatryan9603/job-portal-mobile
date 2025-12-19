@@ -14,7 +14,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useProposalsByUser, useMyOrders } from "@/hooks/useApi";
 import { router } from "expo-router";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import {
   FlatList,
 } from "react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import CalendarNotificationService from "@/services/CalendarNotificationService";
 
 interface Application {
   id: number;
@@ -102,7 +103,8 @@ export default function CalendarScreen() {
   // Process applications and group by date (separate for applied and scheduled)
   const processedApplications = useMemo(() => {
     // Collect proposals the user submitted
-    const userSubmittedProposals: Application[] = userProposalsData?.proposals || [];
+    const userSubmittedProposals: Application[] =
+      userProposalsData?.proposals || [];
 
     // Collect proposals received on orders the user created
     const receivedProposals: Application[] = [];
@@ -112,7 +114,11 @@ export default function CalendarScreen() {
           order.Proposals.forEach((proposal: any) => {
             // Only include proposals that are not from the user themselves
             // (to avoid duplicates if user applied to their own order)
-            if (proposal.userId !== user?.id && proposal.id && proposal.createdAt) {
+            if (
+              proposal.userId !== user?.id &&
+              proposal.id &&
+              proposal.createdAt
+            ) {
               receivedProposals.push({
                 id: proposal.id,
                 orderId: order.id,
@@ -198,6 +204,90 @@ export default function CalendarScreen() {
     const group = processedApplications.find((g) => g.date === dateKey);
     return group?.applications || [];
   };
+
+  // Schedule notifications for accepted jobs when data changes
+  useEffect(() => {
+    const scheduleNotifications = async () => {
+      if (!user || isLoading || error) {
+        return;
+      }
+
+      try {
+        // Collect all proposals with accepted status and scheduled dates
+        const scheduledJobs: {
+          orderId: number;
+          orderTitle: string;
+          scheduledDate: string;
+          proposalId: number;
+        }[] = [];
+
+        // Get user submitted proposals
+        const userProposals = userProposalsData?.proposals || [];
+
+        // Get proposals received on user's orders
+        const receivedProposals: Application[] = [];
+        if (myOrdersData?.orders) {
+          myOrdersData.orders.forEach((order: any) => {
+            if (order.Proposals && Array.isArray(order.Proposals)) {
+              order.Proposals.forEach((proposal: any) => {
+                if (
+                  proposal.userId !== user?.id &&
+                  proposal.id &&
+                  proposal.createdAt
+                ) {
+                  receivedProposals.push({
+                    id: proposal.id,
+                    orderId: order.id,
+                    status: proposal.status || "pending",
+                    createdAt: proposal.createdAt,
+                    Order: {
+                      id: order.id,
+                      title: order.title || `Order #${order.id}`,
+                      availableDates: order.availableDates || [],
+                      status: order.status || "open",
+                    },
+                  });
+                }
+              });
+            }
+          });
+        }
+
+        // Combine all proposals
+        const allProposals = [...userProposals, ...receivedProposals];
+
+        // Extract accepted jobs with scheduled dates
+        allProposals.forEach((proposal: any) => {
+          if (
+            proposal.status === "accepted" &&
+            proposal.Order?.availableDates
+          ) {
+            proposal.Order.availableDates.forEach((dateStr: string) => {
+              scheduledJobs.push({
+                orderId: proposal.Order.id,
+                orderTitle:
+                  proposal.Order.title || `Order #${proposal.Order.id}`,
+                scheduledDate: dateStr,
+                proposalId: proposal.id,
+              });
+            });
+          }
+        });
+
+        console.log(
+          `📅 Found ${scheduledJobs.length} accepted jobs with scheduled dates`
+        );
+
+        // Schedule notifications
+        const notificationService = CalendarNotificationService.getInstance();
+        await notificationService.scheduleJobNotifications(scheduledJobs);
+      } catch (err) {
+        console.error("Error scheduling calendar notifications:", err);
+      }
+    };
+
+    scheduleNotifications();
+  }, [userProposalsData, myOrdersData, user, isLoading, error]);
 
   const normalizeDate = (date: Date): Date => {
     const normalized = new Date(date);

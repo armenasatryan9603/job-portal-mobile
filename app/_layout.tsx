@@ -35,6 +35,9 @@ import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
 import AnalyticsService from "@/services/AnalyticsService";
+import CalendarNotificationService from "@/services/CalendarNotificationService";
+import * as Notifications from "expo-notifications";
+import { router } from "expo-router";
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -45,6 +48,39 @@ const analytics = AnalyticsService.getInstance();
 
 function AppContent() {
   const { isDark } = useTheme();
+
+  // Initialize Calendar Notification Service
+  useEffect(() => {
+    const initializeCalendarNotifications = async () => {
+      try {
+        const calendarNotificationService = CalendarNotificationService.getInstance();
+        await calendarNotificationService.initialize();
+        await calendarNotificationService.requestPermissions();
+        console.log("✅ Calendar notification service initialized");
+      } catch (error) {
+        console.error("❌ Error initializing calendar notification service:", error);
+      }
+    };
+
+    initializeCalendarNotifications();
+  }, []);
+
+  // Handle notification taps
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const calendarNotificationService = CalendarNotificationService.getInstance();
+        calendarNotificationService.handleNotificationResponse(response, (orderId) => {
+          // Navigate to order details
+          router.push(`/orders/${orderId}`);
+        });
+      }
+    );
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   // Handle deep linking for referral codes
   useEffect(() => {

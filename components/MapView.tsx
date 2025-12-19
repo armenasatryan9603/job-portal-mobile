@@ -20,6 +20,7 @@ interface MapViewComponentProps {
   }) => void;
   onClose?: () => void;
   showCurrentLocationButton?: boolean;
+  showConfirmButton?: boolean;
 }
 
 export const MapViewComponent: React.FC<MapViewComponentProps> = ({
@@ -27,6 +28,7 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
   onLocationSelect,
   onClose,
   showCurrentLocationButton = true,
+  showConfirmButton = true,
 }) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -221,7 +223,7 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -288,7 +290,7 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
       </View>
 
       {/* Confirm Button */}
-      {selectedLocation && (
+      {showConfirmButton && selectedLocation && (
         <View style={styles.confirmContainer}>
           <TouchableOpacity
             style={[styles.confirmButton, { backgroundColor: colors.primary }]}
@@ -321,6 +323,9 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    margin: 16,
+    borderRadius: 16,
+    overflow: "hidden",
   },
   map: {
     flex: 1,

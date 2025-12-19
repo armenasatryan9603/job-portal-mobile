@@ -1106,5 +1106,14 @@
   "selectPeersToAdd": "Խնդրում ենք ընտրել առնվազն մեկ գործընկեր ավելացնելու համար",
   "peersAddedSuccessfully": "{count} գործընկեր(ներ) հաջողությամբ ավելացվեց(ին)",
   "partialSuccess": "Մասնակի հաջողություն",
-  "failedToAddPeers": "Չհաջողվեց ավելացնել գործընկերներ"
+  "failedToAddPeers": "Չհաջողվեց ավելացնել գործընկերներ",
+  "jobScheduledToday": "Աշխատանքը պլանավորված է այսօր",
+  "jobScheduledTomorrow": "Աշխատանքը պլանավորված է վաղը",
+  "calendarReminder": "Օրացույցի հիշեցում",
+  "noAppliedApplications": "Դիմումներ չկան",
+  "noScheduledApplications": "Պլանավորված դիմումներ չկան",
+  "noAppliedOnDate": "Այս ամսաթվի համար դիմումներ չկան",
+  "noAppliedDesc": "Դուք դեռ չեք դիմել որևէ աշխատանքի",
+  "noScheduledOnDate": "Այս ամսաթվի համար պլանավորված դիմումներ չկան",
+  "noScheduledDesc": "Պլանավորված ամսաթվեր հասանելի չեն"
 }

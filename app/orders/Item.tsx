@@ -6,18 +6,20 @@ import {
   StyleSheet,
   Image,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { router } from "expo-router";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Order, apiService } from "@/services/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
+import { MapViewComponent } from "@/components/MapView";
 
 interface OrderItemProps {
   order: Order;
@@ -52,10 +54,11 @@ const OrderItem = ({
   const { user } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(true);
   const [saved, setSaved] = useState(isSaved);
   const [saving, setSaving] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -83,6 +86,43 @@ const OrderItem = ({
 
   const displayTitle = getLocalizedText("title", language);
   const displayDescription = getLocalizedText("description", language);
+
+  // Parse location to extract coordinates if available
+  const parseLocationCoordinates = (
+    locationString?: string
+  ): { latitude: number; longitude: number; address: string } | null => {
+    if (!locationString) return null;
+
+    // Try to parse coordinates from string like "address (lat, lng)"
+    const coordMatch = locationString.match(
+      /^(.+?)\s*\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/
+    );
+    if (coordMatch) {
+      const address = coordMatch[1].trim();
+      const lat = parseFloat(coordMatch[2]);
+      const lng = parseFloat(coordMatch[3]);
+
+      // Validate coordinates
+      if (
+        !isNaN(lat) &&
+        !isNaN(lng) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180
+      ) {
+        return {
+          latitude: lat,
+          longitude: lng,
+          address: address,
+        };
+      }
+    }
+
+    return null;
+  };
+
+  const locationCoordinates = parseLocationCoordinates(order.location);
 
   // Status configuration
   const statusConfig = {
@@ -175,6 +215,13 @@ const OrderItem = ({
     }
   };
 
+  const handleLocationPress = (e: any) => {
+    e.stopPropagation(); // Prevent triggering order press
+    if (locationCoordinates) {
+      setShowMapModal(true);
+    }
+  };
+
   // Update saved state when isSaved prop changes
   React.useEffect(() => {
     setSaved(isSaved);
@@ -183,6 +230,7 @@ const OrderItem = ({
   return (
     <TouchableOpacity onPress={() => handleOrderPress(order)} activeOpacity={1}>
       <ResponsiveCard
+        padding={0}
         style={[
           isViewed && styles.viewedCard,
           isViewed && { borderWidth: 2, borderColor: colors.border },
@@ -199,240 +247,271 @@ const OrderItem = ({
           </View>
         )}
         {/* Banner Image */}
-        {order.BannerImage && (
-          <View style={styles.bannerImageContainer}>
-            {imageLoading && (
-              <View
-                style={[
-                  styles.bannerImageSkeleton,
-                  { backgroundColor: colors.border },
-                ]}
-              >
-                <ActivityIndicator size="small" color={colors.tint} />
-              </View>
-            )}
-            <Image
-              source={{ uri: order.BannerImage.fileUrl }}
+        <View style={styles.bannerImageContainer}>
+          {imageLoading && (
+            <View
               style={[
-                styles.bannerImage,
-                imageLoading && styles.bannerImageHidden,
+                styles.bannerImageSkeleton,
+                { backgroundColor: colors.border },
               ]}
-              resizeMode="cover"
-              onLoadStart={() => {
-                setImageLoading(true);
-                setImageError(false);
-              }}
-              onLoad={() => setImageLoading(false)}
-              onError={() => {
-                setImageLoading(false);
-                setImageError(true);
-              }}
-            />
-            {imageError && (
-              <View
-                style={[
-                  styles.bannerImageSkeleton,
-                  { backgroundColor: colors.border },
-                ]}
-              >
-                <IconSymbol
-                  name="photo"
-                  size={24}
-                  color={colors.tabIconDefault}
-                />
-              </View>
-            )}
-          </View>
-        )}
-        <View style={styles.orderHeader}>
-          <View style={styles.orderTitleContainer}>
-            <Text style={[styles.orderTitle, { color: colors.text }]}>
-              {displayTitle}
-            </Text>
-            {/* Bookmark Button - Only show for authenticated users and not for own orders */}
-            {user?.id && !isMyOrders && user.id !== order.clientId && (
-              <TouchableOpacity
-                onPress={handleSaveToggle}
-                style={styles.bookmarkButton}
-                disabled={saving}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {saving ? (
-                  <ActivityIndicator size="small" color={colors.tint} />
-                ) : (
-                  <IconSymbol
-                    name={saved ? "bookmark.fill" : "bookmark"}
-                    size={20}
-                    color={saved ? colors.tint : colors.tabIconDefault}
-                  />
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-          <View
-            style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(order.status) },
-            ]}
-          >
-            <IconSymbol
-              name={getStatusIcon(order.status) as any}
-              size={12}
-              color="white"
-            />
-            <Text style={styles.statusText}>
-              {order.status.replace("_", " ").toUpperCase()}
-            </Text>
-          </View>
-        </View>
-
-        <Text
-          style={[styles.orderDescription, { color: colors.tabIconDefault }]}
-          numberOfLines={5}
-        >
-          {displayDescription}
-        </Text>
-
-        <View style={styles.orderDetails}>
-          <View style={styles.detailItem}>
-            <IconSymbol
-              name="dollarsign.circle.fill"
-              size={16}
-              color={colors.tint}
-            />
-            <Text style={[styles.detailText, { color: colors.text }]}>
-              {budgetDisplay}
-            </Text>
-          </View>
-          {order.location && (
-            <View style={styles.detailItem}>
-              <View style={styles.detailIconContainer}>
-                <IconSymbol
-                  name="location.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-              </View>
-              <Text
-                style={[styles.detailText, { color: colors.text }]}
-                numberOfLines={2}
-              >
-                {order.location}
-              </Text>
+            >
+              <ActivityIndicator size="small" color={colors.tint} />
             </View>
           )}
-          <View style={styles.detailItem}>
-            <IconSymbol name="person.fill" size={16} color={colors.tint} />
-            <Text style={[styles.detailText, { color: colors.text }]}>
-              {order._count?.Proposals ?? order.Proposals?.length ?? 0}{" "}
-              {t("application")}
-            </Text>
-          </View>
-        </View>
-
-        {order.skills && order.skills.length > 0 && (
-          <View style={styles.skillsContainer}>
-            {order.skills.slice(0, 4).map((skill, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.skillTag,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <Text style={[styles.skillText, { color: colors.text }]}>
-                  {skill}
-                </Text>
-              </View>
-            ))}
-            {order.skills.length > 4 && (
-              <Text
-                style={[
-                  styles.moreSkillsText,
-                  { color: colors.tabIconDefault },
-                ]}
-              >
-                +{order.skills.length - 4} {t("more")}
-              </Text>
-            )}
-          </View>
-        )}
-
-        <View>
-          <Text style={[styles.clientName, { color: colors.tabIconDefault }]}>
-            {t("postedBy")} {order.Client.name} •{" "}
-            {new Date(order.createdAt).toLocaleDateString()}
-          </Text>
-          {order.Service && (
-            <Text style={[styles.serviceName, { color: colors.tint }]}>
-              {order.Service.name}
-            </Text>
+          <Image
+            source={{ uri: order.BannerImage?.fileUrl || "" }}
+            style={[
+              styles.bannerImage,
+              imageLoading && styles.bannerImageHidden,
+            ]}
+            resizeMode="cover"
+            onLoadStart={() => {
+              setImageLoading(!!order.BannerImage?.fileUrl);
+              setImageError(!order.BannerImage?.fileUrl);
+            }}
+            onLoad={() => setImageLoading(false)}
+            onError={() => {
+              setImageLoading(false);
+              setImageError(true);
+            }}
+          />
+          {imageError && (
+            <View style={[styles.bannerImageSkeleton]}>
+              <IconSymbol
+                name="photo"
+                size={24}
+                color={colors.tabIconDefault}
+              />
+            </View>
           )}
         </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          {/* Apply Button - Only show for other users' orders (not owner) */}
-          {!isMyOrders &&
-            order.status === "open" &&
-            !hasAppliedToOrder(order.id) &&
-            user?.id !== order.clientId &&
-            order.creditCost && (
-              <Button
-                onPress={() => handleApplyToOrder(order)}
-                title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
-                icon="paperplane.fill"
-                variant="primary"
+        <View style={{ padding: Spacing.md }}>
+          <View style={styles.orderHeader}>
+            <View style={styles.orderTitleContainer}>
+              <Text style={[styles.orderTitle, { color: colors.text }]}>
+                {displayTitle}
+              </Text>
+              {/* Bookmark Button - Only show for authenticated users and not for own orders */}
+              {user?.id && !isMyOrders && user.id !== order.clientId && (
+                <TouchableOpacity
+                  onPress={handleSaveToggle}
+                  style={styles.bookmarkButton}
+                  disabled={saving}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {saving ? (
+                    <ActivityIndicator size="small" color={colors.tint} />
+                  ) : (
+                    <IconSymbol
+                      name={saved ? "bookmark.fill" : "bookmark"}
+                      size={20}
+                      color={saved ? colors.tint : colors.tabIconDefault}
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(order.status) },
+              ]}
+            >
+              <IconSymbol
+                name={getStatusIcon(order.status) as any}
+                size={12}
+                color="white"
               />
+              <Text style={styles.statusText}>
+                {order.status.replace("_", " ").toUpperCase()}
+              </Text>
+            </View>
+          </View>
+
+          <Text
+            style={[styles.orderDescription, { color: colors.tabIconDefault }]}
+            numberOfLines={2}
+          >
+            {displayDescription}
+          </Text>
+
+          <View style={styles.orderDetails}>
+            <View style={styles.detailItem}>
+              <IconSymbol
+                name="dollarsign.circle.fill"
+                size={16}
+                color={colors.tint}
+              />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                {budgetDisplay}
+              </Text>
+            </View>
+            {order.location && (
+              <TouchableOpacity
+                style={styles.detailItem}
+                onPress={handleLocationPress}
+                disabled={!locationCoordinates}
+                activeOpacity={locationCoordinates ? 0.6 : 1}
+              >
+                <View style={styles.detailIconContainer}>
+                  <IconSymbol
+                    name="location.fill"
+                    size={16}
+                    color={
+                      locationCoordinates ? colors.tint : colors.tabIconDefault
+                    }
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.detailText,
+                    {
+                      color: locationCoordinates ? colors.tint : colors.text,
+                      textDecorationLine: locationCoordinates
+                        ? "underline"
+                        : "none",
+                    },
+                  ]}
+                  numberOfLines={2}
+                >
+                  {locationCoordinates?.address || order.location}
+                </Text>
+              </TouchableOpacity>
             )}
+            <View style={styles.detailItem}>
+              <IconSymbol name="person.fill" size={16} color={colors.tint} />
+              <Text style={[styles.detailText, { color: colors.text }]}>
+                {order._count?.Proposals ?? order.Proposals?.length ?? 0}{" "}
+                {t("application")}
+              </Text>
+            </View>
+          </View>
 
-          {/* Applied Status - Show when user has already applied */}
+          {order.skills && order.skills.length > 0 && (
+            <View style={styles.skillsContainer}>
+              {order.skills.slice(0, 4).map((skill, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.skillTag,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.skillText, { color: colors.text }]}>
+                    {skill}
+                  </Text>
+                </View>
+              ))}
+              {order.skills.length > 4 && (
+                <Text
+                  style={[
+                    styles.moreSkillsText,
+                    { color: colors.tabIconDefault },
+                  ]}
+                >
+                  +{order.skills.length - 4} {t("more")}
+                </Text>
+              )}
+            </View>
+          )}
 
-          {!isMyOrders &&
-            order.status === "open" &&
-            hasAppliedToOrder(order.id) &&
-            user?.id !== order.clientId && (
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <View style={{ flex: 1, flexWrap: "nowrap" }}>
+              <Text
+                style={[styles.clientName, { color: colors.tabIconDefault }]}
+              >
+                {t("postedBy")} {order.Client.name} •{" "}
+                {new Date(order.createdAt).toLocaleDateString()}
+              </Text>
+              {order.Service && (
+                <Text style={[styles.serviceName, { color: colors.tint }]}>
+                  {order.Service.name}
+                </Text>
+              )}
+            </View>
+            {/* Apply Button - Only show for other users' orders (not owner) */}
+            {!isMyOrders &&
+              order.status === "open" &&
+              !hasAppliedToOrder(order.id) &&
+              user?.id !== order.clientId &&
+              order.creditCost && (
+                <Button
+                  onPress={() => handleApplyToOrder(order)}
+                  title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
+                  icon="paperplane.fill"
+                  variant="primary"
+                />
+              )}
+
+            {/* Applied Status - Show when user has already applied */}
+
+            {!isMyOrders &&
+              order.status === "open" &&
+              hasAppliedToOrder(order.id) &&
+              user?.id !== order.clientId && (
+                <Button
+                  onPress={() => {}}
+                  variant="primary"
+                  icon="checkmark.circle.fill"
+                  iconSize={16}
+                  iconPosition="left"
+                  title={t("applied")}
+                  disabled={true}
+                />
+              )}
+
+            {/* Cancel Button - Only show for My Jobs */}
+            {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
               <Button
-                onPress={() => {}}
-                variant="primary"
-                icon="checkmark.circle.fill"
+                variant="outline"
+                onPress={() => handleCancelProposal(order)}
+                icon="xmark.circle"
                 iconSize={16}
                 iconPosition="left"
-                title={t("applied")}
-                disabled={true}
+                title={t("cancel")}
+                textColor="#FF3B30"
               />
             )}
 
-          {/* Cancel Button - Only show for My Jobs */}
-          {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
-            <Button
-              variant="outline"
-              onPress={() => handleCancelProposal(order)}
-              icon="xmark.circle"
-              iconSize={16}
-              iconPosition="left"
-              title={t("cancel")}
-              textColor="#FF3B30"
-            />
-          )}
-
-          {/* Delete Button - Only show for user's own orders */}
-          {isMyOrders && order.status !== "pending" && (
-            <Button
-              variant="outline"
-              icon="trash"
-              iconSize={16}
-              iconPosition="left"
-              title={t("delete")}
-              textColor="#FF3B30"
-              onPress={() => handleDeleteOrder(order)}
-            />
-          )}
+            {/* Delete Button - Only show for user's own orders */}
+            {isMyOrders && order.status !== "pending" && (
+              <Button
+                variant="outline"
+                icon="trash"
+                iconSize={16}
+                iconPosition="left"
+                title={t("delete")}
+                textColor="#FF3B30"
+                onPress={() => handleDeleteOrder(order)}
+              />
+            )}
+          </View>
         </View>
       </ResponsiveCard>
+
+      {/* Map Modal */}
+      {locationCoordinates && (
+        <Modal
+          visible={showMapModal}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setShowMapModal(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <MapViewComponent
+              initialLocation={locationCoordinates}
+              onLocationSelect={() => {}}
+              onClose={() => setShowMapModal(false)}
+              showCurrentLocationButton={false}
+              showConfirmButton={false}
+            />
+          </View>
+        </Modal>
+      )}
     </TouchableOpacity>
   );
 };
@@ -441,7 +520,6 @@ const styles = StyleSheet.create({
   bannerImageContainer: {
     width: "100%",
     height: 200,
-    borderRadius: 12,
     marginBottom: 16,
     position: "relative",
     overflow: "hidden",
@@ -449,12 +527,14 @@ const styles = StyleSheet.create({
   bannerImage: {
     width: "100%",
     height: "100%",
-    borderRadius: 12,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   bannerImageHidden: {
     opacity: 0,
   },
   bannerImageSkeleton: {
+    zIndex: 1000,
     position: "absolute",
     top: 0,
     left: 0,
@@ -462,7 +542,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: "100%",
-    borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -502,15 +581,13 @@ const styles = StyleSheet.create({
     color: "white",
   },
   orderDescription: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    opacity: 0.8,
+    fontSize: 14,
+    marginBottom: 10,
   },
   orderDetails: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 16,
+    gap: 10,
     marginBottom: 16,
     alignItems: "flex-start",
   },
@@ -527,7 +604,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
     flexShrink: 1,
     flex: 1,
@@ -537,7 +614,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     alignItems: "center",
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 6,
   },
   skillTag: {
     paddingHorizontal: 10,
@@ -546,7 +623,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   skillText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "600",
   },
   moreSkillsText: {
@@ -564,9 +641,9 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     flexDirection: "row",
-    marginTop: 12,
-    justifyContent: "flex-end",
-    gap: 12,
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    gap: 2,
   },
   appliedButton: {
     flexDirection: "row",

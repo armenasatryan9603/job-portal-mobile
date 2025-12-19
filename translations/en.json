@@ -1106,5 +1106,14 @@
   "selectPeersToAdd": "Please select at least one peer to add",
   "peersAddedSuccessfully": "{count} peer(s) added successfully",
   "partialSuccess": "Partial Success",
-  "failedToAddPeers": "Failed to add peers"
+  "failedToAddPeers": "Failed to add peers",
+  "jobScheduledToday": "Job Scheduled Today",
+  "jobScheduledTomorrow": "Job Scheduled Tomorrow",
+  "calendarReminder": "Calendar Reminder",
+  "noAppliedApplications": "No Applied Applications",
+  "noScheduledApplications": "No Scheduled Applications",
+  "noAppliedOnDate": "No applied items on this date",
+  "noAppliedDesc": "You haven't applied to any jobs yet",
+  "noScheduledOnDate": "No scheduled items on this date",
+  "noScheduledDesc": "No scheduled dates available"
 }

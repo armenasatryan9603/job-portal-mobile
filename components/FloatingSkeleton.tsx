@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { View, StyleSheet, Animated } from "react-native";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Spacing } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 
@@ -14,6 +14,7 @@ interface FloatingSkeletonProps {
   showDetails?: boolean;
   showTags?: boolean;
   showFooter?: boolean;
+  variant?: "list" | "grid";
 }
 
 export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
@@ -26,6 +27,7 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
   showDetails = true,
   showTags = true,
   showFooter = false,
+  variant = "list",
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -54,6 +56,62 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
     inputRange: [0, 1],
     outputRange: [0.3, 0.7],
   });
+
+  const GridSkeletonItem = () => (
+    <View style={[styles.gridCard, { backgroundColor: colors.surface }]}>
+      <Animated.View
+        style={[
+          styles.gridServiceImage,
+          {
+            backgroundColor: colors.border,
+            opacity,
+          },
+        ]}
+      />
+      <View style={styles.gridCardContent}>
+        <Animated.View
+          style={[
+            styles.gridServiceName,
+            {
+              backgroundColor: colors.border,
+              opacity,
+              marginBottom: 4,
+            },
+          ]}
+        />
+        <Animated.View
+          style={[
+            styles.gridServiceName,
+            {
+              backgroundColor: colors.border,
+              opacity,
+              width: "60%",
+            },
+          ]}
+        />
+        <View style={styles.gridServiceStats}>
+          <Animated.View
+            style={[
+              styles.gridStatItem,
+              {
+                backgroundColor: colors.border,
+                opacity,
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.gridStatItem,
+              {
+                backgroundColor: colors.border,
+                opacity,
+              },
+            ]}
+          />
+        </View>
+      </View>
+    </View>
+  );
 
   const SkeletonItem = () => (
     <ResponsiveCard style={{ minHeight: itemHeight }}>
@@ -259,6 +317,39 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
     </ResponsiveCard>
   );
 
+  if (variant === "grid") {
+    // Render grid layout (3 items per row)
+    const rows = Math.ceil(count / 3);
+    return (
+      <View style={styles.container}>
+        {Array.from({ length: rows }).map((_, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.gridRow}>
+            {Array.from({ length: 3 }).map((_, colIndex) => {
+              const itemIndex = rowIndex * 3 + colIndex;
+              if (itemIndex >= count) {
+                // Empty placeholder for incomplete rows
+                return (
+                  <View
+                    key={`placeholder-${colIndex}`}
+                    style={{ flex: 1, marginHorizontal: Spacing.xs }}
+                  />
+                );
+              }
+              return (
+                <View
+                  key={`item-${itemIndex}`}
+                  style={{ flex: 1, marginHorizontal: Spacing.xs }}
+                >
+                  <GridSkeletonItem />
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {Array.from({ length: count }).map((_, index) => (
@@ -271,6 +362,36 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  gridRow: {
+    flexDirection: "row",
+    marginBottom: Spacing.md,
+  },
+  gridCard: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  gridServiceImage: {
+    width: "100%",
+    height: 80,
+  },
+  gridCardContent: {
+    padding: Spacing.sm,
+  },
+  gridServiceName: {
+    height: 16,
+    borderRadius: 4,
+    width: "100%",
+  },
+  gridServiceStats: {
+    flexDirection: "row",
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+  gridStatItem: {
+    height: 14,
+    width: 35,
+    borderRadius: 4,
   },
   skeletonImage: {
     width: "100%",
