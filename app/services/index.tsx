@@ -21,6 +21,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import {
   FlatList,
   StyleSheet,
@@ -63,9 +64,7 @@ const ServicesScreen = () => {
   const { data: rateUnitsData } = useRateUnits();
   const rateUnits = (rateUnitsData || []) as RateUnit[];
   // Use TanStack Query for data fetching
-  const [currentPage, setCurrentPage] = useState(1);
-  const [allServices, setAllServices] = useState<Service[]>([]);
-
+  const [tempCurrentPage, setTempCurrentPage] = useState(1);
   // Use keyboard-aware press handler
   const { wrapPressHandler } = useKeyboardAwarePress();
 
@@ -96,28 +95,16 @@ const ServicesScreen = () => {
     isFetching: activeIsFetching,
     error: activeError,
     refetch: activeRefetch,
-  } = useServices(currentPage, 20, undefined, language, debouncedSearchQuery);
+  } = useServices(
+    tempCurrentPage,
+    20,
+    undefined,
+    language,
+    debouncedSearchQuery
+  );
 
   const { data: rootServices } = useRootServices(language);
 
-  // Reset page when debounced search query changes
-  useEffect(() => {
-    setCurrentPage(1);
-    setAllServices([]);
-  }, [debouncedSearchQuery]);
-
-  // Accumulate services from all pages
-  useEffect(() => {
-    if (activeData?.services) {
-      if (currentPage === 1) {
-        setAllServices(activeData.services);
-      } else {
-        setAllServices((prev) => [...prev, ...activeData.services]);
-      }
-    }
-  }, [activeData, currentPage]);
-
-  const services = allServices;
   const mainServices = rootServices || [];
   const pagination = activeData?.pagination || {
     page: 1,
@@ -128,19 +115,29 @@ const ServicesScreen = () => {
     hasPrevPage: false,
   };
 
-  // Show loading only on initial load (page 1)
-  const isInitialLoading = activeIsLoading && currentPage === 1;
-  const isLoadingMore = activeIsFetching && currentPage > 1;
+  // Use infinite pagination hook
+  const {
+    allItems: services,
+    currentPage,
+    setCurrentPage,
+    loadMore: loadMoreServices,
+    onRefresh,
+    isInitialLoading,
+    isLoadingMore,
+    flatListProps,
+  } = useInfinitePagination({
+    items: activeData?.services || [],
+    pagination,
+    isLoading: activeIsLoading,
+    isFetching: activeIsFetching,
+    resetDeps: [debouncedSearchQuery],
+    enableScrollGate: true,
+  });
 
-  const loadMoreServices = useCallback(() => {
-    if (pagination.hasNextPage) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  }, [pagination.hasNextPage]);
-
-  const onRefresh = useCallback(async () => {
-    await activeRefetch();
-  }, [activeRefetch]);
+  // Sync tempCurrentPage with currentPage from hook
+  useEffect(() => {
+    setTempCurrentPage(currentPage);
+  }, [currentPage]);
 
   // Filter services based on category and services (search is handled by backend)
   const filteredServices = useMemo(() => {
@@ -424,6 +421,7 @@ const ServicesScreen = () => {
             keyExtractor={(item, index) => `row-${index}`}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmptyComponent}
+            {...flatListProps}
             refreshControl={
               <RefreshControl
                 refreshing={activeIsLoading}

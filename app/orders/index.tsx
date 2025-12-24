@@ -24,6 +24,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useMyOrders,
@@ -115,8 +116,9 @@ export default function OrdersScreen() {
     () => `ordersSearch:${screenName}`,
     [screenName]
   );
-  const [currentPage, setCurrentPage] = useState(1);
-  const limit = 20;
+  // Temporary currentPage for query initialization (will be overridden by hook)
+  const [tempCurrentPage, setTempCurrentPage] = useState(1);
+  const limit = 10;
   const status = selectedFilters?.status as string;
 
   // Convert selected services to number array
@@ -139,14 +141,14 @@ export default function OrdersScreen() {
   // For saved orders, fetch all at once (like My Orders/My Jobs) since users typically don't have many saved orders
   const savedOrdersQuery = useSavedOrders(1, 100);
   const allOrdersQuery = useAllOrders(
-    currentPage,
+    tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
     undefined, // serviceId (single, for backward compatibility)
     selectedServiceIds.length > 0 ? selectedServiceIds : undefined
   );
   const publicOrdersQuery = usePublicOrders(
-    currentPage,
+    tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
     undefined, // serviceId (single, for backward compatibility)
@@ -154,7 +156,7 @@ export default function OrdersScreen() {
   );
   const searchOrdersQuery = useSearchOrders(
     searchQuery.trim(),
-    currentPage,
+    tempCurrentPage,
     limit,
     selectedServiceIds.length > 0 ? selectedServiceIds : undefined
   );
@@ -302,15 +304,46 @@ export default function OrdersScreen() {
 
   // Extract data from active query
   const queryData = activeQuery.data as OrderListResponse | undefined;
-  const orders = queryData?.orders || [];
+  const currentPageOrders = queryData?.orders || [];
   const pagination = queryData?.pagination || {
     page: 1,
-    limit: 20,
+    limit: 5,
     total: 0,
     totalPages: 0,
     hasNextPage: false,
     hasPrevPage: false,
   };
+
+  // Use infinite pagination hook for server-side pagination
+  const {
+    allItems: allOrders,
+    currentPage,
+    setCurrentPage,
+    loadMore: loadMoreOrders,
+    onRefresh: handlePaginationRefresh,
+    isInitialLoading: isPaginationInitialLoading,
+    isLoadingMore: isPaginationLoadingMore,
+    flatListProps: paginationFlatListProps,
+  } = useInfinitePagination({
+    items: currentPageOrders,
+    pagination,
+    isLoading: activeQuery.isLoading,
+    isFetching: activeQuery.isFetching,
+    resetDeps: [selectedFilters, searchQuery],
+    enableScrollGate: true,
+  });
+  // asdf
+
+  // Sync tempCurrentPage with currentPage from hook
+  useEffect(() => {
+    if (!isMyOrders && !isMyJobs && !isSavedOrders) {
+      setTempCurrentPage(currentPage);
+    }
+  }, [currentPage, isMyOrders, isMyJobs, isSavedOrders]);
+
+  // Use appropriate orders based on pagination type
+  const orders =
+    isMyOrders || isMyJobs || isSavedOrders ? currentPageOrders : allOrders;
 
   // Extract services for filtering
   const services = servicesData?.services || [];
@@ -384,12 +417,14 @@ export default function OrdersScreen() {
     [t, isMyOrders, services]
   );
 
-  // Loading states
+  // Loading states - use hook's provided values for better pagination handling
   const loading = activeQuery.isLoading && !activeQuery.isFetching;
   const filterLoading = activeQuery.isFetching && currentPage === 1;
-  const loadingMore = activeQuery.isFetching && currentPage > 1;
   const error = activeQuery.error ? (activeQuery.error as Error).message : null;
-  const isInitialLoad = activeQuery.isLoading && currentPage === 1;
+
+  // Use pagination hook's loading states
+  const isInitialLoad = isPaginationInitialLoading;
+  const loadingMore = isPaginationLoadingMore;
 
   // For My Orders/My Jobs/Saved Orders: client-side pagination
   const [allUserOrders, setAllUserOrders] = useState<Order[]>([]);
@@ -777,7 +812,7 @@ export default function OrdersScreen() {
 
   // Helper function to create pagination object for local filtering
   const createPaginationObject = useCallback(
-    (total: number, currentPage: number = 1, limit: number = 20) => {
+    (total: number, currentPage: number = 1, limit: number = 5) => {
       const totalPages = Math.ceil(total / limit);
       return {
         page: currentPage,
@@ -1074,30 +1109,30 @@ export default function OrdersScreen() {
   ]);
 
   // Load more orders (pagination)
-  const loadMoreOrders = useCallback(() => {
+  const loadMoreOrdersWrapper = useCallback(() => {
     if (isMyOrders || isMyJobs || isSavedOrders) {
       // Client-side pagination
       if (displayedPagination.hasNextPage) {
         setClientSidePage((prev) => prev + 1);
       }
     } else {
-      // Server-side pagination
-      if (!loadingMore && displayedPagination.hasNextPage && !isInitialLoad) {
-        setCurrentPage((prev) => prev + 1);
-      }
+      // Server-side pagination - use hook's loadMore
+      loadMoreOrders();
     }
   }, [
     isMyOrders,
     isMyJobs,
     isSavedOrders,
-    loadingMore,
     displayedPagination.hasNextPage,
-    isInitialLoad,
+    loadMoreOrders,
   ]);
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+
+    // Reset pagination state from hook
+    handlePaginationRefresh();
 
     // Invalidate and refetch all order queries
     await queryClient.refetchQueries({ queryKey: ["orders"] });
@@ -1107,15 +1142,19 @@ export default function OrdersScreen() {
     await loadViewedOrders();
     await loadSavedOrders();
 
-    // Reset pagination
+    // Reset pagination for client-side
     if (isMyOrders || isMyJobs || isSavedOrders) {
       setClientSidePage(1);
-    } else {
-      setCurrentPage(1);
     }
 
     setRefreshing(false);
-  }, [queryClient, isMyOrders, isMyJobs, isSavedOrders]);
+  }, [
+    queryClient,
+    isMyOrders,
+    isMyJobs,
+    isSavedOrders,
+    handlePaginationRefresh,
+  ]);
 
   // Load applied orders and viewed orders on component mount
   useEffect(() => {
@@ -1494,6 +1533,11 @@ export default function OrdersScreen() {
     return null;
   };
 
+  console.log(
+    "currentPageOrders=============================================",
+    displayedOrders.length
+  );
+
   return (
     <>
       <Layout header={header}>
@@ -1557,8 +1601,11 @@ export default function OrdersScreen() {
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
               ListEmptyComponent={renderEmptyComponent}
-              onEndReached={loadMoreOrders}
-              onEndReachedThreshold={0.1}
+              {...(isMyOrders || isMyJobs || isSavedOrders
+                ? {}
+                : paginationFlatListProps)}
+              onEndReached={loadMoreOrdersWrapper}
+              onEndReachedThreshold={0.5}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}
@@ -1662,8 +1709,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderRadius: 28,
     gap: 8,
     elevation: 8,
@@ -1678,7 +1725,7 @@ const styles = StyleSheet.create({
   },
   fabText: {
     color: "#FFFFFF",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
   },
 });

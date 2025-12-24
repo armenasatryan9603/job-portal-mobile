@@ -285,7 +285,8 @@ const styles = StyleSheet.create({
   selectedDatesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 4,
+    marginTop: 6,
   },
   dateTimeContainer: {
     marginBottom: 8,
@@ -293,8 +294,8 @@ const styles = StyleSheet.create({
   selectedDateChip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 16,
     gap: 6,
   },
@@ -310,7 +311,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   removeDateText: {
-    fontSize: 14,
+    fontSize: 20,
+    lineHeight: 18,
     fontWeight: "bold",
   },
   errorText: {

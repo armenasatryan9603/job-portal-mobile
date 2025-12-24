@@ -13,6 +13,7 @@ import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
 import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import { router } from "expo-router";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import {
   Image,
   FlatList,
@@ -67,30 +68,17 @@ export default function SpecialistsScreen() {
   const [hiringLoading, setHiringLoading] = useState(false);
 
   // Use TanStack Query for data fetching
-  const [currentPage, setCurrentPage] = useState(1);
-  const [allSpecialists, setAllSpecialists] = useState<SpecialistProfile[]>([]);
+  const [tempCurrentPage, setTempCurrentPage] = useState(1);
   const {
     data: specialistsData,
     isLoading,
     isFetching,
     error,
     refetch,
-  } = useSpecialists(currentPage, 20);
+  } = useSpecialists(tempCurrentPage, 20);
   const { data: servicesData } = useServices(1, 100, undefined, language); // Get all services for filtering with correct language
   const { data: ordersData } = useMyOrders();
 
-  // Accumulate specialists from all pages
-  useEffect(() => {
-    if (specialistsData?.data) {
-      if (currentPage === 1) {
-        setAllSpecialists(specialistsData.data);
-      } else {
-        setAllSpecialists((prev) => [...prev, ...specialistsData.data]);
-      }
-    }
-  }, [specialistsData, currentPage]);
-
-  const specialists = allSpecialists;
   const services = servicesData?.services || [];
   const userOrders = ordersData?.orders || [];
   const pagination = specialistsData?.pagination || {
@@ -102,19 +90,28 @@ export default function SpecialistsScreen() {
     hasPrevPage: false,
   };
 
-  // Show loading only on initial load (page 1)
-  const isInitialLoading = isLoading && currentPage === 1;
-  const isLoadingMore = isFetching && currentPage > 1;
+  // Use infinite pagination hook
+  const {
+    allItems: specialists,
+    currentPage,
+    setCurrentPage,
+    loadMore: loadMoreSpecialists,
+    onRefresh,
+    isInitialLoading,
+    isLoadingMore,
+    flatListProps,
+  } = useInfinitePagination({
+    items: specialistsData?.data || [],
+    pagination,
+    isLoading,
+    isFetching,
+    enableScrollGate: true,
+  });
 
-  const loadMoreSpecialists = useCallback(() => {
-    if (pagination.hasNextPage) {
-      setCurrentPage((prev) => prev + 1);
-    }
-  }, [pagination.hasNextPage]);
-
-  const onRefresh = useCallback(async () => {
-    await refetch();
-  }, [refetch]);
+  // Sync tempCurrentPage with currentPage from hook
+  useEffect(() => {
+    setTempCurrentPage(currentPage);
+  }, [currentPage]);
 
   // Get service names and IDs from fetched services
   const serviceOptions = useMemo(
@@ -631,8 +628,7 @@ export default function SpecialistsScreen() {
             ListHeaderComponent={renderHeader}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmptyComponent}
-            onEndReached={loadMoreSpecialists}
-            onEndReachedThreshold={0.1}
+            {...flatListProps}
             refreshControl={
               <RefreshControl
                 refreshing={isLoading}
@@ -688,7 +684,6 @@ const styles = StyleSheet.create({
   specialistCard: {
     padding: 20,
     borderRadius: 16,
-    marginBottom: 16,
   },
   specialistHeader: {
     flexDirection: "row",
@@ -787,7 +782,6 @@ const styles = StyleSheet.create({
   },
   skillTag: {
     paddingHorizontal: 10,
-    paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
   },
@@ -804,7 +798,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,0.1)",
   },

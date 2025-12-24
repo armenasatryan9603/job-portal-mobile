@@ -125,7 +125,7 @@ export default function CreateOrderScreen() {
       if (defaultUnit) {
         return getRateUnitLabelForLanguage(defaultUnit, language);
       }
-      return t("perProject") || "per project";
+      return t("perProject");
     }
 
     // Find the rate unit in our options
@@ -334,10 +334,7 @@ export default function CreateOrderScreen() {
         const errorMessage =
           error?.message ||
           "Failed to convert currency. Please enter the price manually.";
-        Alert.alert(
-          t("error") || "Error",
-          t("currencyConversionFailed") || errorMessage
-        );
+        Alert.alert(t("error"), t("currencyConversionFailed") || errorMessage);
       } finally {
         setIsConvertingCurrency(false);
         setPreviousCurrency(currency);
@@ -878,9 +875,8 @@ export default function CreateOrderScreen() {
                 ? error
                 : t("unknownError");
             Alert.alert(
-              t("error") || "Error",
-              t("failedToDeleteOrder") ||
-                "Failed to delete order: " + errorMessage
+              t("error"),
+              t("failedToDeleteOrder") + ": " + errorMessage
             );
           } finally {
             setIsSubmitting(false);
@@ -1161,19 +1157,14 @@ export default function CreateOrderScreen() {
         // Order updated successfully - show message if status changed to pending_review
         const updatedOrder = await apiService.getOrderById(currentOrderId);
         if (updatedOrder.status === "pending_review") {
-          Alert.alert(
-            t("success") || "Success",
-            t("orderUpdatedPendingApproval") ||
-              "Order updated successfully. It will be reviewed by admin before being published.",
-            [
-              {
-                text: t("ok") || "OK",
-                onPress: () => {
-                  router.replace("/orders?myOrders=true");
-                },
+          Alert.alert(t("success"), t("orderUpdatedPendingApproval"), [
+            {
+              text: t("ok"),
+              onPress: () => {
+                router.replace("/orders?myOrders=true");
               },
-            ]
-          );
+            },
+          ]);
         } else {
           router.replace("/orders");
         }
@@ -1225,19 +1216,14 @@ export default function CreateOrderScreen() {
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
           // Show success message with pending approval info
-          Alert.alert(
-            t("success") || "Success",
-            t("orderCreatedPendingApproval") ||
-              "Order created successfully. It will be reviewed by admin before being published.",
-            [
-              {
-                text: t("ok") || "OK",
-                onPress: () => {
-                  router.replace("/orders?myOrders=true");
-                },
+          Alert.alert(t("success"), t("orderCreatedPendingApproval"), [
+            {
+              text: t("ok"),
+              onPress: () => {
+                router.replace("/orders?myOrders=true");
               },
-            ]
-          );
+            },
+          ]);
         } else {
           // No media files, use regular order creation
           createdOrder = await apiService.createOrder(finalOrderData);
@@ -1255,19 +1241,14 @@ export default function CreateOrderScreen() {
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
 
           // Show success message with pending approval info
-          Alert.alert(
-            t("success") || "Success",
-            t("orderCreatedPendingApproval") ||
-              "Order created successfully. It will be reviewed by admin before being published.",
-            [
-              {
-                text: t("ok") || "OK",
-                onPress: () => {
-                  router.replace("/orders?myOrders=true");
-                },
+          Alert.alert(t("success"), t("orderCreatedPendingApproval"), [
+            {
+              text: t("ok"),
+              onPress: () => {
+                router.replace("/orders?myOrders=true");
               },
-            ]
-          );
+            },
+          ]);
         }
       }
     } catch (error: any) {
@@ -1299,9 +1280,9 @@ export default function CreateOrderScreen() {
         errorMessage.includes("expired") ||
         error?.response?.status === 401
       ) {
-        Alert.alert(t("error") || "Error", t("authenticationRequired"), [
+        Alert.alert(t("error"), t("authenticationRequired"), [
           {
-            text: t("ok") || "OK",
+            text: t("ok"),
             onPress: () => {
               // Optionally redirect to login
               router.replace("/");
@@ -1310,7 +1291,7 @@ export default function CreateOrderScreen() {
         ]);
       } else {
         Alert.alert(
-          t("error") || "Error",
+          t("error"),
           t("failedToSubmitApplication") + ": " + errorMessage
         );
       }
@@ -1473,7 +1454,7 @@ export default function CreateOrderScreen() {
                     placeholder={
                       selectedService
                         ? `${selectedService.averagePrice || 0}`
-                        : t("budgetPlaceholder") || "0"
+                        : t("budgetPlaceholder")
                     }
                     placeholderTextColor={colors.tabIconDefault}
                     keyboardType="numeric"

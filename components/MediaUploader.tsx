@@ -231,9 +231,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         {/* Media Files */}
         {mediaFiles.map((media, index) => {
           const isBanner = selectedBannerIndex === index;
-          const isExistingBanner =
-            existingBannerId && (media as any).id === existingBannerId;
-          const showBannerBadge = isBanner || isExistingBanner;
+          const showBannerBadge = isBanner;
           const isLoading = imageLoadingStates[index] ?? false;
           const hasError = imageErrorStates[index] ?? false;
 
@@ -344,8 +342,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       { backgroundColor: colors.tint },
                     ]}
                   >
-                    <IconSymbol name="star.fill" size={14} color="white" />
-                    <Text style={styles.bannerBadgeText}>Banner</Text>
+                    <IconSymbol name="star.fill" size={14} color="black" />
+                    <Text style={styles.bannerBadgeText}>{t("banner")}</Text>
                   </View>
                 )}
 
@@ -355,8 +353,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                 >
                   <IconSymbol
                     name={media.type === "image" ? "photo" : "video"}
-                    size={10}
-                    color="white"
+                    size={16}
+                    color="black"
                   />
                 </View>
               </View>
@@ -487,8 +485,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   bannerBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: "white",
+    fontSize: 12,
+    fontWeight: "500",
+    color: "black",
   },
 });
