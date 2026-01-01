@@ -48,6 +48,7 @@ import { calculateAccountCompletion } from "@/utils/accountCompletion";
 import { CircularProgress } from "@/components/CircularProgress";
 import { LocationPicker } from "@/components/LocationPicker";
 import { MapViewComponent } from "@/components/MapView";
+import { CountBadge } from "@/components/CountBadge";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -98,6 +99,10 @@ export default function ProfileScreen() {
 
   // Portfolio count state management
   const [portfolioCount, setPortfolioCount] = useState(0);
+
+  // Teams state management
+  const [userTeams, setUserTeams] = useState<any[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
 
   // Test mode state - will use real backend data
   const [testUserId, setTestUserId] = useState(1);
@@ -183,6 +188,9 @@ export default function ProfileScreen() {
 
       // Fetch portfolio count for completion calculation
       fetchPortfolioCount(profileData.id);
+
+      // Fetch teams for the profile being viewed
+      fetchUserTeams(profileData.id);
     } catch (err) {
       console.error("Error fetching profile:", err);
       setError(t("failedToLoadProfile"));
@@ -255,6 +263,29 @@ export default function ProfileScreen() {
     } catch (err) {
       console.error("Error fetching portfolio count:", err);
       setPortfolioCount(0); // Default to 0 if error
+    }
+  };
+
+  const fetchUserTeams = async (profileUserId?: number) => {
+    const targetId = profileUserId || user?.id;
+    if (!targetId) return;
+    try {
+      setTeamsLoading(true);
+      const teams = await apiService.getTeams();
+      // Filter teams where the profile user is creator or member
+      const userTeamsList = teams.filter((team: any) => {
+        const isCreator = team.createdBy === targetId;
+        const isMember = team.Members?.some(
+          (member: any) => member.userId === targetId && member.isActive
+        );
+        return isCreator || isMember;
+      });
+      setUserTeams(userTeamsList);
+    } catch (err) {
+      console.error("Error fetching user teams:", err);
+      setUserTeams([]);
+    } finally {
+      setTeamsLoading(false);
     }
   };
 
@@ -1150,42 +1181,180 @@ export default function ProfileScreen() {
             }}
           />
 
-          {/* Peers & Teams entry point - Only for specialists */}
-          {!userId && profile?.role === "specialist" && (
+          {/* Teams Section - Show teams user is part of */}
+          {(userTeams.length > 0 || teamsLoading) && (
             <ResponsiveCard>
-              <View style={styles.paymentsPreview}>
-                <View style={{ flex: 1 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "baseline",
+                    gap: 8,
+                  }}
+                >
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("peersAndTeams") || "Peers & Teams"}
+                    {userId ? t("teams") : t("myTeams")}
                   </Text>
+                  {!teamsLoading && <CountBadge count={userTeams.length} />}
+                </View>
+              </View>
+
+              {teamsLoading ? (
+                <View style={styles.teamsLoadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
                   <Text
-                    style={[
-                      styles.paymentsPreviewSubtitle,
-                      { color: colors.textSecondary },
-                    ]}
+                    style={[styles.teamsLoadingText, { color: colors.text }]}
                   >
-                    {t("managePeersAndTeamsDescription") ||
-                      "Manage your peer connections and teams for group applications"}
+                    {t("loadingTeams") || "Loading teams..."}
                   </Text>
                 </View>
-                <TouchableOpacity
-                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                  onPress={() => router.push("/profile/peers")}
-                >
-                  <Text
-                    style={[styles.paymentsCtaText, { color: colors.text }]}
-                  >
-                    {t("managePeers") || "Manage"}
-                  </Text>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-              </View>
+              ) : userTeams.length > 0 ? (
+                <>
+                  <View style={styles.teamsList}>
+                    {userTeams.map((team: any) => {
+                      const profileUserId = userId ? targetUserId : user?.id;
+                      const isCreator = team.createdBy === profileUserId;
+                      const memberCount =
+                        team.Members?.filter((m: any) => m.isActive).length ||
+                        0;
+                      return (
+                        <TouchableOpacity
+                          key={team.id}
+                          style={[
+                            styles.teamItem,
+                            { borderColor: colors.border },
+                          ]}
+                          onPress={() => router.push(`/teams/${team.id}`)}
+                        >
+                          <View style={styles.teamItemContent}>
+                            <View style={styles.teamItemHeader}>
+                              <Text
+                                style={[
+                                  styles.teamItemName,
+                                  { color: colors.text },
+                                ]}
+                              >
+                                {team.name}
+                              </Text>
+                              {isCreator && (
+                                <View
+                                  style={[
+                                    styles.teamLeadBadge,
+                                    { backgroundColor: colors.primary + "20" },
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.teamLeadBadgeText,
+                                      { color: colors.primary },
+                                    ]}
+                                  >
+                                    {t("lead") || "Lead"}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.teamItemMeta}>
+                              <IconSymbol
+                                name="person.3.fill"
+                                size={14}
+                                color={colors.textSecondary}
+                              />
+                              <Text
+                                style={[
+                                  styles.teamItemMetaText,
+                                  { color: colors.textSecondary },
+                                ]}
+                              >
+                                {memberCount} {t("members")}
+                              </Text>
+                            </View>
+                          </View>
+                          <IconSymbol
+                            name="chevron.right"
+                            size={16}
+                            color={colors.tabIconDefault}
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {!userId && (
+                    <TouchableOpacity
+                      style={[
+                        styles.viewAllTeamsButton,
+                        { borderColor: colors.primary },
+                      ]}
+                      onPress={() => router.push("/profile/peers")}
+                    >
+                      <Text
+                        style={[
+                          styles.viewAllTeamsButtonText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {t("manageAllTeams") || "Manage All Teams"}
+                      </Text>
+                      <IconSymbol
+                        name="chevron.right"
+                        size={16}
+                        color={colors.primary}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : null}
             </ResponsiveCard>
           )}
+
+          {/* Peers & Teams entry point - Only for specialists */}
+          {!userId &&
+            profile?.role === "specialist" &&
+            userTeams.length === 0 && (
+              <ResponsiveCard>
+                <View style={styles.paymentsPreview}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                      {t("peersAndTeams") || "Peers & Teams"}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.paymentsPreviewSubtitle,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t("managePeersAndTeamsDescription") ||
+                        "Manage your peer connections and teams for group applications"}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.paymentsCta,
+                      { borderColor: colors.primary },
+                    ]}
+                    onPress={() => router.push("/profile/peers")}
+                  >
+                    <Text
+                      style={[styles.paymentsCtaText, { color: colors.text }]}
+                    >
+                      {t("managePeers") || "Manage"}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </ResponsiveCard>
+            )}
 
           {/* Payments entry point */}
           {!userId && (
@@ -2285,5 +2454,74 @@ const styles = StyleSheet.create({
   missingFieldText: {
     fontSize: 15,
     lineHeight: 22,
+  },
+  // Teams styles
+  teamsLoadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 20,
+    gap: 10,
+  },
+  teamsLoadingText: {
+    fontSize: 14,
+  },
+  teamsList: {
+    gap: 12,
+    marginBottom: 16,
+  },
+  teamItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.md,
+  },
+  teamItemContent: {
+    flex: 1,
+  },
+  teamItemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: 4,
+  },
+  teamItemName: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  teamLeadBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  teamLeadBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  teamItemMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  teamItemMetaText: {
+    fontSize: 13,
+  },
+  viewAllTeamsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    marginTop: Spacing.sm,
+  },
+  viewAllTeamsButtonText: {
+    fontSize: Typography.md,
+    fontWeight: Typography.semibold,
   },
 });

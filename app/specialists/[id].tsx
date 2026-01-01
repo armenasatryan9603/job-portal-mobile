@@ -6,7 +6,7 @@ import {
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -81,7 +81,7 @@ export default function SpecialistDetailScreen() {
         header={
           <Header
             showBackButton
-            title="Loading..."
+            title={t("loading")}
             onBackPress={() => router.back()}
           />
         }
@@ -95,7 +95,7 @@ export default function SpecialistDetailScreen() {
         >
           <ActivityIndicator size="large" color={colors.tint} />
           <Text style={[styles.loadingText, { color: colors.text }]}>
-            Loading specialist details...
+            {t("loadingSpecialistDetails")}
           </Text>
         </View>
       </Layout>
@@ -131,7 +131,7 @@ export default function SpecialistDetailScreen() {
             <Text
               style={[styles.retryButtonText, { color: colors.background }]}
             >
-              Retry
+              {t("retry")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -370,12 +370,11 @@ export default function SpecialistDetailScreen() {
 
               {/* Bio section with better styling */}
               <View style={styles.bioSection}>
-                <Text style={[styles.bioTitle, { color: colors.text }]}>
+                {/* <Text style={[styles.bioTitle, { color: colors.text }]}>
                   About
-                </Text>
+                </Text> */}
                 <Text style={[styles.bio, { color: colors.text }]}>
-                  {specialist.User.bio ||
-                    "Professional specialist ready to help with your project."}
+                  {specialist.User.bio || t("professionalSpecialistReady")}
                 </Text>
               </View>
 
@@ -398,7 +397,7 @@ export default function SpecialistDetailScreen() {
                   <Text
                     style={[styles.statLabel, { color: colors.tabIconDefault }]}
                   >
-                    Projects
+                    {t("projects")}
                   </Text>
                 </View>
 
@@ -415,7 +414,7 @@ export default function SpecialistDetailScreen() {
                   <Text
                     style={[styles.statLabel, { color: colors.tabIconDefault }]}
                   >
-                    Rating
+                    {t("rating")}
                   </Text>
                 </View>
 
@@ -453,10 +452,6 @@ export default function SpecialistDetailScreen() {
 
           {/* Specialist Details */}
           <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Professional Details
-            </Text>
-
             <View style={styles.detailsGrid}>
               {/* Price Range */}
               <View
@@ -484,7 +479,7 @@ export default function SpecialistDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    Hourly Rate
+                    {t("hourlyRate")}
                   </Text>
                   <Text
                     style={[styles.detailCardValue, { color: colors.text }]}
@@ -529,7 +524,7 @@ export default function SpecialistDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    Location
+                    {t("location")}
                   </Text>
                   <Text
                     style={[styles.detailCardValue, { color: colors.text }]}
@@ -565,12 +560,12 @@ export default function SpecialistDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    Experience
+                    {t("experience")}
                   </Text>
                   <Text
                     style={[styles.detailCardValue, { color: colors.text }]}
                   >
-                    {specialist.experienceYears || 0} years
+                    {specialist.experienceYears || 0} {t("years")}
                   </Text>
                 </View>
               </View>
@@ -601,12 +596,12 @@ export default function SpecialistDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    Projects
+                    {t("projects")}
                   </Text>
                   <Text
                     style={[styles.detailCardValue, { color: colors.text }]}
                   >
-                    {specialist._count?.Proposals || 0} sent
+                    {specialist._count?.Proposals || 0} {t("sent")}
                   </Text>
                 </View>
               </View>
@@ -614,11 +609,8 @@ export default function SpecialistDetailScreen() {
           </ResponsiveCard>
 
           {/* Skills */}
-          <ResponsiveCard>
+          <ResponsiveCard style={{ paddingTop: 0 }}>
             <View style={styles.skillsHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Skills & Technologies
-              </Text>
               {specialist.Service?.technologies?.length && (
                 <View
                   style={[
@@ -673,7 +665,7 @@ export default function SpecialistDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    No skills listed yet
+                    {t("noSkillsListedYet")}
                   </Text>
                 </View>
               )}
@@ -683,9 +675,6 @@ export default function SpecialistDetailScreen() {
           {/* Service Information */}
           {specialist.Service && (
             <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Service Information
-              </Text>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceItem}>
                   <IconSymbol
@@ -694,7 +683,7 @@ export default function SpecialistDetailScreen() {
                     color={colors.tint}
                   />
                   <Text style={[styles.serviceText, { color: colors.text }]}>
-                    Service: {specialist.Service.name}
+                    {t("service")}: {specialist.Service.name}
                   </Text>
                 </View>
                 {specialist.Service.description && (
@@ -717,7 +706,8 @@ export default function SpecialistDetailScreen() {
                       color={colors.tint}
                     />
                     <Text style={[styles.serviceText, { color: colors.text }]}>
-                      Service Success Rate: {specialist.Service.completionRate}%
+                      {t("serviceSuccessRate")}:{" "}
+                      {specialist.Service.completionRate}%
                     </Text>
                   </View>
                 )}
@@ -728,9 +718,6 @@ export default function SpecialistDetailScreen() {
           {/* Reviews */}
           {specialist.reviews && specialist.reviews.length > 0 && (
             <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                Reviews ({specialist.reviewCount})
-              </Text>
               <View style={styles.reviewsList}>
                 {specialist.reviews.map((review) => (
                   <View key={review.id} style={styles.reviewItem}>
@@ -758,7 +745,7 @@ export default function SpecialistDetailScreen() {
                       <Text
                         style={[styles.reviewProject, { color: colors.tint }]}
                       >
-                        Project: {review.Order.title}
+                        {t("project")}: {review.Order.title}
                       </Text>
                     )}
                     {review.comment && (
@@ -776,24 +763,23 @@ export default function SpecialistDetailScreen() {
 
           {/* Contact Information */}
           <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              Contact Information
-            </Text>
             <View style={styles.contactInfo}>
-              <View style={styles.contactItem}>
-                <IconSymbol
-                  name="envelope.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.contactText, { color: colors.text }]}>
-                  {specialist.User.email}
-                </Text>
-              </View>
+              {specialist.User.email && (
+                <View style={styles.contactItem}>
+                  <IconSymbol
+                    name="envelope.fill"
+                    size={16}
+                    color={colors.tint}
+                  />
+                  <Text style={[styles.contactText, { color: colors.text }]}>
+                    {specialist.User.email}
+                  </Text>
+                </View>
+              )}
               <View style={styles.contactItem}>
                 <IconSymbol name="calendar" size={16} color={colors.tint} />
                 <Text style={[styles.contactText, { color: colors.text }]}>
-                  Member since:{" "}
+                  {t("memberSince")}:{" "}
                   {new Date(specialist.User.createdAt).toLocaleDateString()}
                 </Text>
               </View>
@@ -1049,7 +1035,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 20,
     justifyContent: "center",
   },
   noSkillsText: {

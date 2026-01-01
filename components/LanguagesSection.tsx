@@ -5,7 +5,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { apiService, UserProfile, UserLanguage } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   StyleSheet,
@@ -24,6 +24,7 @@ import {
   Language,
 } from "@/constants/languages";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CountBadge } from "@/components/CountBadge";
 
 interface LanguagesSectionProps {
   profile: UserProfile;
@@ -198,22 +199,10 @@ export function LanguagesSection({
     <ResponsiveCard>
       <View style={styles.languagesHeader}>
         <View style={styles.headerLeft}>
-          <IconSymbol name="globe" size={20} color={colors.primary} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t("languages")}
           </Text>
-          {profile.languages && profile.languages.length > 0 && (
-            <View
-              style={[
-                styles.countBadge,
-                { backgroundColor: colors.primary + "20" },
-              ]}
-            >
-              <Text style={[styles.countBadgeText, { color: colors.primary }]}>
-                {profile.languages.length}
-              </Text>
-            </View>
-          )}
+          <CountBadge count={profile.languages?.length || 0} />
         </View>
         {!userId && !isEditing && (
           <Button
@@ -596,18 +585,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "700",
-  },
-  countBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    minWidth: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  countBadgeText: {
-    fontSize: 12,
     fontWeight: "700",
   },
   editButton: {

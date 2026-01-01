@@ -16,6 +16,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { CountBadge } from "@/components/CountBadge";
 
 export interface FilterOption {
   key: string;
@@ -481,23 +482,11 @@ export const Filter: React.FC<FilterProps> = ({
                               </Text>
                             </TouchableOpacity>
                             <View style={styles.sectionHeaderRight}>
-                              {selectedCount > 0 && (
-                                <View
-                                  style={[
-                                    styles.badge,
-                                    { backgroundColor: colors.tint },
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.badgeText,
-                                      { color: colors.background },
-                                    ]}
-                                  >
-                                    {selectedCount}
-                                  </Text>
-                                </View>
-                              )}
+                              <CountBadge
+                                count={selectedCount}
+                                color={colors.background}
+                                backgroundColor={colors.tint}
+                              />
                               <TouchableOpacity
                                 onPress={() => toggleSection(sectionKey, true)}
                                 hitSlop={{
@@ -849,21 +838,13 @@ export const Filter: React.FC<FilterProps> = ({
                             <View style={styles.sectionHeaderRight}>
                               {hasValue && (
                                 <>
-                                  <View
-                                    style={[
-                                      styles.badge,
-                                      { backgroundColor: colors.tint },
-                                    ]}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.badgeText,
-                                        { color: colors.background },
-                                      ]}
-                                    >
-                                      {selectedRatings.length}
-                                    </Text>
-                                  </View>
+                                  <CountBadge
+                                    count={selectedRatings.length}
+                                    color={colors.background}
+                                    backgroundColor={colors.tint}
+                                    style={styles.badge}
+                                    textStyle={styles.badgeText}
+                                  />
                                   <TouchableOpacity
                                     onPress={() =>
                                       onFilterChange(sectionKey, [])
@@ -992,21 +973,13 @@ export const Filter: React.FC<FilterProps> = ({
                             <View style={styles.sectionHeaderRight}>
                               {hasValue && (
                                 <>
-                                  <View
-                                    style={[
-                                      styles.badge,
-                                      { backgroundColor: colors.tint },
-                                    ]}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.badgeText,
-                                        { color: colors.background },
-                                      ]}
-                                    >
-                                      1
-                                    </Text>
-                                  </View>
+                                  <CountBadge
+                                    count={1}
+                                    color={colors.background}
+                                    backgroundColor={colors.tint}
+                                    style={styles.badge}
+                                    textStyle={styles.badgeText}
+                                  />
                                   <TouchableOpacity
                                     onPress={() =>
                                       onFilterChange(sectionKey, null)
@@ -1163,21 +1136,13 @@ export const Filter: React.FC<FilterProps> = ({
                             <View style={styles.sectionHeaderRight}>
                               {hasValue && (
                                 <>
-                                  <View
-                                    style={[
-                                      styles.badge,
-                                      { backgroundColor: colors.tint },
-                                    ]}
-                                  >
-                                    <Text
-                                      style={[
-                                        styles.badgeText,
-                                        { color: colors.background },
-                                      ]}
-                                    >
-                                      1
-                                    </Text>
-                                  </View>
+                                  <CountBadge
+                                    count={1}
+                                    color={colors.background}
+                                    backgroundColor={colors.tint}
+                                    style={styles.badge}
+                                    textStyle={styles.badgeText}
+                                  />
                                   <TouchableOpacity
                                     onPress={() =>
                                       onFilterChange(sectionKey, "")
@@ -1277,26 +1242,18 @@ export const Filter: React.FC<FilterProps> = ({
                               {section.title}
                             </Text>
                           </TouchableOpacity>
-                          <View style={styles.sectionHeaderRight}>
-                            {selectedCount > 0 && (
-                              <>
-                                <View
-                                  style={[
-                                    styles.badge,
-                                    { backgroundColor: colors.tint },
-                                  ]}
-                                >
-                                  <Text
-                                    style={[
-                                      styles.badgeText,
-                                      { color: colors.background },
-                                    ]}
-                                  >
-                                    {selectedCount}
-                                  </Text>
-                                </View>
-                                <TouchableOpacity
-                                  onPress={() => clearFilter(sectionKey)}
+                            <View style={styles.sectionHeaderRight}>
+                              {selectedCount > 0 && (
+                                <>
+                                  <CountBadge
+                                    count={selectedCount}
+                                    color={colors.background}
+                                    backgroundColor={colors.tint}
+                                    style={styles.badge}
+                                    textStyle={styles.badgeText}
+                                  />
+                                  <TouchableOpacity
+                                    onPress={() => clearFilter(sectionKey)}
                                   hitSlop={{
                                     top: 5,
                                     bottom: 5,

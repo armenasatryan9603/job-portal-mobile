@@ -33,6 +33,7 @@ import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { MapViewComponent } from "@/components/MapView";
 
 export default function EditOrderScreen() {
   useAnalytics("OrderDetail");
@@ -71,6 +72,41 @@ export default function EditOrderScreen() {
     return order[fieldKey] || "";
   };
 
+  // Parse location to extract coordinates if available
+  const parseLocationCoordinates = (
+    locationString?: string | null
+  ): { latitude: number; longitude: number; address: string } | null => {
+    if (!locationString) return null;
+
+    // Try to parse coordinates from string like "address (lat, lng)"
+    const coordMatch = locationString.match(
+      /^(.+?)\s*\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/
+    );
+    if (coordMatch) {
+      const address = coordMatch[1].trim();
+      const lat = parseFloat(coordMatch[2]);
+      const lng = parseFloat(coordMatch[3]);
+
+      // Validate coordinates
+      if (
+        !isNaN(lat) &&
+        !isNaN(lng) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180
+      ) {
+        return {
+          latitude: lat,
+          longitude: lng,
+          address: address,
+        };
+      }
+    }
+
+    return null;
+  };
+
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [pendingApply, setPendingApply] = useState(false);
@@ -89,6 +125,9 @@ export default function EditOrderScreen() {
   // Change history state
   const [changeHistory, setChangeHistory] = useState<OrderChangeHistory[]>([]);
   const [changeHistoryLoading, setChangeHistoryLoading] = useState(false);
+
+  // Map modal state
+  const [showMapModal, setShowMapModal] = useState(false);
 
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
@@ -520,7 +559,7 @@ export default function EditOrderScreen() {
     return (
       <ResponsiveCard>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("orderChangeHistory") || "Order Change History"}
+          {t("orderChangeHistory")}
         </Text>
         {changeHistoryLoading ? (
           <ActivityIndicator
@@ -669,9 +708,6 @@ export default function EditOrderScreen() {
 
     return (
       <ResponsiveCard>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("mediaFiles")} ({mediaFiles.length})
-        </Text>
         <View style={styles.mediaGrid}>
           {mediaFiles.map((mediaFile) => (
             <View key={mediaFile.id} style={styles.mediaGridItemContainer}>
@@ -798,10 +834,7 @@ export default function EditOrderScreen() {
           <>
             {/* Order Overview */}
             <ResponsiveCard>
-              <View style={styles.detailSection}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("orderOverview")}
-                </Text>
+              <View>
                 <Text style={[styles.orderTitle, { color: colors.text }]}>
                   {getLocalizedText("title", language, order)}
                 </Text>
@@ -917,9 +950,6 @@ export default function EditOrderScreen() {
 
             {/* Order Details */}
             <ResponsiveCard>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("orderDetails")}
-              </Text>
               <View style={styles.detailsContainer}>
                 <View style={styles.detailItem}>
                   <IconSymbol
@@ -942,11 +972,29 @@ export default function EditOrderScreen() {
                   </View>
                 </View>
 
-                <View style={styles.detailItem}>
+                <TouchableOpacity
+                  style={styles.detailItem}
+                  onPress={() => {
+                    const locationCoordinates = parseLocationCoordinates(
+                      order?.location
+                    );
+                    if (locationCoordinates) {
+                      setShowMapModal(true);
+                    }
+                  }}
+                  disabled={!parseLocationCoordinates(order?.location)}
+                  activeOpacity={
+                    parseLocationCoordinates(order?.location) ? 0.6 : 1
+                  }
+                >
                   <IconSymbol
                     name="location.fill"
                     size={20}
-                    color={colors.tint}
+                    color={
+                      parseLocationCoordinates(order?.location)
+                        ? colors.tint
+                        : colors.tabIconDefault
+                    }
                   />
                   <View style={styles.detailContent}>
                     <Text
@@ -957,11 +1005,25 @@ export default function EditOrderScreen() {
                     >
                       {t("location")}
                     </Text>
-                    <Text style={[styles.detailValue, { color: colors.text }]}>
-                      {order?.location || t("remote")}
+                    <Text
+                      style={[
+                        styles.detailValue,
+                        {
+                          color: colors.text,
+                          textDecorationLine: parseLocationCoordinates(
+                            order?.location
+                          )
+                            ? "underline"
+                            : "none",
+                        },
+                      ]}
+                    >
+                      {parseLocationCoordinates(order?.location)?.address ||
+                        order?.location ||
+                        t("remote")}
                     </Text>
                   </View>
-                </View>
+                </TouchableOpacity>
 
                 <View style={styles.detailItem}>
                   <IconSymbol name="calendar" size={20} color={colors.tint} />
@@ -1015,9 +1077,6 @@ export default function EditOrderScreen() {
             {/* Required Skills */}
             {order?.skills && order.skills.length > 0 && (
               <ResponsiveCard>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("requiredSkills")}
-                </Text>
                 <View style={styles.skillsContainer}>
                   {order.skills.map((skill: string, index: number) => (
                     <View
@@ -1074,9 +1133,6 @@ export default function EditOrderScreen() {
                 // Only show if there are valid dates
                 return allDateTimes.length > 0 ? (
                   <ResponsiveCard>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {t("availableDates")}
-                    </Text>
                     <View style={styles.datesContainer}>
                       {allDateTimes.map((dateTime, index) => (
                         <View key={index} style={styles.dateTimeItem}>
@@ -1132,9 +1188,6 @@ export default function EditOrderScreen() {
             {/* Client Information */}
             {order?.Client && (
               <ResponsiveCard>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("clientInformation")}
-                </Text>
                 <TouchableOpacity
                   style={styles.clientInfo}
                   onPress={() =>
@@ -1261,6 +1314,26 @@ export default function EditOrderScreen() {
         subtitle={t("reviewSubtitle")}
         loading={feedbackLoading}
       />
+
+      {/* Map Modal */}
+      {parseLocationCoordinates(order?.location) && (
+        <Modal
+          visible={showMapModal}
+          animationType="slide"
+          presentationStyle="fullScreen"
+          onRequestClose={() => setShowMapModal(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <MapViewComponent
+              initialLocation={parseLocationCoordinates(order?.location)!}
+              onLocationSelect={() => {}}
+              onClose={() => setShowMapModal(false)}
+              showCurrentLocationButton={false}
+              showConfirmButton={false}
+            />
+          </View>
+        </Modal>
+      )}
     </Layout>
   );
 }
@@ -1303,10 +1376,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "white",
-  },
-  // View Mode Styles
-  detailSection: {
-    marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 18,

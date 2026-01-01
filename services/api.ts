@@ -1257,6 +1257,90 @@ class ApiService {
     );
   }
 
+  // Team Gallery/Portfolio methods
+  async getTeamGallery(teamId: number): Promise<PortfolioItem[]> {
+    return this.request<PortfolioItem[]>(
+      `/peers/teams/${teamId}/gallery`,
+      {},
+      false
+    );
+  }
+
+  async uploadTeamGalleryItem(
+    teamId: number,
+    file: { uri: string; type: string; name: string },
+    title?: string,
+    description?: string
+  ): Promise<PortfolioItem> {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: file.uri,
+      type: file.type,
+      name: file.name,
+    } as any);
+    if (title) {
+      formData.append("title", title);
+    }
+    if (description) {
+      formData.append("description", description);
+    }
+
+    const token = await this.getAuthToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(
+      `${API_BASE_URL}/peers/teams/${teamId}/gallery/upload`,
+      {
+        method: "POST",
+        headers,
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = errorText;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorText;
+      } catch {
+        // Use errorText as is
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  }
+
+  async updateTeamGalleryItem(
+    teamId: number,
+    id: number,
+    title?: string,
+    description?: string
+  ): Promise<PortfolioItem> {
+    return this.request<PortfolioItem>(
+      `/peers/teams/${teamId}/gallery/${id}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ title, description }),
+      },
+      true
+    );
+  }
+
+  async deleteTeamGalleryItem(teamId: number, id: number): Promise<void> {
+    return this.request<void>(
+      `/peers/teams/${teamId}/gallery/${id}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
   // User account management
   async deleteAccount(userId: number, phoneNumber?: string): Promise<any> {
     console.log("🗑️ Attempting to delete account for user ID:", userId);
@@ -1554,6 +1638,17 @@ class ApiService {
   }
 
   async updateTeamName(teamId: number, name: string): Promise<any> {
+    return this.updateTeam(teamId, { name });
+  }
+
+  async updateTeam(
+    teamId: number,
+    updateData: {
+      name?: string;
+      bannerUrl?: string | null;
+      description?: string | null;
+    }
+  ): Promise<any> {
     return this.request(
       `/peers/teams/${teamId}`,
       {
@@ -1561,7 +1656,7 @@ class ApiService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify(updateData),
       },
       true
     );

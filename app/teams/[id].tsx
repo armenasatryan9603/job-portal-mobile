@@ -1,11 +1,17 @@
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Button } from "@/components/ui/button";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTheme } from "@/contexts/ThemeContext";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,28 +20,31 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  ImageBackground,
+  TextInput,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { apiService } from "@/services/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
-import { TeamInfo } from "@/components/TeamInfo";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { AddTeamMemberModal } from "@/components/AddTeamMemberModal";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { TeamGallerySection } from "@/components/TeamGallerySection";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
 import AnalyticsService from "@/services/AnalyticsService";
+import { fileUploadService } from "@/services/fileUpload";
 
 export default function TeamDetailScreen() {
   useAnalytics("TeamDetail");
   const { id } = useLocalSearchParams<{ id: string }>();
   const teamId = id ? parseInt(id, 10) : undefined;
   const { user, isAuthenticated } = useAuth();
-  const colorScheme = useColorScheme();
-  const colors = ThemeColors[colorScheme ?? "light"];
+  const { isDark } = useTheme();
+  const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
@@ -64,6 +73,15 @@ export default function TeamDetailScreen() {
   const [hiringDialogVisible, setHiringDialogVisible] = useState(false);
   const [hiringLoading, setHiringLoading] = useState(false);
 
+  // Banner image state
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+
+  // Team description state
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
+  const [descriptionText, setDescriptionText] = useState("");
+  const [savingDescription, setSavingDescription] = useState(false);
+
   const activeMembers = useMemo(() => {
     const members = team?.Members?.filter((m) => m.isActive) || [];
     return members;
@@ -81,6 +99,15 @@ export default function TeamDetailScreen() {
       activeMembers.some((member) => member.userId === user.id)
     );
   }, [team, user, activeMembers]);
+
+  // Sync banner and description with team data
+  useEffect(() => {
+    if (team) {
+      const teamAny = team as any;
+      setBannerImage(teamAny.bannerUrl || null);
+      setDescriptionText(teamAny.description || teamAny.bio || "");
+    }
+  }, [team]);
 
   const handleAddMember = useCallback(
     async (userId: number) => {
@@ -274,8 +301,6 @@ export default function TeamDetailScreen() {
         // Navigate to the conversation after successful hiring
         if (result.conversation?.id) {
           router.push(`/chat/${result.conversation.id}`);
-        } else {
-          Alert.alert(t("success"), t("hiringRequestSent"));
         }
 
         setHiringDialogVisible(false);
@@ -292,6 +317,148 @@ export default function TeamDetailScreen() {
   const handleHiringClose = useCallback(() => {
     setHiringDialogVisible(false);
   }, []);
+
+  // Banner handlers
+  const handleBannerTap = () => {
+    if (!isTeamLead || uploadingBanner) return;
+
+    const options = [];
+    if (bannerImage) {
+      options.push({
+        text: t("removeBanner"),
+        onPress: handleBannerRemove,
+        style: "destructive" as const,
+      });
+    }
+    options.push({
+      text: t("uploadBanner"),
+      onPress: handleBannerUpload,
+    });
+
+    Alert.alert(t("bannerOptions"), t("chooseBannerAction"), [
+      ...options,
+      {
+        text: t("cancel"),
+        style: "cancel" as const,
+      },
+    ]);
+  };
+
+  const handleBannerRemove = async () => {
+    if (!isTeamLead || !team || !teamId) return;
+
+    try {
+      setUploadingBanner(true);
+      await apiService.updateTeam(teamId, { bannerUrl: null });
+      setBannerImage(null);
+      await reloadTeam();
+      AnalyticsService.getInstance().logEvent("team_updated", {
+        update_type: "banner_removed",
+      });
+    } catch (error) {
+      console.error("Error removing banner:", error);
+      Alert.alert(t("error"), t("failedToRemoveBanner"));
+    } finally {
+      setUploadingBanner(false);
+    }
+  };
+
+  const handleBannerUpload = async () => {
+    if (!isTeamLead) return;
+
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [3, 1], // Banner ratio
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const mediaFile = {
+          uri: asset.uri,
+          fileName: `team_banner_${Date.now()}.jpg`,
+          type: "image" as const,
+          mimeType: "image/jpeg",
+          fileSize: asset.fileSize || 0,
+        };
+
+        setBannerImage(asset.uri);
+        setUploadingBanner(true);
+
+        try {
+          const uploadResult = await fileUploadService.uploadProfilePicture(
+            mediaFile
+          );
+          if (uploadResult.success && uploadResult.fileUrl) {
+            if (teamId) {
+              await apiService.updateTeam(teamId, {
+                bannerUrl: uploadResult.fileUrl,
+              });
+              await reloadTeam();
+            }
+            setBannerImage(uploadResult.fileUrl);
+            AnalyticsService.getInstance().logEvent("team_updated", {
+              update_type: "banner",
+            });
+          } else {
+            throw new Error(uploadResult.error || t("uploadFailed"));
+          }
+        } catch (error) {
+          console.error("Error uploading banner:", error);
+          Alert.alert(t("error"), t("failedToUploadProfilePicture"));
+          setBannerImage(null);
+        } finally {
+          setUploadingBanner(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error selecting banner:", error);
+      Alert.alert(t("error"), t("failedToSelectImage"));
+    }
+  };
+
+  // Description handlers
+  const handleStartEditDescription = () => {
+    const teamAny = team as any;
+    setDescriptionText(teamAny.description || teamAny.bio || "");
+    setIsEditingDescription(true);
+  };
+
+  const handleCancelEditDescription = () => {
+    const teamAny = team as any;
+    setDescriptionText(teamAny.description || teamAny.bio || "");
+    setIsEditingDescription(false);
+  };
+
+  const handleSaveDescription = async () => {
+    if (!isTeamLead || !team || !teamId) return;
+
+    try {
+      setSavingDescription(true);
+      await apiService.updateTeam(teamId, {
+        description: descriptionText.trim() || null,
+      });
+      await reloadTeam();
+      AnalyticsService.getInstance().logEvent("team_updated", {
+        update_type: "description",
+      });
+      setIsEditingDescription(false);
+    } catch (error) {
+      console.error("Error updating description:", error);
+      Alert.alert(t("error"), t("failedToUpdateProfile"));
+    } finally {
+      setSavingDescription(false);
+    }
+  };
 
   const header = useMemo(
     () => (
@@ -313,7 +480,10 @@ export default function TeamDetailScreen() {
     return (
       <Layout header={header}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.tint} />
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>
+            {t("loadingProfile")}
+          </Text>
         </View>
       </Layout>
     );
@@ -326,6 +496,16 @@ export default function TeamDetailScreen() {
           <Text style={[styles.errorText, { color: colors.text }]}>
             {t("teamNotFound")}
           </Text>
+          <TouchableOpacity
+            style={[styles.retryButton, { backgroundColor: colors.primary }]}
+            onPress={() => reloadTeam()}
+          >
+            <Text
+              style={[styles.retryButtonText, { color: colors.textInverse }]}
+            >
+              {t("retry")}
+            </Text>
+          </TouchableOpacity>
         </View>
       </Layout>
     );
@@ -333,75 +513,320 @@ export default function TeamDetailScreen() {
 
   return (
     <Layout header={header}>
-      <View
+      <ScrollView
         style={{
-          flexDirection: "row",
-          marginBottom: Spacing.lg,
-          marginHorizontal: Spacing.xl,
-          alignItems: "center",
-          gap: Spacing.md,
+          flex: 1,
+          marginBottom: 4 * Spacing.xxl,
         }}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <TeamInfo
-            team={team}
-            canEdit={isTeamLead}
-            onSave={handleSaveTeamName}
-          />
-        </View>
+        <ResponsiveContainer>
+          {/* Team Header with banner background */}
+          <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
+            <ImageBackground
+              source={bannerImage ? { uri: bannerImage } : undefined}
+              style={[{ paddingTop: bannerImage ? 140 : 0 }]}
+              imageStyle={styles.bannerImage}
+            >
+              {isTeamLead && (
+                <TouchableOpacity
+                  style={styles.bannerTapArea}
+                  onPress={handleBannerTap}
+                  activeOpacity={0.8}
+                  disabled={uploadingBanner}
+                >
+                  {!bannerImage && (
+                    <View
+                      style={[
+                        styles.bannerPlaceholder,
+                        { backgroundColor: colors.border, width: "100%" },
+                      ]}
+                    >
+                      <IconSymbol
+                        name="photo"
+                        size={28}
+                        color={colors.tabIconDefault}
+                      />
+                      <Text
+                        style={[
+                          styles.bannerPlaceholderText,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("addBanner")}
+                      </Text>
+                    </View>
+                  )}
+                  {uploadingBanner && (
+                    <View style={styles.bannerLoadingOverlay}>
+                      <ActivityIndicator size="small" color={colors.tint} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )}
 
-        {isTeamLead && (
-          <TouchableOpacity
-            style={[
-              styles.addButton,
-              {
-                backgroundColor: colors.tint,
-              },
-            ]}
-            onPress={handleOpenModal}
-          >
-            <IconSymbol
-              name="person.badge.plus"
-              size={20}
-              color={colors.background}
-            />
-          </TouchableOpacity>
-        )}
-        {!isUserPartOfTeam && (
-          <TouchableOpacity
-            style={[
-              styles.hireButton,
-              {
-                backgroundColor: colors.tint,
-              },
-            ]}
-            onPress={handleHireTeam}
-          >
-            <Text style={[styles.hireButtonText, { color: colors.background }]}>
-              {t("hire")}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("members")} ({activeMembers.length})
-        </Text>
-        {activeMembers.length === 0 ? (
-          <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-            {t("noMembers")}
-          </Text>
-        ) : (
-          activeMembers.map((member) => (
-            <TeamMemberItem
-              key={member.id}
-              member={member}
-              canRemove={isTeamLead && member.userId !== team.createdBy}
-              onRemove={handleRemoveMember}
-            />
-          ))
-        )}
-      </View>
+              <View style={styles.teamHeader}>
+                <View style={styles.teamIconContainer}>
+                  <View
+                    style={[
+                      styles.teamIcon,
+                      styles.defaultTeamIcon,
+                      { backgroundColor: colors.border },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="person.3.fill"
+                      size={40}
+                      color={colors.textSecondary}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.teamInfo}>
+                  <View style={styles.nameAndEditContainer}>
+                    <Text style={[styles.teamName, { color: colors.text }]}>
+                      {team.name}
+                    </Text>
+                  </View>
+
+                  <View style={styles.teamMetaContainer}>
+                    <View style={styles.metaRow}>
+                      <IconSymbol
+                        name="calendar"
+                        size={14}
+                        color={colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.teamMeta,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t("createdOn")}{" "}
+                        {new Date(team.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <View style={styles.metaRow}>
+                      <IconSymbol
+                        name={
+                          team.isActive
+                            ? "checkmark.circle.fill"
+                            : "xmark.circle.fill"
+                        }
+                        size={14}
+                        color={team.isActive ? "#4CAF50" : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.teamMeta,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {team.isActive ? t("activeTeam") : t("inactiveTeam")}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {!isUserPartOfTeam && (
+                    <TouchableOpacity
+                      style={[
+                        styles.hireButton,
+                        { backgroundColor: colors.primary },
+                      ]}
+                      onPress={handleHireTeam}
+                    >
+                      <Text
+                        style={[
+                          styles.hireButtonText,
+                          { color: colors.textInverse },
+                        ]}
+                      >
+                        {t("hire")}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </ImageBackground>
+          </ResponsiveCard>
+
+          {/* Team Description */}
+          <ResponsiveCard>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("about")}
+              </Text>
+              {isTeamLead && !isEditingDescription && (
+                <Button
+                  onPress={handleStartEditDescription}
+                  title={t("edit")}
+                  variant="primary"
+                  icon="pencil"
+                  iconSize={14}
+                  backgroundColor={colors.primary}
+                />
+              )}
+            </View>
+
+            {isEditingDescription ? (
+              <View style={styles.descriptionEditContainer}>
+                <TextInput
+                  style={[
+                    styles.descriptionTextInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={descriptionText}
+                  onChangeText={setDescriptionText}
+                  placeholder={t("tellUsAboutYourTeam")}
+                  placeholderTextColor={colors.tabIconDefault}
+                  multiline
+                  numberOfLines={6}
+                  textAlignVertical="top"
+                  maxLength={500}
+                />
+                {descriptionText.length > 400 && (
+                  <Text
+                    style={[
+                      styles.characterCount,
+                      { color: colors.tabIconDefault },
+                      descriptionText.length > 480 && { color: "#FF6B6B" },
+                    ]}
+                  >
+                    {descriptionText.length}/500 {t("charactersRemaining")}
+                  </Text>
+                )}
+                <View style={styles.descriptionEditActions}>
+                  <Button
+                    variant="outline"
+                    icon="xmark"
+                    iconSize={14}
+                    title={t("cancel")}
+                    iconPosition="left"
+                    backgroundColor={colors.background}
+                    textColor={colors.text}
+                    onPress={handleCancelEditDescription}
+                    disabled={savingDescription}
+                  />
+                  <Button
+                    variant="primary"
+                    icon="checkmark"
+                    iconSize={14}
+                    title={t("save")}
+                    iconPosition="left"
+                    backgroundColor={colors.primary}
+                    textColor="white"
+                    onPress={handleSaveDescription}
+                    disabled={savingDescription}
+                  />
+                </View>
+              </View>
+            ) : (
+              <>
+                {descriptionText ? (
+                  <Text
+                    style={[styles.descriptionText, { color: colors.text }]}
+                  >
+                    {descriptionText}
+                  </Text>
+                ) : (
+                  <Text
+                    style={[
+                      styles.descriptionText,
+                      { color: colors.textSecondary, fontStyle: "italic" },
+                    ]}
+                  >
+                    {t("noDescriptionProvided")}
+                  </Text>
+                )}
+              </>
+            )}
+          </ResponsiveCard>
+
+          {/* Members Section */}
+          <ResponsiveCard>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("members")} ({activeMembers.length})
+              </Text>
+              {isTeamLead && (
+                <Button
+                  onPress={handleOpenModal}
+                  title={t("addMember")}
+                  variant="primary"
+                  icon="person.badge.plus"
+                  iconSize={14}
+                  backgroundColor={colors.primary}
+                />
+              )}
+            </View>
+
+            {activeMembers.length === 0 ? (
+              <View style={styles.emptyMembersContainer}>
+                <IconSymbol
+                  name="person.3"
+                  size={48}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={[styles.emptyMembersTitle, { color: colors.text }]}
+                >
+                  {t("noMembers")}
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyMembersDescription,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {isTeamLead
+                    ? t("addMembersToGetStarted")
+                    : t("noMembersInTeam")}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.membersList}>
+                {activeMembers.map((member) => (
+                  <TeamMemberItem
+                    key={member.id}
+                    member={member}
+                    canRemove={isTeamLead && member.userId !== team.createdBy}
+                    onRemove={handleRemoveMember}
+                  />
+                ))}
+              </View>
+            )}
+          </ResponsiveCard>
+
+          {/* Gallery Section */}
+          {teamId && (
+            <ResponsiveCard>
+              <TeamGallerySection
+                teamId={teamId}
+                colors={colors}
+                isTeamLead={isTeamLead}
+              />
+            </ResponsiveCard>
+          )}
+        </ResponsiveContainer>
+      </ScrollView>
 
       <AddTeamMemberModal
         visible={showAddMemberModal}
@@ -438,52 +863,185 @@ export default function TeamDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Loading and Error States
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.xl,
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: "500",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: Spacing.xl,
+    padding: 20,
   },
   errorText: {
     fontSize: 16,
     textAlign: "center",
+    marginBottom: 20,
   },
-  section: {
-    margin: Spacing.xl,
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: Spacing.md,
-  },
-  emptyText: {
+  retryButtonText: {
     fontSize: 14,
-    textAlign: "center",
-    padding: Spacing.xl,
+    fontWeight: "600",
   },
-  addButton: {
-    padding: Spacing.md,
-    borderRadius: Spacing.md,
+
+  // Team Header
+  teamHeader: {
+    padding: Spacing.card,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  teamIconContainer: {
+    position: "relative",
+    width: 88,
+    height: 88,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 40,
-    minHeight: 40,
-    flexShrink: 0,
   },
+  teamIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  defaultTeamIcon: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  teamInfo: {
+    flex: 1,
+  },
+  nameAndEditContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  teamName: {
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  teamMetaContainer: {
+    gap: 8,
+    marginTop: 8,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+  },
+  teamMeta: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+
+  // Banner
+  bannerTapArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 140,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  bannerImage: {
+    width: "100%",
+    height: 140,
+  },
+  bannerPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  bannerPlaceholderText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  bannerLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+
+  // Section titles
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+
+  // Description
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  descriptionEditContainer: {
+    gap: 12,
+  },
+  descriptionTextInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    minHeight: 120,
+    textAlignVertical: "top",
+  },
+  characterCount: {
+    fontSize: 12,
+    textAlign: "right",
+    marginTop: 4,
+  },
+  descriptionEditActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+
+  // Members
+  membersList: {
+    gap: 12,
+  },
+  emptyMembersContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+    gap: 10,
+  },
+  emptyMembersTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  emptyMembersDescription: {
+    fontSize: 14,
+    textAlign: "center",
+  },
+
+  // Hire Button
   hireButton: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderRadius: Spacing.md,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
-    minWidth: 80,
-    flexShrink: 0,
+    marginTop: 12,
+    alignSelf: "flex-start",
   },
   hireButtonText: {
     fontSize: 14,

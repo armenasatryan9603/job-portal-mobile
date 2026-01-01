@@ -8,6 +8,7 @@ import {
 } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { CountBadge } from "@/components/CountBadge";
 
 interface CalendarGridProps {
   currentMonth: Date;
@@ -247,21 +248,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                         />
                       ))}
                       {indicators.count && indicators.count > 3 && (
-                        <View
-                          style={[
-                            styles.indicatorCountBadge,
-                            { backgroundColor: colors.tint },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.indicatorCount,
-                              { color: colors.background },
-                            ]}
-                          >
-                            +{indicators.count - 3}
-                          </Text>
-                        </View>
+                        <CountBadge
+                          text={`+${indicators.count - 3}`}
+                          color={colors.background}
+                          backgroundColor={colors.tint}
+                          showOnlyIfPositive={false}
+                          textStyle={{ fontSize: 8 }}
+                          style={{
+                            paddingHorizontal: 4,
+                            paddingVertical: 1,
+                            borderRadius: BorderRadius.sm,
+                            minWidth: 16,
+                          }}
+                        />
                       )}
                     </View>
                   )}
@@ -355,17 +354,5 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-  },
-  indicatorCountBadge: {
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: BorderRadius.sm,
-    minWidth: 16,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  indicatorCount: {
-    fontSize: 8,
-    fontWeight: "700",
   },
 });

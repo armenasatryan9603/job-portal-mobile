@@ -17,6 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { apiService, User, SpecialistListResponse } from "@/services/api";
 import { router } from "expo-router";
+import { CountBadge } from "@/components/CountBadge";
 
 interface PeerSelectorProps {
   selectedPeerIds: number[];
@@ -635,13 +636,13 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
         <Text style={[styles.label, { color: colors.text }]}>
           {t("selectPeers")}
         </Text>
-        <View
-          style={[styles.countBadge, { backgroundColor: colors.tint + "20" }]}
-        >
-          <Text style={[styles.count, { color: colors.tint }]}>
-            {selectedPeerIds.length}/{maxPeers}
-          </Text>
-        </View>
+        <CountBadge
+          text={`${selectedPeerIds.length}/${maxPeers}`}
+          color={colors.tint}
+          showOnlyIfPositive={false}
+          style={styles.countBadge}
+          textStyle={styles.count}
+        />
       </View>
 
       {/* Selected Peers */}

@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import CalendarNotificationService from "@/services/CalendarNotificationService";
+import { CountBadge } from "@/components/CountBadge";
 
 interface Application {
   id: number;
@@ -495,16 +496,7 @@ export default function CalendarScreen() {
                   {item.dateLabel}
                 </Text>
               </View>
-              <View
-                style={[
-                  styles.dateCountBadge,
-                  { backgroundColor: colors.tint + "20" },
-                ]}
-              >
-                <Text style={[styles.dateCount, { color: colors.tint }]}>
-                  {item.applications.length}
-                </Text>
-              </View>
+              <CountBadge count={item.applications.length} color={colors.tint} />
             </View>
             {item.applications.map((app) => (
               <TouchableOpacity
@@ -1040,17 +1032,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: 0.3,
-  },
-  dateCountBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.md,
-    minWidth: 32,
-    alignItems: "center",
-  },
-  dateCount: {
-    fontSize: 13,
-    fontWeight: "700",
   },
   applicationCard: {
     padding: Spacing.lg,

@@ -49,71 +49,45 @@ export function useInfinitePagination<T extends { id: number | string }>(
     enableScrollGate = false,
   } = options;
 
-  // State for accumulated items (infinite scroll)
+  // State for accumulated items and current page
   const [allItems, setAllItems] = useState<T[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const prevPageRef = useRef(0);
-  const canLoadMoreRef = useRef(true);
+
+  // Single ref to prevent duplicate load requests
+  const isLoadingMoreRef = useRef(false);
   const hasScrolledRef = useRef(false);
-  const prevItemsLengthRef = useRef(0);
 
-  // Accumulate items for server-side pagination
+  // Reset everything when reset dependencies change
   useEffect(() => {
-    // Skip if no items
-    if (items.length === 0) return;
+    setAllItems([]);
+    setCurrentPage(1);
+    isLoadingMoreRef.current = false;
+    hasScrolledRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, resetDeps);
 
-    // Wait for pagination.page to catch up with currentPage
-    // This ensures we're processing the correct page's data
-    if (pagination.page !== currentPage) {
+  // Accumulate items when new data arrives for the current page
+  useEffect(() => {
+    // Only process if we have items and the pagination page matches our current page
+    if (items.length === 0 || pagination.page !== currentPage) {
       return;
     }
 
-    // Detect when we have new data (items array changed)
-    const hasNewData =
-      items.length !== prevItemsLengthRef.current ||
-      (currentPage !== prevPageRef.current && items.length > 0);
-
-    if (!hasNewData) return;
-
-    prevItemsLengthRef.current = items.length;
-
-    // Check if this is a page change or just a data update
-    if (currentPage !== prevPageRef.current) {
-      prevPageRef.current = currentPage;
-
-      if (currentPage === 1) {
-        // Reset on page 1 (new query)
-        setAllItems(items);
-        canLoadMoreRef.current = true;
-        hasScrolledRef.current = false; // Reset scroll flag
-      } else {
-        // Append for pages > 1
-        setAllItems((prev) => {
-          const existingIds = new Set(prev.map((item) => item.id));
-          const newItems = items.filter((item) => !existingIds.has(item.id));
-          return [...prev, ...newItems];
-        });
-      }
+    if (currentPage === 1) {
+      // First page: replace all items
+      setAllItems(items);
+    } else {
+      // Subsequent pages: append new items (avoid duplicates)
+      setAllItems((prev) => {
+        const existingIds = new Set(prev.map((item) => item.id));
+        const newItems = items.filter((item) => !existingIds.has(item.id));
+        return [...prev, ...newItems];
+      });
     }
-  }, [currentPage, items, pagination.page]);
 
-  // Re-enable loading after fetch completes
-  useEffect(() => {
-    if (!isFetching && !isLoading) {
-      canLoadMoreRef.current = true;
-    }
-  }, [isFetching, isLoading]);
-
-  // Reset accumulated items when dependencies change
-  useEffect(() => {
-    setAllItems([]);
-    prevPageRef.current = 0;
-    prevItemsLengthRef.current = 0;
-    canLoadMoreRef.current = true;
-    hasScrolledRef.current = false;
-    setCurrentPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, resetDeps);
+    // Re-enable loading after data is processed
+    isLoadingMoreRef.current = false;
+  }, [items, pagination.page, currentPage]);
 
   // Load more callback
   const loadMore = useCallback(() => {
@@ -122,32 +96,24 @@ export function useInfinitePagination<T extends { id: number | string }>(
       return;
     }
 
-    // Only load if: not loading, has next page, and can load more
+    // Only load if: not already loading, not fetching, has next page
     if (
-      canLoadMoreRef.current &&
+      !isLoadingMoreRef.current &&
       !isFetching &&
       !isLoading &&
       pagination.hasNextPage
     ) {
-      canLoadMoreRef.current = false; // Prevent duplicate calls
+      isLoadingMoreRef.current = true;
       setCurrentPage((prev) => prev + 1);
     }
-  }, [
-    enableScrollGate,
-    isFetching,
-    isLoading,
-    pagination.hasNextPage,
-    currentPage,
-  ]);
+  }, [enableScrollGate, isFetching, isLoading, pagination.hasNextPage]);
 
   // Refresh callback
   const onRefresh = useCallback(() => {
     setAllItems([]);
-    prevPageRef.current = 0;
-    prevItemsLengthRef.current = 0;
-    canLoadMoreRef.current = true;
-    hasScrolledRef.current = false;
     setCurrentPage(1);
+    isLoadingMoreRef.current = false;
+    hasScrolledRef.current = false;
   }, []);
 
   // Handle scroll event for scroll gate

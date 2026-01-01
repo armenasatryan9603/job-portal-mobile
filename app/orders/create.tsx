@@ -1613,18 +1613,10 @@ export default function CreateOrderScreen() {
           </ResponsiveCard>
 
           {/* Questions Section */}
-          <ResponsiveCard>
-            <View style={styles.sectionHeader}>
+          <ResponsiveCard style={{ position: "relative" }}>
+            <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {t("questionsForSpecialists")}
-              </Text>
-              <Text
-                style={[
-                  styles.sectionSubtitle,
-                  { color: colors.tabIconDefault },
-                ]}
-              >
-                {t("addQuestionsForApplicants")}
               </Text>
             </View>
 
@@ -1679,6 +1671,9 @@ export default function CreateOrderScreen() {
               style={[
                 styles.addQuestionButton,
                 {
+                  position: "absolute",
+                  right: 16,
+                  top: 7,
                   borderColor: colors.border,
                   backgroundColor: colors.background,
                   opacity: canAddAnotherQuestion() ? 1 : 0.5,
@@ -1686,9 +1681,6 @@ export default function CreateOrderScreen() {
               ]}
             >
               <IconSymbol name="plus.circle" size={20} color={colors.tint} />
-              <Text style={[styles.addQuestionText, { color: colors.tint }]}>
-                {t("addQuestion")}
-              </Text>
             </TouchableOpacity>
           </ResponsiveCard>
 
@@ -1770,6 +1762,7 @@ export default function CreateOrderScreen() {
                 </>
               )}
               <Button
+                style={{ minWidth: 80 }}
                 onPress={handleApply}
                 title={orderId ? t("save") : t("apply")}
                 variant="primary"
@@ -2208,17 +2201,10 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
-  sectionHeader: {
-    marginBottom: 16,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    opacity: 0.7,
   },
   priceHint: {
     fontSize: 12,
@@ -2290,7 +2276,7 @@ const styles = StyleSheet.create({
   questionItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    marginTop: 12,
     gap: 8,
   },
   questionInput: {
@@ -2310,16 +2296,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   addQuestionButton: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
+    width: 45,
+    height: 45,
     borderRadius: 8,
     padding: 12,
     gap: 8,
-  },
-  addQuestionText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
 });
