@@ -143,10 +143,13 @@ export const SkillsAndRequirementsForm: React.FC<
     }
 
     // Create a stable string representation of current badges
-    const badgesKey = skillBadges
-      .map((b) => `${b.skillId || "new"}:${b.name}`)
-      .sort()
-      .join("|");
+    const badgesKey =
+      skillBadges.length === 0
+        ? "empty"
+        : skillBadges
+            .map((b) => `${b.skillId || "new"}:${b.name}`)
+            .sort()
+            .join("|");
 
     // Only notify if badges actually changed
     if (badgesKey === lastNotifiedBadgesRef.current) {
@@ -160,7 +163,7 @@ export const SkillsAndRequirementsForm: React.FC<
       .filter((b) => b.skillId !== undefined)
       .map((b) => b.skillId!);
     const newSkillNames = skillBadges
-      .filter((b) => b.skillId === undefined)
+      .filter((b) => b.skillId === undefined && b.name.trim().length > 0)
       .map((b) => b.name.trim());
 
     // Use setTimeout to ensure this runs after render
