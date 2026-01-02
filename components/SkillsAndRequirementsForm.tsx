@@ -131,11 +131,30 @@ export const SkillsAndRequirementsForm: React.FC<
     }
   }, [formData.skills, allSkills, isLoadingSkills]); // Removed onSkillIdsChange from deps
 
+  // Keep ref updated with latest callback
+  useEffect(() => {
+    onSkillIdsChangeRef.current = onSkillIdsChange;
+  }, [onSkillIdsChange]);
+
   // Notify parent when skillBadges change (separate effect to avoid render-time updates)
   useEffect(() => {
-    if (!onSkillIdsChange || skillBadges.length === 0) {
+    if (!onSkillIdsChangeRef.current) {
       return;
     }
+
+    // Create a stable string representation of current badges
+    const badgesKey = skillBadges
+      .map((b) => `${b.skillId || "new"}:${b.name}`)
+      .sort()
+      .join("|");
+
+    // Only notify if badges actually changed
+    if (badgesKey === lastNotifiedBadgesRef.current) {
+      return;
+    }
+
+    // Update the ref to track what we've notified
+    lastNotifiedBadgesRef.current = badgesKey;
 
     const skillIds = skillBadges
       .filter((b) => b.skillId !== undefined)
@@ -146,14 +165,16 @@ export const SkillsAndRequirementsForm: React.FC<
 
     // Use setTimeout to ensure this runs after render
     const timeoutId = setTimeout(() => {
-      onSkillIdsChange(
-        skillIds,
-        newSkillNames.length > 0 ? newSkillNames : undefined
-      );
+      if (onSkillIdsChangeRef.current) {
+        onSkillIdsChangeRef.current(
+          skillIds,
+          newSkillNames.length > 0 ? newSkillNames : undefined
+        );
+      }
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [skillBadges, onSkillIdsChange]);
+  }, [skillBadges]);
 
   // Autocomplete suggestions (filtered locally)
   const [suggestions, setSuggestions] = useState<Skill[]>([]);
@@ -165,6 +186,8 @@ export const SkillsAndRequirementsForm: React.FC<
   const containerRef = useRef<View>(null);
   const isSelectingSuggestionRef = useRef(false);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastNotifiedBadgesRef = useRef<string>("");
+  const onSkillIdsChangeRef = useRef(onSkillIdsChange);
 
   // Get skill name in current language
   const getSkillName = (skill: Skill): string => {
