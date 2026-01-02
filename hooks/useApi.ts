@@ -192,6 +192,19 @@ export const useDeleteAccount = () => {
 
 // ===== SERVICES HOOKS =====
 
+// ===== SKILLS HOOKS =====
+
+export const useSkills = () => {
+  return useQuery({
+    queryKey: ["skills", "all"],
+    queryFn: () => apiService.getAllSkills(),
+    staleTime: CACHE_TTL.STATIC, // 24 hours - skills don't change often
+    gcTime: CACHE_TTL.STATIC,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+};
+
 export const useRootServices = (language: string = "en") => {
   return useQuery({
     queryKey: ["services", "root", language],
@@ -817,5 +830,7 @@ export const useInvalidateQueries = () => {
       queryClient.invalidateQueries({ queryKey: ["reviews"] }),
     invalidateReasons: () =>
       queryClient.invalidateQueries({ queryKey: ["reasons"] }),
+    invalidateSkills: () =>
+      queryClient.invalidateQueries({ queryKey: ["skills"] }),
   };
 };

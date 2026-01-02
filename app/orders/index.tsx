@@ -65,7 +65,7 @@ export default function OrdersScreen() {
       ? "SavedOrders"
       : "Orders";
   useAnalytics(screenName);
-  const { myOrders, myJobs, saved, serviceId } = useLocalSearchParams();
+  const { myOrders, myJobs, saved, serviceId, q } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
@@ -82,7 +82,10 @@ export default function OrdersScreen() {
       ? null
       : parseInt(serviceId as string)
     : null;
-  const [searchQuery, setSearchQuery] = useState("");
+  // Initialize searchQuery from URL parameter if present
+  const [searchQuery, setSearchQuery] = useState(
+    q ? decodeURIComponent(q as string) : ""
+  );
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
   const [selectedFilters, setSelectedFilters] = useState<
@@ -201,7 +204,8 @@ export default function OrdersScreen() {
             ...parsed,
           }));
         }
-        if (savedSearch !== null) {
+        // Only load saved search if no URL parameter is present
+        if (!q && savedSearch !== null) {
           setSearchQuery(savedSearch);
         }
       } catch (error) {
@@ -209,7 +213,15 @@ export default function OrdersScreen() {
       }
     };
     loadSavedFilters();
-  }, [filterStorageKey, searchStorageKey]);
+  }, [filterStorageKey, searchStorageKey, q]);
+
+  // Update search query when URL parameter changes
+  useEffect(() => {
+    if (q) {
+      const decodedQuery = decodeURIComponent(q as string);
+      setSearchQuery(decodedQuery);
+    }
+  }, [q]);
 
   // Persist filters to local storage
   useEffect(() => {
@@ -597,13 +609,27 @@ export default function OrdersScreen() {
     (orders: Order[], searchQuery: string): Order[] => {
       if (!searchQuery.trim()) return orders;
 
+      const queryLower = searchQuery.toLowerCase();
+
       return orders.filter(
         (order: Order) =>
-          order.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          order.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.title.toLowerCase().includes(queryLower) ||
+          order.description.toLowerCase().includes(queryLower) ||
           order.skills?.some((skill: string) =>
-            skill.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+            skill.toLowerCase().includes(queryLower)
+          ) ||
+          // Also check OrderSkills if available
+          ((order as any).OrderSkills &&
+            (order as any).OrderSkills.some((os: any) => {
+              const skill = os.Skill;
+              if (!skill) return false;
+              const skillName =
+                skill.nameEn?.toLowerCase() ||
+                skill.nameRu?.toLowerCase() ||
+                skill.nameHy?.toLowerCase() ||
+                "";
+              return skillName.includes(queryLower);
+            }))
       );
     },
     []

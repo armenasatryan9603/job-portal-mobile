@@ -58,13 +58,13 @@ export function useInfinitePagination<T extends { id: number | string }>(
   const hasScrolledRef = useRef(false);
 
   // Reset everything when reset dependencies change
-  useEffect(() => {
-    setAllItems([]);
-    setCurrentPage(1);
-    isLoadingMoreRef.current = false;
-    hasScrolledRef.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, resetDeps);
+  // useEffect(() => {
+  //   setAllItems([]);
+  //   setCurrentPage(1);
+  //   isLoadingMoreRef.current = false;
+  //   hasScrolledRef.current = false;
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, resetDeps);
 
   // Accumulate items when new data arrives for the current page
   useEffect(() => {

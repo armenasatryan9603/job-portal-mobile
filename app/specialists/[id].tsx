@@ -6,7 +6,7 @@ import {
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -59,7 +59,6 @@ export default function SpecialistDetailScreen() {
 
       const specialistData = await apiService.getSpecialistById(specialistId);
 
-      console.log("specialistData:", JSON.stringify(specialistData, null, 2));
       setSpecialist(specialistData);
       // Track specialist view
       AnalyticsService.getInstance().logSpecialistViewed(

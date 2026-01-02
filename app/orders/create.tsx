@@ -58,6 +58,9 @@ export default function CreateOrderScreen() {
     serviceId: serviceId ? parseInt(serviceId as string) : null,
   });
 
+  const [skillIds, setSkillIds] = useState<number[]>([]);
+  const [newSkillNames, setNewSkillNames] = useState<string[]>([]);
+
   const [currency, setCurrency] = useState<string>("AMD");
   const [previousCurrency, setPreviousCurrency] = useState<string | null>(null);
   const [isConvertingCurrency, setIsConvertingCurrency] = useState(false);
@@ -260,20 +263,9 @@ export default function CreateOrderScreen() {
           if (response.ok) {
             const data = await response.json();
             rate = data.rates?.[currency];
-            if (rate && typeof rate === "number") {
-              // Success with Frankfurter
-            }
-          } else {
-            const errorData = await response.json().catch(() => ({}));
-            console.log(
-              "Frankfurter API response:",
-              response.status,
-              errorData
-            );
           }
         } catch (error) {
           lastError = error as Error;
-          console.log("Frankfurter API failed, trying fallback:", error);
         }
 
         // If Frankfurter doesn't support these currencies, try exchangerate-api.com
@@ -288,10 +280,6 @@ export default function CreateOrderScreen() {
               rate = data.rates?.[currency];
             }
           } catch (fallbackError) {
-            console.log(
-              "ExchangeRate-API failed, trying second fallback:",
-              fallbackError
-            );
             lastError = fallbackError as Error;
           }
         }
@@ -308,7 +296,6 @@ export default function CreateOrderScreen() {
               rate = data.rates?.[currency];
             }
           } catch (secondFallbackError) {
-            console.log("ExchangeRate.host failed:", secondFallbackError);
             lastError = secondFallbackError as Error;
           }
         }
@@ -461,6 +448,52 @@ export default function CreateOrderScreen() {
               (a: any, b: any) => a.order - b.order
             );
             setQuestions(sortedQuestions.map((q: any) => q.question));
+          }
+
+          // Load existing skills and skillIds from OrderSkills
+          if (
+            (orderData as any).OrderSkills &&
+            (orderData as any).OrderSkills.length > 0
+          ) {
+            const orderSkills = (orderData as any).OrderSkills;
+            const loadedSkillIds = orderSkills
+              .map((os: any) => os.Skill?.id)
+              .filter((id: number) => id !== undefined && id !== null);
+            setSkillIds(loadedSkillIds);
+
+            // Extract skill names based on current language
+            const skillNames = orderSkills
+              .map((os: any) => {
+                const skill = os.Skill;
+                if (!skill) return null;
+                // Get skill name based on current language
+                switch (language) {
+                  case "ru":
+                    return skill.nameRu || skill.nameEn || skill.nameHy;
+                  case "hy":
+                    return skill.nameHy || skill.nameEn || skill.nameRu;
+                  case "en":
+                  default:
+                    return skill.nameEn || skill.nameRu || skill.nameHy;
+                }
+              })
+              .filter(
+                (name: string | null) => name !== null && name.trim() !== ""
+              );
+
+            // Update formData.skills with comma-separated skill names
+            if (skillNames.length > 0) {
+              setFormData((prev) => ({
+                ...prev,
+                skills: skillNames.join(", "),
+              }));
+            }
+          } else if (orderData.skills && orderData.skills.length > 0) {
+            // Fallback: if OrderSkills not available, use skills array
+            setSkillIds([]);
+            // formData.skills is already set from line 379
+          } else {
+            setSkillIds([]);
           }
         } catch (error) {
           console.error("Error loading order for edit:", error);
@@ -779,7 +812,7 @@ export default function CreateOrderScreen() {
 
     try {
       // Prepare data for API call
-      const orderData = {
+      const orderData: any = {
         title: formData.title.trim(),
         description: formData.description.trim(),
         budget: parseFloat(formData.budget),
@@ -789,12 +822,6 @@ export default function CreateOrderScreen() {
         location: selectedLocation
           ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
           : formData.location.trim() || undefined,
-        skills: formData.skills.trim()
-          ? formData.skills
-              .split(",")
-              .map((s) => s.trim())
-              .filter((s) => s)
-          : undefined,
         availableDates:
           formatAllDatesWithTimes().length > 0
             ? formatAllDatesWithTimes()
@@ -802,6 +829,24 @@ export default function CreateOrderScreen() {
         useAIEnhancement: useAIEnhancement, // For both new and existing orders
         questions: questions.filter((q) => q.trim().length > 0),
       };
+
+      // Handle skills: send skillIds for existing skills, and skills array for new skills
+      if (skillIds.length > 0 || newSkillNames.length > 0) {
+        if (skillIds.length > 0) {
+          orderData.skillIds = skillIds;
+        }
+        // If there are new skills (without IDs), send them as skills array
+        // Backend will create them via findOrCreateSkills
+        if (newSkillNames.length > 0) {
+          orderData.skills = newSkillNames;
+        }
+      } else if (formData.skills.trim()) {
+        // Fallback: if no skillIds or newSkillNames, use skills string (backward compatibility)
+        orderData.skills = formData.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter((s) => s);
+      }
 
       // If orderId exists, update the order; otherwise create a new one
       if (orderId) {
@@ -949,7 +994,7 @@ export default function CreateOrderScreen() {
     }
 
     // Prepare base order data
-    const baseOrderData = {
+    const baseOrderData: any = {
       title: formData.title.trim(),
       description: formData.description.trim(),
       budget: parseFloat(formData.budget),
@@ -959,18 +1004,30 @@ export default function CreateOrderScreen() {
       location: selectedLocation
         ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
         : formData.location.trim() || undefined,
-      skills: formData.skills.trim()
-        ? formData.skills
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s)
-        : undefined,
       availableDates:
         formatAllDatesWithTimes().length > 0
           ? formatAllDatesWithTimes()
           : undefined,
       questions: questions.filter((q) => q.trim().length > 0),
     };
+
+    // Handle skills: send skillIds for existing skills, and skills array for new skills
+    if (skillIds.length > 0 || newSkillNames.length > 0) {
+      if (skillIds.length > 0) {
+        baseOrderData.skillIds = skillIds;
+      }
+      // If there are new skills (without IDs), send them as skills array
+      // Backend will create them via findOrCreateSkills
+      if (newSkillNames.length > 0) {
+        baseOrderData.skills = newSkillNames;
+      }
+    } else if (formData.skills.trim()) {
+      // Fallback: if no skillIds or newSkillNames, use skills string (backward compatibility)
+      baseOrderData.skills = formData.skills
+        .split(",")
+        .map((s) => s.trim())
+        .filter((s) => s);
+    }
 
     // If AI enhancement is enabled, show preview first
     if (useAIEnhancement) {
@@ -1128,10 +1185,6 @@ export default function CreateOrderScreen() {
               try {
                 await apiService.setBannerImage(
                   currentOrderId,
-                  targetMediaFile.id
-                );
-                console.log(
-                  "Banner image set successfully:",
                   targetMediaFile.id
                 );
               } catch (error) {
@@ -1580,6 +1633,10 @@ export default function CreateOrderScreen() {
                 skills: errors.skills,
               }}
               onFieldChange={updateField}
+              onSkillIdsChange={(ids: number[], newNames?: string[]) => {
+                setSkillIds(ids);
+                setNewSkillNames(newNames || []);
+              }}
             />
           </View>
 

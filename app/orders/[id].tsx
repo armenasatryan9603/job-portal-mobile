@@ -14,7 +14,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Alert,
   ScrollView,
@@ -26,6 +26,7 @@ import {
   Modal,
   Share,
   Platform,
+  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { apiService, Order, OrderChangeHistory } from "@/services/api";
@@ -34,6 +35,8 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { MapViewComponent } from "@/components/MapView";
+import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
+import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 
 export default function EditOrderScreen() {
   useAnalytics("OrderDetail");
@@ -128,6 +131,10 @@ export default function EditOrderScreen() {
 
   // Map modal state
   const [showMapModal, setShowMapModal] = useState(false);
+
+  // Skill description modal state
+  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+  const [showSkillModal, setShowSkillModal] = useState(false);
 
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
@@ -755,17 +762,43 @@ export default function EditOrderScreen() {
     );
   };
 
+  // Create header and footer (can be used even when order is loading)
+  const header = (
+    <Header
+      title={t("orderDetails")}
+      subtitle={order?.title}
+      showBackButton={true}
+      onBackPress={() => router.back()}
+      rightComponent={
+        order ? (
+          <TouchableOpacity
+            onPress={handleShare}
+            style={styles.shareButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol
+              name="square.and.arrow.up"
+              size={Platform.OS === "android" ? 24 : 20}
+              color={colors.tint}
+            />
+          </TouchableOpacity>
+        ) : undefined
+      }
+    />
+  );
+
+  const footer = (
+    <Footer>
+      <FooterButton
+        title={t("startChat")}
+        onPress={handleStartChat}
+        variant="primary"
+      />
+    </Footer>
+  );
+
   if (loading || userLoading) {
-    return (
-      <Layout>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.tint} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loading")}
-          </Text>
-        </View>
-      </Layout>
-    );
+    return <OrderDetailSkeleton header={header} footer={footer} />;
   }
 
   if (!order) {
@@ -789,38 +822,6 @@ export default function EditOrderScreen() {
       </Layout>
     );
   }
-
-  const header = (
-    <Header
-      title={t("orderDetails")}
-      subtitle={order?.title}
-      showBackButton={true}
-      onBackPress={() => router.back()}
-      rightComponent={
-        <TouchableOpacity
-          onPress={handleShare}
-          style={styles.shareButton}
-          activeOpacity={0.7}
-        >
-          <IconSymbol
-            name="square.and.arrow.up"
-            size={Platform.OS === "android" ? 24 : 20}
-            color={colors.tint}
-          />
-        </TouchableOpacity>
-      }
-    />
-  );
-
-  const footer = (
-    <Footer>
-      <FooterButton
-        title={t("startChat")}
-        onPress={handleStartChat}
-        variant="primary"
-      />
-    </Footer>
-  );
 
   return (
     <Layout header={header} footer={footer}>
@@ -1078,22 +1079,44 @@ export default function EditOrderScreen() {
             {order?.skills && order.skills.length > 0 && (
               <ResponsiveCard>
                 <View style={styles.skillsContainer}>
-                  {order.skills.map((skill: string, index: number) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.skillTag,
-                        {
-                          backgroundColor: colors.background,
-                          borderColor: colors.border,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.skillText, { color: colors.text }]}>
-                        {skill}
-                      </Text>
-                    </View>
-                  ))}
+                  {order.skills.map((skill: string, index: number) => {
+                    // Try to get skillId from OrderSkills if available
+                    const orderSkills = (order as any).OrderSkills;
+                    const skillId =
+                      orderSkills && orderSkills[index]
+                        ? orderSkills[index].Skill?.id
+                        : null;
+
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.skillTag,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                        onPress={() => {
+                          // Navigate to orders list with skill search
+                          router.push(`/orders?q=${encodeURIComponent(skill)}`);
+                        }}
+                        onLongPress={() => {
+                          if (skillId) {
+                            setSelectedSkillId(skillId);
+                            setShowSkillModal(true);
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[styles.skillText, { color: colors.text }]}
+                        >
+                          {skill}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </ResponsiveCard>
             )}
@@ -1334,6 +1357,16 @@ export default function EditOrderScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Skill Description Modal */}
+      <SkillDescriptionModal
+        visible={showSkillModal}
+        skillId={selectedSkillId}
+        onClose={() => {
+          setShowSkillModal(false);
+          setSelectedSkillId(null);
+        }}
+      />
     </Layout>
   );
 }

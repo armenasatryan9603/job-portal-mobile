@@ -20,6 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Order, apiService } from "@/services/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { MapViewComponent } from "@/components/MapView";
+import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 
 interface OrderItemProps {
   order: Order;
@@ -59,6 +60,8 @@ const OrderItem = ({
   const [saved, setSaved] = useState(isSaved);
   const [saving, setSaving] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
+  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
+  const [showSkillModal, setShowSkillModal] = useState(false);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -387,36 +390,87 @@ const OrderItem = ({
             </View>
           </View>
 
-          {order.skills && order.skills.length > 0 && (
-            <View style={styles.skillsContainer}>
-              {order.skills.slice(0, 4).map((skill, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.skillTag,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.skillText, { color: colors.text }]}>
-                    {skill}
+          {(() => {
+            // Get skills from OrderSkills if available, otherwise fallback to order.skills
+            const orderSkills = (order as any).OrderSkills;
+            let skillsToDisplay: Array<{ name: string; skillId: number | null }> = [];
+
+            if (orderSkills && Array.isArray(orderSkills) && orderSkills.length > 0) {
+              // Use OrderSkills structure (preferred)
+              skillsToDisplay = orderSkills.map((os: any) => {
+                const skill = os.Skill;
+                if (!skill) return null;
+                // Get skill name based on current language
+                let skillName = "";
+                switch (language) {
+                  case "ru":
+                    skillName = skill.nameRu || skill.nameEn || skill.nameHy || "";
+                    break;
+                  case "hy":
+                    skillName = skill.nameHy || skill.nameEn || skill.nameRu || "";
+                    break;
+                  case "en":
+                  default:
+                    skillName = skill.nameEn || skill.nameRu || skill.nameHy || "";
+                    break;
+                }
+                return {
+                  name: skillName,
+                  skillId: skill.id,
+                };
+              }).filter((s: any) => s !== null && s.name);
+            } else if (order.skills && order.skills.length > 0) {
+              // Fallback to order.skills array (backward compatibility)
+              skillsToDisplay = order.skills.map((skill: string) => ({
+                name: skill,
+                skillId: null,
+              }));
+            }
+
+            if (skillsToDisplay.length === 0) return null;
+
+            return (
+              <View style={styles.skillsContainer}>
+                {skillsToDisplay.slice(0, 4).map((skill, index) => (
+                  <TouchableOpacity
+                    key={skill.skillId || index}
+                    style={[
+                      styles.skillTag,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={() => {
+                      // Navigate to orders list with skill search
+                      router.push(`/orders?q=${encodeURIComponent(skill.name)}`);
+                    }}
+                    onLongPress={() => {
+                      if (skill.skillId) {
+                        setSelectedSkillId(skill.skillId);
+                        setShowSkillModal(true);
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.skillText, { color: colors.text }]}>
+                      {skill.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+                {skillsToDisplay.length > 4 && (
+                  <Text
+                    style={[
+                      styles.moreSkillsText,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    +{skillsToDisplay.length - 4} {t("more")}
                   </Text>
-                </View>
-              ))}
-              {order.skills.length > 4 && (
-                <Text
-                  style={[
-                    styles.moreSkillsText,
-                    { color: colors.tabIconDefault },
-                  ]}
-                >
-                  +{order.skills.length - 4} {t("more")}
-                </Text>
-              )}
-            </View>
-          )}
+                )}
+              </View>
+            );
+          })()}
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
@@ -512,6 +566,16 @@ const OrderItem = ({
           </View>
         </Modal>
       )}
+
+      {/* Skill Description Modal */}
+      <SkillDescriptionModal
+        visible={showSkillModal}
+        skillId={selectedSkillId}
+        onClose={() => {
+          setShowSkillModal(false);
+          setSelectedSkillId(null);
+        }}
+      />
     </TouchableOpacity>
   );
 };

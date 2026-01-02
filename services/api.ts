@@ -31,6 +31,18 @@ export interface Service {
   };
 }
 
+export interface Skill {
+  id: number;
+  nameEn: string;
+  nameRu: string;
+  nameHy: string;
+  descriptionEn?: string;
+  descriptionRu?: string;
+  descriptionHy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ServiceListResponse {
   services: Service[];
   pagination: {
@@ -893,6 +905,7 @@ class ApiService {
     serviceId: number;
     location?: string;
     skills?: string[];
+    skillIds?: number[];
     availableDates?: string[];
     useAIEnhancement?: boolean;
     questions?: string[];
@@ -921,6 +934,7 @@ class ApiService {
       status?: string;
       location?: string;
       skills?: string[];
+      skillIds?: number[];
       availableDates?: string[];
       useAIEnhancement?: boolean;
       titleEn?: string;
@@ -1726,6 +1740,140 @@ class ApiService {
     }>;
   }> {
     return this.request(`/constants/rate-units`, {}, false);
+  }
+
+  // Skills API
+  async searchSkills(
+    query: string,
+    limit: number = 10
+  ): Promise<
+    Array<{
+      id: number;
+      nameEn: string;
+      nameRu: string;
+      nameHy: string;
+      descriptionEn?: string;
+      descriptionRu?: string;
+      descriptionHy?: string;
+    }>
+  > {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    try {
+      const url = `/skills/search?q=${encodeURIComponent(
+        query
+      )}&limit=${limit}`;
+      const results = await this.request<
+        Array<{
+          id: number;
+          nameEn: string;
+          nameRu: string;
+          nameHy: string;
+          descriptionEn?: string;
+          descriptionRu?: string;
+          descriptionHy?: string;
+        }>
+      >(url, {}, false);
+      return results;
+    } catch (error: any) {
+      console.error("Skills API error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status,
+        url: error?.config?.url,
+      });
+      throw error;
+    }
+  }
+
+  async getAllSkills(): Promise<
+    Array<{
+      id: number;
+      nameEn: string;
+      nameRu: string;
+      nameHy: string;
+      descriptionEn?: string;
+      descriptionRu?: string;
+      descriptionHy?: string;
+    }>
+  > {
+    try {
+      const response = await this.request<
+        | {
+            skills?: Array<{
+              id: number;
+              nameEn: string;
+              nameRu: string;
+              nameHy: string;
+              descriptionEn?: string;
+              descriptionRu?: string;
+              descriptionHy?: string;
+            }>;
+            pagination?: any;
+          }
+        | Array<{
+            id: number;
+            nameEn: string;
+            nameRu: string;
+            nameHy: string;
+            descriptionEn?: string;
+            descriptionRu?: string;
+            descriptionHy?: string;
+          }>
+      >(`/skills?limit=1000`, {}, false);
+
+      // Handle both array response and paginated response
+      if (Array.isArray(response)) {
+        return response as Array<{
+          id: number;
+          nameEn: string;
+          nameRu: string;
+          nameHy: string;
+          descriptionEn?: string;
+          descriptionRu?: string;
+          descriptionHy?: string;
+        }>;
+      }
+      return (response as any).skills || [];
+    } catch (error: any) {
+      console.error("Error fetching all skills:", error);
+      throw error;
+    }
+  }
+
+  async getSkillById(id: number): Promise<{
+    id: number;
+    nameEn: string;
+    nameRu: string;
+    nameHy: string;
+    descriptionEn?: string;
+    descriptionRu?: string;
+    descriptionHy?: string;
+  }> {
+    return this.request(`/skills/${id}`, {}, false);
+  }
+
+  async createSkill(skillData: {
+    nameEn: string;
+    nameRu: string;
+    nameHy: string;
+    descriptionEn?: string;
+    descriptionRu?: string;
+    descriptionHy?: string;
+  }): Promise<any> {
+    return this.request(
+      `/skills`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(skillData),
+      },
+      true
+    );
   }
 }
 
