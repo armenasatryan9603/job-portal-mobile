@@ -443,6 +443,16 @@ export default function SpecialistsScreen() {
                 </Text>
               </View>
               <View style={styles.detailItem}>
+                <IconSymbol name="star.fill" size={16} color="#FFD700" />
+                <Text style={[styles.detailText, { color: colors.text }]}>
+                  {specialist.averageRating && specialist.averageRating > 0
+                    ? `${specialist.averageRating.toFixed(1)} (${
+                        specialist.reviewCount || 0
+                      })`
+                    : t("notRatedYet")}
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
                 <IconSymbol
                   name="location.fill"
                   size={16}

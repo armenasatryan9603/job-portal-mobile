@@ -95,7 +95,11 @@ export interface SpecialistProfile {
   location?: string;
   currency?: string;
   rateUnit?: string;
-  User: User;
+  User: User & {
+    reviewCount?: number;
+    averageRating?: number;
+    reviews?: Review[];
+  };
   Service?: Service;
   _count?: {
     Proposals: number;

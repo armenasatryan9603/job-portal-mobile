@@ -16,7 +16,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  TouchableWithoutFeedback,
   View,
   Keyboard,
   Platform,
@@ -185,15 +184,12 @@ export const Layout: React.FC<LayoutProps> = ({
             },
           ]}
         >
-          <View style={[styles.sidebarHeader, { paddingTop: insets.top + 10 }]}>
-            <TouchableOpacity style={styles.closeButton} onPress={closeSidebar}>
-              <IconSymbol name="xmark" size={20} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
           {/* User Profile Section */}
           <TouchableOpacity
-            style={[styles.userSection, { borderBottomColor: colors.border }]}
+            style={[
+              styles.userSection,
+              { paddingTop: insets.top + 10, borderBottomColor: colors.border },
+            ]}
             onPress={isAuthenticated ? navigateToProfile : showLoginModal}
           >
             <View style={styles.userInfo}>
@@ -375,7 +371,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
-                    { borderBottomColor: colors.border },
+                    { borderBottomColor: "transparent" },
                   ]}
                   onPress={handleLogout}
                 >
@@ -506,21 +502,10 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  sidebarHeader: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    alignItems: "flex-end",
-  },
-  closeButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
   userSection: {
     paddingVertical: 16,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderRadius: 8,
     backgroundColor: "rgba(0,0,0,0.02)",
   },
   userInfo: {

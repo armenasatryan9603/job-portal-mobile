@@ -65,10 +65,6 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     return dateStr;
   };
 
-  const formatAllDatesWithTimes = () => {
-    return selectedDates.map((date) => formatDateWithTimes(date)).join(", ");
-  };
-
   const toggleDateSelection = (date: Date) => {
     // Normalize date to midnight for consistent comparison
     const normalizedDate = normalizeDate(date);
@@ -152,9 +148,6 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       >
         {t("availableDates")}
       </Text>
-      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-        {t("selectAvailableDates")}
-      </Text>
 
       <TouchableOpacity
         style={[
@@ -175,9 +168,7 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
             },
           ]}
         >
-          {selectedDates.length > 0
-            ? formatAllDatesWithTimes()
-            : t("selectAvailableDates")}
+          {t("selectAvailableDates")}
         </Text>
         <Text style={[styles.calendarIcon, { color: colors.tint }]}>📅</Text>
       </TouchableOpacity>
@@ -260,10 +251,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: "500",
     marginBottom: 8,
   },
   calendarInput: {

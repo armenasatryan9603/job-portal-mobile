@@ -408,7 +408,7 @@ export default function SpecialistDetailScreen() {
                 >
                   <IconSymbol name="star.fill" size={20} color="#FFD700" />
                   <Text style={[styles.statNumber, { color: colors.text }]}>
-                    {specialist.averageRating?.toFixed(1) || "0.0"}
+                    {(specialist.averageRating || 0).toFixed(1)}
                   </Text>
                   <Text
                     style={[styles.statLabel, { color: colors.tabIconDefault }]}
@@ -610,24 +610,26 @@ export default function SpecialistDetailScreen() {
           {/* Skills */}
           <ResponsiveCard style={{ paddingTop: 0 }}>
             <View style={styles.skillsHeader}>
-              {specialist.Service?.technologies?.length && (
-                <View
-                  style={[
-                    styles.skillsCount,
-                    { backgroundColor: colors.tint + "15" },
-                  ]}
-                >
-                  <Text
-                    style={[styles.skillsCountText, { color: colors.tint }]}
+              {specialist.Service?.technologies &&
+                specialist.Service.technologies.length > 0 && (
+                  <View
+                    style={[
+                      styles.skillsCount,
+                      { backgroundColor: colors.tint + "15" },
+                    ]}
                   >
-                    {specialist.Service.technologies.length}
-                  </Text>
-                </View>
-              )}
+                    <Text
+                      style={[styles.skillsCountText, { color: colors.tint }]}
+                    >
+                      {specialist.Service.technologies.length}
+                    </Text>
+                  </View>
+                )}
             </View>
 
             <View style={styles.skillsContainer}>
-              {specialist.Service?.technologies?.length ? (
+              {specialist.Service?.technologies &&
+              specialist.Service.technologies.length > 0 ? (
                 specialist.Service.technologies.map((skill, index) => (
                   <View
                     key={index}
@@ -697,7 +699,7 @@ export default function SpecialistDetailScreen() {
                     </Text>
                   </View>
                 )}
-                {specialist.Service.completionRate && (
+                {specialist.Service.completionRate != null && (
                   <View style={styles.serviceItem}>
                     <IconSymbol
                       name="checkmark.circle.fill"
