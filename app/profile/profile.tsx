@@ -389,27 +389,23 @@ export default function ProfileScreen() {
     const options = [];
     if (bannerImage) {
       options.push({
-        text: t("removeBanner") || "Remove Banner",
+        text: t("removeBanner"),
         onPress: handleBannerRemove,
         style: "destructive" as const,
       });
     }
     options.push({
-      text: t("uploadBanner") || "Upload Banner",
+      text: t("uploadBanner"),
       onPress: handleBannerUpload,
     });
 
-    Alert.alert(
-      t("bannerOptions") || "Banner Options",
-      t("chooseBannerAction") || "What would you like to do?",
-      [
-        ...options,
-        {
-          text: t("cancel") || "Cancel",
-          style: "cancel" as const,
-        },
-      ]
-    );
+    Alert.alert(t("bannerOptions"), t("chooseBannerAction"), [
+      ...options,
+      {
+        text: t("cancel"),
+        style: "cancel" as const,
+      },
+    ]);
   };
 
   const handleBannerRemove = async () => {
@@ -447,10 +443,7 @@ export default function ProfileScreen() {
       } as any);
     } catch (error) {
       console.error("Error removing banner:", error);
-      Alert.alert(
-        t("error"),
-        t("failedToRemoveBanner") || "Failed to remove banner"
-      );
+      Alert.alert(t("error"), t("failedToRemoveBanner"));
     } finally {
       setUploadingBanner(false);
     }
@@ -1212,7 +1205,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[styles.teamsLoadingText, { color: colors.text }]}
                   >
-                    {t("loadingTeams") || "Loading teams..."}
+                    {t("loadingTeams")}
                   </Text>
                 </View>
               ) : userTeams.length > 0 ? (
@@ -1256,7 +1249,7 @@ export default function ProfileScreen() {
                                       { color: colors.primary },
                                     ]}
                                   >
-                                    {t("lead") || "Lead"}
+                                    {t("lead")}
                                   </Text>
                                 </View>
                               )}
@@ -1300,7 +1293,7 @@ export default function ProfileScreen() {
                           { color: colors.primary },
                         ]}
                       >
-                        {t("manageAllTeams") || "Manage All Teams"}
+                        {t("manageAllTeams")}
                       </Text>
                       <IconSymbol
                         name="chevron.right"
@@ -1322,7 +1315,7 @@ export default function ProfileScreen() {
                 <View style={styles.paymentsPreview}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {t("peersAndTeams") || "Peers & Teams"}
+                      {t("peersAndTeams")}
                     </Text>
                     <Text
                       style={[
@@ -1344,7 +1337,7 @@ export default function ProfileScreen() {
                     <Text
                       style={[styles.paymentsCtaText, { color: colors.text }]}
                     >
-                      {t("managePeers") || "Manage"}
+                      {t("managePeers")}
                     </Text>
                     <IconSymbol
                       name="chevron.right"

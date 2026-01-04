@@ -3,10 +3,12 @@ import { Alert } from "react-native";
 import { apiService, Service, UserService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export const useSkills = (userId?: number) => {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const { t } = useTranslation();
   const currentUserId = userId || user?.id;
   const [availableServices, setAvailableServices] = useState<Service[]>([]);
   const [userServices, setUserServices] = useState<Service[]>([]);
@@ -75,7 +77,7 @@ export const useSkills = (userId?: number) => {
 
   const saveUserServices = async () => {
     if (!currentUserId) {
-      Alert.alert("Error", "You must be logged in to save skills.");
+      Alert.alert(t("error"), t("youMustBeLoggedInToSaveSkills"));
       return;
     }
 
@@ -115,7 +117,7 @@ export const useSkills = (userId?: number) => {
       await fetchServices();
     } catch (err) {
       console.error("Error saving user services:", err);
-      Alert.alert("Error", "Failed to save skills. Please try again.");
+      Alert.alert(t("error"), t("failedToSaveSkills"));
     } finally {
       setServicesLoading(false);
     }
@@ -132,7 +134,7 @@ export const useSkills = (userId?: number) => {
 
   const removeSkill = async (service: Service) => {
     if (!currentUserId) {
-      Alert.alert("Error", "You must be logged in to remove skills.");
+      Alert.alert(t("error"), t("youMustBeLoggedInToRemoveSkills"));
       return;
     }
 
@@ -148,15 +150,15 @@ export const useSkills = (userId?: number) => {
       });
     } catch (err) {
       console.error("Error removing skill:", err);
-      Alert.alert("Error", "Failed to remove skill. Please try again.");
+      Alert.alert(t("error"), t("failedToRemoveSkill"));
     }
   };
 
   const toggleServiceNotification = async (service: Service) => {
     if (!currentUserId) {
       Alert.alert(
-        "Error",
-        "You must be logged in to update notification preferences."
+        t("error"),
+        t("youMustBeLoggedInToUpdateNotifications")
       );
       return;
     }

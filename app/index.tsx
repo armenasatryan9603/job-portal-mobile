@@ -433,7 +433,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.xl,
   },
-
   // Hero section
   heroSection: {
     borderRadius: BorderRadius.xl,

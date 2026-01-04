@@ -69,7 +69,7 @@ export const PaymentWebView: React.FC<PaymentWebViewProps> = ({
       // Check result type
       if (result.type === "cancel") {
         // User cancelled
-        onFailure?.("Payment was cancelled");
+        onFailure?.(t("paymentCancelled"));
         onClose();
       } else if (result.type === "dismiss") {
         // Browser was dismissed
@@ -92,14 +92,14 @@ export const PaymentWebView: React.FC<PaymentWebViewProps> = ({
           url.includes("cancelled") ||
           url.includes("payment-fail")
         ) {
-          onFailure?.("Payment was cancelled or failed");
+          onFailure?.(t("paymentCancelledOrFailed"));
         }
         
         onClose();
       }
     } catch (error: any) {
       console.error("Error opening browser:", error);
-      onFailure?.(error.message || "Failed to open payment page");
+      onFailure?.(error.message || t("failedToOpenPaymentPage"));
       onClose();
     } finally {
       setLoading(false);

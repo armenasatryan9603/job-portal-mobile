@@ -80,6 +80,7 @@ export interface User {
   email: string;
   phone?: string;
   avatarUrl?: string;
+  bannerUrl?: string | null;
   bio?: string;
   verified: boolean;
   createdAt: string;

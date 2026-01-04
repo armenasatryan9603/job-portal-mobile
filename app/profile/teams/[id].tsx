@@ -90,7 +90,7 @@ export default function TeamDetailScreen() {
       if (userIds.length === 0) {
         Alert.alert(
           t("error"),
-          t("selectMembersToAdd") || "Please select at least one member to add"
+          t("selectMembersToAdd")
         );
         return;
       }
@@ -125,7 +125,7 @@ export default function TeamDetailScreen() {
         } else {
           Alert.alert(
             t("error"),
-            t("failedToAddMembers") || "Failed to add members"
+            t("failedToAddMembers")
           );
         }
 
@@ -136,7 +136,7 @@ export default function TeamDetailScreen() {
         console.error("Error adding members:", error);
         Alert.alert(
           t("error"),
-          error.message || t("failedToAddMembers") || "Failed to add members"
+          error.message || t("failedToAddMembers")
         );
       }
     },
@@ -195,7 +195,7 @@ export default function TeamDetailScreen() {
       if (!newName.trim()) {
         Alert.alert(
           t("error"),
-          t("teamNameRequired") || "Team name is required"
+          t("teamNameRequired")
         );
         return;
       }

@@ -97,7 +97,7 @@ export function AccountInfo({
   };
 
   const roleOptions = [
-    { value: "client", label: t("client") || "Client" },
+    { value: "client", label: t("client") },
     { value: "specialist", label: t("specialist") },
   ];
 

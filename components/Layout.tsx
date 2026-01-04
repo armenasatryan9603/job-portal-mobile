@@ -22,6 +22,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
+import { Logo } from "./Logo";
+import { router } from "expo-router";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -184,12 +186,26 @@ export const Layout: React.FC<LayoutProps> = ({
             },
           ]}
         >
+          {/* Logo Section */}
+          <View
+            style={[
+              styles.logoSection,
+              { paddingTop: insets.top + 16, borderBottomColor: colors.border },
+            ]}
+          >
+            <Logo
+              size={24}
+              onPress={() => {
+                closeSidebar();
+                router.push("/");
+              }}
+              style={styles.sidebarLogo}
+            />
+          </View>
+
           {/* User Profile Section */}
           <TouchableOpacity
-            style={[
-              styles.userSection,
-              { paddingTop: insets.top + 10, borderBottomColor: colors.border },
-            ]}
+            style={[styles.userSection, { borderBottomColor: colors.border }]}
             onPress={isAuthenticated ? navigateToProfile : showLoginModal}
           >
             <View style={styles.userInfo}>
@@ -501,6 +517,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
+  },
+  logoSection: {
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sidebarLogo: {
+    alignSelf: "center",
   },
   userSection: {
     paddingVertical: 16,

@@ -28,7 +28,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>jobportalmobile</string>
-          <string>com.jobportalmobile.app</string>
+          <string>com.job-portal.JobWise</string>
         </array>
       </dict>
       <dict>

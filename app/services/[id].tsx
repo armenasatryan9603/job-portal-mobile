@@ -112,7 +112,7 @@ export default function ServiceDetailScreen() {
         header={
           <Header
             showBackButton
-            title="Loading..."
+            title={t("loading")}
             onBackPress={() => router.back()}
           />
         }

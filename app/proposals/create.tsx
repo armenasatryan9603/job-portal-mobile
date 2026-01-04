@@ -342,7 +342,7 @@ export default function CreateProposalScreen() {
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.text }]}>
-                Your Price ({order.currency || "USD"}) *
+                {t("yourPrice")} ({order.currency || "USD"}) *
               </Text>
               <TextInput
                 style={[

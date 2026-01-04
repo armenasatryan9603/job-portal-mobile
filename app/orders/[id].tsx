@@ -233,7 +233,7 @@ export default function EditOrderScreen() {
       router.push(`/chat/${conversation.id}`);
     } catch (error) {
       console.error("Failed to start chat:", error);
-      Alert.alert("Error", "Failed to start chat. Please try again.");
+      Alert.alert(t("error"), t("failedToStartChat"));
     }
   };
 
@@ -528,9 +528,9 @@ export default function EditOrderScreen() {
   // Format field name for display
   const formatFieldName = (field: string): string => {
     const fieldMap: { [key: string]: string } = {
-      status: t("status") || "Status",
-      title: t("title") || "Title",
-      budget: t("budget") || "Budget",
+      status: t("status"),
+      title: t("title"),
+      budget: t("budget"),
     };
     return fieldMap[field] || field.charAt(0).toUpperCase() + field.slice(1);
   };
@@ -578,7 +578,7 @@ export default function EditOrderScreen() {
           <Text
             style={[styles.emptyHistoryText, { color: colors.tabIconDefault }]}
           >
-            {t("noChangeHistory") || "No change history available"}
+            {t("noChangeHistory")}
           </Text>
         ) : (
           <View style={styles.changeHistoryContainer}>
@@ -608,7 +608,7 @@ export default function EditOrderScreen() {
                           { color: colors.tabIconDefault },
                         ]}
                       >
-                        {t("from") || "From"}:
+                        {t("from")}:
                       </Text>
                       <Text
                         style={[styles.changeValue, { color: colors.text }]}
@@ -623,7 +623,7 @@ export default function EditOrderScreen() {
                           { color: colors.tabIconDefault },
                         ]}
                       >
-                        {t("to") || "To"}:
+                        {t("to")}:
                       </Text>
                       <Text
                         style={[
@@ -646,7 +646,7 @@ export default function EditOrderScreen() {
                           { color: colors.tabIconDefault },
                         ]}
                       >
-                        {t("changedBy") || "Changed by"}: {item.ChangedBy.name}
+                        {t("changedBy")}: {item.ChangedBy.name}
                       </Text>
                     )}
                     {item.reason && (
@@ -684,7 +684,7 @@ export default function EditOrderScreen() {
     const handleDeleteMedia = async (mediaFileId: number) => {
       Alert.alert(
         t("delete"),
-        "Are you sure you want to delete this media file?",
+        t("areYouSureDeleteMediaFile"),
         [
           { text: t("cancel"), style: "cancel" },
           {
@@ -698,14 +698,14 @@ export default function EditOrderScreen() {
                 );
                 setOrder(orderData);
                 Alert.alert(
-                  t("success") || "Success",
-                  "Media file deleted successfully"
+                  t("success"),
+                  t("mediaFileDeletedSuccessfully")
                 );
               } catch (error: any) {
                 console.error("Error deleting media file:", error);
                 const errorMessage =
-                  error?.message || "Failed to delete media file";
-                Alert.alert(t("error") || "Error", errorMessage);
+                  error?.message || t("failedToDeleteMediaFile");
+                Alert.alert(t("error"), errorMessage);
               }
             },
           },
@@ -874,8 +874,8 @@ export default function EditOrderScreen() {
                       />
                       <Text style={styles.statusBadgeText}>
                         {order.status === "pending_review"
-                          ? t("pendingReview") || "Pending Review"
-                          : t("rejected") || "Rejected"}
+                          ? t("pendingReview")
+                          : t("rejected")}
                       </Text>
                     </View>
                   )}
@@ -897,7 +897,7 @@ export default function EditOrderScreen() {
                         { color: colors.text },
                       ]}
                     >
-                      {t("rejectionReason") || "Rejection Reason"}:
+                      {t("rejectionReason")}:
                     </Text>
                     <Text
                       style={[

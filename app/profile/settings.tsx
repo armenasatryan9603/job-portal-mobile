@@ -388,7 +388,7 @@ export default function ProfileSettingsScreen() {
           {/* Pricing & Fees */}
           <ResponsiveCard>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("pricingAndFees") || "Pricing & Fees"}
+              {t("pricingAndFees")}
             </Text>
 
             <TouchableOpacity
@@ -403,7 +403,7 @@ export default function ProfileSettingsScreen() {
                 />
                 <View style={styles.settingText}>
                   <Text style={[styles.settingTitle, { color: colors.text }]}>
-                    {t("orderPricing") || "Order pricing"}
+                    {t("orderPricing")}
                   </Text>
                   <Text
                     style={[

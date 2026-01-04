@@ -54,7 +54,7 @@ const TranslationExample: React.FC = () => {
     try {
       await refreshTranslations();
       setTranslationSource("🌐 Fresh (from backend)");
-      Alert.alert("Success", "Translations refreshed from backend!");
+      Alert.alert(t("success"), t("translationsRefreshedFromBackend"));
     } catch (err) {
       Alert.alert("Error", "Failed to refresh translations");
     }
@@ -69,12 +69,9 @@ const TranslationExample: React.FC = () => {
       // Force reload translations after clearing cache
       await refreshTranslations();
 
-      Alert.alert(
-        "Success",
-        "Cache cleared! Translations reloaded from backend."
-      );
+      Alert.alert(t("success"), t("cacheClearedTranslationsReloaded"));
     } catch (err) {
-      Alert.alert("Error", "Failed to clear cache");
+      Alert.alert(t("error"), t("failedToClearCache"));
     }
   };
 

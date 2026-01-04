@@ -230,7 +230,7 @@ export default function InvitationsScreen() {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <Text style={styles.acceptButtonText}>
-                  {t("accept") || "Accept"}
+                  {t("accept")}
                 </Text>
               )}
             </TouchableOpacity>

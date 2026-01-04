@@ -15,6 +15,8 @@ interface UseInfinitePaginationOptions<T extends { id: number | string }> {
   resetDeps?: any[];
   // Enable scroll-gate protection (prevent immediate page 2 load)
   enableScrollGate?: boolean;
+  // Optional callback to trigger refetch when refresh is called
+  onRefreshCallback?: () => void | Promise<void>;
 }
 
 interface UseInfinitePaginationReturn<T> {
@@ -45,8 +47,8 @@ export function useInfinitePagination<T extends { id: number | string }>(
     pagination,
     isLoading,
     isFetching,
-    resetDeps = [],
     enableScrollGate = false,
+    onRefreshCallback,
   } = options;
 
   // State for accumulated items and current page
@@ -56,6 +58,7 @@ export function useInfinitePagination<T extends { id: number | string }>(
   // Single ref to prevent duplicate load requests
   const isLoadingMoreRef = useRef(false);
   const hasScrolledRef = useRef(false);
+  const isRefreshingRef = useRef(false);
 
   // Reset everything when reset dependencies change
   // useEffect(() => {
@@ -74,8 +77,10 @@ export function useInfinitePagination<T extends { id: number | string }>(
     }
 
     if (currentPage === 1) {
-      // First page: replace all items
+      // First page: replace all items (especially important when refreshing)
       setAllItems(items);
+      // Clear refresh flag once we have new data
+      isRefreshingRef.current = false;
     } else {
       // Subsequent pages: append new items (avoid duplicates)
       setAllItems((prev) => {
@@ -110,11 +115,17 @@ export function useInfinitePagination<T extends { id: number | string }>(
 
   // Refresh callback
   const onRefresh = useCallback(() => {
-    setAllItems([]);
+    // Set refresh flag - items will be replaced when new page 1 data arrives
+    isRefreshingRef.current = true;
+    // Reset to page 1 - this will trigger parent to refetch if needed
     setCurrentPage(1);
     isLoadingMoreRef.current = false;
     hasScrolledRef.current = false;
-  }, []);
+    // Call parent's refresh callback if provided (e.g., to trigger refetch)
+    onRefreshCallback?.();
+    // Note: We don't clear allItems here to avoid showing empty data
+    // Items will be replaced when new page 1 data arrives
+  }, [onRefreshCallback]);
 
   // Handle scroll event for scroll gate
   const handleScroll = useCallback(() => {

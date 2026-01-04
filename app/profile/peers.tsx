@@ -74,7 +74,7 @@ export default function PeersScreen() {
       setPeers(peersData || []);
     } catch (error) {
       console.error("Error loading peers:", error);
-      Alert.alert(t("error"), t("failedToLoadPeers") || "Failed to load peers");
+      Alert.alert(t("error"), t("failedToLoadPeers"));
     } finally {
       setLoading(false);
     }
@@ -330,7 +330,7 @@ export default function PeersScreen() {
                 <View style={styles.pendingBadge}>
                   <IconSymbol name="clock.fill" size={12} color="#FF9500" />
                   <Text style={styles.pendingBadgeText}>
-                    {t("pending") || "Pending"}
+                    {t("pending")}
                   </Text>
                 </View>
               )}
@@ -540,7 +540,7 @@ export default function PeersScreen() {
                 color: colors.text,
               },
             ]}
-            placeholder={t("searchSpecialists") || "Search specialists..."}
+            placeholder={t("searchSpecialists")}
             placeholderTextColor={colors.tabIconDefault}
             value={searchQuery}
             onChangeText={(text) => {

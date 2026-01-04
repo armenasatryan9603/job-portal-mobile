@@ -365,13 +365,13 @@ export default function OrdersScreen() {
     () => [
       {
         key: "sortBy",
-        title: t("sortBy") || "Sort By",
+        title: t("sortBy"),
         options: [
-          { key: "relevance", label: t("relevance") || "Relevance" },
-          { key: "date_desc", label: t("newestFirst") || "Newest First" },
-          { key: "date_asc", label: t("oldestFirst") || "Oldest First" },
-          { key: "price_desc", label: t("highestPrice") || "Highest Price" },
-          { key: "price_asc", label: t("lowestPrice") || "Lowest Price" },
+          { key: "relevance", label: t("relevance") },
+          { key: "date_desc", label: t("newestFirst") },
+          { key: "date_asc", label: t("oldestFirst") },
+          { key: "price_desc", label: t("highestPrice") },
+          { key: "price_asc", label: t("lowestPrice") },
         ],
       },
       {
@@ -389,11 +389,14 @@ export default function OrdersScreen() {
                 { key: "rejected", label: t("rejected") },
               ]
             : []),
+          ...(isAuthenticated && !isMyOrders && !isMyJobs && !isSavedOrders
+            ? [{ key: "not_applied", label: t("notApplied") }]
+            : []),
         ],
       },
       {
         key: "priceRange",
-        title: t("priceRange") || "Price Range",
+        title: t("priceRange"),
         type: "range",
         rangeConfig: {
           min: 0,
@@ -403,7 +406,7 @@ export default function OrdersScreen() {
       },
       {
         key: "location",
-        title: t("location") || "Location",
+        title: t("location"),
         type: "location",
         onLocationPress: () => {
           // Hide filter modal temporarily when opening location modal
@@ -418,7 +421,7 @@ export default function OrdersScreen() {
       // },
       {
         key: "services",
-        title: t("services") || "Services",
+        title: t("services"),
         multiSelect: true,
         options: services.map((service) => ({
           key: service.id.toString(),
@@ -906,8 +909,9 @@ export default function OrdersScreen() {
         filteredOrders = filterOrdersBySearch(filteredOrders, searchQuery);
       }
 
-      // Apply status filter
-      if (status && status !== "all") {
+      // Apply status filter (for My Orders/My Jobs, status filtering is done client-side)
+      // Note: "not_applied" status is not available for My Orders/My Jobs views
+      if (status && status !== "all" && status !== "not_applied") {
         filteredOrders = filterOrdersByStatus(filteredOrders, status);
       }
 
@@ -1021,6 +1025,9 @@ export default function OrdersScreen() {
       filteredOrders = filterOrdersByRating(filteredOrders, ratingFilter);
     }
 
+    // Status filtering is now handled server-side for regular orders
+    // No need for client-side filtering here since backend already filters by status
+
     // Apply sorting
     filteredOrders = sortOrders(filteredOrders, sortBy);
 
@@ -1061,7 +1068,9 @@ export default function OrdersScreen() {
         if (searchQuery.trim()) {
           filtered = filterOrdersBySearch(filtered, searchQuery);
         }
-        if (status && status !== "all") {
+        // Status filtering for My Orders/My Jobs (client-side)
+        // Note: "not_applied" status is not available for My Orders/My Jobs views
+        if (status && status !== "all" && status !== "not_applied") {
           filtered = filterOrdersByStatus(filtered, status);
         }
         if (selectedServices.length > 0) {

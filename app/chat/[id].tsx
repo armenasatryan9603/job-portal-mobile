@@ -744,10 +744,9 @@ export default function ChatDetailScreen() {
     const orderStatus = conversation?.Order?.status;
     if (orderStatus === "open" && containsPhoneNumber(newMessage.trim())) {
       Alert.alert(
-        t("cannotSendPhoneNumber") || "Cannot Send Phone Number",
-        t("phoneNumbersNotAllowedUntilChosen") ||
-          "Phone numbers cannot be shared until you choose a candidate. Please wait until the order is accepted.",
-        [{ text: t("ok") || "OK" }]
+        t("cannotSendPhoneNumber"),
+        t("phoneNumbersNotAllowedUntilChosen"),
+        [{ text: t("ok") }]
       );
       return;
     }
@@ -794,12 +793,12 @@ export default function ChatDetailScreen() {
         errorMessage.includes("phone numbers")
       ) {
         Alert.alert(
-          t("cannotSendPhoneNumber") || "Cannot Send Phone Number",
+          t("cannotSendPhoneNumber"),
           errorMessage,
-          [{ text: t("ok") || "OK" }]
+          [{ text: t("ok") }]
         );
       } else {
-        Alert.alert(t("error") || "Error", errorMessage);
+        Alert.alert(t("error"), errorMessage);
       }
     } finally {
       setSending(false);
@@ -1011,12 +1010,12 @@ export default function ChatDetailScreen() {
       const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
 
       if (diffInMinutes < 1) {
-        return "now";
+        return t("now");
       } else if (diffInMinutes < 60) {
-        return `${Math.floor(diffInMinutes)}m ago`;
+        return `${Math.floor(diffInMinutes)}${t("minutesAgo")}`;
       } else {
         const diffInHours = Math.floor(diffInMinutes / 60);
-        return `${diffInHours}h ago`;
+        return `${diffInHours}${t("hoursAgo")}`;
       }
     };
 
@@ -1199,7 +1198,7 @@ export default function ChatDetailScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    {t("viewOrderDetails") || "View Order Details"}
+                    {t("viewOrderDetails")}
                   </Text>
                 </View>
               </View>
@@ -1397,7 +1396,7 @@ export default function ChatDetailScreen() {
               />
               <Text style={[styles.statusText, { color: colors.text }]}>
                 {conversation?.status === "removed"
-                  ? t("conversationDeleted") || "This conversation was deleted"
+                  ? t("conversationDeleted")
                   : conversation?.status === "completed"
                   ? t("conversationCompleted")
                   : t("conversationClosed")}

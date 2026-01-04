@@ -5,8 +5,8 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -42,6 +42,27 @@ export default function ChatScreen() {
   } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const isRefreshingRef = useRef(false);
+  const conversationsRef = useRef(conversations);
+
+  // Keep ref in sync with conversations
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
+  // Refresh conversations when screen comes into focus
+  // This ensures read status is synced from backend when app reopens
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id && !isRefreshingRef.current && !loading) {
+        isRefreshingRef.current = true;
+        refreshConversations().finally(() => {
+          isRefreshingRef.current = false;
+        });
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id])
+  );
 
   // Subscribe to user updates for real-time conversation list updates
   useEffect(() => {
@@ -58,8 +79,8 @@ export default function ChatScreen() {
         lastMessage: any;
         updatedAt: string;
       }) => {
-        // Update the conversation in the list
-        const existingConv = conversations.find(
+        // Use ref to access latest conversations state
+        const existingConv = conversationsRef.current.find(
           (conv) => conv.id === data.conversationId
         );
 
@@ -94,8 +115,8 @@ export default function ChatScreen() {
         status: string;
         updatedAt: string;
       }) => {
-        // Update order status in conversations that have this order
-        conversations.forEach((conv) => {
+        // Use ref to access latest conversations
+        conversationsRef.current.forEach((conv) => {
           if (conv.Order?.id === orderStatusData.orderId) {
             updateConversation(conv.id, {
               Order: {
@@ -139,13 +160,7 @@ export default function ChatScreen() {
         }
       }
     };
-  }, [
-    user?.id,
-    conversations,
-    updateConversation,
-    refreshConversations,
-    removeConversation,
-  ]);
+  }, [user?.id, updateConversation, refreshConversations, removeConversation]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -190,10 +205,22 @@ export default function ChatScreen() {
 
   const handleConversationPress = async (conversation: Conversation) => {
     try {
-      // Mark messages as read
+      // Mark messages as read on backend
       await chatService.markAsRead(conversation.id);
 
-      // Update local state - set lastReadAt to be after the last message time
+      // Refresh the conversation from backend to get the actual updated lastReadAt
+      // This ensures the read status persists when app reopens
+      const updatedConversation = await chatService.getConversation(
+        conversation.id
+      );
+
+      // Update local state with the actual backend data
+      updateConversation(conversation.id, {
+        Participants: updatedConversation.Participants,
+      });
+    } catch (err) {
+      console.error("Failed to mark as read:", err);
+      // Fallback to optimistic update if refresh fails
       const lastMessage = conversation.Messages[0];
       let newLastReadAt;
       if (lastMessage) {
@@ -209,8 +236,6 @@ export default function ChatScreen() {
           p.isActive ? { ...p, lastReadAt: newLastReadAt } : p
         ),
       });
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
     }
 
     // Track conversation opened
@@ -228,46 +253,40 @@ export default function ChatScreen() {
 
     if (!isClosed) {
       Alert.alert(
-        t("cannotDeleteConversation") || "Cannot Delete Conversation",
-        t("conversationMustBeClosed") ||
-          "Conversations can only be deleted if they are closed.",
-        [{ text: t("ok") || "OK" }]
+        t("cannotDeleteConversation"),
+        t("conversationMustBeClosed"),
+        [{ text: t("ok") }]
       );
       return;
     }
 
-    Alert.alert(
-      t("deleteConversation") || "Delete Conversation",
-      t("areYouSureDeleteConversation") ||
-        "Are you sure you want to delete this conversation?",
-      [
-        {
-          text: t("cancel") || "Cancel",
-          style: "cancel",
+    Alert.alert(t("deleteConversation"), t("areYouSureDeleteConversation"), [
+      {
+        text: t("cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            AnalyticsService.getInstance().logEvent("conversation_deleted", {
+              conversation_id: conversation.id.toString(),
+            });
+            await chatService.deleteConversation(conversation.id);
+            // Remove conversation from local state
+            removeConversation(conversation.id);
+          } catch (error) {
+            console.error("Failed to delete conversation:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : t("failedToDeleteConversation");
+            Alert.alert(t("error"), errorMessage);
+          }
         },
-        {
-          text: t("delete") || "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              AnalyticsService.getInstance().logEvent("conversation_deleted", {
-                conversation_id: conversation.id.toString(),
-              });
-              await chatService.deleteConversation(conversation.id);
-              // Remove conversation from local state
-              removeConversation(conversation.id);
-            } catch (error) {
-              console.error("Failed to delete conversation:", error);
-              const errorMessage =
-                error instanceof Error
-                  ? error.message
-                  : "Failed to delete conversation";
-              Alert.alert(t("error") || "Error", errorMessage);
-            }
-          },
-        },
-      ]
-    );
+      },
+    ]);
   };
 
   const getLastMessageIcon = (type: string) => {
@@ -303,12 +322,14 @@ export default function ChatScreen() {
 
       if (diffInHours < 1) {
         const diffInMinutes = Math.floor(diffInHours * 60);
-        return diffInMinutes < 1 ? "now" : `${diffInMinutes}m ago`;
+        return diffInMinutes < 1
+          ? t("now")
+          : `${diffInMinutes}${t("minutesAgo")}`;
       } else if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)}h ago`;
+        return `${Math.floor(diffInHours)}${t("hoursAgo")}`;
       } else {
         const diffInDays = Math.floor(diffInHours / 24);
-        return `${diffInDays}d ago`;
+        return `${diffInDays}${t("daysAgo")}`;
       }
     };
 

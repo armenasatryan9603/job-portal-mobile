@@ -16,17 +16,18 @@ import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import React, { useState, useEffect } from "react";
 import {
   Image,
+  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  ActivityIndicator,
   Alert,
   TouchableOpacity,
 } from "react-native";
 import { apiService, SpecialistProfile } from "@/services/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
+import { SpecialistDetailSkeleton } from "@/components/SpecialistDetailSkeleton";
 
 export default function SpecialistDetailScreen() {
   useAnalytics("SpecialistDetail");
@@ -42,6 +43,7 @@ export default function SpecialistDetailScreen() {
   const [specialist, setSpecialist] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState<string | null>(null);
 
   const specialistId = parseInt(id as string);
 
@@ -60,6 +62,9 @@ export default function SpecialistDetailScreen() {
       const specialistData = await apiService.getSpecialistById(specialistId);
 
       setSpecialist(specialistData);
+      // Extract banner URL from User object
+      const bannerUrl = specialistData.User.bannerUrl || null;
+      setBannerImage(bannerUrl);
       // Track specialist view
       AnalyticsService.getInstance().logSpecialistViewed(
         specialistId.toString()
@@ -75,30 +80,7 @@ export default function SpecialistDetailScreen() {
 
   // Show loading state
   if (loading) {
-    return (
-      <Layout
-        header={
-          <Header
-            showBackButton
-            title={t("loading")}
-            onBackPress={() => router.back()}
-          />
-        }
-        footer={null}
-      >
-        <View
-          style={[
-            styles.loadingContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <ActivityIndicator size="large" color={colors.tint} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loadingSpecialistDetails")}
-          </Text>
-        </View>
-      </Layout>
-    );
+    return <SpecialistDetailSkeleton />;
   }
 
   // Show error state
@@ -235,215 +217,234 @@ export default function SpecialistDetailScreen() {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <ResponsiveContainer>
           {/* Specialist Overview */}
-          <ResponsiveCard style={styles.overviewCard}>
+          <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
             <View style={styles.overviewSection}>
-              {/* Header with avatar and basic info */}
-              <View style={styles.specialistHeader}>
-                <View style={styles.avatarContainer}>
-                  {specialist.User.avatarUrl ? (
-                    <Image
-                      source={{ uri: specialist.User.avatarUrl }}
-                      style={styles.avatar}
-                    />
-                  ) : (
-                    <View
-                      style={[
-                        styles.avatar,
-                        styles.defaultAvatar,
-                        { backgroundColor: colors.border },
-                      ]}
-                    >
-                      <IconSymbol
-                        name="person.fill"
-                        size={45}
-                        color={colors.tabIconDefault}
-                      />
-                    </View>
-                  )}
-                  {/* Verification badge on avatar */}
-                  {specialist.User.verified && (
-                    <View style={styles.verificationBadge}>
-                      <IconSymbol
-                        name="checkmark.seal.fill"
-                        size={24}
-                        color="#4CAF50"
-                      />
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.specialistInfo}>
-                  <Text style={[styles.specialistName, { color: colors.text }]}>
-                    {specialist.User.name}
-                  </Text>
-                  <Text
-                    style={[styles.specialistTitle, { color: colors.tint }]}
+              {bannerImage && (
+                <View style={styles.bannerWrapper}>
+                  <ImageBackground
+                    source={{ uri: bannerImage }}
+                    style={styles.bannerBackground}
+                    imageStyle={styles.bannerImageStyle}
                   >
-                    {specialist.Service?.name || t("specialist")}
-                  </Text>
-
-                  {/* Rating with better design */}
-                  <View style={styles.ratingContainer}>
-                    {specialist.reviewCount && specialist.reviewCount > 0 ? (
-                      <>
-                        <View style={styles.ratingBadge}>
-                          <View style={styles.stars}>
-                            {renderStars(specialist.averageRating || 0)}
-                          </View>
-                          <Text
-                            style={[
-                              styles.ratingNumber,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {specialist.averageRating || 0}
-                          </Text>
-                        </View>
-                        <Text
-                          style={[
-                            styles.reviewCount,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          ({specialist.reviewCount || 0} {t("reviews")})
-                        </Text>
-                      </>
-                    ) : (
-                      <Text
-                        style={[
-                          styles.notRatedText,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {t("notRatedYet")}
-                      </Text>
-                    )}
-                  </View>
-
-                  {/* Status badges */}
-                  <View style={styles.badgesContainer}>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: specialist.User.verified
-                            ? "#4CAF50"
-                            : "#FFA500",
-                        },
-                      ]}
-                    >
-                      <IconSymbol
-                        name={
-                          specialist.User.verified
-                            ? "checkmark.circle.fill"
-                            : "clock.fill"
-                        }
-                        size={14}
-                        color="white"
+                    {/* Overlay for better text readability */}
+                    <View style={styles.bannerOverlay} />
+                  </ImageBackground>
+                </View>
+              )}
+              <View style={[styles.contentWrapper]}>
+                {/* Header with avatar and basic info */}
+                <View style={styles.specialistHeader}>
+                  <View style={styles.avatarContainer}>
+                    {specialist.User.avatarUrl ? (
+                      <Image
+                        source={{ uri: specialist.User.avatarUrl }}
+                        style={styles.avatar}
                       />
-                      <Text style={styles.statusBadgeText}>
-                        {specialist.User.verified
-                          ? t("verified")
-                          : t("pending")}
-                      </Text>
-                    </View>
-
-                    {specialist.experienceYears && (
+                    ) : (
                       <View
                         style={[
-                          styles.experienceBadge,
-                          { backgroundColor: colors.tint + "20" },
+                          styles.avatar,
+                          styles.defaultAvatar,
+                          { backgroundColor: colors.border },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.experienceBadgeText,
-                            { color: colors.tint },
-                          ]}
-                        ></Text>
+                        <IconSymbol
+                          name="person.fill"
+                          size={45}
+                          color={colors.tabIconDefault}
+                        />
+                      </View>
+                    )}
+                    {/* Verification badge on avatar */}
+                    {specialist.User.verified && (
+                      <View style={styles.verificationBadge}>
+                        <IconSymbol
+                          name="checkmark.seal.fill"
+                          size={24}
+                          color="#4CAF50"
+                        />
                       </View>
                     )}
                   </View>
-                </View>
-              </View>
 
-              {/* Bio section with better styling */}
-              <View style={styles.bioSection}>
-                {/* <Text style={[styles.bioTitle, { color: colors.text }]}>
-                  About
-                </Text> */}
-                <Text style={[styles.bio, { color: colors.text }]}>
-                  {specialist.User.bio || t("professionalSpecialistReady")}
-                </Text>
-              </View>
+                  <View style={styles.specialistInfo}>
+                    <Text
+                      style={[styles.specialistName, { color: colors.text }]}
+                    >
+                      {specialist.User.name}
+                    </Text>
+                    <Text
+                      style={[styles.specialistTitle, { color: colors.tint }]}
+                    >
+                      {specialist.Service?.name || t("specialist")}
+                    </Text>
 
-              {/* Quick stats */}
-              <View style={styles.quickStats}>
-                <View
-                  style={[
-                    styles.statItem,
-                    { backgroundColor: colors.background },
-                  ]}
-                >
-                  <IconSymbol
-                    name="briefcase.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.statNumber, { color: colors.text }]}>
-                    {specialist._count?.Proposals || 0}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: colors.tabIconDefault }]}
-                  >
-                    {t("projects")}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.statItem,
-                    { backgroundColor: colors.background },
-                  ]}
-                >
-                  <IconSymbol name="star.fill" size={20} color="#FFD700" />
-                  <Text style={[styles.statNumber, { color: colors.text }]}>
-                    {(specialist.averageRating || 0).toFixed(1)}
-                  </Text>
-                  <Text
-                    style={[styles.statLabel, { color: colors.tabIconDefault }]}
-                  >
-                    {t("rating")}
-                  </Text>
-                </View>
-
-                <View
-                  style={[
-                    styles.statItem,
-                    { backgroundColor: colors.background },
-                  ]}
-                >
-                  <IconSymbol name="calendar" size={20} color={colors.tint} />
-                  {(() => {
-                    const timeInfo = formatTimeDifference(
-                      specialist.User.createdAt
-                    );
-                    return (
-                      <>
-                        <Text style={[styles.bio, { color: colors.text }]}>
-                          {timeInfo.value}
-                        </Text>
+                    {/* Rating with better design */}
+                    <View style={styles.ratingContainer}>
+                      {specialist.reviewCount && specialist.reviewCount > 0 ? (
+                        <>
+                          <View style={styles.ratingBadge}>
+                            <View style={styles.stars}>
+                              {renderStars(specialist.averageRating || 0)}
+                            </View>
+                            <Text
+                              style={[
+                                styles.ratingNumber,
+                                { color: colors.text },
+                              ]}
+                            >
+                              {specialist.averageRating || 0}
+                            </Text>
+                          </View>
+                          <Text
+                            style={[
+                              styles.reviewCount,
+                              { color: colors.tabIconDefault },
+                            ]}
+                          >
+                            ({specialist.reviewCount || 0} {t("reviews")})
+                          </Text>
+                        </>
+                      ) : (
                         <Text
                           style={[
-                            styles.statLabel,
+                            styles.notRatedText,
                             { color: colors.tabIconDefault },
                           ]}
                         >
-                          {timeInfo.label}
+                          {t("notRatedYet")}
                         </Text>
-                      </>
-                    );
-                  })()}
+                      )}
+                    </View>
+
+                    {/* Status badges */}
+                    <View style={styles.badgesContainer}>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: specialist.User.verified
+                              ? "#4CAF50"
+                              : "#FFA500",
+                          },
+                        ]}
+                      >
+                        <IconSymbol
+                          name={
+                            specialist.User.verified
+                              ? "checkmark.circle.fill"
+                              : "clock.fill"
+                          }
+                          size={14}
+                          color="white"
+                        />
+                        <Text style={styles.statusBadgeText}>
+                          {specialist.User.verified
+                            ? t("verified")
+                            : t("pending")}
+                        </Text>
+                      </View>
+
+                      {specialist.experienceYears && (
+                        <View
+                          style={[
+                            styles.experienceBadge,
+                            { backgroundColor: colors.tint + "20" },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.experienceBadgeText,
+                              { color: colors.tint },
+                            ]}
+                          ></Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {/* Bio section with better styling */}
+                <View style={styles.bioSection}>
+                  <Text style={[styles.bio, { color: colors.text }]}>
+                    {specialist.User.bio || t("professionalSpecialistReady")}
+                  </Text>
+                </View>
+
+                {/* Quick stats */}
+                <View style={styles.quickStats}>
+                  <View
+                    style={[
+                      styles.statItem,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="briefcase.fill"
+                      size={16}
+                      color={colors.tint}
+                    />
+                    <Text style={[styles.statNumber, { color: colors.text }]}>
+                      {specialist._count?.Proposals || 0}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("projects")}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statItem,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <IconSymbol name="star.fill" size={16} color="#FFD700" />
+                    <Text style={[styles.statNumber, { color: colors.text }]}>
+                      {(specialist.averageRating || 0).toFixed(1)}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.statLabel,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("rating")}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statItem,
+                      { backgroundColor: colors.background },
+                    ]}
+                  >
+                    <IconSymbol name="calendar" size={16} color={colors.tint} />
+                    {(() => {
+                      const timeInfo = formatTimeDifference(
+                        specialist.User.createdAt
+                      );
+                      return (
+                        <>
+                          <Text style={[styles.bio, { color: colors.text }]}>
+                            {timeInfo.value}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.statLabel,
+                              { color: colors.tabIconDefault },
+                            ]}
+                          >
+                            {timeInfo.label}
+                          </Text>
+                        </>
+                      );
+                    })()}
+                  </View>
                 </View>
               </View>
             </View>
@@ -467,7 +468,7 @@ export default function SpecialistDetailScreen() {
                 >
                   <IconSymbol
                     name="dollarsign.circle.fill"
-                    size={24}
+                    size={18}
                     color={colors.tint}
                   />
                 </View>
@@ -512,7 +513,7 @@ export default function SpecialistDetailScreen() {
                 >
                   <IconSymbol
                     name="location.fill"
-                    size={24}
+                    size={18}
                     color={colors.tint}
                   />
                 </View>
@@ -548,7 +549,7 @@ export default function SpecialistDetailScreen() {
                 >
                   <IconSymbol
                     name="briefcase.fill"
-                    size={24}
+                    size={18}
                     color={colors.tint}
                   />
                 </View>
@@ -584,7 +585,7 @@ export default function SpecialistDetailScreen() {
                 >
                   <IconSymbol
                     name="checkmark.circle.fill"
-                    size={24}
+                    size={18}
                     color="#4CAF50"
                   />
                 </View>
@@ -793,17 +794,6 @@ export default function SpecialistDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    fontWeight: "500",
-  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
@@ -825,10 +815,40 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   // Overview Section Styles
-  overviewCard: {
-    marginBottom: 16,
-  },
+
   overviewSection: {
+    position: "relative",
+    gap: 20,
+    padding: 16,
+    backgroundColor: "transparent",
+  },
+  bannerWrapper: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "50%",
+    zIndex: 0,
+    overflow: "hidden",
+  },
+  bannerBackground: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerImageStyle: {
+    resizeMode: "cover",
+    opacity: 0.5,
+  },
+  bannerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  contentWrapper: {
+    position: "relative",
+    zIndex: 1,
     gap: 20,
   },
   specialistHeader: {
@@ -938,21 +958,21 @@ const styles = StyleSheet.create({
   },
   quickStats: {
     flexDirection: "row",
-    gap: 12,
+    gap: 8,
   },
   statItem: {
     flex: 1,
     alignItems: "center",
-    padding: 16,
+    padding: 10,
     borderRadius: 12,
-    gap: 8,
+    gap: 6,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: "700",
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "500",
   },
   footerButtons: {
@@ -968,35 +988,38 @@ const styles = StyleSheet.create({
   },
   // Details Section Styles
   detailsGrid: {
-    gap: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
   },
   detailCard: {
+    flex: 1,
+    minWidth: "47%",
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    gap: 16,
-    marginBottom: 8,
+    padding: 10,
+    borderRadius: 10,
+    gap: 10,
   },
   detailIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
   detailCardContent: {
     flex: 1,
-    gap: 4,
+    gap: 2,
   },
   detailCardLabel: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: "500",
-    opacity: 0.8,
+    opacity: 0.7,
   },
   detailCardValue: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 13,
+    fontWeight: "600",
   },
   // Skills Section Styles
   skillsHeader: {

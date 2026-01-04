@@ -230,11 +230,11 @@ const ServicesScreen = () => {
   const filterSections: FilterSection[] = useMemo(
     () => [
       {
-        title: t("categories") || "Categories",
+        title: t("categories"),
         key: "Categories",
         multiSelect: true,
         options: [
-          { key: "all", label: t("allCategories") || "All Categories" },
+          { key: "all", label: t("allCategories") },
           ...mainServices.map((service) => ({
             key: service.id.toString(),
             label: service.name,

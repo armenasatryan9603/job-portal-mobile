@@ -232,7 +232,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
             <IconSymbol name="xmark" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>
-            {t("selectLocationAndRadius") || "Select Location & Radius"}
+            {t("selectLocationAndRadius")}
           </Text>
           <TouchableOpacity
             onPress={handleConfirm}
@@ -256,7 +256,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
                 },
               ]}
             >
-              {t("apply") || "Apply"}
+              {t("apply")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -326,7 +326,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
         >
           <View style={styles.radiusHeader}>
             <Text style={[styles.radiusLabel, { color: colors.text }]}>
-              {t("radius") || "Radius"}
+              {t("radius")}
             </Text>
             <Text style={[styles.radiusValue, { color: colors.primary }]}>
               {radius} km

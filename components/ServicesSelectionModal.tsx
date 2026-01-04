@@ -12,6 +12,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Service } from "@/services/api";
 import { ThemeColors } from "@/constants/styles";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 type ThemeColorsType = typeof ThemeColors;
 
@@ -38,6 +39,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
   onSearchChange,
   onToggleService,
 }) => {
+  const { t } = useTranslation();
   const filteredServices = availableServices.filter(
     (service) =>
       service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,7 +81,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
           />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder="Search services..."
+            placeholder={t("searchServices")}
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={onSearchChange}

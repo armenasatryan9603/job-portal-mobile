@@ -311,7 +311,7 @@ export default function CreateOrderScreen() {
         } else {
           throw new Error(
             `Currency conversion not available for ${previousCurrency} to ${currency}. ${
-              lastError?.message || "Please enter the price manually."
+              lastError?.message || t("pleaseEnterPriceManually")
             }`
           );
         }

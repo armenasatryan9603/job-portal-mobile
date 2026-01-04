@@ -26,6 +26,7 @@ import {
 import { IconSymbol } from "./ui/icon-symbol";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ReferralCodeInput } from "./ReferralCodeInput";
+import { Logo } from "./Logo";
 
 interface SignupModalProps {
   visible: boolean;
@@ -284,6 +285,11 @@ export function SignupModal({ visible, onClose }: SignupModalProps) {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Logo size={64} variant="large" />
+            </View>
+
             {step === "phone" && (
               <View>
                 <PhoneNumberInput
@@ -392,6 +398,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xxl,
     paddingBottom: Spacing.xxl,
     justifyContent: "center",
+  },
+  logoContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.xl,
   },
   // Name input specific styles
   nameInputContainer: {

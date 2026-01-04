@@ -11,6 +11,7 @@ import {
   View,
   Platform,
 } from "react-native";
+import { Logo } from "./Logo";
 
 interface HeaderProps {
   title?: string;
@@ -25,6 +26,7 @@ interface HeaderProps {
   showChatButton?: boolean;
   unreadNotificationsCount?: number;
   unreadMessagesCount?: number;
+  showLogo?: boolean; // New prop for logo display
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -40,6 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   showChatButton = false,
   unreadNotificationsCount = 0,
   unreadMessagesCount = 0,
+  showLogo = false,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -72,23 +75,33 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </View>
 
-        {/* Center - Title */}
+        {/* Center - Logo or Title */}
         <View style={[styles.centerSection, centerTitle && styles.centerTitle]}>
-          {title && (
-            <Text
-              style={[styles.title, { color: colors.text }]}
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-          )}
-          {subtitle && (
-            <Text
-              style={[styles.subtitle, { color: colors.tabIconDefault }]}
-              numberOfLines={1}
-            >
-              {subtitle}
-            </Text>
+          {showLogo ? (
+            <Logo
+              size={32}
+              onPress={() => router.push("/")}
+              style={styles.logo}
+            />
+          ) : (
+            <>
+              {title && (
+                <Text
+                  style={[styles.title, { color: colors.text }]}
+                  numberOfLines={1}
+                >
+                  {title}
+                </Text>
+              )}
+              {subtitle && (
+                <Text
+                  style={[styles.subtitle, { color: colors.tabIconDefault }]}
+                  numberOfLines={1}
+                >
+                  {subtitle}
+                </Text>
+              )}
+            </>
           )}
         </View>
 
@@ -217,5 +230,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: Spacing.xs,
     textAlign: "center",
+  },
+  logo: {
+    alignSelf: "center",
   },
 });

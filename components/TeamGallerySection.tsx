@@ -128,8 +128,8 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
     if (!user?.id) return;
 
     Alert.alert(
-      t("deletePortfolioItem") || "Delete Item",
-      t("deletePortfolioItemConfirm") || "Are you sure you want to delete this item?",
+      t("deletePortfolioItem"),
+      t("deletePortfolioItemConfirm"),
       [
         { text: t("cancel"), style: "cancel" },
         {
@@ -188,7 +188,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("gallery") || "Gallery"}
+          {t("gallery")}
         </Text>
         {isTeamLead && (
           <TouchableOpacity
@@ -214,8 +214,8 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
           />
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
             {isTeamLead
-              ? t("noWorkSamplesYet") || "No gallery items yet"
-              : t("noWorkSamplesAvailable") || "No gallery items available"}
+              ? t("noWorkSamplesYet")
+              : t("noWorkSamplesAvailable")}
           </Text>
           {isTeamLead && (
             <Text
@@ -224,7 +224,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
                 { color: colors.textSecondary },
               ]}
             >
-              {t("uploadWorkSamplesHint") || "Upload images to showcase your team's work"}
+              {t("uploadWorkSamplesHint")}
             </Text>
           )}
         </View>
@@ -280,7 +280,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {t("editPortfolioItem") || "Edit Item"}
+              {t("editPortfolioItem")}
             </Text>
 
             <TextInput

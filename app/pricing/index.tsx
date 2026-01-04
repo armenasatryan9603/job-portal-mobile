@@ -27,7 +27,7 @@ const formatCurrency = (value: number) => {
 
 const formatCredits = (value: number) => {
   const { t } = useTranslation();
-  return `${Math.round(value).toLocaleString()} ${t("credits") || "credits"}`;
+  return `${Math.round(value).toLocaleString()} ${t("credits")}`;
 };
 
 // Format percentage that's already a percentage (e.g., 5.0 -> "5.0%")
@@ -59,7 +59,7 @@ export default function PriceInfoScreen() {
       const data = await apiService.getOrderPricing();
       setPricing(data || []);
     } catch (err: any) {
-      setError(err?.message || "Failed to load pricing");
+      setError(err?.message || t("failedToLoadPricing"));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,10 +73,8 @@ export default function PriceInfoScreen() {
   const header = useMemo(
     () => (
       <Header
-        title={t("pricingAndFees") || "Pricing & Fees"}
-        subtitle={
-          t("viewOrderPricingDetails") || "Order pricing tiers and refunds"
-        }
+        title={t("pricingAndFees")}
+        subtitle={t("viewOrderPricingDetails")}
         showBackButton
         onBackPress={() => router.back()}
       />
@@ -99,7 +97,7 @@ export default function PriceInfoScreen() {
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            {t("loading") || "Loading pricing..."}
+            {t("loadingPricing")}
           </Text>
         </View>
       );
@@ -120,7 +118,7 @@ export default function PriceInfoScreen() {
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
             onPress={loadPricing}
           >
-            <Text style={styles.retryButtonText}>{t("retry") || "Retry"}</Text>
+            <Text style={styles.retryButtonText}>{t("retry")}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -131,7 +129,7 @@ export default function PriceInfoScreen() {
         <View style={styles.centered}>
           <IconSymbol name="tray" size={28} color={colors.textSecondary} />
           <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-            {t("noPricingAvailable") || "No pricing data available yet."}
+            {t("noPricingAvailable")}
           </Text>
         </View>
       );
@@ -158,14 +156,14 @@ export default function PriceInfoScreen() {
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
         {renderRow(
-          t("creditCostIndividual") || "Credit cost (individual)",
+          t("creditCostIndividual"),
           formatPercentDirect(tier.creditCost)
         )}
         {renderRow(
-          t("creditCostTeam") || "Credit cost (team)",
+          t("creditCostTeam"),
           tier.teamCreditCost
             ? formatPercentDirect(tier.teamCreditCost)
-            : t("notAvailable") || "Not available"
+            : t("notAvailable")
         )}
         {renderRow(
           t("refundPercentageIndividual"),

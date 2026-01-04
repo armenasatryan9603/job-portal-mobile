@@ -226,7 +226,7 @@ export default function TeamsScreen() {
   const header = useMemo(
     () => (
       <Header
-        title={isAuthenticated ? t("myTeams") : t("teams") || "Teams"}
+        title={isAuthenticated ? t("myTeams") : t("teams")}
         subtitle={t("findTeamsDesc")}
         showNotificationsButton={isAuthenticated}
         showChatButton={isAuthenticated}

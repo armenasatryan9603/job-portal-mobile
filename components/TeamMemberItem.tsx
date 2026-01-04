@@ -76,7 +76,7 @@ export const TeamMemberItem = memo(
                   <View style={styles.pendingBadge}>
                     <IconSymbol name="clock.fill" size={12} color="#FF9500" />
                     <Text style={styles.pendingBadgeText}>
-                      {t("pending") || "Pending"}
+                      {t("pending")}
                     </Text>
                   </View>
                 )}

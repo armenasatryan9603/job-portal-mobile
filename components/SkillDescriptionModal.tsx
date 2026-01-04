@@ -55,7 +55,7 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
     } catch (err: any) {
       console.error("Error loading skill:", err);
       setError(
-        err?.message || t("failedToLoadSkill") || "Failed to load skill"
+        err?.message || t("failedToLoadSkill")
       );
     } finally {
       setLoading(false);

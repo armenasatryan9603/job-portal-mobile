@@ -31,7 +31,7 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = jobportalmobile/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* jobportalmobile-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "jobportalmobile-Bridging-Header.h"; path = "jobportalmobile/jobportalmobile-Bridging-Header.h"; sourceTree = "<group>"; };
-		F406E055D3D2D5B757433472 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = jobportalmobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F406E055D3D2D5B757433472 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = jobportalmobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -123,7 +123,6 @@
 				9A121685E9C2FCA043516734 /* Pods-jobportalmobile.debug.xcconfig */,
 				509D2705C846344429FFBCB0 /* Pods-jobportalmobile.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -403,6 +402,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = jobportalmobile/jobportalmobile.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q53NBVSDX8;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -421,7 +421,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.jobportalmobile.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.job-portal.JobWise";
 				PRODUCT_NAME = jobportalmobile;
 				SWIFT_OBJC_BRIDGING_HEADER = "jobportalmobile/jobportalmobile-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -439,6 +439,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = jobportalmobile/jobportalmobile.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Q53NBVSDX8;
 				INFOPLIST_FILE = jobportalmobile/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -452,7 +453,7 @@
 					"-lc++",
 				);
 				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.jobportalmobile.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.job-portal.JobWise";
 				PRODUCT_NAME = jobportalmobile;
 				SWIFT_OBJC_BRIDGING_HEADER = "jobportalmobile/jobportalmobile-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

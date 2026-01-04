@@ -24,6 +24,7 @@ import {
 import { IconSymbol } from "./ui/icon-symbol";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ReferralCodeInput } from "./ReferralCodeInput";
+import { Logo } from "./Logo";
 
 interface LoginModalProps {
   visible: boolean;
@@ -348,6 +349,11 @@ export function LoginModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Logo size={64} variant="large" />
+            </View>
+
             {step === "phone" ? (
               <View>
                 {/* Phone Input Only */}
@@ -521,6 +527,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xxl,
     paddingBottom: Spacing.xxl,
     justifyContent: "center",
+  },
+  logoContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.xl,
   },
   inputContainer: {
     borderWidth: 1.5,

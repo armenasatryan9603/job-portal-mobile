@@ -76,7 +76,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
         const answer = questionAnswers[question.id];
         if (!answer || !answer.trim()) {
           errors[question.id] =
-            t("pleaseAnswerQuestion") || "Please answer this question";
+            t("pleaseAnswerQuestion");
         }
       }
     }
@@ -297,7 +297,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                           },
                         ]}
                         placeholder={
-                          t("enterYourAnswer") || "Enter your answer..."
+                          t("enterYourAnswer")
                         }
                         placeholderTextColor={colors.tabIconDefault}
                         value={questionAnswers[question.id] || ""}

@@ -395,7 +395,7 @@ export default function CalendarScreen() {
           <View style={styles.legendItems}>
             {[
               { status: "pending", label: t("pending") },
-              { status: "accepted", label: t("accepted") || "Accepted" },
+              { status: "accepted", label: t("accepted") },
               { status: "rejected", label: t("rejected") },
               { status: "cancelled", label: t("cancelled") },
             ].map((item) => (
@@ -445,18 +445,18 @@ export default function CalendarScreen() {
         dateFilterMode === "applied"
           ? t("noAppliedApplications") ||
             t("noApplications") ||
-            "No Applications"
+            t("noApplications")
           : t("noScheduledApplications") ||
             t("noApplications") ||
-            "No Applications";
+            t("noApplications");
       const emptySubtitle =
         dateFilterMode === "applied"
           ? selectedDate
-            ? t("noAppliedOnDate") || "No applied items on this date"
-            : t("noAppliedDesc") || "You haven't applied to any jobs yet"
+            ? t("noAppliedOnDate")
+            : t("noAppliedDesc")
           : selectedDate
-          ? t("noScheduledOnDate") || "No scheduled items on this date"
-          : t("noScheduledDesc") || "No scheduled dates available";
+          ? t("noScheduledOnDate")
+          : t("noScheduledDesc");
 
       return (
         <EmptyPage
@@ -723,8 +723,8 @@ export default function CalendarScreen() {
         />
         <EmptyPage
           type="error"
-          title={t("error") || "Error"}
-          buttonText={t("retry") || "Retry"}
+          title={t("error")}
+          buttonText={t("retry")}
           onRetry={() => refetch()}
         />
       </Layout>
@@ -861,7 +861,7 @@ export default function CalendarScreen() {
                       },
                     ]}
                   >
-                    {t("applied") || "Applied"}
+                    {t("applied")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -902,7 +902,7 @@ export default function CalendarScreen() {
                       },
                     ]}
                   >
-                    {t("scheduledDate") || "Scheduled"}
+                    {t("scheduledDate")}
                   </Text>
                 </TouchableOpacity>
               </View>

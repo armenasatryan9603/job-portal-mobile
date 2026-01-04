@@ -257,7 +257,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                             { color: colors.textSecondary },
                           ]}
                         >
-                          {t("noReasonsAvailable") || "No reasons available"}
+                          {t("noReasonsAvailable")}
                         </Text>
                       )}
                     </View>

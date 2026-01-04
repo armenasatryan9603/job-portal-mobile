@@ -479,7 +479,7 @@ export const SkillsAndRequirementsForm: React.FC<
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
             onSubmitEditing={handleSubmitEditing}
-            placeholder={t("addSkill") || "Add skill..."}
+            placeholder={t("addSkill")}
             placeholderTextColor={colors.tabIconDefault}
             maxLength={50}
             returnKeyType="done"
@@ -575,7 +575,7 @@ export const SkillsAndRequirementsForm: React.FC<
           >
             <IconSymbol name="plus.circle.fill" size={18} color={colors.tint} />
             <Text style={[styles.createNewSkillText, { color: colors.tint }]}>
-              {t("createSkill") || "Create"} "{currentInput.trim()}"
+              {t("createSkill")} "{currentInput.trim()}"
             </Text>
           </Pressable>
         )}

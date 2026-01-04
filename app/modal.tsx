@@ -5,22 +5,24 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ModalScreen() {
+  const { t } = useTranslation();
   return (
     <Layout
       header={
         <Header
-          title="Modal"
+          title={t("modal")}
           showBackButton={true}
           onBackPress={() => router.back()}
         />
       }
     >
       <ThemedView style={styles.container}>
-        <ThemedText type="title">This is a modal</ThemedText>
+        <ThemedText type="title">{t("thisIsAModal")}</ThemedText>
         <Link href="/" dismissTo style={styles.link}>
-          <ThemedText type="link">Go to home screen</ThemedText>
+          <ThemedText type="link">{t("goToHomeScreen")}</ThemedText>
         </Link>
       </ThemedView>
     </Layout>

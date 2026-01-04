@@ -205,11 +205,8 @@ export default function RefillCreditsScreen() {
     await fetchCurrentBalance();
 
     Alert.alert(
-      t("paymentSuccess") || "Payment Successful",
-      `${
-        t("paymentSuccessMessage") ||
-        "Your payment was successful. Credits have been added to your account."
-      } ${pendingAmount.toFixed(2)} ${t("credits")}.`,
+      t("paymentSuccess"),
+      `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(2)} ${t("credits")}.`,
       [
         {
           text: t("ok"),
@@ -227,10 +224,8 @@ export default function RefillCreditsScreen() {
 
   const handlePaymentFailure = (error: string) => {
     Alert.alert(
-      t("paymentFailed") || "Payment Failed",
-      error ||
-        t("paymentFailedMessage") ||
-        "Your payment could not be processed. Please try again.",
+      t("paymentFailed"),
+      error || t("paymentFailedMessage"),
       [
         {
           text: t("ok"),

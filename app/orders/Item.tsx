@@ -157,7 +157,7 @@ const OrderItem = ({
   const budgetDisplay =
     order.budget !== undefined && order.budget !== null
       ? `${currencyLabel} ${order.budget.toLocaleString()} • ${rateUnitLabel}`
-      : t("notProvided") || "Not provided";
+      : t("notProvided");
 
   const handleSaveToggle = async (e: any) => {
     e.stopPropagation(); // Prevent triggering order press
@@ -245,7 +245,7 @@ const OrderItem = ({
             <Text
               style={[styles.viewedTagText, { color: colors.tabIconDefault }]}
             >
-              {t("viewed") || "Viewed"}
+              {t("viewed")}
             </Text>
           </View>
         )}
@@ -393,32 +393,44 @@ const OrderItem = ({
           {(() => {
             // Get skills from OrderSkills if available, otherwise fallback to order.skills
             const orderSkills = (order as any).OrderSkills;
-            let skillsToDisplay: Array<{ name: string; skillId: number | null }> = [];
+            let skillsToDisplay: Array<{
+              name: string;
+              skillId: number | null;
+            }> = [];
 
-            if (orderSkills && Array.isArray(orderSkills) && orderSkills.length > 0) {
+            if (
+              orderSkills &&
+              Array.isArray(orderSkills) &&
+              orderSkills.length > 0
+            ) {
               // Use OrderSkills structure (preferred)
-              skillsToDisplay = orderSkills.map((os: any) => {
-                const skill = os.Skill;
-                if (!skill) return null;
-                // Get skill name based on current language
-                let skillName = "";
-                switch (language) {
-                  case "ru":
-                    skillName = skill.nameRu || skill.nameEn || skill.nameHy || "";
-                    break;
-                  case "hy":
-                    skillName = skill.nameHy || skill.nameEn || skill.nameRu || "";
-                    break;
-                  case "en":
-                  default:
-                    skillName = skill.nameEn || skill.nameRu || skill.nameHy || "";
-                    break;
-                }
-                return {
-                  name: skillName,
-                  skillId: skill.id,
-                };
-              }).filter((s: any) => s !== null && s.name);
+              skillsToDisplay = orderSkills
+                .filter((os: any) => !!os.Skill)
+                .map((os: any) => {
+                  const skill = os.Skill;
+                  // Get skill name based on current language
+                  let skillName = "";
+                  switch (language) {
+                    case "ru":
+                      skillName =
+                        skill.nameRu || skill.nameEn || skill.nameHy || "";
+                      break;
+                    case "hy":
+                      skillName =
+                        skill.nameHy || skill.nameEn || skill.nameRu || "";
+                      break;
+                    case "en":
+                    default:
+                      skillName =
+                        skill.nameEn || skill.nameRu || skill.nameHy || "";
+                      break;
+                  }
+                  return {
+                    name: skillName,
+                    skillId: skill.id,
+                  };
+                })
+                .filter((s: any) => s !== null && s.name);
             } else if (order.skills && order.skills.length > 0) {
               // Fallback to order.skills array (backward compatibility)
               skillsToDisplay = order.skills.map((skill: string) => ({
@@ -443,7 +455,9 @@ const OrderItem = ({
                     ]}
                     onPress={() => {
                       // Navigate to orders list with skill search
-                      router.push(`/orders?q=${encodeURIComponent(skill.name)}`);
+                      router.push(
+                        `/orders?q=${encodeURIComponent(skill.name)}`
+                      );
                     }}
                     onLongPress={() => {
                       if (skill.skillId) {
@@ -598,6 +612,8 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   bannerImageSkeleton: {
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
     zIndex: 1000,
     position: "absolute",
     top: 0,

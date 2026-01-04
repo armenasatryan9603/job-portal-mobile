@@ -383,7 +383,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
   const handleAddPeer = useCallback(
     (peer: User) => {
       if (selectedPeerIds.length >= maxPeers) {
-        Alert.alert(t("error") || "Error", `Maximum ${maxPeers} peers allowed`);
+        Alert.alert(t("error"), t("maximumPeersAllowed").replace("{maxPeers}", maxPeers.toString()));
         return;
       }
       if (!selectedPeerIds.includes(peer.id)) {
@@ -543,7 +543,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
     if (selectedPeersToAdd.length === 0) {
       Alert.alert(
         t("error"),
-        t("selectPeersToAdd") || "Please select at least one peer to add"
+        t("selectPeersToAdd")
       );
       return;
     }
@@ -583,11 +583,11 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
         );
       } else if (addedPeerIds.length > 0 && failedPeerIds.length > 0) {
         Alert.alert(
-          t("partialSuccess") || "Partial Success",
+          t("partialSuccess"),
           `${addedPeerIds.length} peer(s) added, ${failedPeerIds.length} failed`
         );
       } else {
-        Alert.alert(t("error"), t("failedToAddPeers") || "Failed to add peers");
+        Alert.alert(t("error"), t("failedToAddPeers"));
       }
 
       setAddPeerSearchQuery("");
@@ -598,7 +598,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
       console.error("Error adding peers:", error);
       Alert.alert(
         t("error"),
-        error.message || t("failedToAddPeers") || "Failed to add peers"
+        error.message || t("failedToAddPeers")
       );
     } finally {
       setAddingPeers(false);
@@ -671,7 +671,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
       {/* Teams Section */}
       {onTeamSelect && (
         <CollapsibleSection
-          title={`${t("myTeams") || "My Teams"} (${teams.length})`}
+          title={`${t("myTeams")} (${teams.length})`}
           isOpen={showTeams}
           onToggle={() => setShowTeams(!showTeams)}
           colors={colors}
@@ -685,7 +685,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
               <Text
                 style={[styles.emptyText, { color: colors.tabIconDefault }]}
               >
-                {t("noTeams") || "No teams yet"}
+                {t("noTeams")}
               </Text>
               <TouchableOpacity
                 style={[styles.actionButton, { backgroundColor: colors.tint }]}
@@ -693,7 +693,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
               >
                 <IconSymbol name="person.3" size={16} color="#fff" />
                 <Text style={styles.actionButtonText}>
-                  {t("createTeam") || "Create Team"}
+                  {t("createTeam")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -809,7 +809,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
                 <IconSymbol name="xmark" size={24} color={colors.text} />
               </TouchableOpacity>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {t("addPeers") || "Add Peers"}{" "}
+                {t("addPeers")}{" "}
                 {selectedPeersToAdd.length > 0 &&
                   `(${selectedPeersToAdd.length})`}
               </Text>
@@ -826,7 +826,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
                     <Text style={styles.addSelectedButtonText}>
-                      {t("addSelected") || "Add Selected"}
+                      {t("addSelected")}
                     </Text>
                   )}
                 </TouchableOpacity>
@@ -842,7 +842,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
                   color: colors.text,
                 },
               ]}
-              placeholder={t("searchSpecialists") || "Search specialists..."}
+              placeholder={t("searchSpecialists")}
               placeholderTextColor={colors.tabIconDefault}
               value={addPeerSearchQuery}
               onChangeText={(text) => {
@@ -915,13 +915,13 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
                   <Text
                     style={[styles.emptyText, { color: colors.tabIconDefault }]}
                   >
-                    {t("noResults") || "No specialists found"}
+                    {t("noResults")}
                   </Text>
                 ) : !loadingSpecialists && allSpecialists.length === 0 ? (
                   <Text
                     style={[styles.emptyText, { color: colors.tabIconDefault }]}
                   >
-                    {t("noSpecialists") || "No specialists available"}
+                    {t("noSpecialists")}
                   </Text>
                 ) : null
               }

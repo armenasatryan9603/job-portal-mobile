@@ -916,7 +916,7 @@ export const Filter: React.FC<FilterProps> = ({
                                     { color: colors.textSecondary },
                                   ]}
                                 >
-                                  {t("selectedRatings") || "Selected"}:{" "}
+                                  {t("selectedRatings")}:{" "}
                                   {selectedRatings.join(", ")}{" "}
                                   {selectedRatings.length === 1
                                     ? t("star") || "star"
@@ -1089,9 +1089,8 @@ export const Filter: React.FC<FilterProps> = ({
                                   ]}
                                 >
                                   {hasValue
-                                    ? t("changeLocation") || "Change Location"
-                                    : t("selectLocationOnMap") ||
-                                      "Select Location on Map"}
+                                    ? t("changeLocation")
+                                    : t("selectLocationOnMap")}
                                 </Text>
                               </TouchableOpacity>
                             </View>
@@ -1194,7 +1193,7 @@ export const Filter: React.FC<FilterProps> = ({
                                   },
                                 ]}
                                 placeholder={
-                                  t("enterLocation") || "Enter location..."
+                                  t("enterLocation")
                                 }
                                 placeholderTextColor={colors.tabIconDefault}
                                 value={currentValue}
