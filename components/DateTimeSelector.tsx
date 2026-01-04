@@ -44,6 +44,21 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     return normalized.toDateString();
   };
 
+  const generateDefaultTimes = () => {
+    const times: string[] = [];
+    for (let hour = 9; hour <= 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        // Skip 18:30 since we only want up to 18:00
+        if (hour === 18 && minute > 0) break;
+        const timeString = `${hour.toString().padStart(2, "0")}:${minute
+          .toString()
+          .padStart(2, "0")}`;
+        times.push(timeString);
+      }
+    }
+    return times;
+  };
+
   const getTimesForDate = (date: Date) => {
     const key = getDateKey(date);
     return selectedDateTimes[key] || [];
@@ -56,70 +71,82 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     });
   };
 
+  const convertTimesToRanges = (times: string[]): string => {
+    if (times.length === 0) return "";
+    if (times.length === 1) return times[0];
+
+    const sortedTimes = [...times].sort();
+    const timeToMinutes = (time: string) => {
+      const [hours, minutes] = time.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const minutesToTime = (minutes: number) => {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+    };
+
+    const ranges: string[] = [];
+    let rangeStart = timeToMinutes(sortedTimes[0]);
+    let rangeEnd = rangeStart;
+
+    for (let i = 1; i < sortedTimes.length; i++) {
+      const currentTime = timeToMinutes(sortedTimes[i]);
+      const expectedNext = rangeEnd + 30;
+
+      if (currentTime === expectedNext) {
+        rangeEnd = currentTime;
+      } else {
+        ranges.push(
+          rangeStart === rangeEnd
+            ? minutesToTime(rangeStart)
+            : `${minutesToTime(rangeStart)}-${minutesToTime(rangeEnd)}`
+        );
+        rangeStart = currentTime;
+        rangeEnd = currentTime;
+      }
+    }
+
+    ranges.push(
+      rangeStart === rangeEnd
+        ? minutesToTime(rangeStart)
+        : `${minutesToTime(rangeStart)}-${minutesToTime(rangeEnd)}`
+    );
+
+    return ranges.join(", ");
+  };
+
   const formatDateWithTimes = (date: Date) => {
     const times = getTimesForDate(date);
     const dateStr = formatDateForDisplay(date);
     if (times.length > 0) {
-      return `${dateStr} (${times.join(", ")})`;
+      const timeRanges = convertTimesToRanges(times);
+      return `${dateStr} (${timeRanges})`;
     }
     return dateStr;
   };
 
   const toggleDateSelection = (date: Date) => {
-    // Normalize date to midnight for consistent comparison
     const normalizedDate = normalizeDate(date);
     const dateKey = normalizedDate.toDateString();
+    const isSelected = selectedDates.some(
+      (d) => normalizeDate(d).toDateString() === dateKey
+    );
 
-    if (
-      selectedDates.some((d) => {
-        const normalized = normalizeDate(d);
-        return normalized.toDateString() === dateKey;
-      })
-    ) {
-      // Remove date
-      const newDates = selectedDates.filter((d) => {
-        const normalized = normalizeDate(d);
-        return normalized.toDateString() !== dateKey;
-      });
-      onDatesChange(newDates);
-
-      // Remove associated times
-      const key = getDateKey(normalizedDate);
+    if (isSelected) {
+      // Remove date and its times
+      onDatesChange(
+        selectedDates.filter((d) => normalizeDate(d).toDateString() !== dateKey)
+      );
       const newDateTimes = { ...selectedDateTimes };
-      delete newDateTimes[key];
+      delete newDateTimes[getDateKey(normalizedDate)];
       onDateTimesChange(newDateTimes);
     } else {
-      // Add date (normalized to midnight)
+      // Add date
       onDatesChange([...selectedDates, normalizedDate]);
     }
   };
 
-  const toggleTimeForDate = (date: Date, time: string) => {
-    const key = getDateKey(date);
-    const currentTimes = getTimesForDate(date);
-
-    if (currentTimes.includes(time)) {
-      // Remove time
-      const newTimes = currentTimes.filter((t) => t !== time);
-      if (newTimes.length === 0) {
-        // Remove date if no times selected
-        const newDateTimes = { ...selectedDateTimes };
-        delete newDateTimes[key];
-        onDateTimesChange(newDateTimes);
-      } else {
-        onDateTimesChange({
-          ...selectedDateTimes,
-          [key]: newTimes,
-        });
-      }
-    } else {
-      // Add time
-      onDateTimesChange({
-        ...selectedDateTimes,
-        [key]: [...currentTimes, time],
-      });
-    }
-  };
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) => {
@@ -234,13 +261,22 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       <TimePicker
         visible={showTimePicker}
         onClose={() => setShowTimePicker(false)}
+        onDone={(times) => {
+          if (!selectedDateForTime) return;
+          const key = getDateKey(selectedDateForTime);
+          if (times.length === 0) {
+            const newDateTimes = { ...selectedDateTimes };
+            delete newDateTimes[key];
+            onDateTimesChange(newDateTimes);
+          } else {
+            onDateTimesChange({ ...selectedDateTimes, [key]: times });
+          }
+        }}
         selectedDate={selectedDateForTime}
         selectedTimes={
           selectedDateForTime ? getTimesForDate(selectedDateForTime) : []
         }
-        onTimeToggle={(time) =>
-          selectedDateForTime && toggleTimeForDate(selectedDateForTime, time)
-        }
+        defaultTimes={generateDefaultTimes()}
         formatDateForDisplay={formatDateForDisplay}
       />
     </ResponsiveCard>

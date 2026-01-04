@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -14,35 +14,95 @@ import { useTranslation } from "@/hooks/useTranslation";
 interface TimePickerProps {
   visible: boolean;
   onClose: () => void;
+  onDone: (times: string[]) => void;
   selectedDate: Date | null;
   selectedTimes: string[];
-  onTimeToggle: (time: string) => void;
   formatDateForDisplay: (date: Date) => string;
+  defaultTimes?: string[];
 }
 
 export const TimePicker: React.FC<TimePickerProps> = ({
   visible,
   onClose,
+  onDone,
   selectedDate,
   selectedTimes,
-  onTimeToggle,
   formatDateForDisplay,
+  defaultTimes = [],
 }) => {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 8; hour <= 20; hour++) {
+  const [localSelectedTimes, setLocalSelectedTimes] = useState<string[]>([]);
+
+  // Initialize local state when modal opens
+  useEffect(() => {
+    if (visible) {
+      const initialTimes =
+        selectedTimes.length > 0 ? selectedTimes : defaultTimes;
+      setLocalSelectedTimes([...initialTimes]);
+    }
+  }, [visible, selectedTimes, defaultTimes]);
+
+  const handleCancel = () => {
+    setLocalSelectedTimes(selectedTimes.length > 0 ? [...selectedTimes] : []);
+    onClose();
+  };
+
+  const handleDone = () => {
+    onDone(localSelectedTimes);
+    onClose();
+  };
+
+  const toggleTime = (time: string) => {
+    setLocalSelectedTimes((prev) =>
+      prev.includes(time) ? prev.filter((t) => t !== time) : [...prev, time]
+    );
+  };
+
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    for (let hour = 0; hour < 24; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const timeString = `${hour.toString().padStart(2, "0")}:${minute
-          .toString()
-          .padStart(2, "0")}`;
-        slots.push(timeString);
+        slots.push(
+          `${hour.toString().padStart(2, "0")}:${minute
+            .toString()
+            .padStart(2, "0")}`
+        );
       }
     }
     return slots;
+  }, []);
+
+  const getTimeBasedColor = (time: string) => {
+    const [hourStr, minuteStr] = time.split(":");
+    const hour = parseInt(hourStr, 10);
+    const minute = parseInt(minuteStr, 10);
+    const timeDecimal = hour + minute / 60;
+    const isLight = colorScheme === "light";
+
+    // Create smooth gradient: peak at noon, darkest at midnight
+    const normalizedTime = (timeDecimal / 24) * 2 * Math.PI;
+    const shiftedTime = normalizedTime - Math.PI / 2;
+    const brightness = Math.sin(shiftedTime);
+    const normalizedBrightness = (brightness + 1) / 2;
+
+    if (isLight) {
+      const minBrightness = 224; // #e0e0e0
+      const maxBrightness = 255; // #ffffff
+      const value = Math.round(
+        minBrightness + (maxBrightness - minBrightness) * normalizedBrightness
+      );
+      return `rgb(${value}, ${value}, ${value})`;
+    } else {
+      const minBrightness = 15; // #0f0f0f
+      const maxBrightness = 42; // #2a2a2a
+      const value = Math.round(
+        minBrightness + (maxBrightness - minBrightness) * normalizedBrightness
+      );
+      return `rgb(${value}, ${value}, ${value})`;
+    }
   };
 
   return (
@@ -50,7 +110,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleCancel}
     >
       <View
         style={[styles.modalContainer, { backgroundColor: colors.background }]}
@@ -58,7 +118,10 @@ export const TimePicker: React.FC<TimePickerProps> = ({
         <View
           style={[styles.modalHeader, { borderBottomColor: colors.border }]}
         >
-          <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            style={styles.modalCloseButton}
+          >
             <Text style={[styles.modalCloseText, { color: colors.tint }]}>
               {t("cancel")}
             </Text>
@@ -66,7 +129,7 @@ export const TimePicker: React.FC<TimePickerProps> = ({
           <Text style={[styles.modalTitle, { color: colors.text }]}>
             {selectedDate && formatDateForDisplay(selectedDate)}
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.modalDoneButton}>
+          <TouchableOpacity onPress={handleDone} style={styles.modalDoneButton}>
             <Text style={[styles.modalDoneText, { color: colors.tint }]}>
               {t("done")}
             </Text>
@@ -85,69 +148,36 @@ export const TimePicker: React.FC<TimePickerProps> = ({
 
           <ScrollView style={styles.timeSlotsContainer}>
             <View style={styles.timeSlotsGrid}>
-              {generateTimeSlots().map((time) => (
-                <TouchableOpacity
-                  key={time}
-                  style={[
-                    styles.timeSlot,
-                    {
-                      backgroundColor: selectedTimes.includes(time)
-                        ? colors.tint
-                        : colors.background,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  onPress={() => onTimeToggle(time)}
-                >
-                  <Text
+              {timeSlots.map((time) => {
+                const isSelected = localSelectedTimes.includes(time);
+                return (
+                  <TouchableOpacity
+                    key={time}
                     style={[
-                      styles.timeSlotText,
+                      styles.timeSlot,
                       {
-                        color: selectedTimes.includes(time)
-                          ? colors.background
-                          : colors.text,
+                        backgroundColor: getTimeBasedColor(time),
+                        borderColor: isSelected ? colors.tint : colors.border,
+                        borderWidth: isSelected ? 2 : 1,
                       },
                     ]}
-                  >
-                    {time}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-
-          {selectedTimes.length > 0 && (
-            <View
-              style={[
-                styles.selectedTimesSummary,
-                { borderTopColor: colors.border },
-              ]}
-            >
-              <Text style={[styles.summaryTitle, { color: colors.text }]}>
-                {t("selectedTimes")} ({selectedTimes.length})
-              </Text>
-              <View style={styles.selectedTimesContainer}>
-                {selectedTimes.map((time, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.selectedTimeChip,
-                      { backgroundColor: colors.tint },
-                    ]}
+                    onPress={() => toggleTime(time)}
                   >
                     <Text
                       style={[
-                        styles.selectedTimeText,
-                        { color: colors.background },
+                        styles.timeSlotText,
+                        {
+                          color: colors.text,
+                        },
                       ]}
                     >
                       {time}
                     </Text>
-                  </View>
-                ))}
-              </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          )}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -202,6 +232,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    justifyContent: "center",
   },
   timeSlot: {
     width: "22%",
@@ -213,30 +244,6 @@ const styles = StyleSheet.create({
   },
   timeSlotText: {
     fontSize: 14,
-    fontWeight: "500",
-  },
-  selectedTimesSummary: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    marginTop: 16,
-  },
-  summaryTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  selectedTimesContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  selectedTimeChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 16,
-  },
-  selectedTimeText: {
-    fontSize: 12,
     fontWeight: "500",
   },
 });

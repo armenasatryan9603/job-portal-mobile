@@ -199,8 +199,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
   },
   modalDoneButton: {
     paddingHorizontal: 8,

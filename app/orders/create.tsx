@@ -1426,18 +1426,6 @@ export default function CreateOrderScreen() {
     <Layout header={header}>
       <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 100 }}>
         <ResponsiveContainer>
-          {/* Service Selection */}
-          <ResponsiveCard>
-            <View ref={serviceSectionRef}>
-              <ServiceSelector
-                selectedService={selectedService}
-                onServiceSelect={handleServiceSelect}
-                error={errors.serviceId}
-                disabled={orderStatus === "in_progress"}
-              />
-            </View>
-          </ResponsiveCard>
-
           {/* Basic Information */}
           <ResponsiveCard>
             <View ref={basicInfoSectionRef}>
@@ -1456,6 +1444,18 @@ export default function CreateOrderScreen() {
                 }}
                 onFieldChange={updateField}
                 onLocationChange={handleLocationChange}
+              />
+            </View>
+          </ResponsiveCard>
+
+          {/* Service Selection */}
+          <ResponsiveCard>
+            <View ref={serviceSectionRef}>
+              <ServiceSelector
+                selectedService={selectedService}
+                onServiceSelect={handleServiceSelect}
+                error={errors.serviceId}
+                disabled={orderStatus === "in_progress"}
               />
             </View>
           </ResponsiveCard>
@@ -1622,6 +1622,27 @@ export default function CreateOrderScreen() {
             </View>
           </ResponsiveCard>
 
+          {/* Media Upload */}
+          <ResponsiveCard>
+            <MediaUploader
+              onMediaChange={setMediaFiles}
+              maxFiles={10}
+              value={mediaFiles}
+              selectedBannerIndex={selectedBannerIndex ?? undefined}
+              onBannerSelect={setSelectedBannerIndex}
+              existingBannerId={
+                existingBannerId !== null ? existingBannerId : undefined
+              }
+            />
+            {mediaFiles.length > 0 && (
+              <Text
+                style={[styles.bannerHint, { color: colors.tabIconDefault }]}
+              >
+                {t("tapImageToSetAsBanner")}
+              </Text>
+            )}
+          </ResponsiveCard>
+
           {/* Skills and Requirements */}
 
           <View ref={skillsSectionRef}>
@@ -1647,27 +1668,6 @@ export default function CreateOrderScreen() {
             onDatesChange={setSelectedDates}
             onDateTimesChange={setSelectedDateTimes}
           />
-
-          {/* Media Upload */}
-          <ResponsiveCard>
-            <MediaUploader
-              onMediaChange={setMediaFiles}
-              maxFiles={10}
-              value={mediaFiles}
-              selectedBannerIndex={selectedBannerIndex ?? undefined}
-              onBannerSelect={setSelectedBannerIndex}
-              existingBannerId={
-                existingBannerId !== null ? existingBannerId : undefined
-              }
-            />
-            {mediaFiles.length > 0 && (
-              <Text
-                style={[styles.bannerHint, { color: colors.tabIconDefault }]}
-              >
-                {t("tapImageToSetAsBanner")}
-              </Text>
-            )}
-          </ResponsiveCard>
 
           {/* Questions Section */}
           <ResponsiveCard style={{ position: "relative" }}>

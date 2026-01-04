@@ -26,17 +26,18 @@ import {
   Modal,
   Share,
   Platform,
-  Animated,
 } from "react-native";
 import { Image } from "expo-image";
 import { apiService, Order, OrderChangeHistory } from "@/services/api";
 import { chatService } from "@/services/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { ApplyModal } from "@/components/ApplyModal";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
+import { useApplyToOrder } from "@/hooks/useApi";
 
 export default function EditOrderScreen() {
   useAnalytics("OrderDetail");
@@ -135,6 +136,13 @@ export default function EditOrderScreen() {
   // Skill description modal state
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
   const [showSkillModal, setShowSkillModal] = useState(false);
+
+  // Apply modal state
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+
+  // Apply to order mutation
+  const applyToOrderMutation = useApplyToOrder();
 
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
@@ -237,16 +245,6 @@ export default function EditOrderScreen() {
     }
   };
 
-  const handleSubmitProposal = () => {
-    // Check if user is authenticated
-    if (!user?.id) {
-      showLoginModal();
-      return;
-    }
-
-    router.push(`/proposals/create?orderId=${id}`);
-  };
-
   const handleApplyToOrder = () => {
     // Check if user is authenticated
     if (!user?.id) {
@@ -255,13 +253,94 @@ export default function EditOrderScreen() {
       return;
     }
 
+    // Ensure we have a valid order
+    if (!order) {
+      Alert.alert(t("error"), t("orderNotFound"));
+      return;
+    }
+
     // Track apply to order
     AnalyticsService.getInstance().logEvent("apply_to_order_clicked", {
-      order_id: id?.toString() || "unknown",
+      order_id: order.id.toString(),
     });
 
-    // Navigate to proposal creation
-    router.push(`/proposals/create?orderId=${id}`);
+    // Show apply modal
+    setShowApplyModal(true);
+  };
+
+  const handleSubmitApplication = async (
+    message: string,
+    questionAnswers?: Array<{ questionId: number; answer: string }>,
+    peerIds?: number[],
+    teamId?: number
+  ) => {
+    if (!order) return;
+
+    setApplyLoading(true);
+
+    try {
+      // Use TanStack Query mutation
+      const result = await applyToOrderMutation.mutateAsync({
+        orderId: order.id,
+        message: message,
+        questionAnswers: questionAnswers,
+        peerIds: peerIds,
+        teamId: teamId,
+      });
+
+      // Track proposal submission
+      const proposalId = result?.id || result?.proposalId || "unknown";
+      await AnalyticsService.getInstance().logProposalSubmitted(
+        order.id.toString(),
+        proposalId.toString()
+      );
+
+      // Add order to applied orders set
+      setAppliedOrders((prev) => new Set(prev).add(order.id));
+
+      // Create a chat conversation with the client (include peers if group application)
+      // The proposal message will be automatically sent as the first message by the backend
+      try {
+        const conversation = await chatService.createOrderConversation(
+          order.id,
+          typeof proposalId === "number" ? proposalId : undefined
+        );
+
+        Alert.alert(t("success"), t("applicationSubmittedSuccessfully"), [
+          {
+            text: t("ok"),
+            onPress: () => {
+              // Navigate to the chat
+              router.push(`/chat/${conversation.id}`);
+            },
+          },
+        ]);
+      } catch (chatError) {
+        // Still show success for the application, but mention chat creation failed
+        Alert.alert(
+          t("success"),
+          t("applicationSubmittedSuccessfully") + " (Chat creation failed)"
+        );
+      }
+
+      // Close the modal
+      setShowApplyModal(false);
+    } catch (error: any) {
+      // Handle specific error cases
+      if (error.message?.includes("Insufficient credit balance")) {
+        Alert.alert(t("insufficientCredits"), t("needMoreCredits"));
+      } else if (error.message?.includes("already has a proposal")) {
+        Alert.alert(t("error"), "You have already applied to this order");
+      } else {
+        Alert.alert(t("error"), t("failedToSubmitApplication"));
+      }
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
+  const handleCloseApplyModal = () => {
+    setShowApplyModal(false);
   };
 
   const handleFeedbackSubmit = async (
@@ -486,12 +565,12 @@ export default function EditOrderScreen() {
       setPendingApply(false);
       // Small delay to ensure the page has fully rendered after login
       const timer = setTimeout(() => {
-        router.push(`/proposals/create?orderId=${id}`);
+        setShowApplyModal(true);
       }, 500);
 
       return () => clearTimeout(timer);
     }
-  }, [user?.id, pendingApply, order, userLoading, id]);
+  }, [user?.id, pendingApply, order, userLoading]);
 
   // Get field badge color
   const getFieldColor = (field: string, newValue?: string | null): string => {
@@ -682,35 +761,28 @@ export default function EditOrderScreen() {
     if (!mediaFiles || mediaFiles.length === 0) return null;
 
     const handleDeleteMedia = async (mediaFileId: number) => {
-      Alert.alert(
-        t("delete"),
-        t("areYouSureDeleteMediaFile"),
-        [
-          { text: t("cancel"), style: "cancel" },
-          {
-            text: t("delete"),
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await apiService.deleteMediaFile(mediaFileId);
-                const orderData = await apiService.getOrderById(
-                  parseInt(id as string)
-                );
-                setOrder(orderData);
-                Alert.alert(
-                  t("success"),
-                  t("mediaFileDeletedSuccessfully")
-                );
-              } catch (error: any) {
-                console.error("Error deleting media file:", error);
-                const errorMessage =
-                  error?.message || t("failedToDeleteMediaFile");
-                Alert.alert(t("error"), errorMessage);
-              }
-            },
+      Alert.alert(t("delete"), t("areYouSureDeleteMediaFile"), [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: t("delete"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiService.deleteMediaFile(mediaFileId);
+              const orderData = await apiService.getOrderById(
+                parseInt(id as string)
+              );
+              setOrder(orderData);
+              Alert.alert(t("success"), t("mediaFileDeletedSuccessfully"));
+            } catch (error: any) {
+              console.error("Error deleting media file:", error);
+              const errorMessage =
+                error?.message || t("failedToDeleteMediaFile");
+              Alert.alert(t("error"), errorMessage);
+            }
           },
-        ]
-      );
+        },
+      ]);
     };
 
     return (
@@ -911,17 +983,20 @@ export default function EditOrderScreen() {
                 )}
 
                 {/* Apply Button or Applied Status */}
-                {order?.status === "open" && !hasAppliedToOrder(order.id) ? (
+                {order?.status === "open" &&
+                !hasAppliedToOrder(order.id) &&
+                user?.id !== order.clientId &&
+                order.creditCost ? (
                   <Button
                     style={{ paddingVertical: 12 }}
                     onPress={handleApplyToOrder}
-                    title={`${t("apply")} (${order.creditCost || 1} ${t(
-                      "credit"
-                    )})`}
+                    title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
                     icon="paperplane.fill"
                     variant="primary"
                   />
-                ) : order?.status === "open" && hasAppliedToOrder(order.id) ? (
+                ) : order?.status === "open" &&
+                  hasAppliedToOrder(order.id) &&
+                  user?.id !== order.clientId ? (
                   <Button
                     style={{ paddingVertical: 12 }}
                     onPress={() => {}}
@@ -1366,6 +1441,15 @@ export default function EditOrderScreen() {
           setShowSkillModal(false);
           setSelectedSkillId(null);
         }}
+      />
+
+      {/* Apply Modal */}
+      <ApplyModal
+        visible={showApplyModal}
+        onClose={handleCloseApplyModal}
+        order={order}
+        onSubmit={handleSubmitApplication}
+        loading={applyLoading}
       />
     </Layout>
   );
