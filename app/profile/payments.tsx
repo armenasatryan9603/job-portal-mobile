@@ -5,7 +5,12 @@ import {
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import {
+  BorderRadius,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
 import { useCreditCard } from "@/contexts/CreditCardContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -687,8 +692,8 @@ export default function PaymentsScreen() {
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 6,
   },
   sectionSubtitle: {

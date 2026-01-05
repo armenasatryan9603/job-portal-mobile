@@ -7,7 +7,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -351,9 +351,10 @@ export default function EditOrderScreen() {
     setFeedbackLoading(true);
     try {
       // Submit feedback for the canceled proposal
+      // When specialist cancels, backend will automatically set specialistId
       await chatService.submitFeedback({
         orderId: order?.id || 0,
-        userId: user?.id,
+        specialistId: undefined,
         rating,
         comment: feedback,
         feedbackType: "canceled",
@@ -1495,8 +1496,8 @@ const styles = StyleSheet.create({
     color: "white",
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 20,
   },
   orderTitle: {

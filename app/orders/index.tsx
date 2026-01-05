@@ -1278,9 +1278,10 @@ export default function OrdersScreen() {
     setFeedbackLoading(true);
     try {
       // Submit feedback for the canceled proposal
+      // When specialist cancels, backend will automatically set specialistId
       await chatService.submitFeedback({
         orderId: canceledOrderId,
-        userId: user?.id,
+        specialistId: undefined,
         rating,
         comment: feedback,
         feedbackType: "canceled",

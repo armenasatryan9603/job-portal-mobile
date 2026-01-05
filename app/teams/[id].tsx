@@ -6,7 +6,12 @@ import {
 } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import {
+  BorderRadius,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -983,8 +988,8 @@ const styles = StyleSheet.create({
 
   // Section titles
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 16,
   },
 

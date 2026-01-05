@@ -294,7 +294,7 @@ class ChatService {
    */
   async submitFeedback(feedbackData: {
     orderId: number;
-    userId?: number;
+    specialistId?: number;
     rating: number;
     comment?: string;
     feedbackType: "completed" | "canceled";

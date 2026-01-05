@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { fileUploadService } from "@/services/fileUpload";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -376,8 +376,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 8,
   },
   sectionSubtitle: {

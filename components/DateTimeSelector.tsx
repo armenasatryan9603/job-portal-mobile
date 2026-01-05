@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CalendarPicker } from "./CalendarPicker";
 import { TimePicker } from "./TimePicker";
@@ -83,7 +83,9 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
     const minutesToTime = (minutes: number) => {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
-      return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}`;
+      return `${hours.toString().padStart(2, "0")}:${mins
+        .toString()
+        .padStart(2, "0")}`;
     };
 
     const ranges: string[] = [];
@@ -146,7 +148,6 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
       onDatesChange([...selectedDates, normalizedDate]);
     }
   };
-
 
   const navigateMonth = (direction: "prev" | "next") => {
     setCurrentMonth((prev) => {
@@ -285,8 +286,8 @@ export const DateTimeSelector: React.FC<DateTimeSelectorProps> = ({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 8,
   },
   calendarInput: {

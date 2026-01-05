@@ -15,7 +15,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
 import { PortfolioItem, apiService } from "@/services/api";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useAuth } from "@/contexts/AuthContext";
 import * as ImagePicker from "expo-image-picker";
@@ -127,26 +127,22 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
   const handleDeleteItem = async (item: PortfolioItem) => {
     if (!user?.id) return;
 
-    Alert.alert(
-      t("deletePortfolioItem"),
-      t("deletePortfolioItemConfirm"),
-      [
-        { text: t("cancel"), style: "cancel" },
-        {
-          text: t("delete"),
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await apiService.deleteTeamGalleryItem(teamId, item.id);
-              await loadGallery();
-            } catch (error: any) {
-              console.error("Error deleting gallery item:", error);
-              Alert.alert(t("error"), error.message || t("deleteFailed"));
-            }
-          },
+    Alert.alert(t("deletePortfolioItem"), t("deletePortfolioItemConfirm"), [
+      { text: t("cancel"), style: "cancel" },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await apiService.deleteTeamGalleryItem(teamId, item.id);
+            await loadGallery();
+          } catch (error: any) {
+            console.error("Error deleting gallery item:", error);
+            Alert.alert(t("error"), error.message || t("deleteFailed"));
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleEditItem = (item: PortfolioItem) => {
@@ -207,22 +203,13 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
 
       {portfolioItems.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <IconSymbol
-            name="photo"
-            size={48}
-            color={colors.textSecondary}
-          />
+          <IconSymbol name="photo" size={48} color={colors.textSecondary} />
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-            {isTeamLead
-              ? t("noWorkSamplesYet")
-              : t("noWorkSamplesAvailable")}
+            {isTeamLead ? t("noWorkSamplesYet") : t("noWorkSamplesAvailable")}
           </Text>
           {isTeamLead && (
             <Text
-              style={[
-                styles.emptySubtext,
-                { color: colors.textSecondary },
-              ]}
+              style={[styles.emptySubtext, { color: colors.textSecondary }]}
             >
               {t("uploadWorkSamplesHint")}
             </Text>
@@ -244,13 +231,19 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
               {isTeamLead && (
                 <View style={styles.itemActions}>
                   <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: colors.primary },
+                    ]}
                     onPress={() => handleEditItem(item)}
                   >
                     <IconSymbol name="pencil" size={14} color="white" />
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: "#FF6B6B" }]}
+                    style={[
+                      styles.actionButton,
+                      { backgroundColor: "#FF6B6B" },
+                    ]}
                     onPress={() => handleDeleteItem(item)}
                   >
                     <IconSymbol name="trash" size={14} color="white" />
@@ -278,7 +271,12 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
         onRequestClose={() => setEditingItem(null)}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {t("editPortfolioItem")}
             </Text>
@@ -351,8 +349,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
   },
   addButton: {
     width: 32,
@@ -451,4 +449,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

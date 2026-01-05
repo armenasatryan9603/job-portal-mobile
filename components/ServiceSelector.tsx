@@ -12,7 +12,7 @@ import {
   Image,
   ScrollView,
 } from "react-native";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Service } from "@/services/api";
@@ -451,8 +451,8 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxxl,
+    fontWeight: Typography.bold,
     marginBottom: 8,
   },
   sectionSubtitle: {
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   categoriesScrollView: {
-    maxHeight: 400,
+    maxHeight: 200,
   },
   categoriesContainer: {
     gap: 16,

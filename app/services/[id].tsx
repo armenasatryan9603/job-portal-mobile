@@ -6,7 +6,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { ServiceCard } from "@/components/ServiceCard";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -434,44 +434,45 @@ export default function ServiceDetailScreen() {
                 flexDirection: "row",
                 gap: Spacing.sm,
                 justifyContent: "space-between",
+                flexWrap: "wrap",
               }}
             >
-              <View>
-                <Button
-                  onPress={handleCreateOrder}
-                  variant="primary"
-                  iconSize={14}
-                  title={t("postJob")}
-                  icon="plus.circle.fill"
-                  backgroundColor={colors.primary}
-                  style={{ paddingHorizontal: Spacing.sm }}
-                  textStyle={{ fontSize: 12 }}
-                />
-              </View>
-              <View>
-                <Button
-                  onPress={handleBrowseSpecialists}
-                  variant="primary"
-                  iconSize={14}
-                  title={t("specialists")}
-                  icon="person.2.fill"
-                  backgroundColor={colors.primary}
-                  style={{ paddingHorizontal: Spacing.sm }}
-                  textStyle={{ fontSize: 12 }}
-                />
-              </View>
-              <View>
-                <Button
-                  onPress={handleBrowseOrders}
-                  variant="primary"
-                  iconSize={14}
-                  title={t("orders")}
-                  icon="list.bullet"
-                  backgroundColor={colors.primary}
-                  style={{ paddingHorizontal: Spacing.sm }}
-                  textStyle={{ fontSize: 12 }}
-                />
-              </View>
+              {/* <View> */}
+              <Button
+                onPress={handleCreateOrder}
+                variant="primary"
+                iconSize={14}
+                title={t("postJob")}
+                icon="plus.circle.fill"
+                backgroundColor={colors.primary}
+                style={{ paddingHorizontal: Spacing.sm }}
+                textStyle={{ fontSize: 12 }}
+              />
+              {/* </View> */}
+              {/* <View> */}
+              <Button
+                onPress={handleBrowseSpecialists}
+                variant="primary"
+                iconSize={14}
+                title={t("specialists")}
+                icon="person.2.fill"
+                backgroundColor={colors.primary}
+                style={{ paddingHorizontal: Spacing.sm }}
+                textStyle={{ fontSize: 12 }}
+              />
+              {/* </View>
+              <View> */}
+              <Button
+                onPress={handleBrowseOrders}
+                variant="primary"
+                iconSize={14}
+                title={t("orders")}
+                icon="list.bullet"
+                backgroundColor={colors.primary}
+                style={{ paddingHorizontal: Spacing.sm }}
+                textStyle={{ fontSize: 12 }}
+              />
+              {/* </View> */}
             </View>
           </ResponsiveCard>
         </ResponsiveContainer>
@@ -538,8 +539,9 @@ const styles = StyleSheet.create({
     fontWeight: "400",
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
+    marginBottom: Spacing.md,
   },
   featureItem: {
     flexDirection: "row",
@@ -553,6 +555,7 @@ const styles = StyleSheet.create({
   technologiesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+    marginTop: Spacing.md,
   },
   techTag: {
     paddingHorizontal: 10,

@@ -12,7 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { IconSymbol } from "./ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 12,
   },
   codeContainer: {

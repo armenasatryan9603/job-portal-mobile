@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useTranslation, useT } from "../hooks/useTranslation";
 import { useLanguage } from "../contexts/LanguageContext";
 import TranslationService from "../services/TranslationService";
+import { Typography } from "@/constants/styles";
 
 /**
  * Example component showing how to use the new translation system
@@ -216,8 +217,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 10,
     color: "#333",
   },

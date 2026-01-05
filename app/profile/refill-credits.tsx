@@ -15,6 +15,8 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { apiService } from "@/services/api";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
+import AnalyticsService from "@/services/AnalyticsService";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -176,7 +178,7 @@ export default function RefillCreditsScreen() {
 
       // Track payment initiated
       AnalyticsService.getInstance().logPaymentInitiated(
-        result.transactionId || `refill_${Date.now()}`,
+        result.orderId || `refill_${Date.now()}`,
         amount,
         "USD"
       );
@@ -206,7 +208,9 @@ export default function RefillCreditsScreen() {
 
     Alert.alert(
       t("paymentSuccess"),
-      `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(2)} ${t("credits")}.`,
+      `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(2)} ${t(
+        "credits"
+      )}.`,
       [
         {
           text: t("ok"),
@@ -223,20 +227,16 @@ export default function RefillCreditsScreen() {
   };
 
   const handlePaymentFailure = (error: string) => {
-    Alert.alert(
-      t("paymentFailed"),
-      error || t("paymentFailedMessage"),
-      [
-        {
-          text: t("ok"),
-          onPress: () => {
-            setShowPaymentWebView(false);
-            setPaymentUrl(null);
-            setPendingAmount(0);
-          },
+    Alert.alert(t("paymentFailed"), error || t("paymentFailedMessage"), [
+      {
+        text: t("ok"),
+        onPress: () => {
+          setShowPaymentWebView(false);
+          setPaymentUrl(null);
+          setPendingAmount(0);
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handlePaymentClose = () => {
@@ -684,8 +684,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontSize: Typography.xxxl,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
   },
   // Preset Amounts Container
   presetAmountsContainer: {

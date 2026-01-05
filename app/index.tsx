@@ -18,6 +18,7 @@ import {
   createThemeShadow,
   Spacing,
   ThemeColors,
+  Typography,
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -518,8 +519,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: Spacing.lg,
   },
 

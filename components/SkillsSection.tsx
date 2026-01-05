@@ -10,7 +10,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
 import { Service } from "@/services/api";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type ThemeColorsType = typeof ThemeColors;
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     flex: 1,
     flexShrink: 1,
   },

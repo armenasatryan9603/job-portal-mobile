@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect } from "expo-router";
@@ -11,7 +11,7 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,   
+  StyleSheet,
   Image,
   ActivityIndicator,
   Alert,
@@ -229,9 +229,7 @@ export default function InvitationsScreen() {
               {isProcessing ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.acceptButtonText}>
-                  {t("accept")}
-                </Text>
+                <Text style={styles.acceptButtonText}>{t("accept")}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -385,8 +383,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: Spacing.md,
   },
   invitationItem: {

@@ -1,12 +1,19 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { apiService, UserProfile } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from "react";
-import { Alert, StyleSheet, Text, TextInput, View, TouchableOpacity } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  TouchableOpacity,
+} from "react-native";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 
 interface AccountInfoProps {
@@ -279,8 +286,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     flex: 1,
     flexShrink: 1,
   },

@@ -16,7 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Image,
   ImageBackground,
@@ -49,6 +49,7 @@ import { CircularProgress } from "@/components/CircularProgress";
 import { LocationPicker } from "@/components/LocationPicker";
 import { MapViewComponent } from "@/components/MapView";
 import { CountBadge } from "@/components/CountBadge";
+import { ProfileSkeleton } from "@/components/ProfileSkeleton";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -64,6 +65,7 @@ export default function ProfileScreen() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   // Reviews state management
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -151,7 +153,13 @@ export default function ProfileScreen() {
   );
 
   const fetchProfile = async () => {
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) {
+      return;
+    }
+
     try {
+      isFetchingRef.current = true;
       setLoading(true);
       setError(null);
 
@@ -201,6 +209,7 @@ export default function ProfileScreen() {
       }
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -751,18 +760,9 @@ export default function ProfileScreen() {
     />
   );
 
-  // Show loading state
-  if (loading) {
-    return (
-      <Layout header={header}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loadingProfile")}
-          </Text>
-        </View>
-      </Layout>
-    );
+  // Show loading state only on initial load (when we don't have profile data yet)
+  if (loading && !profile) {
+    return <ProfileSkeleton header={header} />;
   }
 
   // Show error state
@@ -1409,7 +1409,6 @@ export default function ProfileScreen() {
                   flexDirection: "row",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 16,
                 }}
               >
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -1514,7 +1513,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               ) : (
-                <View style={styles.priceDisplayContainer}>
+                <View>
                   {(() => {
                     const profileAny = profile as any;
                     const min = profileAny.priceMin;
@@ -1557,7 +1556,6 @@ export default function ProfileScreen() {
                   flexDirection: "row",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 16,
                 }}
               >
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -2072,8 +2070,8 @@ const styles = StyleSheet.create({
 
   // Section titles
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 16,
   },
 
@@ -2367,9 +2365,6 @@ const styles = StyleSheet.create({
   priceEditActions: {
     flexDirection: "row",
     gap: 10,
-  },
-  priceDisplayContainer: {
-    paddingVertical: 8,
   },
   priceDisplay: {
     fontSize: 16,

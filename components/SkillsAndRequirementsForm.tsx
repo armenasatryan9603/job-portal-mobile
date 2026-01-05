@@ -9,7 +9,7 @@ import {
   Pressable,
   Platform,
 } from "react-native";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -600,8 +600,8 @@ export const SkillsAndRequirementsForm: React.FC<
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: Typography.xxxl,
+    fontWeight: Typography.bold,
     marginBottom: 12,
   },
   inputContainer: {

@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -88,10 +88,7 @@ export default function TeamDetailScreen() {
     async (userIds: number[]) => {
       if (!teamId || typeof teamId !== "number") return;
       if (userIds.length === 0) {
-        Alert.alert(
-          t("error"),
-          t("selectMembersToAdd")
-        );
+        Alert.alert(t("error"), t("selectMembersToAdd"));
         return;
       }
 
@@ -123,10 +120,7 @@ export default function TeamDetailScreen() {
           setShowAddMemberModal(false);
         } else if (addedMemberIds.length > 0 && failedMemberIds.length > 0) {
         } else {
-          Alert.alert(
-            t("error"),
-            t("failedToAddMembers")
-          );
+          Alert.alert(t("error"), t("failedToAddMembers"));
         }
 
         // Reset modal state
@@ -134,10 +128,7 @@ export default function TeamDetailScreen() {
         setSearchResults([]);
       } catch (error: any) {
         console.error("Error adding members:", error);
-        Alert.alert(
-          t("error"),
-          error.message || t("failedToAddMembers")
-        );
+        Alert.alert(t("error"), error.message || t("failedToAddMembers"));
       }
     },
     [teamId, reloadTeam, t, setSearchQuery, setSearchResults, setAllSpecialists]
@@ -193,10 +184,7 @@ export default function TeamDetailScreen() {
     async (newName: string) => {
       if (!teamId || typeof teamId !== "number") return;
       if (!newName.trim()) {
-        Alert.alert(
-          t("error"),
-          t("teamNameRequired")
-        );
+        Alert.alert(t("error"), t("teamNameRequired"));
         return;
       }
 
@@ -360,8 +348,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: Spacing.md,
   },
   emptyText: {

@@ -9,7 +9,7 @@ import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { MediaUploader } from "@/components/MediaUploader";
 import { AIPreviewModal } from "@/components/AIPreviewModal";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -1759,7 +1759,7 @@ export default function CreateOrderScreen() {
                         : "transparent",
                       borderColor: useAIEnhancement
                         ? colors.primary
-                        : colors.border,
+                        : colors.borderTertiary,
                     },
                   ]}
                 >
@@ -2252,6 +2252,7 @@ const styles = StyleSheet.create({
   },
   checkboxLabel: {
     fontSize: 16,
+    fontWeight: "500",
     flex: 1,
   },
   infoButton: {
@@ -2259,8 +2260,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 4,
   },
   priceHint: {

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { ThemeColors } from "@/constants/styles";
+import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MapViewComponent } from "@/components/MapView";
@@ -182,8 +182,8 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: Typography.xxl,
+    fontWeight: Typography.bold,
     marginBottom: 20,
   },
   inputGroup: {

@@ -954,24 +954,36 @@ export default function ChatDetailScreen() {
     try {
       setFeedbackLoading(true);
 
-      // Get specialist ID from the conversation participants
-      // Since there are only two participants and one is the client, the other should be the specialist
-      // const client = conversation.Participants.find(
-      //   (p) => p.User.role === "client"
-      // );
-      const specialist = conversation.Participants.find(
-        (p) => p.userId !== user?.id
+      // Determine if current user is client or specialist
+      const isCurrentUserClient = conversation.Order.clientId === user?.id;
+      
+      // Get the specialist participant (the one who is not the client)
+      const specialistParticipant = conversation.Participants.find(
+        (p) => p.userId !== conversation.Order!.clientId
       );
 
+      // Determine specialistId based on who is reviewing:
+      // - If client is reviewing: send the specialist's ID
+      // - If specialist is reviewing: send undefined (backend will set it to reviewerId)
+      let specialistId: number | undefined;
+      if (isCurrentUserClient) {
+        // Client is reviewing the specialist
+        specialistId = specialistParticipant?.userId;
+      } else {
+        // Specialist is reviewing - backend will handle setting specialistId
+        // We can send undefined or the specialist's own ID
+        specialistId = undefined;
+      }
+
+      console.log("Current user is client:", isCurrentUserClient);
       console.log("All participants:", conversation.Participants);
-      // console.log("Client found:", client);
-      console.log("Specialist found:", specialist);
-      console.log("Specialist ID:", specialist?.userId);
+      console.log("Specialist participant:", specialistParticipant);
+      console.log("Specialist ID to send:", specialistId);
 
       // Submit feedback to backend
       await chatService.submitFeedback({
         orderId: conversation.Order!.id,
-        userId: specialist?.userId,
+        specialistId: specialistId,
         rating,
         comment: feedback,
         feedbackType: pendingAction === "cancel" ? "canceled" : "completed",

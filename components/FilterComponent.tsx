@@ -1556,7 +1556,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
   rangeContainer: {
