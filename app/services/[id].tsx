@@ -63,13 +63,6 @@ export default function ServiceDetailScreen() {
     }, [])
   );
 
-  // Fetch service details from API
-  useEffect(() => {
-    if (serviceId) {
-      fetchServiceDetails();
-    }
-  }, [serviceId]);
-
   // Chunk child services into rows of 3 for grid layout
   // This must be before any conditional returns to follow Rules of Hooks
   const childServiceRows = useMemo(() => {
@@ -81,12 +74,12 @@ export default function ServiceDetailScreen() {
     return rows;
   }, [service]);
 
-  const fetchServiceDetails = async () => {
+  const fetchServiceDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const serviceData = await apiService.getServiceById(serviceId);
+      const serviceData = await apiService.getServiceById(serviceId, language);
       setService(serviceData);
       // Track service view
       AnalyticsService.getInstance().logServiceViewed(
@@ -103,7 +96,14 @@ export default function ServiceDetailScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [serviceId, language]);
+
+  // Fetch service details from API
+  useEffect(() => {
+    if (serviceId) {
+      fetchServiceDetails();
+    }
+  }, [serviceId, fetchServiceDetails]);
 
   // Show loading state
   if (loading) {
@@ -279,7 +279,7 @@ export default function ServiceDetailScreen() {
               <Image
                 source={{ uri: service.imageUrl }}
                 style={styles.serviceImage}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             )}
             <View style={{ padding: Spacing.lg }}>
@@ -377,23 +377,6 @@ export default function ServiceDetailScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("technologiesUsed")}
             </Text>
-            {service.features.map((feature, index) => (
-              <View key={index} style={styles.featureItem}>
-                <IconSymbol
-                  name="checkmark.circle.fill"
-                  size={14}
-                  color={colors.tabIconDefault}
-                />
-                <Text
-                  style={[
-                    styles.featureText,
-                    { color: colors.tabIconDefault, marginLeft: 8 },
-                  ]}
-                >
-                  {feature.name}
-                </Text>
-              </View>
-            ))}
             <View style={styles.technologiesContainer}>
               {service.technologies.map((tech, index) => (
                 <View
@@ -437,7 +420,6 @@ export default function ServiceDetailScreen() {
                 flexWrap: "wrap",
               }}
             >
-              {/* <View> */}
               <Button
                 onPress={handleCreateOrder}
                 variant="primary"
@@ -448,8 +430,6 @@ export default function ServiceDetailScreen() {
                 style={{ paddingHorizontal: Spacing.sm }}
                 textStyle={{ fontSize: 12 }}
               />
-              {/* </View> */}
-              {/* <View> */}
               <Button
                 onPress={handleBrowseSpecialists}
                 variant="primary"
@@ -460,8 +440,6 @@ export default function ServiceDetailScreen() {
                 style={{ paddingHorizontal: Spacing.sm }}
                 textStyle={{ fontSize: 12 }}
               />
-              {/* </View>
-              <View> */}
               <Button
                 onPress={handleBrowseOrders}
                 variant="primary"
@@ -472,7 +450,6 @@ export default function ServiceDetailScreen() {
                 style={{ paddingHorizontal: Spacing.sm }}
                 textStyle={{ fontSize: 12 }}
               />
-              {/* </View> */}
             </View>
           </ResponsiveCard>
         </ResponsiveContainer>
@@ -518,6 +495,7 @@ const styles = StyleSheet.create({
     height: 160,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
+    backgroundColor: "lightgray",
   },
   overviewSection: {},
   serviceName: {
@@ -526,7 +504,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   serviceDescription: {
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: Spacing.md,
   },
   statItem: {

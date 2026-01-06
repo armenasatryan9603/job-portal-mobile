@@ -32,7 +32,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
           <Image
             source={{ uri: service.imageUrl }}
             style={styles.gridServiceImage}
-            resizeMode="cover"
+            resizeMode="contain"
           />
         )}
         <View style={styles.gridCardContent}>
@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   gridServiceImage: {
     width: "100%",
     height: 80,
+    backgroundColor: "lightgray",
   },
   gridCardContent: {
     padding: Spacing.sm,

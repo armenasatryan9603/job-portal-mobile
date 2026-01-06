@@ -42,7 +42,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <View style={styles.container}>
+    <>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
           {t("skillsAndServices")}
@@ -198,21 +198,17 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
           ))}
         </View>
       )}
-    </View>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
     flex: 1,
-    minHeight: 40,
   },
   sectionTitle: {
     fontSize: Typography.xxl,

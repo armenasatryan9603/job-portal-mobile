@@ -1,6 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { ThemeColors, Typography } from "@/constants/styles";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { apiService, UserProfile, UserLanguage } from "@/services/api";
@@ -507,7 +507,7 @@ export function LanguagesSection({
           </View>
         </View>
       ) : (
-        <View style={styles.languagesDisplay}>
+        <>
           {profile.languages && profile.languages.length > 0 ? (
             <View style={styles.languagesChipsContainer}>
               {profile.languages.map((userLang, index) => {
@@ -564,7 +564,7 @@ export function LanguagesSection({
               </Text>
             </View>
           )}
-        </View>
+        </>
       )}
     </ResponsiveCard>
   );
@@ -593,9 +593,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-  },
-  languagesDisplay: {
-    minHeight: 40,
   },
   languagesChipsContainer: {
     flexDirection: "row",

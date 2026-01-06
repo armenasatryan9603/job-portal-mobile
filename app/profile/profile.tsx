@@ -18,8 +18,6 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
-  Image,
-  ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
@@ -28,9 +26,9 @@ import {
   View,
   ActivityIndicator,
   Alert,
-  Animated,
   Modal,
 } from "react-native";
+import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { apiService, UserProfile, Review } from "@/services/api";
 import { fileUploadService } from "@/services/fileUpload";
@@ -827,11 +825,16 @@ export default function ProfileScreen() {
         <ResponsiveContainer>
           {/* Profile Header with banner background */}
           <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
-            <ImageBackground
-              source={bannerImage ? { uri: bannerImage } : undefined}
-              style={[{ paddingTop: userId && !bannerImage ? 0 : 140 }]}
-              imageStyle={styles.bannerImage}
-            >
+            <View style={[{ paddingTop: userId && !bannerImage ? 0 : 140 }]}>
+              {bannerImage && (
+                <Image
+                  source={{ uri: bannerImage }}
+                  style={styles.bannerImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={200}
+                />
+              )}
               {!userId && (
                 <TouchableOpacity
                   style={styles.bannerTapArea}
@@ -911,6 +914,9 @@ export default function ProfileScreen() {
                                   uri: profilePicture || profile.avatarUrl,
                                 }}
                                 style={styles.avatar}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={200}
                               />
                             ) : (
                               <View
@@ -941,6 +947,9 @@ export default function ProfileScreen() {
                                   uri: profilePicture || profile.avatarUrl,
                                 }}
                                 style={styles.avatar}
+                                contentFit="cover"
+                                cachePolicy="memory-disk"
+                                transition={200}
                               />
                             ) : (
                               <View
@@ -1042,7 +1051,7 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               </View>
-            </ImageBackground>
+            </View>
           </ResponsiveCard>
 
           {/* Bio */}
@@ -1052,7 +1061,7 @@ export default function ProfileScreen() {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 16,
+                marginBottom: 8,
               }}
             >
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -1753,11 +1762,14 @@ export default function ProfileScreen() {
               </View>
             ) : (
               <View style={styles.userReviewsList}>
-                {reviews.map((review) => (
+                {reviews.map((review, index) => (
                   <View
                     key={review.id}
                     style={[
-                      styles.userReviewItem,
+                      {
+                        borderBottomWidth: index === reviews.length - 1 ? 0 : 1,
+                        paddingBottom: index === reviews.length - 1 ? 0 : 16,
+                      },
                       { borderBottomColor: colors.border },
                     ]}
                   >
@@ -1821,7 +1833,7 @@ export default function ProfileScreen() {
                             { color: colors.textSecondary },
                           ]}
                         >
-                          Budget: ${review.Order.budget}
+                          {t("budget")}: ${review.Order.budget}
                         </Text>
                       )}
                     </View>
@@ -1980,8 +1992,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   bannerImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     width: "100%",
-
     height: 140,
   },
   bannerPlaceholder: {
@@ -2067,14 +2082,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontStyle: "italic",
   },
-
   // Section titles
   sectionTitle: {
     fontSize: Typography.xxl,
     fontWeight: Typography.bold,
-    marginBottom: 16,
   },
-
   // Skills
   skillsContainer: {
     flexDirection: "row",
@@ -2232,10 +2244,6 @@ const styles = StyleSheet.create({
   },
   userReviewsList: {
     gap: 16,
-  },
-  userReviewItem: {
-    paddingBottom: 16,
-    borderBottomWidth: 1,
   },
   userReviewHeader: {
     flexDirection: "row",

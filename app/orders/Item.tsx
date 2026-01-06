@@ -4,10 +4,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
   ActivityIndicator,
   Modal,
 } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -89,6 +89,46 @@ const OrderItem = ({
 
   const displayTitle = getLocalizedText("title", language);
   const displayDescription = getLocalizedText("description", language);
+
+  // Helper function to get localized service name
+  const getLocalizedServiceName = (service?: {
+    name?: string;
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+  }): string => {
+    if (!service) return "";
+
+    switch (language) {
+      case "ru":
+        return (
+          service.nameRu ||
+          service.nameEn ||
+          service.nameHy ||
+          service.name ||
+          ""
+        );
+      case "hy":
+        return (
+          service.nameHy ||
+          service.nameEn ||
+          service.nameRu ||
+          service.name ||
+          ""
+        );
+      case "en":
+      default:
+        return (
+          service.nameEn ||
+          service.nameRu ||
+          service.nameHy ||
+          service.name ||
+          ""
+        );
+    }
+  };
+
+  const displayServiceName = getLocalizedServiceName(order.Service);
 
   // Parse location to extract coordinates if available
   const parseLocationCoordinates = (
@@ -262,21 +302,26 @@ const OrderItem = ({
             </View>
           )}
           <Image
-            source={{ uri: order.BannerImage?.fileUrl || "" }}
+            source={{
+              uri: order.BannerImage?.fileUrl || "",
+            }}
             style={[
               styles.bannerImage,
               imageLoading && styles.bannerImageHidden,
             ]}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
             onLoadStart={() => {
-              setImageLoading(!!order.BannerImage?.fileUrl);
-              setImageError(!order.BannerImage?.fileUrl);
+              const hasUri = !!order.BannerImage?.fileUrl;
+              setImageLoading(hasUri);
+              setImageError(!hasUri);
             }}
             onLoad={() => setImageLoading(false)}
             onError={() => {
               setImageLoading(false);
               setImageError(true);
             }}
+            transition={150}
           />
           {imageError && (
             <View style={[styles.bannerImageSkeleton]}>
@@ -339,6 +384,18 @@ const OrderItem = ({
           </Text>
 
           <View style={styles.orderDetails}>
+            {order.Service && displayServiceName && (
+              <View style={styles.detailItem}>
+                <IconSymbol
+                  name="wrench.and.screwdriver.fill"
+                  size={16}
+                  color={colors.tint}
+                />
+                <Text style={[styles.detailText, { color: colors.text }]}>
+                  {displayServiceName}
+                </Text>
+              </View>
+            )}
             <View style={styles.detailItem}>
               <IconSymbol
                 name="dollarsign.circle.fill"
@@ -495,9 +552,9 @@ const OrderItem = ({
                 {t("postedBy")} {order.Client.name} •{" "}
                 {new Date(order.createdAt).toLocaleDateString()}
               </Text>
-              {order.Service && (
+              {order.Service && displayServiceName && (
                 <Text style={[styles.serviceName, { color: colors.tint }]}>
-                  {order.Service.name}
+                  {displayServiceName}
                 </Text>
               )}
             </View>
