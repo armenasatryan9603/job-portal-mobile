@@ -119,7 +119,8 @@ export const AddTeamMemberModal = memo(
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               {selectionMode ? t("addMembers") : t("addMember")}{" "}
-              {selectionMode && selectedMembers.length > 0 &&
+              {selectionMode &&
+                selectedMembers.length > 0 &&
                 `(${selectedMembers.length})`}
             </Text>
             {selectionMode && selectedMembers.length > 0 && (
@@ -134,9 +135,7 @@ export const AddTeamMemberModal = memo(
                 {addingMembers ? (
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  <Text style={styles.addSelectedButtonText}>
-                    {t("addSelected")}
-                  </Text>
+                  <Text style={styles.addSelectedButtonText}>{t("save")}</Text>
                 )}
               </TouchableOpacity>
             )}
@@ -169,7 +168,8 @@ export const AddTeamMemberModal = memo(
             data={displayData}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => {
-              const isSelected = selectionMode && selectedMembers.includes(item.id);
+              const isSelected =
+                selectionMode && selectedMembers.includes(item.id);
               return (
                 <TouchableOpacity
                   style={[
@@ -239,10 +239,18 @@ export const AddTeamMemberModal = memo(
                         color={colors.tint}
                       />
                     ) : (
-                      <IconSymbol name="circle" size={24} color={colors.border} />
+                      <IconSymbol
+                        name="circle"
+                        size={24}
+                        color={colors.border}
+                      />
                     )
                   ) : (
-                    <IconSymbol name="plus.circle" size={24} color={colors.tint} />
+                    <IconSymbol
+                      name="plus.circle"
+                      size={24}
+                      color={colors.tint}
+                    />
                   )}
                 </TouchableOpacity>
               );
@@ -296,7 +304,7 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   modalTitle: {
-    fontSize: Typography.xxl,
+    fontSize: Typography.lg,
     fontWeight: Typography.bold,
   },
   addSelectedButton: {
@@ -364,4 +372,3 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
 });
-

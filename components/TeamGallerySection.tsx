@@ -44,6 +44,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (teamId) {
@@ -223,11 +224,16 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
         >
           {portfolioItems.map((item) => (
             <View key={item.id} style={styles.itemContainer}>
-              <Image
-                source={{ uri: item.fileUrl }}
-                style={[styles.itemImage, { backgroundColor: colors.border }]}
-                resizeMode="cover"
-              />
+              <TouchableOpacity
+                onPress={() => setSelectedImage(item.fileUrl)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ uri: item.fileUrl }}
+                  style={[styles.itemImage, { backgroundColor: colors.border }]}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
               {isTeamLead && (
                 <View style={styles.itemActions}>
                   <TouchableOpacity
@@ -262,6 +268,32 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
           ))}
         </ScrollView>
       )}
+
+      {/* Fullscreen Image Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.imageModalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedImage(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+            style={styles.fullscreenImageContainer}
+          >
+            <Image
+              source={{ uri: selectedImage || "" }}
+              style={styles.fullscreenImage}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal
@@ -447,5 +479,21 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginTop: 8,
+  },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenImageContainer: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullscreenImage: {
+    width: "90%",
+    height: "90%",
   },
 });

@@ -52,7 +52,7 @@ export default function TeamDetailScreen() {
   const [updatingTeamName, setUpdatingTeamName] = useState(false);
 
   const activeMembers = useMemo(() => {
-    const members = team?.Members?.filter((m) => m.isActive) || [];
+    const members = team?.Members; //?.filter((m) => m.isActive) || [];
     console.log("Active members:", members);
     console.log("All team members:", team?.Members);
     return members;
@@ -279,14 +279,14 @@ export default function TeamDetailScreen() {
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {t("members")} ({activeMembers.length})
+            {t("members")} ({activeMembers?.length || 0})
           </Text>
-          {activeMembers.length === 0 ? (
+          {activeMembers?.length === 0 ? (
             <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
               {t("noMembers")}
             </Text>
           ) : (
-            activeMembers.map((member) => (
+            activeMembers?.map((member) => (
               <TeamMemberItem
                 key={member.id}
                 member={member}

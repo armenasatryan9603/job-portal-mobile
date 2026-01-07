@@ -75,8 +75,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
       for (const question of order.questions) {
         const answer = questionAnswers[question.id];
         if (!answer || !answer.trim()) {
-          errors[question.id] =
-            t("pleaseAnswerQuestion");
+          errors[question.id] = t("pleaseAnswerQuestion");
         }
       }
     }
@@ -191,7 +190,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                     color={colors.tint}
                   />
                   <Text style={[styles.detailText, { color: colors.text }]}>
-                    ${order.budget.toLocaleString()}
+                    {order.currency}&nbsp;{order.budget.toLocaleString()}
                   </Text>
                 </View>
                 {order.location && (
@@ -296,9 +295,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                             color: colors.text,
                           },
                         ]}
-                        placeholder={
-                          t("enterYourAnswer")
-                        }
+                        placeholder={t("enterYourAnswer")}
                         placeholderTextColor={colors.tabIconDefault}
                         value={questionAnswers[question.id] || ""}
                         onChangeText={(text) => {
@@ -391,15 +388,20 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color="black" />
+                  <ActivityIndicator size="small" color={colors.textInverse} />
                 ) : (
                   <>
                     <IconSymbol
                       name="paperplane.fill"
                       size={16}
-                      color="black"
+                      color={colors.textInverse}
                     />
-                    <Text style={styles.submitButtonText}>
+                    <Text
+                      style={[
+                        styles.submitButtonText,
+                        { color: colors.textInverse },
+                      ]}
+                    >
                       {t("submitApplication")}
                     </Text>
                   </>

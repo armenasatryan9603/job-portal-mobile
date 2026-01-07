@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
     height: 160,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
-    backgroundColor: "lightgray",
+    backgroundColor: "white",
   },
   overviewSection: {},
   serviceName: {

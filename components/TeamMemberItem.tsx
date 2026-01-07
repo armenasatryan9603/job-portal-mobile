@@ -75,19 +75,10 @@ export const TeamMemberItem = memo(
                 {isPending && (
                   <View style={styles.pendingBadge}>
                     <IconSymbol name="clock.fill" size={12} color="#FF9500" />
-                    <Text style={styles.pendingBadgeText}>
-                      {t("pending")}
-                    </Text>
+                    <Text style={styles.pendingBadgeText}>{t("pending")}</Text>
                   </View>
                 )}
               </View>
-              {member.User.email && (
-                <Text
-                  style={[styles.memberEmail, { color: colors.tabIconDefault }]}
-                >
-                  {member.User.email}
-                </Text>
-              )}
             </View>
           </TouchableOpacity>
           {canRemove && (
@@ -123,8 +114,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   memberNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: Spacing.sm,
   },
   memberName: {
@@ -143,6 +132,7 @@ const styles = StyleSheet.create({
   pendingBadge: {
     flexDirection: "row",
     alignItems: "center",
+    alignSelf: "flex-start",
     gap: 4,
     paddingHorizontal: Spacing.sm,
     paddingVertical: 4,

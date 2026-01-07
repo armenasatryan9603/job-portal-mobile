@@ -121,7 +121,7 @@ export const Button: React.FC<ButtonProps> = ({
           )}
           {children || (
             <Text style={finalTextStyle} numberOfLines={1}>
-              {title}
+              {title || children}
             </Text>
           )}
           {icon && iconPosition === "right" && (

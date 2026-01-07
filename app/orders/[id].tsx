@@ -39,6 +39,28 @@ import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { useApplyToOrder } from "@/hooks/useApi";
 
+// Helper function to get localized service name
+const getLocalizedServiceName = (
+  service?: {
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+  },
+  language: string = "en"
+): string => {
+  if (!service) return "";
+
+  switch (language) {
+    case "ru":
+      return service.nameRu || "";
+    case "hy":
+      return service.nameHy || "";
+    case "en":
+    default:
+      return service.nameEn || "";
+  }
+};
+
 export default function EditOrderScreen() {
   useAnalytics("OrderDetail");
   const { id, myJobs, preview } = useLocalSearchParams();
@@ -1048,7 +1070,7 @@ export default function EditOrderScreen() {
                   {t("service")}
                 </Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {order.Service.name}
+                  {getLocalizedServiceName(order.Service, language)}
                 </Text>
               </View>
             </View>

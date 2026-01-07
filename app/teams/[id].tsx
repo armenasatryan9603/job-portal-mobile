@@ -82,9 +82,10 @@ export default function TeamDetailScreen() {
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
-  // Team description state
+  // Team description and name editing state
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [descriptionText, setDescriptionText] = useState("");
+  const [teamNameText, setTeamNameText] = useState("");
   const [savingDescription, setSavingDescription] = useState(false);
 
   const activeMembers = useMemo(() => {
@@ -150,7 +151,11 @@ export default function TeamDetailScreen() {
         for (const userId of userIds) {
           try {
             await apiService.addTeamMember(teamId, userId);
+
             addedMemberIds.push(userId);
+
+            console.log("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", addedMemberIds);
+            //
           } catch (error: any) {
             console.error(`Error adding member ${userId}:`, error);
             failedMemberIds.push(userId);
@@ -178,6 +183,7 @@ export default function TeamDetailScreen() {
         setSearchQuery("");
         setSearchResults([]);
       } catch (error: any) {
+        console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
         console.error("Error adding members:", error);
         Alert.alert(t("error"), error.message || t("failedToAddMembers"));
       }
@@ -230,34 +236,6 @@ export default function TeamDetailScreen() {
     setSearchQuery("");
     setSearchResults([]);
   }, [setSearchQuery, setSearchResults]);
-
-  const handleSaveTeamName = useCallback(
-    async (newName: string) => {
-      if (!teamId || typeof teamId !== "number") return;
-      if (!newName.trim()) {
-        Alert.alert(t("error"), t("teamNameRequired"));
-        return;
-      }
-
-      try {
-        setUpdatingTeamName(true);
-        await apiService.updateTeamName(teamId, newName.trim());
-        await reloadTeam();
-      } catch (error: any) {
-        console.error("Error updating team name:", error);
-        Alert.alert(
-          t("error"),
-          error.message ||
-            t("failedToUpdateTeamName") ||
-            "Failed to update team name"
-        );
-        throw error; // Re-throw to let component handle it
-      } finally {
-        setUpdatingTeamName(false);
-      }
-    },
-    [teamId, reloadTeam, t]
-  );
 
   const handleHireTeam = useCallback(() => {
     if (!team) return;
@@ -435,31 +413,47 @@ export default function TeamDetailScreen() {
   const handleStartEditDescription = () => {
     const teamAny = team as any;
     setDescriptionText(teamAny.description || teamAny.bio || "");
+    setTeamNameText(team?.name || "");
     setIsEditingDescription(true);
   };
 
   const handleCancelEditDescription = () => {
     const teamAny = team as any;
     setDescriptionText(teamAny.description || teamAny.bio || "");
+    setTeamNameText(team?.name || "");
     setIsEditingDescription(false);
   };
 
   const handleSaveDescription = async () => {
     if (!isTeamLead || !team || !teamId) return;
 
+    // Validate team name
+    if (!teamNameText.trim()) {
+      Alert.alert(t("error"), t("teamNameRequired"));
+      return;
+    }
+
     try {
       setSavingDescription(true);
+
+      // Update team name if it changed
+      if (teamNameText.trim() !== team.name) {
+        await apiService.updateTeamName(teamId, teamNameText.trim());
+      }
+
+      // Update description
       await apiService.updateTeam(teamId, {
         description: descriptionText.trim() || null,
       });
+
       await reloadTeam();
       AnalyticsService.getInstance().logEvent("team_updated", {
-        update_type: "description",
+        update_type: "description_and_name",
       });
       setIsEditingDescription(false);
-    } catch (error) {
-      console.error("Error updating description:", error);
-      Alert.alert(t("error"), t("failedToUpdateProfile"));
+    } catch (error: any) {
+      console.error("Error updating team:", error);
+      Alert.alert(t("error"), error.message || t("failedToUpdateProfile"));
     } finally {
       setSavingDescription(false);
     }
@@ -662,7 +656,6 @@ export default function TeamDetailScreen() {
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 16,
               }}
             >
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -682,24 +675,49 @@ export default function TeamDetailScreen() {
 
             {isEditingDescription ? (
               <View style={styles.descriptionEditContainer}>
-                <TextInput
-                  style={[
-                    styles.descriptionTextInput,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.text,
-                    },
-                  ]}
-                  value={descriptionText}
-                  onChangeText={setDescriptionText}
-                  placeholder={t("tellUsAboutYourTeam")}
-                  placeholderTextColor={colors.tabIconDefault}
-                  multiline
-                  numberOfLines={6}
-                  textAlignVertical="top"
-                  maxLength={500}
-                />
+                <View style={styles.editFieldContainer}>
+                  <Text style={[styles.editFieldLabel, { color: colors.text }]}>
+                    {t("teamName")}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.teamNameTextInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={teamNameText}
+                    onChangeText={setTeamNameText}
+                    placeholder={t("teamName")}
+                    placeholderTextColor={colors.tabIconDefault}
+                    maxLength={100}
+                  />
+                </View>
+                <View style={styles.editFieldContainer}>
+                  <Text style={[styles.editFieldLabel, { color: colors.text }]}>
+                    {t("description")}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.descriptionTextInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={descriptionText}
+                    onChangeText={setDescriptionText}
+                    placeholder={t("tellUsAboutYourTeam")}
+                    placeholderTextColor={colors.tabIconDefault}
+                    multiline
+                    numberOfLines={6}
+                    textAlignVertical="top"
+                    maxLength={500}
+                  />
+                </View>
                 {descriptionText.length > 400 && (
                   <Text
                     style={[
@@ -999,7 +1017,21 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   descriptionEditContainer: {
-    gap: 12,
+    gap: 16,
+  },
+  editFieldContainer: {
+    gap: 8,
+  },
+  editFieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  teamNameTextInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
   },
   descriptionTextInput: {
     borderWidth: 1,

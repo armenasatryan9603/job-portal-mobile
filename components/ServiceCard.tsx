@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   gridServiceImage: {
     width: "100%",
     height: 80,
-    backgroundColor: "lightgray",
+    backgroundColor: "white",
   },
   gridCardContent: {
     padding: Spacing.sm,

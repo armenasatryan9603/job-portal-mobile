@@ -199,9 +199,22 @@ export default function OrdersScreen() {
         const savedSearch = await AsyncStorage.getItem(searchStorageKey);
         if (savedFiltersString) {
           const parsed = JSON.parse(savedFiltersString);
+          setSelectedFilters((prev) => {
+            const updated = {
+              ...prev,
+              ...parsed,
+            };
+            // If serviceId is in URL, it takes precedence over saved filters
+            if (filterServiceId !== null) {
+              updated.services = [filterServiceId.toString()];
+            }
+            return updated;
+          });
+        } else if (filterServiceId !== null) {
+          // If no saved filters but serviceId in URL, set it
           setSelectedFilters((prev) => ({
             ...prev,
-            ...parsed,
+            services: [filterServiceId.toString()],
           }));
         }
         // Only load saved search if no URL parameter is present
@@ -213,7 +226,7 @@ export default function OrdersScreen() {
       }
     };
     loadSavedFilters();
-  }, [filterStorageKey, searchStorageKey, q]);
+  }, [filterStorageKey, searchStorageKey, q, filterServiceId]);
 
   // Update search query when URL parameter changes
   useEffect(() => {
@@ -249,51 +262,6 @@ export default function OrdersScreen() {
     };
     saveSearch();
   }, [searchQuery, searchStorageKey]);
-
-  // Sync serviceId from URL parameter with selectedFilters
-  // This ensures that when navigating from service detail page, the filter is applied
-  useEffect(() => {
-    if (filterServiceId !== null) {
-      const serviceIdString = filterServiceId.toString();
-      setSelectedFilters((prev) => {
-        // Always update to match URL parameter when it's present
-        const currentServices = Array.isArray(prev.services)
-          ? prev.services
-          : [];
-        // Update if different or if we have multiple services selected
-        if (
-          currentServices.length !== 1 ||
-          currentServices[0] !== serviceIdString
-        ) {
-          return {
-            ...prev,
-            services: [serviceIdString],
-          };
-        }
-        return prev;
-      });
-      // Reset to page 1 when service changes
-      if (!isMyOrders && !isMyJobs) {
-        setCurrentPage(1);
-      }
-    } else {
-      // If no serviceId in URL, clear the service filter (unless user manually selected)
-      // Only clear if it was set from URL (we can detect this by checking if it's a single service)
-      setSelectedFilters((prev) => {
-        const currentServices = Array.isArray(prev.services)
-          ? prev.services
-          : [];
-        // Only clear if it's a single service (likely from URL), not multiple (user selection)
-        if (currentServices.length === 1) {
-          return {
-            ...prev,
-            services: [],
-          };
-        }
-        return prev;
-      });
-    }
-  }, [filterServiceId, isMyOrders, isMyJobs]);
 
   // Update status filter when switching to saved orders view
   useEffect(() => {

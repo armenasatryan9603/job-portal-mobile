@@ -12,7 +12,7 @@ import { router } from "expo-router";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -291,6 +291,9 @@ const OrderItem = ({
         )}
         {/* Banner Image */}
         <View style={styles.bannerImageContainer}>
+          {order.Service && displayServiceName && (
+            <Text style={[styles.serviceName]}>{displayServiceName}</Text>
+          )}
           {imageLoading && (
             <View
               style={[
@@ -384,18 +387,6 @@ const OrderItem = ({
           </Text>
 
           <View style={styles.orderDetails}>
-            {order.Service && displayServiceName && (
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="wrench.and.screwdriver.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {displayServiceName}
-                </Text>
-              </View>
-            )}
             <View style={styles.detailItem}>
               <IconSymbol
                 name="dollarsign.circle.fill"
@@ -552,11 +543,6 @@ const OrderItem = ({
                 {t("postedBy")} {order.Client.name} •{" "}
                 {new Date(order.createdAt).toLocaleDateString()}
               </Text>
-              {order.Service && displayServiceName && (
-                <Text style={[styles.serviceName, { color: colors.tint }]}>
-                  {displayServiceName}
-                </Text>
-              )}
             </View>
             {/* Apply Button - Only show for other users' orders (not owner) */}
             {!isMyOrders &&
@@ -614,6 +600,19 @@ const OrderItem = ({
                 onPress={() => handleDeleteOrder(order)}
               />
             )}
+
+            {/* {order.Service && displayServiceName && (
+              <View style={styles.detailItem}>
+                <IconSymbol
+                  name="wrench.and.screwdriver.fill"
+                  size={16}
+                  color={colors.tint}
+                />
+                <Text style={[styles.detailText, { color: colors.text }]}>
+                  {displayServiceName}
+                </Text>
+              </View>
+            )} */}
           </View>
         </View>
       </ResponsiveCard>
@@ -773,8 +772,13 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   serviceName: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: Typography.bold,
+    textAlign: "right",
+    position: "absolute",
+    bottom: 5,
+    left: 10,
+    zIndex: 1,
   },
   actionButtons: {
     flexDirection: "row",

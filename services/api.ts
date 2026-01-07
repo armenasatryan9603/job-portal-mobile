@@ -1619,9 +1619,8 @@ class ApiService {
   }
 
   async getTeams(): Promise<any[]> {
-    // Teams endpoint is now accessible without authentication
-    // Will use auth token if available, but won't fail if not authenticated
-    return this.request(`/peers/teams`, {}, false);
+    // Use auth token so team leads get pending invitations included
+    return this.request(`/peers/teams`, {}, true);
   }
 
   async createTeam(name: string): Promise<any> {
