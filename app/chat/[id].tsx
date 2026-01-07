@@ -29,6 +29,7 @@ import { pusherService } from "@/services/pusherService";
 import { useChatReminder } from "@/contexts/ChatReminderContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
+import { ChatSkeleton } from "@/components/ChatSkeleton";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -550,13 +551,13 @@ export default function ChatDetailScreen() {
 
   const getParticipantName = () => {
     if (!conversation) return t("chat");
-    
+
     // If conversation has a title (set by backend for team applications), use it
     // The backend sets title as "Team Name & Client Name" for team applications
     if (conversation.title && conversation.title.includes(" & ")) {
       return conversation.title;
     }
-    
+
     // Otherwise, use participant names (for regular applications)
     const otherParticipants = conversation.Participants.filter(
       (p) => p.isActive
@@ -792,11 +793,9 @@ export default function ChatDetailScreen() {
         errorMessage.includes("phone number") ||
         errorMessage.includes("phone numbers")
       ) {
-        Alert.alert(
-          t("cannotSendPhoneNumber"),
-          errorMessage,
-          [{ text: t("ok") }]
-        );
+        Alert.alert(t("cannotSendPhoneNumber"), errorMessage, [
+          { text: t("ok") },
+        ]);
       } else {
         Alert.alert(t("error"), errorMessage);
       }
@@ -956,7 +955,7 @@ export default function ChatDetailScreen() {
 
       // Determine if current user is client or specialist
       const isCurrentUserClient = conversation.Order.clientId === user?.id;
-      
+
       // Get the specialist participant (the one who is not the client)
       const specialistParticipant = conversation.Participants.find(
         (p) => p.userId !== conversation.Order!.clientId
@@ -1125,12 +1124,7 @@ export default function ChatDetailScreen() {
   if (loading) {
     return (
       <Layout header={header} showFooterTabs={false}>
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loadingConversation")}
-          </Text>
-        </View>
+        <ChatSkeleton header={header} />
       </Layout>
     );
   }
@@ -1778,10 +1772,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 16,
   },
   retryButton: {
     paddingHorizontal: 24,
