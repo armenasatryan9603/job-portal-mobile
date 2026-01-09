@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 import { getApiBaseUrl } from "@/config/api";
 import * as Notifications from "expo-notifications";
 
@@ -215,6 +216,28 @@ class NotificationService {
         console.warn("⚠️ Could not create notification channel:", error);
       }
 
+      // ✅ FIX: Set up global notification handler for foreground display
+      // This ensures notifications are displayed when app is in foreground
+      try {
+        Notifications.setNotificationHandler({
+          handleNotification: async (notification) => {
+            // Show all notifications in foreground
+            return {
+              shouldShowAlert: true,
+              shouldPlaySound: true,
+              shouldSetBadge: true,
+              shouldShowBanner: true,
+              shouldShowList: true,
+            };
+          },
+        });
+        console.log(
+          "✅ Global notification handler configured for foreground display"
+        );
+      } catch (error) {
+        console.warn("⚠️ Could not set global notification handler:", error);
+      }
+
       const permissionGranted = await this.requestPermissions();
       if (!permissionGranted) {
         console.warn(
@@ -415,6 +438,43 @@ class NotificationService {
 
       await this.saveNotification(notification);
       console.log("Notification saved:", notification);
+
+      // ✅ FIX: Display notification in foreground using expo-notifications
+      // This ensures users see notifications even when app is open
+      if (remoteMessage.notification) {
+        try {
+          // Ensure Android channel exists (in case it wasn't created yet)
+          if (Platform.OS === "android") {
+            await Notifications.setNotificationChannelAsync("default", {
+              name: "Default Channel",
+              importance: Notifications.AndroidImportance.HIGH,
+              sound: "default",
+              vibrationPattern: [0, 250, 250, 250],
+              lightColor: "#FF231F7C",
+            });
+          }
+
+          // Display notification immediately in foreground
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: remoteMessage.notification.title || "New Notification",
+              body: remoteMessage.notification.body || "",
+              data: remoteMessage.data || {},
+              sound: true,
+              badge: 1,
+            },
+            trigger: null, // Show immediately
+          });
+
+          console.log("✅ Foreground notification displayed");
+        } catch (error) {
+          console.error("❌ Error displaying foreground notification:", error);
+          console.error(
+            "   Error details:",
+            error instanceof Error ? error.message : String(error)
+          );
+        }
+      }
     } catch (error) {
       console.error("Error handling notification:", error);
     }
@@ -559,14 +619,19 @@ class NotificationService {
       const authToken = await this.getAuthToken();
 
       if (!authToken) {
-        console.warn(
-          "⚠️  No auth token available - FCM token not sent to backend"
+        console.error(
+          "❌ No auth token available - FCM token not sent to backend"
         );
-        console.warn("   Token will be sent after user logs in");
+        console.error(
+          "   This means user is not logged in or token key mismatch"
+        );
+        console.error("   Expected AsyncStorage key: 'auth_token'");
+        console.error("   Token will be sent after user logs in");
         return;
       }
 
       console.log(`📤 Sending FCM token to: ${url}`);
+      console.log(`   Auth token present: ${authToken.substring(0, 20)}...`);
 
       const response = await fetch(url, {
         method: "POST",
@@ -579,7 +644,7 @@ class NotificationService {
 
       if (response.ok) {
         console.log("✅ FCM token sent to backend successfully");
-        console.log("   Token:", token.substring(0, 50) + "...");
+        console.log("   FCM Token:", token.substring(0, 50) + "...");
       } else {
         const errorText = await response.text().catch(() => "Unknown error");
         console.error(
@@ -588,7 +653,7 @@ class NotificationService {
           errorText
         );
         console.error("   URL:", url);
-        console.error("   Token (for manual testing):", token);
+        console.error("   FCM Token (for manual testing):", token);
       }
     } catch (error: any) {
       console.error("❌ Error sending FCM token to backend:", error);
@@ -601,7 +666,8 @@ class NotificationService {
   // Get auth token for API requests
   private async getAuthToken(): Promise<string | null> {
     try {
-      const token = await AsyncStorage.getItem("authToken");
+      // ✅ FIX: Changed from "authToken" to "auth_token" to match the key used throughout the app
+      const token = await AsyncStorage.getItem("auth_token");
       return token;
     } catch (error) {
       console.error("Error getting auth token:", error);
@@ -718,10 +784,13 @@ class NotificationService {
       const authToken = await this.getAuthToken();
 
       if (!authToken) {
-        console.warn("⚠️  No auth token available - cannot send FCM token");
+        console.error("❌ No auth token available - cannot send FCM token");
+        console.error("   User may not be logged in yet or token not stored");
+        console.error("   Expected AsyncStorage key: 'auth_token'");
         return;
       }
 
+      console.log("✅ Auth token found, attempting to get FCM token...");
       const fcmToken = await this.getFCMToken();
       if (fcmToken) {
         console.log("✅ FCM token available, sending to backend...");
@@ -731,6 +800,9 @@ class NotificationService {
         console.log(
           "   - For iOS: Token will be sent when APNS token is available"
         );
+        console.log(
+          "   - For iOS Simulator: Push notifications not supported, use real device"
+        );
         console.log("   - For Android: Check notification permissions");
         console.log(
           "   - Token will be sent automatically when available via onTokenRefresh"
@@ -738,6 +810,10 @@ class NotificationService {
       }
     } catch (error) {
       console.error("❌ Error ensuring FCM token is sent:", error);
+      console.error(
+        "   Error details:",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   }
 }
