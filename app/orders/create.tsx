@@ -37,6 +37,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsService from "@/services/AnalyticsService";
 import { API_CONFIG } from "@/config/api";
 import { DateTimeSelector } from "@/components/DateTimeSelector";
+import { useServices } from "@/hooks/useApi";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -192,6 +193,9 @@ export default function CreateOrderScreen() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch services (same hook used by ServiceSelector to avoid duplicate calls)
+  const { data: servicesData } = useServices(1, 100, undefined, language);
+
   // Fetch rate units from API on component mount
   useEffect(() => {
     const fetchRateUnits = async () => {
@@ -333,10 +337,29 @@ export default function CreateOrderScreen() {
 
   // Handle serviceId and orderId from URL params
   useEffect(() => {
-    if (serviceId) {
+    if (serviceId && servicesData?.services) {
       const serviceIdNum = parseInt(serviceId as string);
       setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
       // Set AI enhancement to true for new orders (checked by default)
+      setUseAIEnhancement(true);
+
+      // Find the service from already-fetched services list
+      const service = servicesData.services.find((s) => s.id === serviceIdNum);
+      if (service) {
+        setSelectedService(service);
+
+        // Suggest budget based on service prices
+        if (service.averagePrice) {
+          setFormData((prev) => ({
+            ...prev,
+            budget: service.averagePrice!.toString(),
+          }));
+        }
+      }
+    } else if (serviceId) {
+      // If serviceId is provided but services haven't loaded yet, just set the ID
+      const serviceIdNum = parseInt(serviceId as string);
+      setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
       setUseAIEnhancement(true);
     }
 
@@ -503,7 +526,7 @@ export default function CreateOrderScreen() {
 
       loadOrderForEdit();
     }
-  }, [serviceId, orderId]);
+  }, [serviceId, orderId, language, servicesData]);
 
   const validateField = (
     field: string,

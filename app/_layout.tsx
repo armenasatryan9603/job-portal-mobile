@@ -53,12 +53,16 @@ function AppContent() {
   useEffect(() => {
     const initializeCalendarNotifications = async () => {
       try {
-        const calendarNotificationService = CalendarNotificationService.getInstance();
+        const calendarNotificationService =
+          CalendarNotificationService.getInstance();
         await calendarNotificationService.initialize();
         await calendarNotificationService.requestPermissions();
         console.log("✅ Calendar notification service initialized");
       } catch (error) {
-        console.error("❌ Error initializing calendar notification service:", error);
+        console.error(
+          "❌ Error initializing calendar notification service:",
+          error
+        );
       }
     };
 
@@ -69,11 +73,15 @@ function AppContent() {
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const calendarNotificationService = CalendarNotificationService.getInstance();
-        calendarNotificationService.handleNotificationResponse(response, (orderId) => {
-          // Navigate to order details
-          router.push(`/orders/${orderId}`);
-        });
+        const calendarNotificationService =
+          CalendarNotificationService.getInstance();
+        calendarNotificationService.handleNotificationResponse(
+          response,
+          (orderId) => {
+            // Navigate to order details
+            router.push(`/orders/${orderId}`);
+          }
+        );
       }
     );
 

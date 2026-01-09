@@ -72,6 +72,9 @@ class NotificationService {
   private chatReminderListeners = new Set<
     (payload: ChatReminderPayload) => void
   >();
+  // Track recently shown reminders to prevent duplicates (Pusher + FCM)
+  private recentReminders = new Map<string, number>(); // messageId -> timestamp
+  private readonly REMINDER_DEDUP_WINDOW = 5000; // 5 seconds
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -99,6 +102,65 @@ class NotificationService {
         console.error("Error delivering chat reminder:", error);
       }
     });
+  }
+
+  /**
+   * Manually trigger a chat reminder for a new message received via Pusher
+   * This is used when messages come through real-time channels instead of push notifications
+   * Scenario 1: App running, not on current chat page
+   */
+  triggerChatReminderForMessage(
+    conversationId: number,
+    message: {
+      id: number;
+      senderId: number;
+      content: string;
+      Sender?: { name: string };
+    }
+  ): void {
+    const isActiveConversation =
+      this.activeConversationId !== null &&
+      this.activeConversationId === conversationId;
+
+    if (!isActiveConversation) {
+      const messageId = message.id.toString();
+      const now = Date.now();
+
+      // Check if we recently showed a reminder for this message (prevent duplicates from FCM)
+      const lastShown = this.recentReminders.get(messageId);
+      if (lastShown && now - lastShown < this.REMINDER_DEDUP_WINDOW) {
+        console.log(`⏭️ Skipping duplicate reminder for message ${messageId}`);
+        return;
+      }
+
+      // Mark this message as shown
+      this.recentReminders.set(messageId, now);
+
+      // Clean up old entries (older than dedup window)
+      this.cleanupRecentReminders(now);
+
+      const senderName = message.Sender?.name || "Someone";
+      const messagePreview =
+        message.content.length > 100
+          ? message.content.substring(0, 100) + "..."
+          : message.content;
+
+      this.emitChatReminder({
+        conversationId: conversationId.toString(),
+        messageId: messageId,
+        senderId: message.senderId.toString(),
+        title: `New message from ${senderName}`,
+        body: messagePreview,
+      });
+    }
+  }
+
+  private cleanupRecentReminders(now: number): void {
+    for (const [messageId, timestamp] of this.recentReminders.entries()) {
+      if (now - timestamp > this.REMINDER_DEDUP_WINDOW) {
+        this.recentReminders.delete(messageId);
+      }
+    }
   }
 
   async initialize(): Promise<void> {
@@ -306,19 +368,36 @@ class NotificationService {
         const numericConversationId = conversationId
           ? Number(conversationId)
           : null;
+        const messageId = remoteMessage.data?.messageId;
         const isActiveConversation =
           numericConversationId !== null &&
           this.activeConversationId !== null &&
           numericConversationId === this.activeConversationId;
 
-        if (!isActiveConversation) {
-          this.emitChatReminder({
-            conversationId,
-            messageId: remoteMessage.data?.messageId,
-            senderId: remoteMessage.data?.senderId,
-            title,
-            body,
-          });
+        // Scenario 1: App running (foreground), not on current chat page
+        // Only show reminder if conversation is not active and we haven't shown it recently
+        if (!isActiveConversation && messageId) {
+          const now = Date.now();
+          const lastShown = this.recentReminders.get(messageId);
+
+          // Check if we recently showed a reminder for this message (prevent duplicates from Pusher)
+          if (!lastShown || now - lastShown >= this.REMINDER_DEDUP_WINDOW) {
+            // Mark this message as shown
+            this.recentReminders.set(messageId, now);
+            this.cleanupRecentReminders(now);
+
+            this.emitChatReminder({
+              conversationId,
+              messageId,
+              senderId: remoteMessage.data?.senderId,
+              title,
+              body,
+            });
+          } else {
+            console.log(
+              `⏭️ Skipping duplicate FCM reminder for message ${messageId} (already shown via Pusher)`
+            );
+          }
         }
 
         // Chat reminders are lightweight cues - do not store them

@@ -354,10 +354,10 @@ export default function SpecialistsScreen() {
                   { backgroundColor: colors.border },
                 ]}
               >
-                {specialist.User.avatarUrl &&
+                {specialist.User?.avatarUrl &&
                 !imageErrors.has(specialist.id) ? (
                   <Image
-                    source={{ uri: specialist.User.avatarUrl }}
+                    source={{ uri: specialist.User?.avatarUrl }}
                     style={styles.avatar}
                     onError={() => handleImageError(specialist.id)}
                   />
@@ -373,7 +373,7 @@ export default function SpecialistsScreen() {
               </View>
               <View style={styles.specialistInfo}>
                 <Text style={[styles.specialistName, { color: colors.text }]}>
-                  {specialist.User.name}
+                  {specialist.User?.name || t("deletedUser")}
                 </Text>
                 <Text style={[styles.specialistTitle, { color: colors.tint }]}>
                   {specialist.Service?.name || t("specialist")}
@@ -406,14 +406,14 @@ export default function SpecialistsScreen() {
                   style={[
                     styles.availabilityDot,
                     {
-                      backgroundColor: specialist.User.verified
+                      backgroundColor: specialist.User?.verified
                         ? "#4CAF50"
                         : "#FFA500",
                     },
                   ]}
                 />
                 <Text style={[styles.availabilityText, { color: colors.text }]}>
-                  {specialist.User.verified ? t("verified") : t("unverified")}
+                  {specialist.User?.verified ? t("verified") : t("unverified")}
                 </Text>
               </View>
             </View>

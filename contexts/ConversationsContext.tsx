@@ -8,6 +8,8 @@ import React, {
 import { chatService, Conversation } from "@/services/chatService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { pusherService } from "@/services/pusherService";
+import NotificationService from "@/services/NotificationService";
 
 interface ConversationsContextType {
   conversations: Conversation[];
@@ -134,6 +136,47 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
       setConversations([]);
       setUnreadMessagesCount(0);
     }
+  }, [isAuthenticated, user?.id]);
+
+  // Global subscription to catch new messages and trigger notifications
+  // This works even when user is not on chat screens
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    pusherService.initialize();
+
+    // Subscribe to user updates to catch all new messages
+    const unsubscribe = pusherService.subscribeToUserUpdates(
+      user.id,
+      (data: {
+        conversationId: number;
+        lastMessage: any;
+        updatedAt: string;
+      }) => {
+        // Check if this is a new message from another user
+        if (
+          data.lastMessage &&
+          data.lastMessage.senderId !== user.id
+        ) {
+          const notificationService = NotificationService.getInstance();
+          notificationService.triggerChatReminderForMessage(
+            data.conversationId,
+            {
+              id: data.lastMessage.id,
+              senderId: data.lastMessage.senderId,
+              content: data.lastMessage.content,
+              Sender: data.lastMessage.Sender,
+            }
+          );
+        }
+      },
+      undefined, // conversation-status-updated (not needed here)
+      undefined // order-status-updated (not needed here)
+    );
+
+    return () => {
+      unsubscribe();
+    };
   }, [isAuthenticated, user?.id]);
 
   const value: ConversationsContextType = {

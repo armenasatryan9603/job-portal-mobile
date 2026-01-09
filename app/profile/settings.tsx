@@ -411,8 +411,7 @@ export default function ProfileSettingsScreen() {
                       { color: colors.textSecondary },
                     ]}
                   >
-                    {t("viewOrderPricingDetails") ||
-                      "See credit costs and refunds by budget range"}
+                    {t("viewOrderPricingDetails")}
                   </Text>
                 </View>
               </View>

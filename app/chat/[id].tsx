@@ -358,11 +358,25 @@ export default function ChatDetailScreen() {
           if (!prev || prev.id !== statusData.conversationId) {
             return prev;
           }
-          return {
+          // If conversation is closed, also mark current user as inactive if they're not the client
+          const updatedConversation = {
             ...prev,
             status: statusData.status,
             updatedAt: statusData.updatedAt,
           };
+
+          // If conversation is closed and current user is not the client, mark them as inactive
+          if (
+            statusData.status === "closed" &&
+            user?.id &&
+            prev.Order?.clientId !== user.id
+          ) {
+            updatedConversation.Participants = prev.Participants.map((p) =>
+              p.userId === user.id ? { ...p, isActive: false } : p
+            );
+          }
+
+          return updatedConversation;
         });
       }
     );
@@ -444,18 +458,35 @@ export default function ChatDetailScreen() {
         updatedAt: string;
       }) => {
         // Update order status in conversation if it matches
+        let shouldReload = false;
         setConversation((prev) => {
           if (!prev || prev.Order?.id !== orderStatusData.orderId) {
             return prev;
           }
+          // If order is closed, also close the conversation
+          const shouldCloseConversation = orderStatusData.status === "closed";
+          // Reload if order is being closed and conversation wasn't already closed
+          if (shouldCloseConversation && prev.status !== "closed") {
+            shouldReload = true;
+          }
           return {
             ...prev,
+            status: shouldCloseConversation ? "closed" : prev.status,
+            updatedAt: orderStatusData.updatedAt,
             Order: {
               ...prev.Order!,
               status: orderStatusData.status,
             },
           };
         });
+
+        // If order is closed, reload conversation to get updated participant status
+        if (shouldReload) {
+          // Use setTimeout to avoid state update conflicts
+          setTimeout(() => {
+            loadConversation();
+          }, 100);
+        }
       }
     );
 
@@ -719,13 +750,7 @@ export default function ChatDetailScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (
-      !newMessage.trim() ||
-      !conversation ||
-      sending ||
-      isConversationClosed() ||
-      conversation.status === "removed"
-    )
+    if (!newMessage.trim() || !conversation || sending || !canSendMessages())
       return;
 
     // Stop typing indicator when sending message
@@ -814,6 +839,24 @@ export default function ChatDetailScreen() {
     return (
       conversation?.status === "closed" || conversation?.status === "completed"
     );
+  };
+
+  // Check if current user is an active participant
+  const isCurrentUserActiveParticipant = () => {
+    if (!conversation || !user?.id) return false;
+    const currentUserParticipant = conversation.Participants.find(
+      (p) => p.userId === user.id
+    );
+    return currentUserParticipant?.isActive ?? false;
+  };
+
+  // Check if user can send messages
+  const canSendMessages = () => {
+    if (!conversation || !user?.id) return false;
+    if (isConversationClosed()) return false;
+    if (conversation.status === "removed") return false;
+    if (!isCurrentUserActiveParticipant()) return false;
+    return true;
   };
 
   // Handle reject action
@@ -1015,6 +1058,14 @@ export default function ChatDetailScreen() {
     const isFromCurrentUser = item.senderId === currentUserId;
     const isSystemMessage = item.messageType === "system";
 
+    // Check if there are multiple senders (more than 1 other participant besides current user)
+    const activeParticipants =
+      conversation?.Participants.filter((p) => p.isActive) || [];
+    const otherParticipants = activeParticipants.filter(
+      (p) => p.userId !== currentUserId
+    );
+    const hasMultipleSenders = otherParticipants.length > 1;
+
     const formatTimestamp = (dateString: string) => {
       const date = new Date(dateString);
       const now = new Date();
@@ -1073,6 +1124,19 @@ export default function ChatDetailScreen() {
             : styles.otherUserMessage,
         ]}
       >
+        {/* Show sender name if there are multiple senders and message is from another user */}
+        {hasMultipleSenders && !isFromCurrentUser && (
+          <Text
+            style={[
+              styles.senderName,
+              {
+                color: colors.tabIconDefault,
+              },
+            ]}
+          >
+            {item.Sender?.name || t("deletedUser")}
+          </Text>
+        )}
         <View
           style={[
             styles.messageBubble,
@@ -1444,8 +1508,8 @@ export default function ChatDetailScreen() {
             </View>
           )}
 
-        {/* Message Input - Only show if conversation is active and not removed */}
-        {!isConversationClosed() && conversation?.status !== "removed" && (
+        {/* Message Input - Only show if conversation is active, not removed, and user is active participant */}
+        {canSendMessages() && (
           <View style={inputContainerStyle}>
             <View
               style={[
@@ -1630,6 +1694,12 @@ const styles = StyleSheet.create({
   },
   otherUserMessage: {
     alignItems: "flex-start",
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+    marginLeft: 4,
   },
   systemMessageContainer: {
     marginBottom: 12,

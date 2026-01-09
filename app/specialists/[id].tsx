@@ -235,9 +235,9 @@ export default function SpecialistDetailScreen() {
                 {/* Header with avatar and basic info */}
                 <View style={styles.specialistHeader}>
                   <View style={styles.avatarContainer}>
-                    {specialist.User.avatarUrl ? (
+                    {specialist.User?.avatarUrl ? (
                       <Image
-                        source={{ uri: specialist.User.avatarUrl }}
+                        source={{ uri: specialist.User?.avatarUrl }}
                         style={styles.avatar}
                       />
                     ) : (
@@ -256,7 +256,7 @@ export default function SpecialistDetailScreen() {
                       </View>
                     )}
                     {/* Verification badge on avatar */}
-                    {specialist.User.verified && (
+                    {specialist.User?.verified && (
                       <View style={styles.verificationBadge}>
                         <IconSymbol
                           name="checkmark.seal.fill"
@@ -271,7 +271,7 @@ export default function SpecialistDetailScreen() {
                     <Text
                       style={[styles.specialistName, { color: colors.text }]}
                     >
-                      {specialist.User.name}
+                      {specialist.User?.name || t("deletedUser")}
                     </Text>
                     <Text
                       style={[styles.specialistTitle, { color: colors.tint }]}
@@ -323,7 +323,7 @@ export default function SpecialistDetailScreen() {
                         style={[
                           styles.statusBadge,
                           {
-                            backgroundColor: specialist.User.verified
+                            backgroundColor: specialist.User?.verified
                               ? "#4CAF50"
                               : "#FFA500",
                           },
@@ -331,7 +331,7 @@ export default function SpecialistDetailScreen() {
                       >
                         <IconSymbol
                           name={
-                            specialist.User.verified
+                            specialist.User?.verified
                               ? "checkmark.circle.fill"
                               : "clock.fill"
                           }
@@ -728,7 +728,7 @@ export default function SpecialistDetailScreen() {
                         <Text
                           style={[styles.reviewerName, { color: colors.text }]}
                         >
-                          {review.Reviewer.name}
+                          {review.Reviewer?.name || t("deletedUser")}
                         </Text>
                         <View style={styles.reviewRating}>
                           {renderStars(review.rating)}

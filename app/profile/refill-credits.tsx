@@ -36,7 +36,7 @@ const PRESET_AMOUNTS = [10, 25, 50, 100, 200, 500];
 export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
   const { isDark } = useTheme();
-  const { t, refreshTranslations } = useTranslation();
+  const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
@@ -62,14 +62,7 @@ export default function RefillCreditsScreen() {
   // Fetch current balance and refresh translations
   useEffect(() => {
     fetchCurrentBalance();
-    // Refresh translations to ensure we have the latest keys
-    refreshTranslations()
-      .then(() => {
-        console.log("✅ Translations refreshed successfully");
-      })
-      .catch((err) => {
-        console.warn("⚠️ Failed to refresh translations:", err);
-      });
+
     // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,

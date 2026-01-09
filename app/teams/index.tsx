@@ -142,7 +142,7 @@ export default function TeamsScreen() {
         !searchQuery ||
         team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         team.Members?.some((member) =>
-          member.User.name.toLowerCase().includes(searchQuery.toLowerCase())
+          member.User?.name?.toLowerCase().includes(searchQuery.toLowerCase())
         );
 
       return matchesSearch;
@@ -342,12 +342,12 @@ export default function TeamsScreen() {
                           { backgroundColor: colors.border },
                         ]}
                       >
-                        {member.User.avatarUrl &&
-                        !imageErrors.has(member.User.id) ? (
+                        {member.User?.avatarUrl &&
+                        !imageErrors.has(member.User?.id || 0) ? (
                           <Image
-                            source={{ uri: member.User.avatarUrl }}
+                            source={{ uri: member.User?.avatarUrl }}
                             style={styles.avatar}
-                            onError={() => handleImageError(member.User.id)}
+                            onError={() => handleImageError(member.User?.id || 0)}
                           />
                         ) : (
                           <View style={styles.defaultAvatar}>
@@ -357,7 +357,7 @@ export default function TeamsScreen() {
                                 { color: colors.tabIconDefault },
                               ]}
                             >
-                              {member.User.name
+                              {(member.User?.name || t("deletedUser"))
                                 .split(" ")
                                 .map((n) => n[0])
                                 .join("")

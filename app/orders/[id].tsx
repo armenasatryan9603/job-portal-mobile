@@ -1220,14 +1220,16 @@ export default function EditOrderScreen() {
                         { color: colors.background },
                       ]}
                     >
-                      {order?.Client?.name?.charAt(0)?.toUpperCase()}
+                      {(order?.Client?.name || t("deletedUser"))
+                        ?.charAt(0)
+                        ?.toUpperCase() || "?"}
                     </Text>
                   </View>
                 )}
               </View>
               <View style={styles.clientNameContainer}>
                 <Text style={[styles.clientName, { color: colors.text }]}>
-                  {order?.Client?.name}
+                  {order?.Client?.name || t("deletedUser")}
                 </Text>
                 {order?.Client?.verified && (
                   <View style={styles.verifiedBadge}>

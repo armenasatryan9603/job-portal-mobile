@@ -540,7 +540,7 @@ const OrderItem = ({
               <Text
                 style={[styles.clientName, { color: colors.tabIconDefault }]}
               >
-                {t("postedBy")} {order.Client.name} •{" "}
+                {t("postedBy")} {order.Client?.name || t("deletedUser")} •{" "}
                 {new Date(order.createdAt).toLocaleDateString()}
               </Text>
             </View>

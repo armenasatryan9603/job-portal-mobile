@@ -303,7 +303,7 @@ export default function ChatScreen() {
   const renderConversation = ({ item }: { item: Conversation }) => {
     const otherParticipants = item.Participants.filter((p) => p.isActive);
     const participantName = otherParticipants
-      .map((p) => p.User.name)
+      .map((p) => p.User?.name || t("deletedUser"))
       .join(", ");
     const lastMessage = item.Messages[0];
     const currentUserParticipant = item.Participants.find((p) => p.isActive);
@@ -362,7 +362,9 @@ export default function ChatScreen() {
               ]}
             >
               <Text style={[styles.avatarText, { color: "white" }]}>
-                {participantName.charAt(0).toUpperCase()}
+                {participantName && participantName.length > 0
+                  ? participantName.charAt(0).toUpperCase()
+                  : "?"}
               </Text>
             </View>
           </View>
