@@ -186,6 +186,12 @@ export default function ChatDetailScreen() {
         const numericId = parseInt(id as string, 10);
         if (!Number.isNaN(numericId)) {
           setActiveConversationId(numericId);
+
+          // ✅ FIX: Mark messages as read when screen comes into focus
+          // This ensures messages are marked as read when user returns to the conversation
+          chatService.markAsRead(numericId).catch((err) => {
+            console.error("Failed to mark as read on focus:", err);
+          });
         }
       }
 
@@ -199,6 +205,27 @@ export default function ChatDetailScreen() {
   useEffect(() => {
     loadConversation();
   }, [id]);
+
+  // ✅ FIX: Mark messages as read periodically while viewing
+  // This ensures messages are marked as read continuously while user is actively viewing
+  useEffect(() => {
+    if (!conversation?.id) return;
+
+    // Mark as read immediately when conversation is loaded
+    chatService.markAsRead(conversation.id).catch((err) => {
+      console.error("Failed to mark as read on conversation load:", err);
+    });
+
+    // Then mark as read every 5 seconds while viewing
+    // This handles edge cases where messages might not be marked as read
+    const interval = setInterval(() => {
+      chatService.markAsRead(conversation.id).catch((err) => {
+        console.error("Failed to mark as read periodically:", err);
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [conversation?.id]);
 
   // Handle keyboard show/hide - scroll to bottom when keyboard appears
   useEffect(() => {
@@ -343,6 +370,12 @@ export default function ChatDetailScreen() {
             clearTimeout(existingTimeout);
             typingClearTimeoutsRef.current.delete(newMessage.senderId);
           }
+
+          // ✅ FIX: Mark as read when new message arrives while viewing
+          // This ensures messages are marked as read in real-time when user is actively viewing
+          chatService.markAsRead(currentConversationId).catch((err) => {
+            console.error("Failed to mark as read on new message:", err);
+          });
         }
 
         setTimeout(() => {
@@ -1811,7 +1844,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     borderWidth: 1,
     borderRadius: 20,
-    paddingHorizontal: 12,
+    paddingLeft: 12,
+    paddingRight: 8,
     paddingVertical: 6,
     gap: 6,
     minHeight: 44,
@@ -1821,9 +1855,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     maxHeight: 100,
     minHeight: 28,
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    lineHeight: 20,
+    lineHeight: 14,
   },
   sendButton: {
     width: 36,

@@ -46,6 +46,11 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
       const currentUserParticipant = conv.Participants.find((p) => p.isActive);
       const lastMessage = conv.Messages[0];
 
+      // ✅ FIX: Don't count messages sent by current user as unread
+      if (!lastMessage || lastMessage.senderId === user?.id) {
+        return sum;
+      }
+
       if (lastMessage && currentUserParticipant?.lastReadAt) {
         const lastReadTime = new Date(currentUserParticipant.lastReadAt);
         const messageTime = new Date(lastMessage.createdAt);

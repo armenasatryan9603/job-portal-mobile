@@ -14,7 +14,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
   RefreshControl,
   Alert,
 } from "react-native";
@@ -24,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/contexts/ConversationsContext";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { ChatListSkeleton } from "@/components/ChatListSkeleton";
 
 export default function ChatScreen() {
   useAnalytics("ChatList");
@@ -173,6 +173,11 @@ export default function ChatScreen() {
     const currentUserParticipant = conv.Participants.find((p) => p.isActive);
     const lastMessage = conv.Messages[0];
 
+    // ✅ FIX: Don't count messages sent by current user as unread
+    if (!lastMessage || lastMessage.senderId === user?.id) {
+      return sum;
+    }
+
     if (lastMessage && currentUserParticipant?.lastReadAt) {
       const lastReadTime = new Date(currentUserParticipant.lastReadAt);
       const messageTime = new Date(lastMessage.createdAt);
@@ -309,11 +314,14 @@ export default function ChatScreen() {
     const currentUserParticipant = item.Participants.find((p) => p.isActive);
 
     // Calculate unread count
+    // ✅ FIX: Don't count messages sent by current user as unread
     const hasUnread =
-      lastMessage && currentUserParticipant?.lastReadAt
+      lastMessage &&
+      lastMessage.senderId !== user?.id &&
+      (currentUserParticipant?.lastReadAt
         ? new Date(lastMessage.createdAt) >
           new Date(currentUserParticipant.lastReadAt)
-        : lastMessage && !currentUserParticipant?.lastReadAt;
+        : !currentUserParticipant?.lastReadAt);
 
     const formatTimestamp = (dateString: string) => {
       const date = new Date(dateString);
@@ -437,12 +445,7 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <Layout header={header}>
-        <View style={[styles.container, styles.centerContent]}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loadingConversations")}
-          </Text>
-        </View>
+        <ChatListSkeleton itemCount={6} />
       </Layout>
     );
   }
