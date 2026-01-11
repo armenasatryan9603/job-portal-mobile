@@ -24,7 +24,7 @@ import { queryClient } from "@/services/queryClient";
 
 import { GlobalModals } from "@/components/GlobalModals";
 import { ChatReminderToast } from "@/components/ChatReminderToast";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CreditCardProvider } from "@/contexts/CreditCardContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ModalProvider } from "@/contexts/ModalContext";
@@ -38,6 +38,14 @@ import AnalyticsService from "@/services/AnalyticsService";
 import CalendarNotificationService from "@/services/CalendarNotificationService";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
+
+// Firebase messaging import with fallback
+let messaging: any = null;
+try {
+  messaging = require("@react-native-firebase/messaging").default;
+} catch (error) {
+  console.warn("Firebase messaging not available");
+}
 
 export const unstable_settings = {
   initialRouteName: "index",
@@ -57,10 +65,9 @@ function AppContent() {
           CalendarNotificationService.getInstance();
         await calendarNotificationService.initialize();
         await calendarNotificationService.requestPermissions();
-        console.log("✅ Calendar notification service initialized");
       } catch (error) {
         console.error(
-          "❌ Error initializing calendar notification service:",
+          "Error initializing calendar notification service:",
           error
         );
       }
@@ -69,24 +76,84 @@ function AppContent() {
     initializeCalendarNotifications();
   }, []);
 
-  // Handle notification taps
+  // Helper function to navigate based on notification data
+  const navigateFromNotification = (data: any) => {
+    if (!data) {
+      return;
+    }
+
+    // Extract values - Firebase data is always strings, so we need to handle that
+    const type = String(data?.type || "").trim();
+    const conversationId = String(data?.conversationId || "").trim();
+    const notificationId = String(data?.notificationId || "").trim();
+    const orderId = String(data?.orderId || "").trim();
+
+    // Wait a bit for app to be ready, then navigate
+    setTimeout(() => {
+      try {
+        // Handle calendar notifications
+        if (type === "calendar_reminder" && orderId) {
+          router.push(`/orders/${orderId}`);
+          return;
+        }
+
+        // Handle chat messages - must check this first
+        if (type === "chat_message" && conversationId) {
+          router.push(`/chat/${conversationId}`);
+          return;
+        }
+
+        // Handle other notifications - notificationId should be present for all non-chat notifications
+        // Check if notificationId exists and is valid (not empty, not "undefined", not "null")
+        if (notificationId && notificationId !== "" && notificationId !== "undefined" && notificationId !== "null") {
+          router.push(`/notifications/${notificationId}`);
+          return;
+        }
+
+        // Fallback: navigate to notifications list
+        router.push("/notifications");
+      } catch (error) {
+        console.error("Error navigating from notification tap:", error);
+      }
+    }, 500); // Small delay to ensure router is ready
+  };
+
+  // Handle notification taps from expo-notifications (works when app is in background)
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const calendarNotificationService =
-          CalendarNotificationService.getInstance();
-        calendarNotificationService.handleNotificationResponse(
-          response,
-          (orderId) => {
-            // Navigate to order details
-            router.push(`/orders/${orderId}`);
-          }
-        );
+        const data = response.notification.request.content.data;
+        navigateFromNotification(data);
       }
     );
 
     return () => {
       subscription.remove();
+    };
+  }, []);
+
+  // Handle Firebase notifications when app is opened from terminated/background state
+  useEffect(() => {
+    if (!messaging) return;
+
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage) {
+          navigateFromNotification(remoteMessage.data);
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting initial notification:", error);
+      });
+
+    // Also handle when app is opened from background
+    const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
+      navigateFromNotification(remoteMessage.data);
+    });
+
+    return () => {
+      unsubscribe();
     };
   }, []);
 
@@ -100,7 +167,7 @@ function AppContent() {
           handleDeepLink(url);
         }
       } catch (error) {
-        console.error("❌ Error getting initial URL:", error);
+        console.error("Error getting initial URL:", error);
       }
     };
 
@@ -136,11 +203,11 @@ function AppContent() {
       const refCode = parsed.queryParams?.ref as string;
 
       if (refCode) {
-        console.log(`🔗 Deep link detected with referral code: ${refCode}`);
+        // Deep link detected with referral code
         storeReferralCode(refCode);
       }
     } catch (error) {
-      console.error("❌ Error parsing deep link:", error);
+      console.error("Error parsing deep link:", error);
     }
   };
 
@@ -176,8 +243,8 @@ export default function RootLayout() {
       <ThemeProvider>
         <LanguageProvider>
           <TranslationProvider>
-            <UnreadCountProvider>
-              <AuthProvider>
+            <AuthProvider>
+              <UnreadCountProvider>
                 <ConversationsProvider>
                   <CreditCardProvider>
                     <ModalProvider>
@@ -189,8 +256,8 @@ export default function RootLayout() {
                     </ModalProvider>
                   </CreditCardProvider>
                 </ConversationsProvider>
-              </AuthProvider>
-            </UnreadCountProvider>
+              </UnreadCountProvider>
+            </AuthProvider>
           </TranslationProvider>
         </LanguageProvider>
       </ThemeProvider>

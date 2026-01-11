@@ -24,6 +24,7 @@ import { useConversations } from "@/contexts/ConversationsContext";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { ChatListSkeleton } from "@/components/ChatListSkeleton";
+import { formatTimestamp } from "@/utils/dateFormatting";
 
 export default function ChatScreen() {
   useAnalytics("ChatList");
@@ -50,86 +51,19 @@ export default function ChatScreen() {
     conversationsRef.current = conversations;
   }, [conversations]);
 
-  // Refresh conversations when screen comes into focus
-  // This ensures read status is synced from backend when app reopens
-  useFocusEffect(
-    useCallback(() => {
-      if (user?.id && !isRefreshingRef.current && !loading) {
-        isRefreshingRef.current = true;
-        refreshConversations().finally(() => {
-          isRefreshingRef.current = false;
-        });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.id])
-  );
+  // Note: Conversations are loaded in ConversationsContext on mount
+  // No need to reload on focus - Pusher keeps them updated in real-time
 
-  // Subscribe to user updates for real-time conversation list updates
+  // Note: User updates subscription is handled globally in ConversationsContext
+  // to prevent handler conflicts. This screen uses the context's updateConversation
+  // which is automatically called when Pusher events arrive.
+
+  // Handle conversation deletion events (bound directly to channel, not via subscribeToUserUpdates)
   useEffect(() => {
     if (!user?.id) return;
 
-    // Initialize Pusher
     pusherService.initialize();
 
-    // Subscribe to user-specific updates
-    const unsubscribe = pusherService.subscribeToUserUpdates(
-      user.id,
-      (data: {
-        conversationId: number;
-        lastMessage: any;
-        updatedAt: string;
-      }) => {
-        // Use ref to access latest conversations state
-        const existingConv = conversationsRef.current.find(
-          (conv) => conv.id === data.conversationId
-        );
-
-        if (existingConv) {
-          // Update existing conversation
-          updateConversation(data.conversationId, {
-            updatedAt: data.updatedAt,
-            Messages: data.lastMessage
-              ? [{ ...data.lastMessage, Sender: data.lastMessage.Sender }]
-              : existingConv.Messages,
-          });
-        } else {
-          // New conversation - reload the list
-          refreshConversations();
-        }
-      },
-      // Handle conversation status updates
-      (statusData: {
-        conversationId: number;
-        status: string;
-        updatedAt: string;
-      }) => {
-        // Update conversation status in the list
-        updateConversation(statusData.conversationId, {
-          status: statusData.status,
-          updatedAt: statusData.updatedAt,
-        });
-      },
-      // Handle order status updates
-      (orderStatusData: {
-        orderId: number;
-        status: string;
-        updatedAt: string;
-      }) => {
-        // Use ref to access latest conversations
-        conversationsRef.current.forEach((conv) => {
-          if (conv.Order?.id === orderStatusData.orderId) {
-            updateConversation(conv.id, {
-              Order: {
-                ...conv.Order,
-                status: orderStatusData.status,
-              },
-            });
-          }
-        });
-      }
-    );
-
-    // Subscribe to conversation deletion events
     const conversationDeletedHandler = (data: {
       conversationId: number;
       deletedBy: number;
@@ -151,7 +85,6 @@ export default function ChatScreen() {
 
     return () => {
       clearTimeout(timeoutId);
-      unsubscribe();
       const pusher = (pusherService as any).pusher;
       if (pusher) {
         const channel = pusher.channel(`user-${user.id}`);
@@ -160,7 +93,7 @@ export default function ChatScreen() {
         }
       }
     };
-  }, [user?.id, updateConversation, refreshConversations, removeConversation]);
+  }, [user?.id, removeConversation]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -169,23 +102,25 @@ export default function ChatScreen() {
   };
 
   const totalUnreadCount = conversations.reduce((sum, conv) => {
-    // Calculate unread count based on last message and participant's lastReadAt
-    const currentUserParticipant = conv.Participants.find((p) => p.isActive);
+    const currentUserParticipant = conv.Participants.find(
+      (p) => p.userId === user?.id && p.isActive
+    );
     const lastMessage = conv.Messages[0];
 
-    // ✅ FIX: Don't count messages sent by current user as unread
+    // Don't count messages sent by current user as unread
     if (!lastMessage || lastMessage.senderId === user?.id) {
       return sum;
     }
 
-    if (lastMessage && currentUserParticipant?.lastReadAt) {
-      const lastReadTime = new Date(currentUserParticipant.lastReadAt);
-      const messageTime = new Date(lastMessage.createdAt);
-      return messageTime > lastReadTime ? sum + 1 : sum;
-    } else if (lastMessage && !currentUserParticipant?.lastReadAt) {
+    // If no lastReadAt, consider it unread
+    if (!currentUserParticipant?.lastReadAt) {
       return sum + 1;
     }
-    return sum;
+
+    // Check if message is newer than lastReadAt
+    const lastReadTime = new Date(currentUserParticipant.lastReadAt);
+    const messageTime = new Date(lastMessage.createdAt);
+    return messageTime > lastReadTime ? sum + 1 : sum;
   }, 0);
 
   const header = (
@@ -209,46 +144,12 @@ export default function ChatScreen() {
   });
 
   const handleConversationPress = async (conversation: Conversation) => {
-    try {
-      // Mark messages as read on backend
-      await chatService.markAsRead(conversation.id);
-
-      // Refresh the conversation from backend to get the actual updated lastReadAt
-      // This ensures the read status persists when app reopens
-      const updatedConversation = await chatService.getConversation(
-        conversation.id
-      );
-
-      // Update local state with the actual backend data
-      updateConversation(conversation.id, {
-        Participants: updatedConversation.Participants,
-      });
-    } catch (err) {
-      console.error("Failed to mark as read:", err);
-      // Fallback to optimistic update if refresh fails
-      const lastMessage = conversation.Messages[0];
-      let newLastReadAt;
-      if (lastMessage) {
-        const messageTime = new Date(lastMessage.createdAt);
-        // Add 1 second to ensure it's after the message
-        newLastReadAt = new Date(messageTime.getTime() + 1000).toISOString();
-      } else {
-        newLastReadAt = new Date().toISOString();
-      }
-
-      updateConversation(conversation.id, {
-        Participants: conversation.Participants.map((p) =>
-          p.isActive ? { ...p, lastReadAt: newLastReadAt } : p
-        ),
-      });
-    }
-
     // Track conversation opened
     AnalyticsService.getInstance().logEvent("conversation_opened", {
       conversation_id: conversation.id.toString(),
     });
 
-    // Navigate to chat detail
+    // Navigate to chat detail (mark as read happens in useFocusEffect)
     router.push(`/chat/${conversation.id}`);
   };
 
@@ -311,10 +212,11 @@ export default function ChatScreen() {
       .map((p) => p.User?.name || t("deletedUser"))
       .join(", ");
     const lastMessage = item.Messages[0];
-    const currentUserParticipant = item.Participants.find((p) => p.isActive);
+    const currentUserParticipant = item.Participants.find(
+      (p) => p.userId === user?.id && p.isActive
+    );
 
-    // Calculate unread count
-    // ✅ FIX: Don't count messages sent by current user as unread
+    // Don't count messages sent by current user as unread
     const hasUnread =
       lastMessage &&
       lastMessage.senderId !== user?.id &&
@@ -322,24 +224,6 @@ export default function ChatScreen() {
         ? new Date(lastMessage.createdAt) >
           new Date(currentUserParticipant.lastReadAt)
         : !currentUserParticipant?.lastReadAt);
-
-    const formatTimestamp = (dateString: string) => {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-      if (diffInHours < 1) {
-        const diffInMinutes = Math.floor(diffInHours * 60);
-        return diffInMinutes < 1
-          ? t("now")
-          : `${diffInMinutes}${t("minutesAgo")}`;
-      } else if (diffInHours < 24) {
-        return `${Math.floor(diffInHours)}${t("hoursAgo")}`;
-      } else {
-        const diffInDays = Math.floor(diffInHours / 24);
-        return `${diffInDays}${t("daysAgo")}`;
-      }
-    };
 
     const isClosed = item.status === "closed" || item.status === "completed";
 
@@ -405,7 +289,7 @@ export default function ChatScreen() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {lastMessage ? formatTimestamp(lastMessage.createdAt) : ""}
+                {lastMessage ? formatTimestamp(lastMessage.createdAt, t) : ""}
               </Text>
             </View>
 

@@ -2,6 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { getApiBaseUrl } from "@/config/api";
 import * as Notifications from "expo-notifications";
+import { apiService } from "@/services/api";
+import { queryClient } from "@/services/queryClient";
 
 /**
  * NotificationService - Firebase Cloud Messaging (FCM) Only
@@ -62,6 +64,8 @@ interface RemoteMessage {
     senderId?: string;
     title?: string;
     body?: string;
+    notificationId?: string;
+    orderId?: string;
   };
 }
 
@@ -75,7 +79,8 @@ class NotificationService {
   >();
   // Track recently shown reminders to prevent duplicates (Pusher + FCM)
   private recentReminders = new Map<string, number>(); // messageId -> timestamp
-  private readonly REMINDER_DEDUP_WINDOW = 5000; // 5 seconds
+  private readonly REMINDER_DEDUP_WINDOW = 10000; // 10 seconds
+  private isInitialized = false;
 
   static getInstance(): NotificationService {
     if (!NotificationService.instance) {
@@ -165,6 +170,12 @@ class NotificationService {
   }
 
   async initialize(): Promise<void> {
+    // Prevent multiple initializations
+    if (this.isInitialized) {
+      console.log("⚠️ NotificationService already initialized, skipping");
+      return;
+    }
+
     try {
       console.log("🔧 Initializing NotificationService...");
 
@@ -216,12 +227,25 @@ class NotificationService {
         console.warn("⚠️ Could not create notification channel:", error);
       }
 
-      // ✅ FIX: Set up global notification handler for foreground display
-      // This ensures notifications are displayed when app is in foreground
+      // ✅ Set up unified notification handler for all notification types
+      // This handles both chat and calendar notifications to prevent conflicts
       try {
         Notifications.setNotificationHandler({
           handleNotification: async (notification) => {
-            // Show all notifications in foreground
+            const notificationType = notification.request.content.data?.type;
+
+            // Calendar notifications - show with badge
+            if (notificationType === "calendar_reminder") {
+              return {
+                shouldShowAlert: true,
+                shouldPlaySound: true,
+                shouldSetBadge: true,
+                shouldShowBanner: true,
+                shouldShowList: true,
+              };
+            }
+
+            // All other notifications (chat, orders, etc.) - show with badge
             return {
               shouldShowAlert: true,
               shouldPlaySound: true,
@@ -232,10 +256,10 @@ class NotificationService {
           },
         });
         console.log(
-          "✅ Global notification handler configured for foreground display"
+          "✅ Unified notification handler configured for all notification types"
         );
       } catch (error) {
-        console.warn("⚠️ Could not set global notification handler:", error);
+        console.warn("⚠️ Could not set notification handler:", error);
       }
 
       const permissionGranted = await this.requestPermissions();
@@ -267,7 +291,8 @@ class NotificationService {
         console.log("   Watch for 'FCM Token refreshed' message in logs");
       }
 
-      console.log("NotificationService initialized successfully");
+      this.isInitialized = true;
+      console.log("✅ NotificationService initialized successfully");
     } catch (error) {
       console.error("❌ Error initializing NotificationService:", error);
       console.error(
@@ -336,17 +361,29 @@ class NotificationService {
     // It must be at the top level, not inside a class
 
     // Handle notification taps when app is in background
-    messaging().onNotificationOpenedApp((remoteMessage: RemoteMessage) => {
-      console.log("Notification opened app:", remoteMessage);
-      this.handleNotificationTap(remoteMessage);
-    });
+    messaging().onNotificationOpenedApp(
+      async (remoteMessage: RemoteMessage) => {
+        console.log("Notification opened app:", remoteMessage);
+
+        // Notification is already in backend, no need to save locally
+        console.log("Notification opened from background (already in backend)");
+
+        // Handle navigation/tap
+        this.handleNotificationTap(remoteMessage);
+      }
+    );
 
     // Handle app launch from notification
     messaging()
       .getInitialNotification()
-      .then((remoteMessage: RemoteMessage | null) => {
+      .then(async (remoteMessage: RemoteMessage | null) => {
         if (remoteMessage) {
           console.log("App launched from notification:", remoteMessage);
+
+          // Notification is already in backend, no need to save locally
+          console.log("App launched from notification (already in backend)");
+
+          // Handle navigation/tap
           this.handleNotificationTap(remoteMessage);
         }
       });
@@ -427,17 +464,18 @@ class NotificationService {
         return;
       }
 
-      const notification: Notification = {
-        id: remoteMessage.messageId || `local_${Date.now()}`,
-        title: remoteMessage.notification?.title || "New Notification",
-        message: remoteMessage.notification?.body || "",
-        timestamp: new Date().toLocaleString(),
-        isRead: false,
-        type: remoteMessage.data?.type || "system",
-      };
+      // Notification is already stored in backend, no need to save locally
+      // Backend created it when the event occurred
+      console.log("Notification received (already in backend):", {
+        type: remoteMessage.data?.type,
+        title: remoteMessage.notification?.title,
+      });
 
-      await this.saveNotification(notification);
-      console.log("Notification saved:", notification);
+      // Invalidate TanStack Query cache to fetch fresh notifications
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications", "unread-count"],
+      });
 
       // ✅ FIX: Display notification in foreground using expo-notifications
       // This ensures users see notifications even when app is open
@@ -480,28 +518,50 @@ class NotificationService {
     }
   }
 
+  // Deprecated: Notifications are stored in backend only
+  // This method kept for backward compatibility but should not be used
   async saveNotification(notification: Notification): Promise<void> {
-    try {
-      const existing = await this.getStoredNotifications();
-      const updated = [notification, ...existing].slice(
-        0,
-        this.MAX_NOTIFICATIONS
-      );
-      await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-      console.log("Notification saved to storage");
-    } catch (error) {
-      console.error("Error saving notification:", error);
-    }
+    // Notifications are stored in backend, not locally
+    // This method is kept for compatibility but does nothing
+    console.log("saveNotification called but notifications are backend-only");
   }
 
   async getStoredNotifications(): Promise<Notification[]> {
     try {
-      const stored = await AsyncStorage.getItem(this.STORAGE_KEY);
-      const notifications = stored ? JSON.parse(stored) : [];
-      console.log(
-        `Retrieved ${notifications.length} notifications from storage`
-      );
-      return notifications;
+      // Fetch from backend (primary source)
+      try {
+        const response = await apiService.get<{
+          notifications: any[];
+          pagination: any;
+        }>("/notifications?limit=100", true);
+
+        if (response?.notifications) {
+          // Convert backend format to frontend format
+          const notifications = response.notifications.map((n: any) => ({
+            id: n.id.toString(),
+            title: n.title || "",
+            message: n.message || "",
+            timestamp: n.createdAt || new Date().toISOString(),
+            isRead: n.isRead || false,
+            type: (n.type as NotificationType) || "system",
+          }));
+
+          // Save to local storage only as offline cache
+          await AsyncStorage.setItem(
+            this.STORAGE_KEY,
+            JSON.stringify(notifications)
+          );
+          return notifications;
+        }
+      } catch (apiError) {
+        console.log("Backend fetch failed, using offline cache:", apiError);
+        // Only use local storage if backend is unavailable (offline mode)
+        const stored = await AsyncStorage.getItem(this.STORAGE_KEY);
+        const notifications = stored ? JSON.parse(stored) : [];
+        return notifications;
+      }
+
+      return [];
     } catch (error) {
       console.error("Error getting stored notifications:", error);
       return [];
@@ -510,12 +570,23 @@ class NotificationService {
 
   async markAsRead(notificationId: string): Promise<void> {
     try {
+      // Try backend first
+      try {
+        await apiService.post(
+          `/notifications/${notificationId}/read`,
+          {},
+          true
+        );
+      } catch (apiError) {
+        console.log("Backend mark as read failed, using local:", apiError);
+      }
+
+      // Also update local storage
       const notifications = await this.getStoredNotifications();
       const updated = notifications.map((n) =>
         n.id === notificationId ? { ...n, isRead: true } : n
       );
       await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-      console.log(`Notification ${notificationId} marked as read`);
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -523,10 +594,17 @@ class NotificationService {
 
   async markAllAsRead(): Promise<void> {
     try {
+      // Try backend first
+      try {
+        await apiService.post("/notifications/mark-all-read", {}, true);
+      } catch (apiError) {
+        console.log("Backend mark all as read failed, using local:", apiError);
+      }
+
+      // Also update local storage
       const notifications = await this.getStoredNotifications();
       const updated = notifications.map((n) => ({ ...n, isRead: true }));
       await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(updated));
-      console.log("All notifications marked as read");
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
     }
@@ -534,10 +612,22 @@ class NotificationService {
 
   async getUnreadCount(): Promise<number> {
     try {
+      // Try to fetch from backend first
+      try {
+        const response = await apiService.get<{ unreadCount: number }>(
+          "/notifications/unread-count",
+          true
+        );
+        if (response?.unreadCount !== undefined) {
+          return response.unreadCount;
+        }
+      } catch (apiError) {
+        console.log("Backend unread count failed, using local:", apiError);
+      }
+
+      // Fallback to local count
       const notifications = await this.getStoredNotifications();
-      const unreadCount = notifications.filter((n) => !n.isRead).length;
-      console.log(`Unread notifications count: ${unreadCount}`);
-      return unreadCount;
+      return notifications.filter((n) => !n.isRead).length;
     } catch (error) {
       console.error("Error getting unread count:", error);
       return 0;
@@ -557,6 +647,27 @@ class NotificationService {
 
   async clearAllNotifications(): Promise<void> {
     try {
+      // Try backend first
+      try {
+        const authToken = await this.getAuthToken();
+        if (authToken) {
+          const apiUrl = getApiBaseUrl();
+          const response = await fetch(`${apiUrl}/notifications/clear-all`, {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${authToken}`,
+            },
+          });
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+        }
+      } catch (apiError) {
+        console.log("Backend clear all failed, using local:", apiError);
+      }
+
+      // Also clear local storage
       await AsyncStorage.removeItem(this.STORAGE_KEY);
       console.log("All notifications cleared");
     } catch (error) {
@@ -579,31 +690,15 @@ class NotificationService {
   }
 
   private handleNotificationTap(remoteMessage: RemoteMessage): void {
-    // Handle navigation based on notification type
-    const type = remoteMessage.data?.type;
-    const relatedId = remoteMessage.data?.relatedId;
-
-    console.log("Handling notification tap:", { type, relatedId });
-
-    // Add your navigation logic here based on notification type
-    switch (type) {
-      case "order":
-        // Navigate to order details
-        console.log("Navigate to order:", relatedId);
-        break;
-      case "proposal":
-        // Navigate to proposal details
-        console.log("Navigate to proposal:", relatedId);
-        break;
-      case "message":
-        // Navigate to chat
-        console.log("Navigate to chat:", relatedId);
-        break;
-      default:
-        // Navigate to notifications list
-        console.log("Navigate to notifications list");
-        break;
-    }
+    // Navigation is handled by expo-notifications response listener in _layout.tsx
+    // When Firebase notifications are displayed via expo-notifications (in background-message-handler.ts),
+    // tapping them will automatically trigger the response listener
+    // This method is kept for logging purposes only
+    console.log("Notification tap detected (navigation handled by expo-notifications):", {
+      type: remoteMessage.data?.type,
+      conversationId: remoteMessage.data?.conversationId,
+      notificationId: remoteMessage.data?.notificationId,
+    });
   }
 
   // Method to get current unread count (for testing)
@@ -611,55 +706,41 @@ class NotificationService {
     return await this.getUnreadCount();
   }
 
-  // Send FCM token to backend
-  async sendFCMTokenToBackend(token: string): Promise<void> {
-    try {
-      const apiUrl = getApiBaseUrl();
-      const url = `${apiUrl}/notifications/fcm-token`;
-      const authToken = await this.getAuthToken();
+  // Send FCM token to backend with retry logic
+  async sendFCMTokenToBackend(
+    token: string,
+    retries: number = 3
+  ): Promise<void> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const authToken = await this.getAuthToken();
+        if (!authToken) {
+          if (attempt === retries) {
+            console.error("❌ No auth token available - FCM token not sent");
+          }
+          return;
+        }
 
-      if (!authToken) {
-        console.error(
-          "❌ No auth token available - FCM token not sent to backend"
+        await apiService.post(
+          "/notifications/fcm-token",
+          { fcmToken: token },
+          true
         );
-        console.error(
-          "   This means user is not logged in or token key mismatch"
-        );
-        console.error("   Expected AsyncStorage key: 'auth_token'");
-        console.error("   Token will be sent after user logs in");
-        return;
-      }
-
-      console.log(`📤 Sending FCM token to: ${url}`);
-      console.log(`   Auth token present: ${authToken.substring(0, 20)}...`);
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ fcmToken: token }),
-      });
-
-      if (response.ok) {
         console.log("✅ FCM token sent to backend successfully");
-        console.log("   FCM Token:", token.substring(0, 50) + "...");
-      } else {
-        const errorText = await response.text().catch(() => "Unknown error");
-        console.error(
-          "❌ Failed to send FCM token to backend:",
-          response.status,
-          errorText
-        );
-        console.error("   URL:", url);
-        console.error("   FCM Token (for manual testing):", token);
+        return;
+      } catch (error: any) {
+        if (attempt === retries) {
+          console.error(
+            "❌ Failed to send FCM token after",
+            retries,
+            "attempts:",
+            error
+          );
+        } else {
+          console.log(`⏳ Retry ${attempt}/${retries} for FCM token...`);
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+        }
       }
-    } catch (error: any) {
-      console.error("❌ Error sending FCM token to backend:", error);
-      console.error("   Error message:", error?.message);
-      console.error("   API URL:", getApiBaseUrl());
-      console.error("   Make sure backend is running and accessible");
     }
   }
 

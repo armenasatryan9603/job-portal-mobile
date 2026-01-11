@@ -30,6 +30,8 @@ import { useChatReminder } from "@/contexts/ChatReminderContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
 import { ChatSkeleton } from "@/components/ChatSkeleton";
+import { useConversations } from "@/contexts/ConversationsContext";
+import { formatTimestamp } from "@/utils/dateFormatting";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -154,6 +156,7 @@ export default function ChatDetailScreen() {
   const { user } = useAuth();
   const { id } = useLocalSearchParams();
   const { setActiveConversationId } = useChatReminder();
+  const { updateConversation } = useConversations();
   const insets = useSafeAreaInsets();
   const [newMessage, setNewMessage] = useState("");
   const flatListRef = useRef<FlatList>(null);
@@ -180,52 +183,45 @@ export default function ChatDetailScreen() {
     Map<number, ReturnType<typeof setTimeout>>
   >(new Map());
 
+  // Simple helper function to mark conversation as read and update context
+  // Mark as read ONLY when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      if (id) {
-        const numericId = parseInt(id as string, 10);
-        if (!Number.isNaN(numericId)) {
-          setActiveConversationId(numericId);
+      if (!id || !user?.id) return;
 
-          // ✅ FIX: Mark messages as read when screen comes into focus
-          // This ensures messages are marked as read when user returns to the conversation
-          chatService.markAsRead(numericId).catch((err) => {
-            console.error("Failed to mark as read on focus:", err);
+      const conversationId = parseInt(id as string, 10);
+      if (Number.isNaN(conversationId)) return;
+
+      setActiveConversationId(conversationId);
+
+      // Mark as read once when screen comes into focus
+      const markAsRead = async () => {
+        try {
+          await chatService.markAsRead(conversationId);
+          const updated = await chatService.getConversation(conversationId);
+          updateConversation(conversationId, {
+            Participants: updated.Participants,
           });
+        } catch (err) {
+          console.error("Failed to mark as read:", err);
         }
-      }
+      };
+
+      markAsRead();
 
       return () => {
         setActiveConversationId(null);
       };
-    }, [id, setActiveConversationId])
+    }, [id, user?.id, setActiveConversationId, updateConversation])
   );
 
-  // Load conversation and messages
+  // Load conversation and messages when id changes
   useEffect(() => {
-    loadConversation();
+    if (id) {
+      // Always reload from DB when conversation ID changes
+      loadConversation(false);
+    }
   }, [id]);
-
-  // ✅ FIX: Mark messages as read periodically while viewing
-  // This ensures messages are marked as read continuously while user is actively viewing
-  useEffect(() => {
-    if (!conversation?.id) return;
-
-    // Mark as read immediately when conversation is loaded
-    chatService.markAsRead(conversation.id).catch((err) => {
-      console.error("Failed to mark as read on conversation load:", err);
-    });
-
-    // Then mark as read every 5 seconds while viewing
-    // This handles edge cases where messages might not be marked as read
-    const interval = setInterval(() => {
-      chatService.markAsRead(conversation.id).catch((err) => {
-        console.error("Failed to mark as read periodically:", err);
-      });
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [conversation?.id]);
 
   // Handle keyboard show/hide - scroll to bottom when keyboard appears
   useEffect(() => {
@@ -266,9 +262,9 @@ export default function ChatDetailScreen() {
 
   // Initialize Pusher and subscribe to conversation updates
   useEffect(() => {
-    pusherService.initialize();
-
     if (!conversation?.id) return;
+
+    pusherService.initialize();
 
     const currentConversationId = conversation.id;
     const conversationChannelName = `conversation-${currentConversationId}`;
@@ -339,6 +335,7 @@ export default function ChatDetailScreen() {
     const unsubscribe = pusherService.subscribeToConversation(
       currentConversationId,
       (newMessage: Message) => {
+        console.log("📨 Received new-message via Pusher:", newMessage.id);
         if (newMessage.conversationId !== currentConversationId) {
           console.warn(
             `⚠️ Received message for conversation ${newMessage.conversationId} but current is ${currentConversationId}. Ignoring.`
@@ -354,6 +351,7 @@ export default function ChatDetailScreen() {
             );
             return prev;
           }
+          console.log("✅ Adding message to state:", newMessage.id);
           return [...prev, newMessage];
         });
 
@@ -371,11 +369,7 @@ export default function ChatDetailScreen() {
             typingClearTimeoutsRef.current.delete(newMessage.senderId);
           }
 
-          // ✅ FIX: Mark as read when new message arrives while viewing
-          // This ensures messages are marked as read in real-time when user is actively viewing
-          chatService.markAsRead(currentConversationId).catch((err) => {
-            console.error("Failed to mark as read on new message:", err);
-          });
+          // Note: Mark as read is handled by useFocusEffect
         }
 
         setTimeout(() => {
@@ -480,52 +474,70 @@ export default function ChatDetailScreen() {
 
     pusherService.initialize();
 
-    const unsubscribe = pusherService.subscribeToUserUpdates(
-      user.id,
-      () => {}, // conversation-updated handler (not needed here)
-      undefined, // conversation-status-updated (handled above)
-      // Handle order status updates
-      (orderStatusData: {
-        orderId: number;
-        status: string;
-        updatedAt: string;
-      }) => {
-        // Update order status in conversation if it matches
-        let shouldReload = false;
-        setConversation((prev) => {
-          if (!prev || prev.Order?.id !== orderStatusData.orderId) {
-            return prev;
-          }
-          // If order is closed, also close the conversation
-          const shouldCloseConversation = orderStatusData.status === "closed";
-          // Reload if order is being closed and conversation wasn't already closed
-          if (shouldCloseConversation && prev.status !== "closed") {
-            shouldReload = true;
-          }
-          return {
-            ...prev,
-            status: shouldCloseConversation ? "closed" : prev.status,
-            updatedAt: orderStatusData.updatedAt,
-            Order: {
-              ...prev.Order!,
-              status: orderStatusData.status,
-            },
-          };
-        });
+    // Note: User updates subscription is handled globally in ConversationsContext
+    // to prevent handler conflicts. Order status updates are handled there too.
+    // For this specific conversation, we handle order status updates via direct channel binding
+    // to avoid conflicts with the global subscription.
 
-        // If order is closed, reload conversation to get updated participant status
-        if (shouldReload) {
-          // Use setTimeout to avoid state update conflicts
-          setTimeout(() => {
-            loadConversation();
-          }, 100);
+    const handleOrderStatusUpdate = (orderStatusData: {
+      orderId: number;
+      status: string;
+      updatedAt: string;
+    }) => {
+      // Update order status in conversation if it matches
+      let shouldReload = false;
+      setConversation((prev) => {
+        if (!prev || prev.Order?.id !== orderStatusData.orderId) {
+          return prev;
+        }
+        // If order is closed, also close the conversation
+        const shouldCloseConversation = orderStatusData.status === "closed";
+        // Reload if order is being closed and conversation wasn't already closed
+        if (shouldCloseConversation && prev.status !== "closed") {
+          shouldReload = true;
+        }
+        return {
+          ...prev,
+          status: shouldCloseConversation ? "closed" : prev.status,
+          updatedAt: orderStatusData.updatedAt,
+          Order: {
+            ...prev.Order!,
+            status: orderStatusData.status,
+          },
+        };
+      });
+
+      // If order is closed, reload conversation to get updated participant status
+      if (shouldReload) {
+        // Use setTimeout to avoid state update conflicts
+        setTimeout(() => {
+          loadConversation(false);
+        }, 100);
+      }
+    };
+
+    // Bind directly to user channel for order status updates (doesn't conflict with ConversationsContext)
+    const timeoutId = setTimeout(() => {
+      const pusher = (pusherService as any).pusher;
+      if (pusher && user?.id) {
+        const channel = pusher.channel(`user-${user.id}`);
+        if (channel) {
+          channel.bind("order-status-updated", handleOrderStatusUpdate);
         }
       }
-    );
+    }, 100);
 
     return () => {
-      unsubscribe();
+      clearTimeout(timeoutId);
+      const pusher = (pusherService as any).pusher;
+      if (pusher && user?.id) {
+        const channel = pusher.channel(`user-${user.id}`);
+        if (channel) {
+          channel.unbind("order-status-updated", handleOrderStatusUpdate);
+        }
+      }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, conversation?.Order?.id]);
 
   // Check for existing feedback and show dialog when conversation loads
@@ -574,19 +586,64 @@ export default function ChatDetailScreen() {
     checkAndShowDialog();
   }, [conversation, feedbackSubmitted, hasExistingFeedback, user?.id]);
 
-  const loadConversation = async () => {
+  const loadConversation = async (preserveLocalMessages = false) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Clear previous messages to prevent showing messages from wrong conversation
-      setMessages([]);
-
       const conversationId = parseInt(id as string);
-      const [conversationData, messagesData] = await Promise.all([
-        chatService.getConversation(conversationId),
-        chatService.getMessages(conversationId),
-      ]);
+      if (isNaN(conversationId)) {
+        setError("Invalid conversation ID");
+        setLoading(false);
+        return;
+      }
+
+      console.log(`📥 Loading conversation ${conversationId}...`);
+
+      // Only clear messages if not preserving local messages (e.g., when navigating to a different conversation)
+      if (!preserveLocalMessages) {
+        setMessages([]);
+      }
+
+      // Get conversation data first to check total message count
+      const conversationData = await chatService.getConversation(
+        conversationId
+      );
+
+      // Get messages - if there are more than 50, load the last page (newest messages)
+      // Otherwise, load from page 1
+      const limit = 100;
+      let page = 1;
+
+      // Get first page to check total count
+      const firstPageData = await chatService.getMessages(
+        conversationId,
+        1,
+        limit
+      );
+      const totalMessages = firstPageData.pagination.total;
+
+      if (totalMessages > limit) {
+        // Calculate last page to get newest messages
+        page = Math.ceil(totalMessages / limit);
+        console.log(
+          `   Total messages: ${totalMessages}, loading page ${page} (newest messages)`
+        );
+      }
+
+      // Load the appropriate page (last page if > 50 messages, otherwise first page)
+      const messagesData =
+        page === 1
+          ? firstPageData
+          : await chatService.getMessages(conversationId, page, limit);
+
+      console.log(
+        `✅ Loaded ${messagesData.messages.length} messages from DB (page ${page})`
+      );
+      console.log(
+        `   Message IDs from DB:`,
+        messagesData.messages.map((m) => m.id)
+      );
 
       // Double-check: ensure we're setting messages for the correct conversation
       if (conversationData.id === conversationId) {
@@ -595,16 +652,42 @@ export default function ChatDetailScreen() {
         const uniqueMessages = messagesData.messages.filter(
           (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
         );
-        setMessages(uniqueMessages);
+        // Messages are already in ascending order (oldest first, newest last) from backend
+
+        if (preserveLocalMessages) {
+          // Merge with existing messages, keeping local messages that might not be in DB yet
+          setMessages((prev) => {
+            const merged = [...prev, ...uniqueMessages];
+            // Deduplicate by ID and sort by createdAt
+            const deduplicated = merged.filter(
+              (msg, index, self) =>
+                index === self.findIndex((m) => m.id === msg.id)
+            );
+            // Sort by createdAt ascending (oldest first)
+            const sorted = deduplicated.sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime()
+            );
+            console.log(
+              `✅ Merged ${sorted.length} messages (${prev.length} local + ${uniqueMessages.length} from DB)`
+            );
+            return sorted;
+          });
+        } else {
+          console.log(`✅ Setting ${uniqueMessages.length} messages to state`);
+          setMessages(uniqueMessages);
+        }
       } else {
         console.warn(
           `⚠️ Conversation ID mismatch: expected ${conversationId}, got ${conversationData.id}`
         );
+        setError("Conversation ID mismatch");
       }
 
-      // Mark messages as read
-      await chatService.markAsRead(conversationId);
+      // Note: Mark as read is handled by useFocusEffect
     } catch (err) {
+      console.error("❌ Error loading conversation:", err);
       setError(
         err instanceof Error ? err.message : t("failedToLoadConversation")
       );
@@ -819,11 +902,23 @@ export default function ChatDetailScreen() {
         messageType: "text",
       });
 
+      // Verify message was created successfully
+      if (!newMessageData || !newMessageData.id) {
+        throw new Error("Message was not saved - no ID returned from server");
+      }
+
+      console.log("✅ Message sent successfully:", {
+        id: newMessageData.id,
+        content: newMessageData.content.substring(0, 50),
+        conversationId: newMessageData.conversationId,
+      });
+
       // Track chat message sent
       AnalyticsService.getInstance().logChatMessageSent(
         conversation.id.toString()
       );
 
+      // Add message to local state immediately
       setMessages((prev) => {
         // Check if message already exists (avoid duplicates from Pusher)
         const exists = prev.some((msg) => msg.id === newMessageData.id);
@@ -833,7 +928,13 @@ export default function ChatDetailScreen() {
           );
           return prev;
         }
-        return [...prev, newMessageData];
+        console.log(`✅ Adding message ${newMessageData.id} to local state`);
+        // Sort by createdAt to maintain order
+        const updated = [...prev, newMessageData].sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        return updated;
       });
       setNewMessage("");
 
@@ -841,6 +942,13 @@ export default function ChatDetailScreen() {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
+
+      // Reload conversation after a short delay to ensure DB has the message
+      // This ensures the message persists even if user navigates away and back
+      setTimeout(() => {
+        console.log("🔄 Reloading conversation to sync with DB...");
+        loadConversation(true); // Preserve local messages during merge
+      }, 500);
     } catch (err) {
       console.error("Failed to send message:", err);
       const errorMessage =
@@ -913,7 +1021,7 @@ export default function ChatDetailScreen() {
               order_id: conversation.Order!.id.toString(),
             });
             // Reload conversation to get updated status
-            await loadConversation();
+            await loadConversation(false);
           } catch (error) {
             console.error("Failed to reject application:", error);
             Alert.alert(t("error"), t("failedToRejectApplication"));
@@ -946,7 +1054,7 @@ export default function ChatDetailScreen() {
               order_id: conversation.Order!.id.toString(),
             });
             // Reload conversation to get updated status
-            await loadConversation();
+            await loadConversation(false);
           } catch (error) {
             console.error("Failed to choose application:", error);
             Alert.alert(t("error"), t("failedToChooseApplication"));
@@ -975,7 +1083,7 @@ export default function ChatDetailScreen() {
             setActionLoading(true);
             await chatService.cancelApplication(conversation.Order!.id);
             // Reload conversation to get updated status
-            await loadConversation();
+            await loadConversation(false);
           } catch (error) {
             console.error("Failed to cancel application:", error);
             Alert.alert(t("error"), t("failedToCancelApplication"));
@@ -1008,7 +1116,7 @@ export default function ChatDetailScreen() {
               order_id: conversation.Order!.id.toString(),
             });
             // Reload conversation to get updated status
-            await loadConversation();
+            await loadConversation(false);
             // The useEffect will automatically show the feedback dialog
             // after the conversation is reloaded with "completed" status
           } catch (error) {
@@ -1099,21 +1207,6 @@ export default function ChatDetailScreen() {
     );
     const hasMultipleSenders = otherParticipants.length > 1;
 
-    const formatTimestamp = (dateString: string) => {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInMinutes = (now.getTime() - date.getTime()) / (1000 * 60);
-
-      if (diffInMinutes < 1) {
-        return t("now");
-      } else if (diffInMinutes < 60) {
-        return `${Math.floor(diffInMinutes)}${t("minutesAgo")}`;
-      } else {
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        return `${diffInHours}${t("hoursAgo")}`;
-      }
-    };
-
     // Render system messages differently
     if (isSystemMessage) {
       return (
@@ -1202,7 +1295,7 @@ export default function ChatDetailScreen() {
                 },
               ]}
             >
-              {formatTimestamp(item.createdAt)}
+              {formatTimestamp(item.createdAt, t)}
             </Text>
             {isFromCurrentUser && (
               <IconSymbol
@@ -1235,7 +1328,7 @@ export default function ChatDetailScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={loadConversation}
+            onPress={() => loadConversation(false)}
           >
             <Text style={styles.retryButtonText}>{t("retry")}</Text>
           </TouchableOpacity>

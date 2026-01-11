@@ -275,10 +275,6 @@ export default function CalendarScreen() {
           }
         });
 
-        console.log(
-          `📅 Found ${scheduledJobs.length} accepted jobs with scheduled dates`
-        );
-
         // Schedule notifications
         const notificationService = CalendarNotificationService.getInstance();
         await notificationService.scheduleJobNotifications(scheduledJobs);
@@ -496,7 +492,10 @@ export default function CalendarScreen() {
                   {item.dateLabel}
                 </Text>
               </View>
-              <CountBadge count={item.applications.length} color={colors.tint} />
+              <CountBadge
+                count={item.applications.length}
+                color={colors.tint}
+              />
             </View>
             {item.applications.map((app) => (
               <TouchableOpacity

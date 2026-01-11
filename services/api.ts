@@ -474,6 +474,17 @@ class ApiService {
     );
   }
 
+  // Generic DELETE method
+  async delete<T>(endpoint: string, requireAuth: boolean = false): Promise<T> {
+    return this.request<T>(
+      endpoint,
+      {
+        method: "DELETE",
+      },
+      requireAuth
+    );
+  }
+
   // Authentication API methods
   async login(
     email: string,

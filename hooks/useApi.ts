@@ -806,6 +806,110 @@ export const useTrackPhoneNumber = () => {
   });
 };
 
+// ===== NOTIFICATIONS HOOKS =====
+
+export const useNotifications = (page: number = 1, limit: number = 100) => {
+  const { isOnline } = useNetworkStatus();
+  const { isAuthenticated } = useAuth();
+  return useQuery({
+    queryKey: ["notifications", page, limit],
+    queryFn: async () => {
+      const response = await apiService.get<{
+        notifications: any[];
+        pagination: any;
+      }>("/notifications?limit=100", true);
+      // Convert backend format to frontend format
+      return {
+        notifications: response.notifications.map((n: any) => ({
+          id: n.id.toString(),
+          title: n.title || "",
+          message: n.message || "",
+          timestamp: n.createdAt || new Date().toISOString(),
+          isRead: n.isRead || false,
+          type: n.type || "system",
+        })),
+        pagination: response.pagination,
+      };
+    },
+    staleTime: CACHE_TTL.DYNAMIC,
+    enabled: isAuthenticated,
+    retry: isOnline,
+  });
+};
+
+export const useUnreadNotificationCount = () => {
+  const { isOnline } = useNetworkStatus();
+  const { isAuthenticated } = useAuth();
+  return useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: async () => {
+      const response = await apiService.get<{ unreadCount: number }>(
+        "/notifications/unread-count",
+        true
+      );
+      return response.unreadCount;
+    },
+    staleTime: CACHE_TTL.DYNAMIC,
+    enabled: isAuthenticated,
+    retry: isOnline,
+    refetchInterval: 60000, // Minimal polling: Refetch every 60 seconds (fallback when FCM fails)
+  });
+};
+
+export const useMarkNotificationAsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (notificationId: string) =>
+      apiService.post(`/notifications/${notificationId}/read`, {}, true),
+    onSuccess: (_, notificationId) => {
+      // Optimistically update the cache
+      queryClient.setQueryData(
+        ["notifications", 1, 100],
+        (old: any) => {
+          if (!old?.notifications) return old;
+          return {
+            ...old,
+            notifications: old.notifications.map((n: any) =>
+              n.id === notificationId ? { ...n, isRead: true } : n
+            ),
+          };
+        }
+      );
+      // Also invalidate to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+};
+
+export const useMarkAllNotificationsAsRead = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiService.post("/notifications/mark-all-read", {}, true),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    },
+  });
+};
+
+export const useClearAllNotifications = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiService.delete("/notifications/clear-all", true),
+    onSuccess: () => {
+      // Clear the cache and set to empty array
+      queryClient.setQueryData(["notifications", 1, 100], {
+        notifications: [],
+        pagination: { total: 0, page: 1, limit: 100, pages: 0 },
+      });
+      queryClient.setQueryData(["notifications", "unread-count"], 0);
+      // Also invalidate to ensure fresh data on next fetch
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+};
+
 // ===== UTILITY HOOKS =====
 
 export const useInvalidateQueries = () => {

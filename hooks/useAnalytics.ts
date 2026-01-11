@@ -13,7 +13,7 @@ export function useAnalytics(screenName?: string) {
   useEffect(() => {
     // Use provided screenName or derive from pathname
     const screen = screenName || pathname || "unknown";
-    analytics.logScreenView(screen);
+    analytics.logEvent(screen);
   }, [pathname, screenName]);
 }
 
@@ -24,4 +24,3 @@ export function useAnalytics(screenName?: string) {
 export function useAnalyticsService() {
   return AnalyticsService.getInstance();
 }
-

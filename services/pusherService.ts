@@ -114,7 +114,11 @@ class PusherService {
   subscribeToConversation(
     conversationId: number,
     onNewMessage: (message: any) => void,
-    onStatusUpdate?: (data: { conversationId: number; status: string; updatedAt: string }) => void
+    onStatusUpdate?: (data: {
+      conversationId: number;
+      status: string;
+      updatedAt: string;
+    }) => void
   ) {
     if (!this.pusher) {
       console.warn("Pusher not initialized");
@@ -208,8 +212,16 @@ class PusherService {
   subscribeToUserUpdates(
     userId: number,
     onConversationUpdated: (data: any) => void,
-    onStatusUpdate?: (data: { conversationId: number; status: string; updatedAt: string }) => void,
-    onOrderStatusUpdate?: (data: { orderId: number; status: string; updatedAt: string }) => void
+    onStatusUpdate?: (data: {
+      conversationId: number;
+      status: string;
+      updatedAt: string;
+    }) => void,
+    onOrderStatusUpdate?: (data: {
+      orderId: number;
+      status: string;
+      updatedAt: string;
+    }) => void
   ) {
     if (!this.pusher) {
       return () => {};
@@ -217,16 +229,52 @@ class PusherService {
 
     const channelName = `user-${userId}`;
 
-    // Unsubscribe if already subscribed
+    // Check if already subscribed - if so, just update handlers, don't resubscribe
+    // This prevents duplicate subscriptions and logs when useEffect re-runs
     if (this.channels.has(channelName)) {
-      this.pusher.unsubscribe(channelName);
+      const existingChannel = this.channels.get(channelName);
+
+      // Unbind old handlers and bind new ones
+      existingChannel.unbind("conversation-updated");
+      existingChannel.unbind("conversation-status-updated");
+      existingChannel.unbind("order-status-updated");
+
+      existingChannel.bind("conversation-updated", (data: any) => {
+        console.log("💬 Conversation updated:", data);
+        if (data) onConversationUpdated(data);
+      });
+
+      if (onStatusUpdate) {
+        existingChannel.bind("conversation-status-updated", (data: any) => {
+          console.log("🔄 Conversation status updated:", data);
+          onStatusUpdate(data);
+        });
+      }
+
+      if (onOrderStatusUpdate) {
+        existingChannel.bind("order-status-updated", (data: any) => {
+          console.log("📦 Order status updated:", data);
+          onOrderStatusUpdate(data);
+        });
+      }
+
+      // Return cleanup function that doesn't unsubscribe (since we're reusing the channel)
+      // The channel will only be unsubscribed when the component fully unmounts
+      return () => {
+        // Just unbind handlers, don't unsubscribe the channel
+        // This prevents the subscription_succeeded event from firing again
+        existingChannel.unbind("conversation-updated");
+        existingChannel.unbind("conversation-status-updated");
+        existingChannel.unbind("order-status-updated");
+      };
     }
 
+    // New subscription - only happens once per user
     const channel = this.pusher.subscribe(channelName);
 
     channel.bind("conversation-updated", (data: any) => {
       console.log("💬 Conversation updated:", data);
-      onConversationUpdated(data);
+      if (data) onConversationUpdated(data);
     });
 
     if (onStatusUpdate) {
@@ -247,11 +295,22 @@ class PusherService {
       console.log(`✅ Subscribed to user-${userId}`);
     });
 
+    channel.bind("pusher:subscription_error", (error: any) => {
+      console.error(`❌ Subscription error for user-${userId}:`, error);
+    });
+
     this.channels.set(channelName, channel);
 
     return () => {
-      this.pusher?.unsubscribe(channelName);
-      this.channels.delete(channelName);
+      // Only unsubscribe if this is the last handler (when component unmounts)
+      // For now, we'll keep the channel subscribed and just unbind handlers
+      // The channel will be cleaned up when Pusher disconnects
+      const channel = this.channels.get(channelName);
+      if (channel) {
+        channel.unbind("conversation-updated");
+        channel.unbind("conversation-status-updated");
+        channel.unbind("order-status-updated");
+      }
     };
   }
 

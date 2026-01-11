@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { apiService } from "./api";
 
 /**
  * CalendarNotificationService
@@ -29,41 +30,14 @@ class CalendarNotificationService {
   }
 
   /**
-   * Initialize the service and configure notification behavior
+   * Initialize the service
+   * Note: Notification handler is set in NotificationService to prevent conflicts
    */
   async initialize(): Promise<void> {
     try {
-      console.log("🔧 Initializing CalendarNotificationService...");
-
-      // Configure how notifications are displayed when app is in foreground
-      Notifications.setNotificationHandler({
-        handleNotification: async (notification) => {
-          // Show calendar notifications even in foreground
-          if (notification.request.content.data?.type === "calendar_reminder") {
-            return {
-              shouldShowAlert: true,
-              shouldPlaySound: true,
-              shouldSetBadge: true,
-              shouldShowBanner: true,
-              shouldShowList: true,
-            };
-          }
-          return {
-            shouldShowAlert: true,
-            shouldPlaySound: true,
-            shouldSetBadge: false,
-            shouldShowBanner: true,
-            shouldShowList: true,
-          };
-        },
-      });
-
-      console.log("✅ CalendarNotificationService initialized");
+      // Notification handler is managed by NotificationService to prevent conflicts
     } catch (error) {
-      console.error(
-        "❌ Error initializing CalendarNotificationService:",
-        error
-      );
+      console.error("Error initializing CalendarNotificationService:", error);
     }
   }
 
@@ -73,10 +47,6 @@ class CalendarNotificationService {
    */
   async scheduleJobNotifications(acceptedJobs: ScheduledJob[]): Promise<void> {
     try {
-      console.log(
-        `📅 Scheduling notifications for ${acceptedJobs.length} jobs`
-      );
-
       // Cancel all existing calendar notifications first
       await this.cancelAllCalendarNotifications();
 
@@ -95,7 +65,6 @@ class CalendarNotificationService {
 
         // Skip past dates
         if (normalizedScheduledDate < normalizedNow) {
-          console.log(`⏭️ Skipping past date: ${job.scheduledDate}`);
           continue;
         }
 
@@ -145,12 +114,8 @@ class CalendarNotificationService {
         this.STORAGE_KEY,
         JSON.stringify(notificationIds)
       );
-
-      console.log(
-        `✅ Scheduled ${notificationIds.length} calendar notifications`
-      );
     } catch (error) {
-      console.error("❌ Error scheduling job notifications:", error);
+      console.error("Error scheduling job notifications:", error);
     }
   }
 
@@ -201,15 +166,9 @@ class CalendarNotificationService {
         },
       });
 
-      console.log(
-        `✅ Scheduled notification for ${
-          job.orderTitle
-        } at ${triggerTime.toLocaleString()}`
-      );
-
       return notificationId;
     } catch (error) {
-      console.error("❌ Error scheduling single notification:", error);
+      console.error("Error scheduling single notification:", error);
       return null;
     }
   }
@@ -228,16 +187,12 @@ class CalendarNotificationService {
         for (const id of notificationIds) {
           await Notifications.cancelScheduledNotificationAsync(id);
         }
-
-        console.log(
-          `🗑️ Cancelled ${notificationIds.length} calendar notifications`
-        );
       }
 
       // Clear storage
       await AsyncStorage.removeItem(this.STORAGE_KEY);
     } catch (error) {
-      console.error("❌ Error cancelling calendar notifications:", error);
+      console.error("Error cancelling calendar notifications:", error);
     }
   }
 
@@ -257,13 +212,9 @@ class CalendarNotificationService {
           notification.content.data?.type === "calendar_reminder"
       );
 
-      console.log(
-        `📋 Found ${calendarNotifications.length} scheduled calendar notifications`
-      );
-
       return calendarNotifications;
     } catch (error) {
-      console.error("❌ Error getting scheduled notifications:", error);
+      console.error("Error getting scheduled notifications:", error);
       return [];
     }
   }
@@ -283,14 +234,13 @@ class CalendarNotificationService {
       }
 
       if (finalStatus !== "granted") {
-        console.warn("⚠️ Notification permissions not granted");
+        console.warn("Notification permissions not granted");
         return false;
       }
 
-      console.log("✅ Notification permissions granted");
       return true;
     } catch (error) {
-      console.error("❌ Error requesting notification permissions:", error);
+      console.error("Error requesting notification permissions:", error);
       return false;
     }
   }
@@ -305,10 +255,75 @@ class CalendarNotificationService {
     const data = response.notification.request.content.data;
 
     if (data?.type === "calendar_reminder" && data?.orderId) {
-      console.log(
-        `📱 User tapped calendar notification for order ${data.orderId}`
-      );
       navigationCallback(Number(data.orderId));
+    }
+  }
+
+  /**
+   * Automatically fetch and schedule all calendar notifications for the current user
+   * This should be called when the app opens or user logs in
+   */
+  async scheduleAllNotificationsForUser(userId: number): Promise<void> {
+    try {
+      // Fetch user proposals
+      const userProposalsResponse = await apiService.getProposalsByUser(userId);
+      const userProposals = userProposalsResponse?.proposals || [];
+
+      // Fetch user's orders (to get proposals received on their orders)
+      const myOrdersResponse = await apiService.getMyOrders();
+      const myOrders = myOrdersResponse?.orders || [];
+
+      // Collect all proposals with accepted status and scheduled dates
+      const scheduledJobs: ScheduledJob[] = [];
+
+      // Process user submitted proposals
+      userProposals.forEach((proposal: any) => {
+        if (
+          proposal.status === "accepted" &&
+          proposal.Order?.availableDates &&
+          Array.isArray(proposal.Order.availableDates)
+        ) {
+          proposal.Order.availableDates.forEach((dateStr: string) => {
+            scheduledJobs.push({
+              orderId: proposal.Order.id,
+              orderTitle:
+                proposal.Order.title || `Order #${proposal.Order.id}`,
+              scheduledDate: dateStr,
+              proposalId: proposal.id,
+            });
+          });
+        }
+      });
+
+      // Process proposals received on user's orders
+      myOrders.forEach((order: any) => {
+        if (order.Proposals && Array.isArray(order.Proposals)) {
+          order.Proposals.forEach((proposal: any) => {
+            if (
+              proposal.userId !== userId &&
+              proposal.status === "accepted" &&
+              order.availableDates &&
+              Array.isArray(order.availableDates)
+            ) {
+              order.availableDates.forEach((dateStr: string) => {
+                scheduledJobs.push({
+                  orderId: order.id,
+                  orderTitle: order.title || `Order #${order.id}`,
+                  scheduledDate: dateStr,
+                  proposalId: proposal.id,
+                });
+              });
+            }
+          });
+        }
+      });
+
+      // Schedule all notifications
+      if (scheduledJobs.length > 0) {
+        await this.scheduleJobNotifications(scheduledJobs);
+      }
+    } catch (error) {
+      console.error("Error scheduling calendar notifications for user:", error);
     }
   }
 }

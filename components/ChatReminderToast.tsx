@@ -56,7 +56,11 @@ export const ChatReminderToast: React.FC = () => {
         ]}
       >
         <View style={styles.iconWrapper}>
-          <IconSymbol name="bubble.left.and.text.bubble.fill" size={18} color="white" />
+          <IconSymbol
+            name="bubble.left.and.text.bubble.right.fill"
+            size={18}
+            color="white"
+          />
         </View>
         <View style={styles.textWrapper}>
           <Text style={[styles.title, { color: colors.text }]}>
@@ -81,7 +85,7 @@ export const ChatReminderToast: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 20,
+    top: 60,
     left: 0,
     right: 0,
     alignItems: "center",
@@ -125,4 +129,3 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
 });
-

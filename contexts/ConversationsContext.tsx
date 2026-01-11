@@ -43,22 +43,25 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
   // Calculate unread count from conversations
   const calculateUnreadCount = (convs: Conversation[]): number => {
     return convs.reduce((sum, conv) => {
-      const currentUserParticipant = conv.Participants.find((p) => p.isActive);
+      const currentUserParticipant = conv.Participants.find(
+        (p) => p.userId === user?.id && p.isActive
+      );
       const lastMessage = conv.Messages[0];
 
-      // ✅ FIX: Don't count messages sent by current user as unread
+      // Don't count messages sent by current user as unread
       if (!lastMessage || lastMessage.senderId === user?.id) {
         return sum;
       }
 
-      if (lastMessage && currentUserParticipant?.lastReadAt) {
-        const lastReadTime = new Date(currentUserParticipant.lastReadAt);
-        const messageTime = new Date(lastMessage.createdAt);
-        return messageTime > lastReadTime ? sum + 1 : sum;
-      } else if (lastMessage && !currentUserParticipant?.lastReadAt) {
+      // If no lastReadAt, consider it unread
+      if (!currentUserParticipant?.lastReadAt) {
         return sum + 1;
       }
-      return sum;
+
+      // Check if message is newer than lastReadAt
+      const lastReadTime = new Date(currentUserParticipant.lastReadAt);
+      const messageTime = new Date(lastMessage.createdAt);
+      return messageTime > lastReadTime ? sum + 1 : sum;
     }, 0);
   };
 
@@ -81,11 +84,66 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
 
-      setConversations(sorted);
+      // Merge with existing conversations to preserve any local updates (like lastReadAt)
+      // that might be newer than what the backend returns
+      setConversations((prevConversations) => {
+        const merged = sorted.map((backendConv) => {
+          const localConv = prevConversations.find(
+            (c) => c.id === backendConv.id
+          );
 
-      // Update unread count
-      const unreadCount = calculateUnreadCount(sorted);
-      setUnreadMessagesCount(unreadCount);
+          // If local conversation has a newer lastReadAt, use it
+          if (localConv) {
+            const localParticipant = localConv.Participants.find(
+              (p) => p.isActive
+            );
+            const backendParticipant = backendConv.Participants.find(
+              (p) => p.isActive
+            );
+
+            if (
+              localParticipant?.lastReadAt &&
+              backendParticipant?.lastReadAt
+            ) {
+              const localLastRead = new Date(localParticipant.lastReadAt);
+              const backendLastRead = new Date(backendParticipant.lastReadAt);
+
+              // Use the newer lastReadAt (local might be more recent if just updated)
+              if (localLastRead > backendLastRead) {
+                return {
+                  ...backendConv,
+                  Participants: backendConv.Participants.map((p) =>
+                    p.isActive
+                      ? { ...p, lastReadAt: localParticipant.lastReadAt }
+                      : p
+                  ),
+                };
+              }
+            } else if (
+              localParticipant?.lastReadAt &&
+              !backendParticipant?.lastReadAt
+            ) {
+              // Local has lastReadAt but backend doesn't - use local
+              return {
+                ...backendConv,
+                Participants: backendConv.Participants.map((p) =>
+                  p.isActive
+                    ? { ...p, lastReadAt: localParticipant.lastReadAt }
+                    : p
+                ),
+              };
+            }
+          }
+
+          return backendConv;
+        });
+
+        // Update unread count after merge
+        const unreadCount = calculateUnreadCount(merged);
+        setUnreadMessagesCount(unreadCount);
+
+        return merged;
+      });
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load conversations"
@@ -143,44 +201,115 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
     }
   }, [isAuthenticated, user?.id]);
 
-  // Global subscription to catch new messages and trigger notifications
-  // This works even when user is not on chat screens
+  // Global subscription to catch new messages, update conversation list, and trigger notifications
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
-    pusherService.initialize();
+    let unsubscribe: (() => void) | undefined;
 
-    // Subscribe to user updates to catch all new messages
-    const unsubscribe = pusherService.subscribeToUserUpdates(
-      user.id,
-      (data: {
-        conversationId: number;
-        lastMessage: any;
-        updatedAt: string;
-      }) => {
-        // Check if this is a new message from another user
-        if (
-          data.lastMessage &&
-          data.lastMessage.senderId !== user.id
-        ) {
-          const notificationService = NotificationService.getInstance();
-          notificationService.triggerChatReminderForMessage(
-            data.conversationId,
-            {
-              id: data.lastMessage.id,
-              senderId: data.lastMessage.senderId,
-              content: data.lastMessage.content,
-              Sender: data.lastMessage.Sender,
+    const setupPusher = async () => {
+      await pusherService.initialize();
+      unsubscribe = pusherService.subscribeToUserUpdates(
+        user.id,
+        (data: any) => {
+          if (!data?.conversationId) return;
+
+          setConversations((prevConversations) => {
+            const existingConv = prevConversations.find(
+              (conv) => conv.id === data.conversationId
+            );
+
+            if (existingConv) {
+              const updated = prevConversations.map((conv) =>
+                conv.id === data.conversationId
+                  ? {
+                      ...conv,
+                      updatedAt: data.updatedAt || conv.updatedAt,
+                      Messages: data.lastMessage
+                        ? [
+                            {
+                              ...data.lastMessage,
+                              Sender: data.lastMessage.Sender,
+                            },
+                          ]
+                        : conv.Messages,
+                    }
+                  : conv
+              );
+              const sorted = [...updated].sort(
+                (a, b) =>
+                  new Date(b.updatedAt).getTime() -
+                  new Date(a.updatedAt).getTime()
+              );
+              const unreadCount = calculateUnreadCount(sorted);
+              setUnreadMessagesCount(unreadCount);
+              return sorted;
+            } else {
+              refreshConversations();
+              return prevConversations;
             }
-          );
+          });
+
+          if (
+            data.lastMessage?.senderId &&
+            data.lastMessage.senderId !== user.id
+          ) {
+            NotificationService.getInstance().triggerChatReminderForMessage(
+              data.conversationId,
+              {
+                id: data.lastMessage.id,
+                senderId: data.lastMessage.senderId,
+                content: data.lastMessage.content,
+                Sender: data.lastMessage.Sender,
+              }
+            );
+          }
+        },
+        (statusData: {
+          conversationId: number;
+          status: string;
+          updatedAt: string;
+        }) => {
+          updateConversation(statusData.conversationId, {
+            status: statusData.status,
+            updatedAt: statusData.updatedAt,
+          });
+        },
+        (orderStatusData: {
+          orderId: number;
+          status: string;
+          updatedAt: string;
+        }) => {
+          setConversations((prevConversations) => {
+            const updated = prevConversations.map((conv) => {
+              if (conv.Order?.id === orderStatusData.orderId) {
+                return {
+                  ...conv,
+                  Order: {
+                    ...conv.Order,
+                    status: orderStatusData.status,
+                  },
+                };
+              }
+              return conv;
+            });
+            const sorted = [...updated].sort(
+              (a, b) =>
+                new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime()
+            );
+            const unreadCount = calculateUnreadCount(sorted);
+            setUnreadMessagesCount(unreadCount);
+            return sorted;
+          });
         }
-      },
-      undefined, // conversation-status-updated (not needed here)
-      undefined // order-status-updated (not needed here)
-    );
+      );
+    };
+
+    setupPusher();
 
     return () => {
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
     };
   }, [isAuthenticated, user?.id]);
 

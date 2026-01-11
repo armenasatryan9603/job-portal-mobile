@@ -4,10 +4,9 @@ import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import React, { useMemo } from "react";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
@@ -17,7 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import NotificationService from "@/services/NotificationService";
+import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useApi";
 
 interface NotificationDetail {
   id: string;
@@ -42,56 +41,51 @@ export default function NotificationDetailScreen() {
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useTranslation();
-  const { refreshNotificationCount } = useUnreadCount();
-  const { id } = useLocalSearchParams();
+  const { id: idParam } = useLocalSearchParams();
+  const notificationId = Array.isArray(idParam) ? idParam[0] : idParam;
 
-  const [notification, setNotification] = useState<NotificationDetail | null>(
-    null
+  // Use TanStack Query to get notifications
+  const { data: notificationsData, isLoading, isFetching } = useNotifications();
+  const markAsReadMutation = useMarkNotificationAsRead();
+
+  // Find the notification from TanStack Query cache
+  const notificationData = useMemo(() => {
+    if (!notificationId || !notificationsData?.notifications) return null;
+    return notificationsData.notifications.find((n) => n.id === notificationId);
+  }, [notificationId, notificationsData]);
+
+  // Check if we're still loading (only show loading when we have no data at all)
+  // isFetching alone means we're refetching but have cached data, so don't show loading
+  const isLoadingNotification = isLoading;
+
+  // Mark as read when screen is focused and notification is unread
+  useFocusEffect(
+    React.useCallback(() => {
+      if (notificationData && !notificationData.isRead && notificationId) {
+        // Only mark as read if mutation is not already in progress
+        if (!markAsReadMutation.isPending) {
+          markAsReadMutation.mutate(notificationId);
+        }
+      }
+    }, [notificationData?.isRead, notificationId, markAsReadMutation])
   );
 
-  // Load real notification data
-  useEffect(() => {
-    const loadNotification = async () => {
-      try {
-        const notifications =
-          await NotificationService.getInstance().getStoredNotifications();
-        const notificationData = notifications.find((n) => n.id === id);
-
-        if (notificationData) {
-          // Mark as read if not already read
-          if (!notificationData.isRead) {
-            await NotificationService.getInstance().markAsRead(
-              notificationData.id
-            );
-            await refreshNotificationCount(); // Refresh the badge count
-          }
-
-          // Convert to detail format
-          const detailNotification: NotificationDetail = {
-            id: notificationData.id,
-            title: notificationData.title,
-            message: notificationData.message,
-            fullContent: notificationData.message, // Use message as full content for now
-            timestamp: notificationData.timestamp,
-            isRead: true, // Mark as read since we just read it
-            type: notificationData.type,
-            relatedData: {
-              // Add any related data based on type
-              type: notificationData.type,
-            },
-          };
-
-          setNotification(detailNotification);
-        }
-      } catch (error) {
-        console.error("Error loading notification:", error);
-      }
+  // Convert to detail format
+  const notification: NotificationDetail | null = useMemo(() => {
+    if (!notificationData) return null;
+    return {
+      id: notificationData.id,
+      title: notificationData.title,
+      message: notificationData.message,
+      fullContent: notificationData.message,
+      timestamp: notificationData.timestamp,
+      isRead: true, // Mark as read since we're viewing it
+      type: notificationData.type as any,
+      relatedData: {
+        type: notificationData.type,
+      },
     };
-
-    if (id) {
-      loadNotification();
-    }
-  }, [id, refreshNotificationCount]);
+  }, [notificationData]);
 
   const header = (
     <Header
@@ -183,11 +177,27 @@ export default function NotificationDetailScreen() {
     }
   };
 
+  // Show loading state while fetching
+  if (isLoadingNotification) {
+    return (
+      <Layout header={header}>
+        <View style={styles.errorContainer}>
+          <IconSymbol name="hourglass" size={32} color={colors.tabIconDefault} />
+          <Text style={[styles.errorText, { color: colors.textSecondary, marginTop: 12 }]}>
+            {t("loading") || "Loading..."}
+          </Text>
+        </View>
+      </Layout>
+    );
+  }
+
+  // Only show "not found" after data has loaded
   if (!notification) {
     return (
       <Layout header={header}>
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { color: colors.text }]}>
+          <IconSymbol name="exclamationmark.circle" size={32} color={colors.tabIconDefault} />
+          <Text style={[styles.errorText, { color: colors.text, marginTop: 12 }]}>
             {t("notificationNotFound")}
           </Text>
         </View>

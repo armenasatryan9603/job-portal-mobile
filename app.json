@@ -20,7 +20,7 @@
       "name": "JobWise",
       "deploymentTarget": "17.0",
       "supportsTablet": true,
-      "bundleIdentifier": "com.job-portal.JobWise",
+      "bundleIdentifier": "com.jobportalmobile.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "buildNumber": "1",
       "entitlements": {

@@ -1,12 +1,12 @@
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
+import { NotificationSkeleton } from "@/components/NotificationSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React from "react";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
@@ -16,7 +16,30 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import NotificationService from "@/services/NotificationService";
+import {
+  useNotifications,
+  useUnreadNotificationCount,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+  useClearAllNotifications,
+} from "@/hooks/useApi";
+import { formatTimestamp } from "@/utils/dateFormatting";
+
+const getNotificationIcon = (type: string) => {
+  switch (type) {
+    case "proposal":
+      return "doc.text.fill";
+    case "order":
+    case "new_order":
+      return "briefcase.fill";
+    case "message":
+      return "message.fill";
+    case "system":
+      return "gear.circle.fill";
+    default:
+      return "bell.fill";
+  }
+};
 
 interface Notification {
   id: string;
@@ -33,55 +56,19 @@ export default function NotificationsScreen() {
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useTranslation();
-  const { refreshNotificationCount } = useUnreadCount();
 
-  // Real notifications data from Firebase
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Use TanStack Query hooks
+  const {
+    data: notificationsData,
+    isLoading: loading,
+    refetch,
+  } = useNotifications();
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const markAsReadMutation = useMarkNotificationAsRead();
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
+  const clearAllMutation = useClearAllNotifications();
 
-  useEffect(() => {
-    loadNotifications();
-  }, []);
-
-  const loadNotifications = async () => {
-    try {
-      setLoading(true);
-      const stored =
-        await NotificationService.getInstance().getStoredNotifications();
-      setNotifications(stored);
-    } catch (error) {
-      console.error("Error loading notifications:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  const header = (
-    <Header
-      title={t("notifications")}
-      subtitle={`${unreadCount} ${t("unreadNotifications")}`}
-      showBackButton={true}
-      onBackPress={() => router.back()}
-    />
-  );
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case "proposal":
-        return "doc.text.fill";
-      case "order":
-      case "new_order":
-        return "briefcase.fill";
-      case "message":
-        return "message.fill";
-      case "system":
-        return "gear.circle.fill";
-      default:
-        return "bell.fill";
-    }
-  };
+  const notifications = notificationsData?.notifications || [];
 
   const getNotificationColor = (type: string) => {
     switch (type) {
@@ -99,6 +86,22 @@ export default function NotificationsScreen() {
     }
   };
 
+  // Refetch notifications when screen is focused to get new notifications
+  useFocusEffect(
+    React.useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
+
+  const header = (
+    <Header
+      title={t("notifications")}
+      subtitle={`${unreadCount} ${t("unreadNotifications")}`}
+      showBackButton={true}
+      onBackPress={() => router.back()}
+    />
+  );
+
   const handleNotificationPress = async (notification: Notification) => {
     // Track notification view
     AnalyticsService.getInstance().logEvent("notification_viewed", {
@@ -108,30 +111,27 @@ export default function NotificationsScreen() {
 
     // Mark as read if unread
     if (!notification.isRead) {
-      await NotificationService.getInstance().markAsRead(notification.id);
-      AnalyticsService.getInstance().logEvent("notification_marked_read", {
-        notification_id: notification.id,
+      markAsReadMutation.mutate(notification.id, {
+        onSuccess: () => {
+          AnalyticsService.getInstance().logEvent("notification_marked_read", {
+            notification_id: notification.id,
+          });
+        },
       });
-      await loadNotifications(); // Refresh the list
-      await refreshNotificationCount(); // Refresh the badge count
     }
 
     // Navigate to notification detail
     router.push(`/notifications/${notification.id}`);
   };
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = () => {
     AnalyticsService.getInstance().logEvent("notifications_marked_all_read");
-    await NotificationService.getInstance().markAllAsRead();
-    await loadNotifications(); // Refresh the list
-    await refreshNotificationCount(); // Refresh the badge count
+    markAllAsReadMutation.mutate(undefined);
   };
 
-  const clearAllNotifications = async () => {
+  const clearAllNotifications = () => {
     AnalyticsService.getInstance().logEvent("notifications_cleared_all");
-    await NotificationService.getInstance().clearAllNotifications();
-    await loadNotifications(); // Refresh the list
-    await refreshNotificationCount(); // Refresh the badge count
+    clearAllMutation.mutate(undefined);
   };
 
   const renderNotification = ({ item }: { item: Notification }) => {
@@ -196,7 +196,7 @@ export default function NotificationsScreen() {
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {item.timestamp}
+                {formatTimestamp(item.timestamp, t, { includeSpace: true })}
               </Text>
             </View>
             <Text
@@ -215,22 +215,9 @@ export default function NotificationsScreen() {
     );
   };
 
-  // Show loading state
+  // Show loading state with skeleton loaders
   if (loading) {
-    return (
-      <Layout header={header}>
-        <View
-          style={[
-            styles.loadingContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            {t("loadingNotifications")}
-          </Text>
-        </View>
-      </Layout>
-    );
+    return <NotificationSkeleton header={header} />;
   }
 
   // Show empty state
@@ -297,6 +284,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 80,
   },
   markAllContainer: {
     flexDirection: "row",

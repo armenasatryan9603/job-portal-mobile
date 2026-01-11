@@ -6,19 +6,12 @@ import React, {
   useEffect,
 } from "react";
 import NotificationService from "@/services/NotificationService";
+import { useUnreadNotificationCount } from "@/hooks/useApi";
 
 interface UnreadCountContextType {
   unreadNotificationsCount: number;
   unreadMessagesCount: number;
-  setUnreadNotificationsCount: (count: number) => void;
   setUnreadMessagesCount: (count: number) => void;
-  incrementUnreadNotifications: () => void;
-  incrementUnreadMessages: () => void;
-  decrementUnreadNotifications: () => Promise<void>;
-  decrementUnreadMessages: () => void;
-  resetUnreadNotifications: () => Promise<void>;
-  resetUnreadMessages: () => void;
-  refreshNotificationCount: () => Promise<void>;
 }
 
 const UnreadCountContext = createContext<UnreadCountContextType | undefined>(
@@ -29,84 +22,55 @@ interface UnreadCountProviderProps {
   children: ReactNode;
 }
 
+// Inner component to use hooks (hooks can only be used in components)
+const UnreadCountProviderInner: React.FC<{
+  children: ReactNode;
+  setUnreadNotificationsCount: (count: number) => void;
+  setUnreadMessagesCount: (count: number) => void;
+}> = ({ children, setUnreadNotificationsCount, setUnreadMessagesCount }) => {
+  // Use TanStack Query for unread count (has minimal 60-second polling as fallback)
+  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+
+  // Sync TanStack Query data to context state for Header badge
+  useEffect(() => {
+    setUnreadNotificationsCount(unreadCount);
+  }, [unreadCount, setUnreadNotificationsCount]);
+
+  // Initialize notifications on mount (only once)
+  useEffect(() => {
+    const initializeNotifications = async () => {
+      try {
+        await NotificationService.getInstance().initialize();
+      } catch (error) {
+        console.error("Error initializing notifications:", error);
+      }
+    };
+    initializeNotifications();
+  }, []);
+
+  return <>{children}</>;
+};
+
 export const UnreadCountProvider: React.FC<UnreadCountProviderProps> = ({
   children,
 }) => {
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
 
-  useEffect(() => {
-    initializeNotifications();
-
-    // Set up interval to refresh notification count
-    const interval = setInterval(async () => {
-      await refreshNotificationCount();
-    }, 5000); // Refresh every 5 seconds
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const initializeNotifications = async () => {
-    try {
-      await NotificationService.getInstance().initialize();
-      await refreshNotificationCount();
-    } catch (error) {
-      console.error("Error initializing notifications:", error);
-    }
-  };
-
-  const refreshNotificationCount = async () => {
-    try {
-      const count = await NotificationService.getInstance().getUnreadCount();
-      setUnreadNotificationsCount(count);
-    } catch (error) {
-      console.error("Error refreshing notification count:", error);
-    }
-  };
-
-  const incrementUnreadNotifications = () => {
-    setUnreadNotificationsCount((prev) => prev + 1);
-  };
-
-  const incrementUnreadMessages = () => {
-    setUnreadMessagesCount((prev) => prev + 1);
-  };
-
-  const decrementUnreadNotifications = async () => {
-    setUnreadNotificationsCount((prev) => Math.max(0, prev - 1));
-    await refreshNotificationCount(); // Refresh from storage
-  };
-
-  const decrementUnreadMessages = () => {
-    setUnreadMessagesCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const resetUnreadNotifications = async () => {
-    setUnreadNotificationsCount(0);
-    await refreshNotificationCount(); // Refresh from storage
-  };
-
-  const resetUnreadMessages = () => {
-    setUnreadMessagesCount(0);
-  };
-
   const value: UnreadCountContextType = {
     unreadNotificationsCount,
     unreadMessagesCount,
-    setUnreadNotificationsCount,
     setUnreadMessagesCount,
-    incrementUnreadNotifications,
-    incrementUnreadMessages,
-    decrementUnreadNotifications,
-    decrementUnreadMessages,
-    resetUnreadNotifications,
-    resetUnreadMessages,
-    refreshNotificationCount,
   };
 
   return (
     <UnreadCountContext.Provider value={value}>
-      {children}
+      <UnreadCountProviderInner
+        setUnreadNotificationsCount={setUnreadNotificationsCount}
+        setUnreadMessagesCount={setUnreadMessagesCount}
+      >
+        {children}
+      </UnreadCountProviderInner>
     </UnreadCountContext.Provider>
   );
 };
