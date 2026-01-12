@@ -38,6 +38,7 @@ import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { useApplyToOrder } from "@/hooks/useApi";
+import { ApplyButton } from "@/components/ApplyButton";
 
 // Helper function to get localized service name
 const getLocalizedServiceName = (
@@ -853,31 +854,14 @@ export default function EditOrderScreen() {
           )}
 
           {/* Apply Button or Applied Status */}
-          {order?.status === "open" &&
-          !hasAppliedToOrder(order.id) &&
-          user?.id !== order.clientId &&
-          order.creditCost ? (
-            <Button
-              style={{ paddingVertical: 12 }}
-              onPress={handleApplyToOrder}
-              title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
-              icon="paperplane.fill"
-              variant="primary"
+          {order && (
+            <ApplyButton
+              order={order}
+              hasAppliedToOrder={hasAppliedToOrder}
+              onApply={handleApplyToOrder}
+              style={{ paddingVertical: 10 }}
             />
-          ) : order?.status === "open" &&
-            hasAppliedToOrder(order.id) &&
-            user?.id !== order.clientId ? (
-            <Button
-              style={{ paddingVertical: 12 }}
-              onPress={() => {}}
-              title={t("applied")}
-              icon="checkmark.circle.fill"
-              iconSize={16}
-              iconPosition="left"
-              variant="primary"
-              disabled={true}
-            />
-          ) : null}
+          )}
 
           {/* Cancel Button - Only show for My Jobs */}
           {isMyJobs && order?.Proposals && order.Proposals.length > 0 && (

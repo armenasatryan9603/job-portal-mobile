@@ -500,6 +500,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 6,
+    backgroundColor: "#fff",
   },
   categoryTitle: {
     fontSize: 16,
@@ -525,7 +526,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 6,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: "#fff",
   },
   serviceListItemImagePlaceholder: {
     width: 40,

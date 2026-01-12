@@ -21,6 +21,7 @@ import { Order, apiService } from "@/services/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
+import { ApplyButton } from "@/components/ApplyButton";
 
 interface OrderItemProps {
   order: Order;
@@ -62,34 +63,6 @@ const OrderItem = ({
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
   const [showSkillModal, setShowSkillModal] = useState(false);
-  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
-
-  // Check subscription status
-  useEffect(() => {
-    const checkSubscription = async () => {
-      if (!user) {
-        setHasActiveSubscription(false);
-        return;
-      }
-      try {
-        const subscription = await apiService.getMySubscription();
-        if (subscription && subscription.status === "active") {
-          const endDate = new Date(subscription.endDate);
-          setHasActiveSubscription(endDate > new Date());
-        } else {
-          setHasActiveSubscription(false);
-        }
-      } catch (error: any) {
-        // No subscription or error - assume no subscription
-        // Don't log JSON parse errors as they're expected when there's no subscription
-        if (!error.message?.includes("end of input")) {
-          console.error("Error checking subscription:", error);
-        }
-        setHasActiveSubscription(false);
-      }
-    };
-    checkSubscription();
-  }, [user]);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -573,39 +546,13 @@ const OrderItem = ({
               </Text>
             </View>
             {/* Apply Button - Only show for other users' orders (not owner) */}
-            {!isMyOrders &&
-              order.status === "open" &&
-              !hasAppliedToOrder(order.id) &&
-              user?.id !== order.clientId &&
-              order.creditCost && (
-                <Button
-                  onPress={() => handleApplyToOrder(order)}
-                  title={
-                    hasActiveSubscription
-                      ? t("apply") || "Apply"
-                      : `${t("apply")} (${order.creditCost} ${t("credit")})`
-                  }
-                  icon="paperplane.fill"
-                  variant="primary"
-                />
-              )}
-
-            {/* Applied Status - Show when user has already applied */}
-
-            {!isMyOrders &&
-              order.status === "open" &&
-              hasAppliedToOrder(order.id) &&
-              user?.id !== order.clientId && (
-                <Button
-                  onPress={() => {}}
-                  variant="primary"
-                  icon="checkmark.circle.fill"
-                  iconSize={16}
-                  iconPosition="left"
-                  title={t("applied")}
-                  disabled={true}
-                />
-              )}
+            {!isMyOrders && (
+              <ApplyButton
+                order={order}
+                hasAppliedToOrder={hasAppliedToOrder}
+                onApply={handleApplyToOrder}
+              />
+            )}
 
             {/* Cancel Button - Only show for My Jobs */}
             {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
