@@ -29,7 +29,7 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { apiService, Service } from "@/services/api";
+import { apiService, Category } from "@/services/api";
 import { fileUploadService, MediaFile } from "@/services/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -37,7 +37,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsService from "@/services/AnalyticsService";
 import { API_CONFIG } from "@/config/api";
 import { DateTimeSelector } from "@/components/DateTimeSelector";
-import { useServices } from "@/hooks/useApi";
+import { useCategories } from "@/hooks/useApi";
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -56,7 +56,7 @@ export default function CreateOrderScreen() {
     location: "",
     skills: "",
     availableDates: "",
-    serviceId: serviceId ? parseInt(serviceId as string) : null,
+    categoryId: serviceId ? parseInt(serviceId as string) : null,
   });
 
   const [skillIds, setSkillIds] = useState<number[]>([]);
@@ -87,7 +87,7 @@ export default function CreateOrderScreen() {
     address: string;
   } | null>(null);
 
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedService, setSelectedService] = useState<Category | null>(null);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [selectedDateTimes, setSelectedDateTimes] = useState<{
     [key: string]: string[];
@@ -188,13 +188,13 @@ export default function CreateOrderScreen() {
     location: "",
     skills: "",
     availableDates: "",
-    serviceId: "",
+    categoryId: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch services (same hook used by ServiceSelector to avoid duplicate calls)
-  const { data: servicesData } = useServices(1, 100, undefined, language);
+  const { data: categoriesData } = useCategories(1, 100, undefined, language);
 
   // Fetch rate units from API on component mount
   useEffect(() => {
@@ -337,29 +337,31 @@ export default function CreateOrderScreen() {
 
   // Handle serviceId and orderId from URL params
   useEffect(() => {
-    if (serviceId && servicesData?.services) {
-      const serviceIdNum = parseInt(serviceId as string);
-      setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
+    if (serviceId && categoriesData?.categories) {
+      const categoryIdNum = parseInt(serviceId as string);
+      setFormData((prev) => ({ ...prev, categoryId: categoryIdNum }));
       // Set AI enhancement to true for new orders (checked by default)
       setUseAIEnhancement(true);
 
-      // Find the service from already-fetched services list
-      const service = servicesData.services.find((s) => s.id === serviceIdNum);
-      if (service) {
-        setSelectedService(service);
+      // Find the category from already-fetched categories list
+      const category = categoriesData.categories.find(
+        (c) => c.id === categoryIdNum
+      );
+      if (category) {
+        setSelectedService(category);
 
-        // Suggest budget based on service prices
-        if (service.averagePrice) {
+        // Suggest budget based on category prices
+        if (category.averagePrice) {
           setFormData((prev) => ({
             ...prev,
-            budget: service.averagePrice!.toString(),
+            budget: category.averagePrice!.toString(),
           }));
         }
       }
     } else if (serviceId) {
-      // If serviceId is provided but services haven't loaded yet, just set the ID
-      const serviceIdNum = parseInt(serviceId as string);
-      setFormData((prev) => ({ ...prev, serviceId: serviceIdNum }));
+      // If categoryId is provided but categories haven't loaded yet, just set the ID
+      const categoryIdNum = parseInt(serviceId as string);
+      setFormData((prev) => ({ ...prev, categoryId: categoryIdNum }));
       setUseAIEnhancement(true);
     }
 
@@ -385,7 +387,7 @@ export default function CreateOrderScreen() {
             location: orderData.location || "",
             skills: orderData.skills?.join(", ") || "",
             availableDates: orderData.availableDates?.join(", ") || "",
-            serviceId: orderData.serviceId || null,
+            categoryId: orderData.categoryId || null,
           });
 
           // Populate currency/rate unit if available
@@ -403,8 +405,8 @@ export default function CreateOrderScreen() {
           setRateUnit(loadedRateUnit);
 
           // Set selected service if available
-          if (orderData.Service) {
-            setSelectedService(orderData.Service);
+          if (orderData.Category) {
+            setSelectedService(orderData.Category);
           }
 
           // Parse available dates
@@ -526,7 +528,7 @@ export default function CreateOrderScreen() {
 
       loadOrderForEdit();
     }
-  }, [serviceId, orderId, language, servicesData]);
+  }, [serviceId, orderId, language, categoriesData]);
 
   const validateField = (
     field: string,
@@ -746,32 +748,32 @@ export default function CreateOrderScreen() {
     }
   };
 
-  const handleServiceSelect = (service: Service | null) => {
+  const handleServiceSelect = (category: Category | null) => {
     // Prevent service changes when order is in_progress
     if (orderStatus === "in_progress") {
       return;
     }
 
-    if (!service) {
+    if (!category) {
       setSelectedService(null);
-      setFormData((prev) => ({ ...prev, serviceId: null }));
-      setErrors((prev) => ({ ...prev, serviceId: "" }));
+      setFormData((prev) => ({ ...prev, categoryId: null }));
+      setErrors((prev) => ({ ...prev, categoryId: "" }));
       return;
     }
 
-    setSelectedService(service);
-    setFormData((prev) => ({ ...prev, serviceId: service.id }));
+    setSelectedService(category);
+    setFormData((prev) => ({ ...prev, categoryId: category.id }));
 
     // Suggest budget based on service prices
-    if (service.averagePrice) {
+    if (category.averagePrice) {
       setFormData((prev) => ({
         ...prev,
-        budget: service.averagePrice!.toString(),
+        budget: category.averagePrice!.toString(),
       }));
     }
 
     // Clear service error
-    setErrors((prev) => ({ ...prev, serviceId: "" }));
+    setErrors((prev) => ({ ...prev, categoryId: "" }));
   };
 
   const handleLocationChange = (location: {
@@ -809,7 +811,7 @@ export default function CreateOrderScreen() {
         selectedDates,
         selectedDateTimes,
       }),
-      serviceId: validateField("serviceId", formData.serviceId || "", {
+      categoryId: validateField("categoryId", formData.categoryId || "", {
         selectedDates,
         selectedDateTimes,
       }),
@@ -841,7 +843,7 @@ export default function CreateOrderScreen() {
         budget: parseFloat(formData.budget),
         currency,
         rateUnit,
-        serviceId: formData.serviceId!,
+        categoryId: formData.categoryId!,
         location: selectedLocation
           ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
           : formData.location.trim() || undefined,
@@ -994,7 +996,7 @@ export default function CreateOrderScreen() {
         selectedDates,
         selectedDateTimes,
       }),
-      serviceId: validateField("serviceId", formData.serviceId || "", {
+      categoryId: validateField("categoryId", formData.categoryId || "", {
         selectedDates,
         selectedDateTimes,
       }),
@@ -1023,7 +1025,7 @@ export default function CreateOrderScreen() {
       budget: parseFloat(formData.budget),
       currency,
       rateUnit,
-      serviceId: formData.serviceId!,
+      categoryId: formData.categoryId!,
       location: selectedLocation
         ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
         : formData.location.trim() || undefined,
@@ -1477,7 +1479,7 @@ export default function CreateOrderScreen() {
               <ServiceSelector
                 selectedService={selectedService}
                 onServiceSelect={handleServiceSelect}
-                error={errors.serviceId}
+                error={errors.categoryId}
                 disabled={orderStatus === "in_progress"}
               />
             </View>
@@ -1498,7 +1500,7 @@ export default function CreateOrderScreen() {
                 <Text
                   style={[styles.priceHint, { color: colors.tabIconDefault }]}
                 >
-                  {t("selectServiceFirstForBudgetSuggestion")}
+                  {t("selectCategoryFirstForBudgetSuggestion")}
                 </Text>
               )}
 

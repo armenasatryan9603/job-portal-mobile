@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
-import { apiService, Service, UserService } from "@/services/api";
+import { apiService, Category, UserCategory } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -10,142 +10,142 @@ export const useSkills = (userId?: number) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const currentUserId = userId || user?.id;
-  const [availableServices, setAvailableServices] = useState<Service[]>([]);
-  const [userServices, setUserServices] = useState<Service[]>([]);
-  const [servicesLoading, setServicesLoading] = useState(false);
-  const [servicesError, setServicesError] = useState<string | null>(null);
-  const [showServicesModal, setShowServicesModal] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [userCategories, setUserCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [showCategoriesModal, setShowCategoriesModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [serviceNotifications, setServiceNotifications] = useState<{
-    [serviceId: number]: boolean;
+  const [categoryNotifications, setCategoryNotifications] = useState<{
+    [categoryId: number]: boolean;
   }>({});
 
-  const fetchServices = async () => {
+  const fetchCategories = async () => {
     try {
-      setServicesLoading(true);
-      setServicesError(null);
+      setCategoriesLoading(true);
+      setCategoriesError(null);
 
-      // Fetch all services with a high limit to get all available services
-      const servicesResponse = await apiService.getAllServices(
+      // Fetch all categories with a high limit to get all available categories
+      const categoriesResponse = await apiService.getAllCategories(
         1,
         100,
         undefined,
         language
       );
-      setAvailableServices(servicesResponse.services);
+      setAvailableCategories(categoriesResponse.categories);
 
-      // Fetch user services if user is authenticated
+      // Fetch user categories if user is authenticated
       if (currentUserId) {
         try {
-          const userServicesResponse = await apiService.getUserServices(
+          const userCategoriesResponse = await apiService.getUserCategories(
             currentUserId
           );
-          const services = userServicesResponse.userServices.map(
-            (us) => us.Service
+          const categories = userCategoriesResponse.userCategories.map(
+            (uc) => uc.Category
           );
-          setUserServices(services);
+          setUserCategories(categories);
 
           // Set up notification preferences
-          const notifications: { [serviceId: number]: boolean } = {};
-          userServicesResponse.userServices.forEach((us) => {
-            notifications[us.serviceId] = us.notificationsEnabled;
+          const notifications: { [categoryId: number]: boolean } = {};
+          userCategoriesResponse.userCategories.forEach((uc) => {
+            notifications[uc.categoryId] = uc.notificationsEnabled;
           });
-          setServiceNotifications(notifications);
+          setCategoryNotifications(notifications);
         } catch (err) {
-          console.error("Error fetching user services:", err);
-          // Don't fail the whole operation if user services fail
+          console.error("Error fetching user categories:", err);
+          // Don't fail the whole operation if user categories fail
         }
       }
     } catch (err) {
-      console.error("Error fetching services:", err);
-      setServicesError("Failed to load services.");
+      console.error("Error fetching categories:", err);
+      setCategoriesError("Failed to load categories.");
     } finally {
-      setServicesLoading(false);
+      setCategoriesLoading(false);
     }
   };
 
-  const toggleServiceSelection = (service: Service) => {
-    setUserServices((prev) => {
-      const isSelected = prev.some((s) => s.id === service.id);
+  const toggleCategorySelection = (category: Category) => {
+    setUserCategories((prev) => {
+      const isSelected = prev.some((c) => c.id === category.id);
       if (isSelected) {
-        return prev.filter((s) => s.id !== service.id);
+        return prev.filter((c) => c.id !== category.id);
       } else {
-        return [...prev, service];
+        return [...prev, category];
       }
     });
   };
 
-  const saveUserServices = async () => {
+  const saveUserCategories = async () => {
     if (!currentUserId) {
       Alert.alert(t("error"), t("youMustBeLoggedInToSaveSkills"));
       return;
     }
 
     try {
-      setServicesLoading(true);
+      setCategoriesLoading(true);
 
-      // Get current user services from API
-      const currentUserServicesResponse = await apiService.getUserServices(
+      // Get current user categories from API
+      const currentUserCategoriesResponse = await apiService.getUserCategories(
         currentUserId
       );
-      const currentUserServices = currentUserServicesResponse.userServices;
+      const currentUserCategories = currentUserCategoriesResponse.userCategories;
 
-      // Find services to add and remove
-      const currentServiceIds = currentUserServices.map((us) => us.serviceId);
-      const newServiceIds = userServices.map((s) => s.id);
+      // Find categories to add and remove
+      const currentCategoryIds = currentUserCategories.map((uc) => uc.categoryId);
+      const newCategoryIds = userCategories.map((c) => c.id);
 
-      const servicesToAdd = newServiceIds.filter(
-        (id) => !currentServiceIds.includes(id)
+      const categoriesToAdd = newCategoryIds.filter(
+        (id) => !currentCategoryIds.includes(id)
       );
-      const servicesToRemove = currentServiceIds.filter(
-        (id) => !newServiceIds.includes(id)
+      const categoriesToRemove = currentCategoryIds.filter(
+        (id) => !newCategoryIds.includes(id)
       );
 
-      // Add new services
-      for (const serviceId of servicesToAdd) {
-        await apiService.addUserService(currentUserId, serviceId, true);
+      // Add new categories
+      for (const categoryId of categoriesToAdd) {
+        await apiService.addUserCategory(currentUserId, categoryId, true);
       }
 
-      // Remove services
-      for (const serviceId of servicesToRemove) {
-        await apiService.removeUserService(currentUserId, serviceId);
+      // Remove categories
+      for (const categoryId of categoriesToRemove) {
+        await apiService.removeUserCategory(currentUserId, categoryId);
       }
 
-      setShowServicesModal(false);
+      setShowCategoriesModal(false);
 
-      // Refresh the services
-      await fetchServices();
+      // Refresh the categories
+      await fetchCategories();
     } catch (err) {
-      console.error("Error saving user services:", err);
+      console.error("Error saving user categories:", err);
       Alert.alert(t("error"), t("failedToSaveSkills"));
     } finally {
-      setServicesLoading(false);
+      setCategoriesLoading(false);
     }
   };
 
-  const openServicesModal = () => {
-    setShowServicesModal(true);
+  const openCategoriesModal = () => {
+    setShowCategoriesModal(true);
   };
 
-  const closeServicesModal = () => {
-    setShowServicesModal(false);
+  const closeCategoriesModal = () => {
+    setShowCategoriesModal(false);
     setSearchQuery("");
   };
 
-  const removeSkill = async (service: Service) => {
+  const removeSkill = async (category: Category) => {
     if (!currentUserId) {
       Alert.alert(t("error"), t("youMustBeLoggedInToRemoveSkills"));
       return;
     }
 
     try {
-      await apiService.removeUserService(currentUserId, service.id);
+      await apiService.removeUserCategory(currentUserId, category.id);
 
-      setUserServices((prev) => prev.filter((s) => s.id !== service.id));
+      setUserCategories((prev) => prev.filter((c) => c.id !== category.id));
       // Also remove notification preference when skill is removed
-      setServiceNotifications((prev) => {
+      setCategoryNotifications((prev) => {
         const newNotifications = { ...prev };
-        delete newNotifications[service.id];
+        delete newNotifications[category.id];
         return newNotifications;
       });
     } catch (err) {
@@ -154,7 +154,7 @@ export const useSkills = (userId?: number) => {
     }
   };
 
-  const toggleServiceNotification = async (service: Service) => {
+  const toggleCategoryNotification = async (category: Category) => {
     if (!currentUserId) {
       Alert.alert(
         t("error"),
@@ -164,16 +164,16 @@ export const useSkills = (userId?: number) => {
     }
 
     try {
-      const newNotificationState = !serviceNotifications[service.id];
-      await apiService.updateUserServiceNotifications(
+      const newNotificationState = !categoryNotifications[category.id];
+      await apiService.updateUserCategoryNotifications(
         currentUserId,
-        service.id,
+        category.id,
         newNotificationState
       );
 
-      setServiceNotifications((prev) => ({
+      setCategoryNotifications((prev) => ({
         ...prev,
-        [service.id]: newNotificationState,
+        [category.id]: newNotificationState,
       }));
     } catch (err) {
       console.error("Error updating notification preference:", err);
@@ -188,30 +188,44 @@ export const useSkills = (userId?: number) => {
     setSearchQuery("");
   };
 
-  // Load services on mount
+  // Load categories on mount
   useEffect(() => {
-    fetchServices();
+    fetchCategories();
   }, []);
 
   return {
     // State
-    availableServices,
-    userServices,
-    servicesLoading,
-    servicesError,
-    showServicesModal,
+    availableCategories,
+    userCategories,
+    categoriesLoading,
+    categoriesError,
+    showCategoriesModal,
     searchQuery,
-    serviceNotifications,
+    categoryNotifications,
 
     // Actions
-    fetchServices,
-    toggleServiceSelection,
-    saveUserServices,
-    openServicesModal,
-    closeServicesModal,
+    fetchCategories,
+    toggleCategorySelection,
+    saveUserCategories,
+    openCategoriesModal,
+    closeCategoriesModal,
     removeSkill,
     setSearchQuery,
     clearSearch,
-    toggleServiceNotification,
+    toggleCategoryNotification,
+    
+    // Backward compatibility aliases
+    availableServices: availableCategories,
+    userServices: userCategories,
+    servicesLoading: categoriesLoading,
+    servicesError: categoriesError,
+    showServicesModal: showCategoriesModal,
+    serviceNotifications: categoryNotifications,
+    fetchServices: fetchCategories,
+    toggleServiceSelection: toggleCategorySelection,
+    saveUserServices: saveUserCategories,
+    openServicesModal: openCategoriesModal,
+    closeServicesModal: closeCategoriesModal,
+    toggleServiceNotification: toggleCategoryNotification,
   };
 };

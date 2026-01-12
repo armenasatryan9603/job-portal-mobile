@@ -207,16 +207,16 @@ export const useSkills = () => {
   });
 };
 
-export const useRootServices = (language: string = "en") => {
+export const useRootCategories = (language: string = "en") => {
   return useQuery({
-    queryKey: ["services", "root", language],
-    queryFn: () => apiService.getRootServices(language),
+    queryKey: ["categories", "root", language],
+    queryFn: () => apiService.getRootCategories(language),
     staleTime: CACHE_TTL.STATIC,
     gcTime: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
 };
 
-export const useServices = (
+export const useCategories = (
   page: number = 1,
   limit: number = 10,
   parentId?: number,
@@ -229,31 +229,34 @@ export const useServices = (
 
   return useQuery({
     queryKey: hasSearchQuery
-      ? ["services", "search", trimmedQuery, page, limit, language]
-      : ["services", page, limit, parentId, language],
+      ? ["categories", "search", trimmedQuery, page, limit, language]
+      : ["categories", page, limit, parentId, language],
     queryFn: () =>
       hasSearchQuery
-        ? apiService.searchServices(trimmedQuery, page, limit, language)
-        : apiService.getAllServices(page, limit, parentId, language),
+        ? apiService.searchCategories(trimmedQuery, page, limit, language)
+        : apiService.getAllCategories(page, limit, parentId, language),
     staleTime: hasSearchQuery ? CACHE_TTL.DYNAMIC : CACHE_TTL.STATIC,
     enabled: true, // Always enabled - hook handles both search and regular listing
     retry: isOnline,
   });
 };
 
-export const useServiceById = (id: number, language: string = "en") => {
+export const useCategoryById = (id: number, language: string = "en") => {
   return useQuery({
-    queryKey: ["services", id, language],
-    queryFn: () => apiService.getServiceById(id, language),
+    queryKey: ["categories", id, language],
+    queryFn: () => apiService.getCategoryById(id, language),
     staleTime: CACHE_TTL.STATIC,
     enabled: !!id,
   });
 };
 
-export const useChildServices = (parentId: number, language: string = "en") => {
+export const useChildCategories = (
+  parentId: number,
+  language: string = "en"
+) => {
   return useQuery({
-    queryKey: ["services", "children", parentId, language],
-    queryFn: () => apiService.getChildServices(parentId, language),
+    queryKey: ["categories", "children", parentId, language],
+    queryFn: () => apiService.getChildCategories(parentId, language),
     staleTime: CACHE_TTL.STATIC,
     enabled: !!parentId,
   });
@@ -267,8 +270,8 @@ export const useSearchServices = (
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["services", "search", query, page, limit, language],
-    queryFn: () => apiService.searchServices(query, page, limit, language),
+    queryKey: ["categories", "search", query, page, limit, language],
+    queryFn: () => apiService.searchCategories(query, page, limit, language),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: !!query,
     retry: isOnline,
@@ -326,8 +329,8 @@ export const useAllOrders = (
   page: number = 1,
   limit: number = 10,
   status?: string,
-  serviceId?: number,
-  serviceIds?: number[],
+  categoryId?: number,
+  categoryIds?: number[],
   clientId?: number
 ) => {
   const { isOnline } = useNetworkStatus();
@@ -338,8 +341,8 @@ export const useAllOrders = (
       page,
       limit,
       status,
-      serviceId,
-      serviceIds,
+      categoryId,
+      categoryIds,
       clientId,
     ],
     queryFn: () =>
@@ -347,8 +350,8 @@ export const useAllOrders = (
         page,
         limit,
         status,
-        serviceId,
-        serviceIds,
+        categoryId,
+        categoryIds,
         clientId
       ),
     staleTime: CACHE_TTL.USER_DATA,
@@ -384,7 +387,7 @@ export const useMyJobs = () => {
 export const useAvailableOrders = (
   page: number = 1,
   limit: number = 10,
-  serviceId?: number,
+  categoryId?: number,
   location?: string,
   budgetMin?: number,
   budgetMax?: number
@@ -396,7 +399,7 @@ export const useAvailableOrders = (
       "available",
       page,
       limit,
-      serviceId,
+      categoryId,
       location,
       budgetMin,
       budgetMax,
@@ -405,7 +408,7 @@ export const useAvailableOrders = (
       apiService.getAvailableOrders(
         page,
         limit,
-        serviceId,
+        categoryId,
         location,
         budgetMin,
         budgetMax
@@ -420,8 +423,8 @@ export const usePublicOrders = (
   page: number = 1,
   limit: number = 10,
   status?: string,
-  serviceId?: number,
-  serviceIds?: number[],
+  categoryId?: number,
+  categoryIds?: number[],
   clientId?: number
 ) => {
   const { isOnline } = useNetworkStatus();
@@ -432,8 +435,8 @@ export const usePublicOrders = (
       page,
       limit,
       status,
-      serviceId,
-      serviceIds,
+      categoryId,
+      categoryIds,
       clientId,
     ],
     queryFn: () =>
@@ -441,8 +444,8 @@ export const usePublicOrders = (
         page,
         limit,
         status,
-        serviceId,
-        serviceIds,
+        categoryId,
+        categoryIds,
         clientId
       ),
     staleTime: CACHE_TTL.DYNAMIC,
@@ -455,12 +458,12 @@ export const useSearchOrders = (
   query: string,
   page: number = 1,
   limit: number = 10,
-  serviceIds?: number[]
+  categoryIds?: number[]
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "search", query, page, limit, serviceIds],
-    queryFn: () => apiService.searchOrders(query, page, limit, serviceIds),
+    queryKey: ["orders", "search", query, page, limit, categoryIds],
+    queryFn: () => apiService.searchOrders(query, page, limit, categoryIds),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: !!query,
     retry: isOnline,
@@ -707,72 +710,72 @@ export const useUploadMediaFile = () => {
   });
 };
 
-// ===== USER SERVICES HOOKS =====
+// ===== USER CATEGORIES HOOKS =====
 
-export const useUserServices = (userId: number) => {
+export const useUserCategories = (userId: number) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["user-services", userId],
-    queryFn: () => apiService.getUserServices(userId),
+    queryKey: ["user-categories", userId],
+    queryFn: () => apiService.getUserCategories(userId),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: !!userId,
     retry: isOnline,
   });
 };
 
-export const useAddUserService = () => {
+export const useAddUserCategory = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       userId,
-      serviceId,
+      categoryId,
       notificationsEnabled,
     }: {
       userId: number;
-      serviceId: number;
+      categoryId: number;
       notificationsEnabled: boolean;
-    }) => apiService.addUserService(userId, serviceId, notificationsEnabled),
+    }) => apiService.addUserCategory(userId, categoryId, notificationsEnabled),
     onSuccess: (_, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: ["user-services", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-categories", userId] });
     },
   });
 };
 
-export const useRemoveUserService = () => {
+export const useRemoveUserCategory = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       userId,
-      serviceId,
+      categoryId,
     }: {
       userId: number;
-      serviceId: number;
-    }) => apiService.removeUserService(userId, serviceId),
+      categoryId: number;
+    }) => apiService.removeUserCategory(userId, categoryId),
     onSuccess: (_, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: ["user-services", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-categories", userId] });
     },
   });
 };
 
-export const useUpdateUserServiceNotifications = () => {
+export const useUpdateUserCategoryNotifications = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       userId,
-      serviceId,
+      categoryId,
       notificationsEnabled,
     }: {
       userId: number;
-      serviceId: number;
+      categoryId: number;
       notificationsEnabled: boolean;
     }) =>
-      apiService.updateUserServiceNotifications(
+      apiService.updateUserCategoryNotifications(
         userId,
-        serviceId,
+        categoryId,
         notificationsEnabled
       ),
     onSuccess: (_, { userId }) => {
-      queryClient.invalidateQueries({ queryKey: ["user-services", userId] });
+      queryClient.invalidateQueries({ queryKey: ["user-categories", userId] });
     },
   });
 };
@@ -997,8 +1000,8 @@ export const useInvalidateQueries = () => {
   const queryClient = useQueryClient();
   return {
     invalidateAll: () => queryClient.invalidateQueries(),
-    invalidateServices: () =>
-      queryClient.invalidateQueries({ queryKey: ["services"] }),
+    invalidateCategories: () =>
+      queryClient.invalidateQueries({ queryKey: ["categories"] }),
     invalidateSpecialists: () =>
       queryClient.invalidateQueries({ queryKey: ["specialists"] }),
     invalidateOrders: () =>
@@ -1007,8 +1010,8 @@ export const useInvalidateQueries = () => {
       queryClient.invalidateQueries({ queryKey: ["proposals"] }),
     invalidateProfile: () =>
       queryClient.invalidateQueries({ queryKey: ["profile"] }),
-    invalidateUserServices: () =>
-      queryClient.invalidateQueries({ queryKey: ["user-services"] }),
+    invalidateUserCategories: () =>
+      queryClient.invalidateQueries({ queryKey: ["user-categories"] }),
     invalidateConversations: () =>
       queryClient.invalidateQueries({ queryKey: ["conversations"] }),
     invalidateReviews: () =>

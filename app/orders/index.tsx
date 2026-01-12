@@ -35,7 +35,7 @@ import {
   useSavedOrders,
   useApplyToOrder,
   useDeleteOrder,
-  useServices,
+  useCategories,
 } from "@/hooks/useApi";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import AnalyticsService from "@/services/AnalyticsService";
@@ -65,7 +65,7 @@ export default function OrdersScreen() {
       ? "SavedOrders"
       : "Orders";
   useAnalytics(screenName);
-  const { myOrders, myJobs, saved, serviceId, q } = useLocalSearchParams();
+  const { myOrders, myJobs, saved, categoryId, q } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
@@ -77,10 +77,10 @@ export default function OrdersScreen() {
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
   const isSavedOrders = saved === "true";
-  const filterServiceId = serviceId
-    ? isNaN(parseInt(serviceId as string))
+  const filterCategoryId = categoryId
+    ? isNaN(parseInt(categoryId as string))
       ? null
-      : parseInt(serviceId as string)
+      : parseInt(categoryId as string)
     : null;
   // Initialize searchQuery from URL parameter if present
   const [searchQuery, setSearchQuery] = useState(
@@ -99,7 +99,7 @@ export default function OrdersScreen() {
     >
   >({
     status: isMyJobs || isSavedOrders || isMyOrders ? "all" : "open",
-    services: filterServiceId ? [filterServiceId.toString()] : [],
+    categories: filterCategoryId ? [filterCategoryId.toString()] : [],
     priceRange: { min: 0, max: 100000 },
     sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
     location: null as {
@@ -124,19 +124,19 @@ export default function OrdersScreen() {
   const limit = 10;
   const status = selectedFilters?.status as string;
 
-  // Convert selected services to number array
-  // Prioritize filterServiceId from URL if present, otherwise use selectedFilters
-  const selectedServiceIds = useMemo(() => {
-    // If we have a serviceId from URL, use it directly (most reliable)
-    if (filterServiceId !== null) {
-      return [filterServiceId];
+  // Convert selected categories to number array
+  // Prioritize filterCategoryId from URL if present, otherwise use selectedFilters
+  const selectedCategoryIds = useMemo(() => {
+    // If we have a categoryId from URL, use it directly (most reliable)
+    if (filterCategoryId !== null) {
+      return [filterCategoryId];
     }
     // Otherwise, use selectedFilters (for manual filter selection)
-    const services = Array.isArray(selectedFilters.services)
-      ? selectedFilters.services
+    const categories = Array.isArray(selectedFilters.categories)
+      ? selectedFilters.categories
       : [];
-    return services.map((id) => parseInt(id)).filter((id) => !isNaN(id));
-  }, [filterServiceId, selectedFilters.services]);
+    return categories.map((id) => parseInt(id)).filter((id) => !isNaN(id));
+  }, [filterCategoryId, selectedFilters.categories]);
 
   // TanStack Query hooks
   const myOrdersQuery = useMyOrders();
@@ -147,23 +147,23 @@ export default function OrdersScreen() {
     tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
-    undefined, // serviceId (single, for backward compatibility)
-    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
+    undefined, // categoryId (single, for backward compatibility)
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
   );
   const publicOrdersQuery = usePublicOrders(
     tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
-    undefined, // serviceId (single, for backward compatibility)
-    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
+    undefined, // categoryId (single, for backward compatibility)
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
   );
   const searchOrdersQuery = useSearchOrders(
     searchQuery.trim(),
     tempCurrentPage,
     limit,
-    selectedServiceIds.length > 0 ? selectedServiceIds : undefined
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
   );
-  const { data: servicesData } = useServices(1, 100, undefined, language); // Get all services for filtering
+  const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering
 
   // Mutations
   const applyToOrderMutation = useApplyToOrder();
@@ -204,17 +204,17 @@ export default function OrdersScreen() {
               ...prev,
               ...parsed,
             };
-            // If serviceId is in URL, it takes precedence over saved filters
-            if (filterServiceId !== null) {
-              updated.services = [filterServiceId.toString()];
+            // If categoryId is in URL, it takes precedence over saved filters
+            if (filterCategoryId !== null) {
+              updated.categories = [filterCategoryId.toString()];
             }
             return updated;
           });
-        } else if (filterServiceId !== null) {
-          // If no saved filters but serviceId in URL, set it
+        } else if (filterCategoryId !== null) {
+          // If no saved filters but categoryId in URL, set it
           setSelectedFilters((prev) => ({
             ...prev,
-            services: [filterServiceId.toString()],
+            categories: [filterCategoryId.toString()],
           }));
         }
         // Only load saved search if no URL parameter is present
@@ -226,7 +226,7 @@ export default function OrdersScreen() {
       }
     };
     loadSavedFilters();
-  }, [filterStorageKey, searchStorageKey, q, filterServiceId]);
+  }, [filterStorageKey, searchStorageKey, q, filterCategoryId]);
 
   // Update search query when URL parameter changes
   useEffect(() => {
@@ -326,7 +326,7 @@ export default function OrdersScreen() {
     isMyOrders || isMyJobs || isSavedOrders ? currentPageOrders : allOrders;
 
   // Extract services for filtering
-  const services = servicesData?.services || [];
+  const categories = categoriesData?.categories || [];
 
   // Filter configuration
   const filterSections = useMemo<FilterSection[]>(
@@ -388,16 +388,16 @@ export default function OrdersScreen() {
       //   type: "stars",
       // },
       {
-        key: "services",
-        title: t("services"),
+        key: "categories",
+        title: t("categories"),
         multiSelect: true,
-        options: services.map((service) => ({
-          key: service.id.toString(),
-          label: service.name,
+        options: categories.map((category) => ({
+          key: category.id.toString(),
+          label: category.name,
         })),
       },
     ],
-    [t, isMyOrders, services]
+    [t, isMyOrders, categories]
   );
 
   // Loading states - use hook's provided values for better pagination handling
@@ -615,15 +615,15 @@ export default function OrdersScreen() {
     []
   );
 
-  // Helper function to filter orders by serviceIds (array)
-  const filterOrdersByServices = useCallback(
-    (orders: Order[], serviceIds: string[]): Order[] => {
-      if (!serviceIds || serviceIds.length === 0) return orders;
-      const serviceIdNumbers = serviceIds.map((id) => parseInt(id));
+  // Helper function to filter orders by categoryIds (array)
+  const filterOrdersByCategories = useCallback(
+    (orders: Order[], categoryIds: string[]): Order[] => {
+      if (!categoryIds || categoryIds.length === 0) return orders;
+      const categoryIdNumbers = categoryIds.map((id) => parseInt(id));
       return orders.filter(
         (order: Order) =>
-          (order.serviceId && serviceIdNumbers.includes(order.serviceId)) ||
-          (order.Service?.id && serviceIdNumbers.includes(order.Service.id))
+          (order.categoryId && categoryIdNumbers.includes(order.categoryId)) ||
+          (order.Category?.id && categoryIdNumbers.includes(order.Category.id))
       );
     },
     []
@@ -862,8 +862,8 @@ export default function OrdersScreen() {
 
   // Compute orders for My Orders/My Jobs with client-side pagination
   const displayedOrders = useMemo(() => {
-    const selectedServices = Array.isArray(selectedFilters.services)
-      ? selectedFilters.services
+    const selectedCategories = Array.isArray(selectedFilters.categories)
+      ? selectedFilters.categories
       : [];
     const sortBy = (selectedFilters.sortBy as string) || "relevance";
 
@@ -883,11 +883,11 @@ export default function OrdersScreen() {
         filteredOrders = filterOrdersByStatus(filteredOrders, status);
       }
 
-      // Apply service filter (client-side for My Orders/My Jobs)
-      if (selectedServices.length > 0) {
-        filteredOrders = filterOrdersByServices(
+      // Apply category filter (client-side for My Orders/My Jobs)
+      if (selectedCategories.length > 0) {
+        filteredOrders = filterOrdersByCategories(
           filteredOrders,
-          selectedServices
+          selectedCategories
         );
       }
 
@@ -1016,7 +1016,7 @@ export default function OrdersScreen() {
     orders,
     filterOrdersBySearch,
     filterOrdersByStatus,
-    filterOrdersByServices,
+    filterOrdersByCategories,
     filterOrdersByPriceRange,
     filterOrdersByLocation,
     filterOrdersByRating,
@@ -1026,8 +1026,8 @@ export default function OrdersScreen() {
 
   // Compute pagination for My Orders/My Jobs/Saved Orders
   const displayedPagination = useMemo(() => {
-    const selectedServices = Array.isArray(selectedFilters.services)
-      ? selectedFilters.services
+    const selectedCategories = Array.isArray(selectedFilters.categories)
+      ? selectedFilters.categories
       : [];
 
     if (isMyOrders || isMyJobs || isSavedOrders) {
@@ -1041,8 +1041,8 @@ export default function OrdersScreen() {
         if (status && status !== "all" && status !== "not_applied") {
           filtered = filterOrdersByStatus(filtered, status);
         }
-        if (selectedServices.length > 0) {
-          filtered = filterOrdersByServices(filtered, selectedServices);
+        if (selectedCategories.length > 0) {
+          filtered = filterOrdersByCategories(filtered, selectedCategories);
         }
         filtered = filterOrdersByPriceRange(filtered, priceRange);
         const locationFilter = selectedFilters.location as {
@@ -1104,7 +1104,7 @@ export default function OrdersScreen() {
     pagination,
     filterOrdersBySearch,
     filterOrdersByStatus,
-    filterOrdersByServices,
+    filterOrdersByCategories,
     filterOrdersByPriceRange,
     filterOrdersByRating,
     createPaginationObject,

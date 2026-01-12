@@ -26,7 +26,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { apiService, SpecialistProfile } from "@/services/api";
-import { useSpecialists, useServices, useMyOrders } from "@/hooks/useApi";
+import { useSpecialists, useCategories, useMyOrders } from "@/hooks/useApi";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -76,10 +76,10 @@ export default function SpecialistsScreen() {
     error,
     refetch,
   } = useSpecialists(tempCurrentPage, 20);
-  const { data: servicesData } = useServices(1, 100, undefined, language); // Get all services for filtering with correct language
+  const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering with correct language
   const { data: ordersData } = useMyOrders();
 
-  const services = servicesData?.services || [];
+  const categories = categoriesData?.categories || [];
   const userOrders = ordersData?.orders || [];
   const pagination = specialistsData?.pagination || {
     page: 1,
@@ -113,14 +113,14 @@ export default function SpecialistsScreen() {
     setTempCurrentPage(currentPage);
   }, [currentPage]);
 
-  // Get service names and IDs from fetched services
-  const serviceOptions = useMemo(
+  // Get category names and IDs from fetched categories
+  const categoryOptions = useMemo(
     () =>
-      services.map((service) => ({
-        id: service.id,
-        name: service.name,
+      categories.map((category) => ({
+        id: category.id,
+        name: category.name,
       })),
-    [services]
+    [categories]
   );
 
   const handleFilterChange = (
@@ -169,13 +169,13 @@ export default function SpecialistsScreen() {
             ?.toLowerCase()
             .includes(searchQuery.toLowerCase());
 
-        // Service filter - compare by service ID
-        const serviceFilter = selectedFilters.services;
-        const specialistServiceId = `${specialist.Service?.id}`;
-        const matchesService =
-          Array.isArray(serviceFilter) &&
-          (serviceFilter.length === 0 ||
-            serviceFilter.includes(specialistServiceId));
+        // Category filter - compare by category ID
+        const categoryFilter = selectedFilters.categories;
+        const specialistCategoryId = `${specialist.Category?.id}`;
+        const matchesCategory =
+          Array.isArray(categoryFilter) &&
+          (categoryFilter.length === 0 ||
+            categoryFilter.includes(specialistCategoryId));
 
         // Price filter
         const priceFilter = selectedFilters.priceRange;
@@ -187,7 +187,7 @@ export default function SpecialistsScreen() {
               (specialist.priceMin || 0) <= priceFilter.max
             : true;
 
-        return matchesSearch && matchesService && matchesPrice;
+        return matchesSearch && matchesCategory && matchesPrice;
       }),
     [specialists, searchQuery, selectedFilters]
   );
@@ -206,16 +206,16 @@ export default function SpecialistsScreen() {
         },
       },
       {
-        title: t("services"),
-        key: "services",
+        title: t("categories"),
+        key: "categories",
         multiSelect: true,
-        options: serviceOptions.map((service) => ({
-          key: service.id.toString(),
-          label: service.name,
+        options: categoryOptions.map((category) => ({
+          key: category.id.toString(),
+          label: category.name,
         })),
       },
     ],
-    [t, serviceOptions]
+    [t, categoryOptions]
   );
 
   const handleSpecialistPress = (specialistId: number) => {
@@ -376,7 +376,7 @@ export default function SpecialistsScreen() {
                   {specialist.User?.name || t("deletedUser")}
                 </Text>
                 <Text style={[styles.specialistTitle, { color: colors.tint }]}>
-                  {specialist.Service?.name || t("specialist")}
+                  {specialist.Category?.name || t("specialist")}
                 </Text>
                 <View style={styles.ratingContainer}>
                   {specialist.averageRating && specialist.averageRating > 0 ? (
@@ -475,7 +475,7 @@ export default function SpecialistsScreen() {
             </View>
 
             <View style={styles.skillsContainer}>
-              {specialist.Service?.technologies
+              {specialist.Category?.technologies
                 ?.slice(0, 5)
                 .map((skill, index) => (
                   <View

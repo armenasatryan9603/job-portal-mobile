@@ -15,16 +15,16 @@ import {
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Service } from "@/services/api";
-import { useServices } from "@/hooks/useApi";
+import { Category } from "@/services/api";
+import { useCategories } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
 import { formatPriceDisplay } from "@/utils/currencyRateUnit";
 
 interface ServiceSelectorProps {
-  selectedService: Service | null;
-  onServiceSelect: (service: Service | null) => void;
+  selectedService: Category | null;
+  onServiceSelect: (category: Category | null) => void;
   error?: string;
   disabled?: boolean;
 }
@@ -49,11 +49,11 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     isLoading: isLoadingServices,
     error: servicesErrorData,
     refetch: refetchServices,
-  } = useServices(1, 100, undefined, language);
+  } = useCategories(1, 100, undefined, language);
 
-  // Extract services from the cached response
-  const services = useMemo(() => {
-    return servicesData?.services || [];
+  // Extract categories from the cached response
+  const categories = useMemo(() => {
+    return servicesData?.categories || [];
   }, [servicesData]);
 
   const servicesError = servicesErrorData ? t("failedToLoadServices") : null;
@@ -67,71 +67,75 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
     }
   }, []);
 
-  // Organize services by category
-  const getServicesByCategory = () => {
-    const categories = services.filter((service) => !service.parentId);
-    const subServices = services.filter((service) => service.parentId);
+  // Organize categories by parent
+  const getCategoriesByParent = () => {
+    const parentCategories = categories.filter(
+      (category) => !category.parentId
+    );
+    const subCategories = categories.filter((category) => category.parentId);
 
     if (!searchQuery.trim()) {
-      // No search - show all categories with all their sub-services
-      return categories.map((category) => ({
+      // No search - show all categories with all their sub-categories
+      return parentCategories.map((category) => ({
         ...category,
-        subServices: subServices.filter((sub) => sub.parentId === category.id),
+        subCategories: subCategories.filter(
+          (sub) => sub.parentId === category.id
+        ),
       }));
     }
 
-    // Search is active - filter both categories and sub-services
+    // Search is active - filter both categories and sub-categories
     const searchLower = searchQuery.toLowerCase();
 
-    // Find matching sub-services
-    const matchingSubServices = subServices.filter(
-      (service) =>
-        service.name.toLowerCase().includes(searchLower) ||
-        service.Parent?.name.toLowerCase().includes(searchLower)
+    // Find matching sub-categories
+    const matchingSubCategories = subCategories.filter(
+      (category) =>
+        category.name.toLowerCase().includes(searchLower) ||
+        category.Parent?.name.toLowerCase().includes(searchLower)
     );
 
-    // Find categories that match or have matching sub-services
+    // Find categories that match or have matching sub-categories
     const matchingCategoryIds = new Set<number>();
-    matchingSubServices.forEach((service) => {
-      if (service.parentId) {
-        matchingCategoryIds.add(service.parentId);
+    matchingSubCategories.forEach((category) => {
+      if (category.parentId) {
+        matchingCategoryIds.add(category.parentId);
       }
     });
 
-    // Get categories that match search or have matching sub-services
-    const relevantCategories = categories.filter(
+    // Get categories that match search or have matching sub-categories
+    const relevantCategories = parentCategories.filter(
       (cat) =>
         cat.name.toLowerCase().includes(searchLower) ||
         matchingCategoryIds.has(cat.id)
     );
 
-    // Group matching sub-services by their parent category
+    // Group matching sub-categories by their parent category
     return relevantCategories
       .map((category) => {
         const categoryMatches = category.name
           .toLowerCase()
           .includes(searchLower);
-        const categorySubServices = matchingSubServices.filter(
+        const categorySubCategories = matchingSubCategories.filter(
           (sub) => sub.parentId === category.id
         );
 
-        // If category name matches, show all sub-services
-        // Otherwise, only show matching sub-services
+        // If category name matches, show all sub-categories
+        // Otherwise, only show matching sub-categories
         return {
           ...category,
-          subServices: categoryMatches
-            ? subServices.filter((sub) => sub.parentId === category.id)
-            : categorySubServices,
+          subCategories: categoryMatches
+            ? subCategories.filter((sub) => sub.parentId === category.id)
+            : categorySubCategories,
         };
       })
-      .filter((category) => category.subServices.length > 0);
+      .filter((category) => category.subCategories.length > 0);
   };
 
-  const handleServiceSelect = (service: Service) => {
-    onServiceSelect(service);
+  const handleCategorySelect = (category: Category) => {
+    onServiceSelect(category);
   };
 
-  const servicesByCategory = getServicesByCategory();
+  const categoriesByParent = getCategoriesByParent();
   const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
     () => new Set()
   );
@@ -152,10 +156,10 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
   return (
     <View>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        {t("selectService")} *
+        {t("selectCategory")} *
       </Text>
       <Text style={[styles.sectionSubtitle, { color: colors.tabIconDefault }]}>
-        {t("selectServiceDescription")}
+        {t("selectCategoryDescription")}
       </Text>
 
       {/* Search Bar */}
@@ -175,7 +179,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholder={t("searchServices")}
+            placeholder={t("searchCategories")}
             placeholderTextColor={colors.tabIconDefault}
             editable={!disabled}
           />
@@ -260,7 +264,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={[styles.loadingText, { color: colors.text }]}>
-              {t("loadingServices")}
+              {t("loadingCategories")}
             </Text>
           </View>
         ) : servicesError ? (
@@ -285,7 +289,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
-        ) : servicesByCategory.length === 0 ? (
+        ) : categoriesByParent.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
               name="magnifyingglass"
@@ -293,7 +297,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               color={colors.tabIconDefault}
             />
             <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-              {t("noServicesFound")}
+              {t("noCategories")}
             </Text>
           </View>
         ) : (
@@ -303,7 +307,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
-            {servicesByCategory.map((category) => {
+            {categoriesByParent.map((category) => {
               const isExpanded = expandedCategories.has(category.id);
               return (
                 <View key={category.id} style={styles.categorySection}>
@@ -330,10 +334,10 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                         { color: colors.tabIconDefault },
                       ]}
                     >
-                      {category.subServices.length}{" "}
-                      {category.subServices.length === 1
-                        ? t("service")
-                        : t("services")}
+                      {category.subCategories.length}{" "}
+                      {category.subCategories.length === 1
+                        ? t("category")
+                        : t("categories")}
                     </Text>
                     <IconSymbol
                       name={isExpanded ? "chevron.up" : "chevron.down"}
@@ -343,11 +347,12 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                   </TouchableOpacity>
                   {isExpanded && (
                     <View style={styles.servicesList}>
-                      {category.subServices.map((service) => {
-                        const isSelected = selectedService?.id === service.id;
+                      {category.subCategories.map((subCategory) => {
+                        const isSelected =
+                          selectedService?.id === subCategory.id;
                         return (
                           <TouchableOpacity
-                            key={service.id}
+                            key={subCategory.id}
                             style={[
                               styles.serviceListItem,
                               {
@@ -361,14 +366,14 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                               },
                             ]}
                             onPress={() =>
-                              !disabled && handleServiceSelect(service)
+                              !disabled && handleCategorySelect(subCategory)
                             }
                             activeOpacity={0.7}
                             disabled={disabled}
                           >
-                            {service.imageUrl ? (
+                            {subCategory.imageUrl ? (
                               <Image
-                                source={{ uri: service.imageUrl }}
+                                source={{ uri: subCategory.imageUrl }}
                                 style={styles.serviceListItemImage}
                                 resizeMode="cover"
                               />
@@ -400,9 +405,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                 ]}
                                 numberOfLines={1}
                               >
-                                {service.name}
+                                {subCategory.name}
                               </Text>
-                              {service.averagePrice && (
+                              {subCategory.averagePrice && (
                                 <Text
                                   style={[
                                     styles.serviceListItemPrice,
@@ -412,9 +417,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
                                   ]}
                                 >
                                   {formatPriceDisplay(
-                                    service.averagePrice,
-                                    service.currency,
-                                    service.rateUnit,
+                                    subCategory.averagePrice,
+                                    subCategory.currency,
+                                    subCategory.rateUnit,
                                     rateUnits,
                                     language
                                   )}

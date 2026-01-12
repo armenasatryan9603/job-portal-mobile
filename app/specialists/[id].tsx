@@ -685,7 +685,7 @@ export default function SpecialistDetailScreen() {
                     color={colors.tint}
                   />
                   <Text style={[styles.serviceText, { color: colors.text }]}>
-                    {t("service")}: {specialist.Service.name}
+                    {t("category")}: {specialist.Category.name}
                   </Text>
                 </View>
                 {specialist.Service.description && (

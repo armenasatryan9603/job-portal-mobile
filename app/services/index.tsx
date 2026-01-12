@@ -33,8 +33,8 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { Service } from "@/services/api";
-import { useServices, useRootServices } from "@/hooks/useApi";
+import { Category } from "@/services/api";
+import { useCategories, useRootCategories } from "@/hooks/useApi";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { formatPriceDisplay } from "@/utils/currencyRateUnit";
@@ -95,7 +95,7 @@ const ServicesScreen = () => {
     isFetching: activeIsFetching,
     error: activeError,
     refetch: activeRefetch,
-  } = useServices(
+  } = useCategories(
     tempCurrentPage,
     20,
     undefined,
@@ -103,9 +103,9 @@ const ServicesScreen = () => {
     debouncedSearchQuery
   );
 
-  const { data: rootServices } = useRootServices(language);
+  const { data: rootCategories } = useRootCategories(language);
 
-  const mainServices = rootServices || [];
+  const mainCategories = rootCategories || [];
   const pagination = activeData?.pagination || {
     page: 1,
     limit: 20,
@@ -117,16 +117,16 @@ const ServicesScreen = () => {
 
   // Use infinite pagination hook
   const {
-    allItems: services,
+    allItems: categories,
     currentPage,
     setCurrentPage,
-    loadMore: loadMoreServices,
+    loadMore: loadMoreCategories,
     onRefresh,
     isInitialLoading,
     isLoadingMore,
     flatListProps,
   } = useInfinitePagination({
-    items: activeData?.services || [],
+    items: activeData?.categories || [],
     pagination,
     isLoading: activeIsLoading,
     isFetching: activeIsFetching,
@@ -139,9 +139,9 @@ const ServicesScreen = () => {
     setTempCurrentPage(currentPage);
   }, [currentPage]);
 
-  // Filter services based on category and services (search is handled by backend)
-  const filteredServices = useMemo(() => {
-    return services.filter((service) => {
+  // Filter categories based on category and categories (search is handled by backend)
+  const filteredCategories = useMemo(() => {
+    return categories.filter((category) => {
       const selectedCategories = selectedFilters["Categories"];
       const matchesCategory =
         !selectedCategories ||
@@ -150,73 +150,73 @@ const ServicesScreen = () => {
         (Array.isArray(selectedCategories) &&
           selectedCategories.includes("all")) ||
         (Array.isArray(selectedCategories) &&
-          selectedCategories.includes(service?.parentId?.toString() || "")) ||
-        (!service.parentId &&
+          selectedCategories.includes(category?.parentId?.toString() || "")) ||
+        (!category.parentId &&
           Array.isArray(selectedCategories) &&
           selectedCategories.includes("all"));
 
-      const selectedServices = selectedFilters["services"];
-      const matchesService =
-        !selectedServices ||
-        (Array.isArray(selectedServices) && selectedServices.length === 0) ||
-        (Array.isArray(selectedServices) &&
-          selectedServices.includes(service.id.toString()));
+      const selectedCategoriesFilter = selectedFilters["categories"];
+      const matchesCategoryFilter =
+        !selectedCategoriesFilter ||
+        (Array.isArray(selectedCategoriesFilter) && selectedCategoriesFilter.length === 0) ||
+        (Array.isArray(selectedCategoriesFilter) &&
+          selectedCategoriesFilter.includes(category.id.toString()));
 
-      return matchesCategory && matchesService;
+      return matchesCategory && matchesCategoryFilter;
     });
-  }, [services, selectedFilters]);
+  }, [categories, selectedFilters]);
 
-  // Get parent services only (for main grid)
-  const parentServices = useMemo(() => {
-    return mainServices.filter((service) => {
+  // Get parent categories only (for main grid)
+  const parentCategories = useMemo(() => {
+    return mainCategories.filter((category) => {
       if (debouncedSearchQuery.trim()) {
-        return service.name
+        return category.name
           .toLowerCase()
           .includes(debouncedSearchQuery.toLowerCase());
       }
       return true;
     });
-  }, [mainServices, debouncedSearchQuery]);
+  }, [mainCategories, debouncedSearchQuery]);
 
-  // Chunk parent services into rows of 3 for grid layout
-  const parentServiceRows = useMemo(() => {
-    const rows: Service[][] = [];
-    for (let i = 0; i < parentServices.length; i += 3) {
-      rows.push(parentServices.slice(i, i + 3));
+  // Chunk parent categories into rows of 3 for grid layout
+  const parentCategoryRows = useMemo(() => {
+    const rows: Category[][] = [];
+    for (let i = 0; i < parentCategories.length; i += 3) {
+      rows.push(parentCategories.slice(i, i + 3));
     }
     return rows;
-  }, [parentServices]);
+  }, [parentCategories]);
 
-  // Get child services for a specific parent
-  const getChildServices = useCallback(
+  // Get child categories for a specific parent
+  const getChildCategories = useCallback(
     (parentId: number) => {
-      return filteredServices.filter(
-        (service) => service.parentId === parentId
+      return filteredCategories.filter(
+        (category) => category.parentId === parentId
       );
     },
-    [filteredServices]
+    [filteredCategories]
   );
 
-  // Get child services for a specific child service (grandchildren)
-  const getGrandchildServices = useCallback(
+  // Get child categories for a specific child category (grandchildren)
+  const getGrandchildCategories = useCallback(
     (childId: number) => {
-      return filteredServices.filter((service) => service.parentId === childId);
+      return filteredCategories.filter((category) => category.parentId === childId);
     },
-    [filteredServices]
+    [filteredCategories]
   );
 
-  const handleServicePress = useCallback((serviceId: number) => {
-    AnalyticsService.getInstance().logEvent("service_clicked", {
-      service_id: serviceId.toString(),
-      location: "services_list",
+  const handleCategoryPress = useCallback((categoryId: number) => {
+    AnalyticsService.getInstance().logEvent("category_clicked", {
+      category_id: categoryId.toString(),
+      location: "categories_list",
     });
 
-    // Navigate to service details page
-    router.push(`/services/${serviceId}`);
+    // Navigate to category details page
+    router.push(`/services/${categoryId}`);
   }, []);
 
   // Wrap the handler to dismiss keyboard first if visible
-  const wrappedHandleServicePress = wrapPressHandler(handleServicePress);
+  const wrappedHandleCategoryPress = wrapPressHandler(handleCategoryPress);
 
   const handleCreateOrder = () => {
     AnalyticsService.getInstance().logEvent("button_clicked", {
@@ -235,14 +235,14 @@ const ServicesScreen = () => {
         multiSelect: true,
         options: [
           { key: "all", label: t("allCategories") },
-          ...mainServices.map((service) => ({
-            key: service.id.toString(),
-            label: service.name,
+          ...mainCategories.map((category) => ({
+            key: category.id.toString(),
+            label: category.name,
           })),
         ],
       },
     ],
-    [t, mainServices, services]
+    [t, mainCategories, categories]
   );
 
   const handleSearchChange = useCallback((text: string) => {
@@ -251,7 +251,7 @@ const ServicesScreen = () => {
     if (text.trim().length > 0) {
       setTimeout(() => {
         AnalyticsService.getInstance().logSearch(text.trim(), {
-          search_type: "services",
+          search_type: "categories",
         });
       }, 500);
     }
@@ -279,7 +279,7 @@ const ServicesScreen = () => {
 
   const header = (
     <Header
-      title={t("services")}
+      title={t("categories")}
       subtitle={t("findSpecialists")}
       showNotificationsButton={isAuthenticated}
       showChatButton={isAuthenticated}
@@ -302,15 +302,15 @@ const ServicesScreen = () => {
     );
   }
 
-  // Render a service card for grid view
-  const renderServiceCard = (service: Service) => {
-    const childServices = getChildServices(service.id);
+  // Render a category card for grid view
+  const renderCategoryCard = (category: Category) => {
+    const childCategories = getChildCategories(category.id);
     return (
       <ServiceCard
-        key={service.id}
-        service={service}
-        onPress={wrappedHandleServicePress}
-        childCount={childServices.length}
+        key={category.id}
+        service={category}
+        onPress={wrappedHandleCategoryPress}
+        childCount={childCategories.length}
         colors={{
           surface: colors.surface,
           text: colors.text,
@@ -320,17 +320,17 @@ const ServicesScreen = () => {
     );
   };
 
-  // Render a row of up to 3 service cards
-  const renderServiceRow = ({
+  // Render a row of up to 3 category cards
+  const renderCategoryRow = ({
     item: row,
     index,
   }: {
-    item: Service[];
+    item: Category[];
     index: number;
   }) => {
     return (
       <View key={`row-${index}`} style={styles.gridRow}>
-        {row.map((service) => renderServiceCard(service))}
+        {row.map((category) => renderCategoryCard(category))}
         {/* Add empty placeholders if row has less than 3 items */}
         {row.length < 3 &&
           Array.from({ length: 3 - row.length }).map((_, i) => (
@@ -363,16 +363,16 @@ const ServicesScreen = () => {
   };
 
   const renderEmptyComponent = () => {
-    if (parentServices.length === 0) {
+    if (parentCategories.length === 0) {
       return (
         <EmptyPage
           type="empty"
           icon="wrench.and.screwdriver"
-          title={t("noServices")}
+          title={t("noCategories")}
           subtitle={
             searchQuery
               ? t("tryAdjustingSearchTerms")
-              : t("noServicesAvailable")
+              : t("noCategories")
           }
         />
       );
@@ -396,7 +396,7 @@ const ServicesScreen = () => {
         >
           <ResponsiveCard padding={Spacing.md}>
             <Filter
-              searchPlaceholder={t("searchServices")}
+              searchPlaceholder={t("searchCategories")}
               onSearchChange={handleSearchChange}
               filterSections={filterSections}
               selectedFilters={selectedFilters}
@@ -416,8 +416,8 @@ const ServicesScreen = () => {
         ) : (
           <FlatList
             style={{ marginTop: 100 }}
-            data={parentServiceRows}
-            renderItem={renderServiceRow}
+            data={parentCategoryRows}
+            renderItem={renderCategoryRow}
             keyExtractor={(item, index) => `row-${index}`}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmptyComponent}

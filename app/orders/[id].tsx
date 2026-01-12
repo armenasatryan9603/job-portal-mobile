@@ -41,24 +41,24 @@ import { useApplyToOrder } from "@/hooks/useApi";
 import { ApplyButton } from "@/components/ApplyButton";
 
 // Helper function to get localized service name
-const getLocalizedServiceName = (
-  service?: {
+const getLocalizedCategoryName = (
+  category?: {
     nameEn?: string;
     nameRu?: string;
     nameHy?: string;
   },
   language: string = "en"
 ): string => {
-  if (!service) return "";
+  if (!category) return "";
 
   switch (language) {
     case "ru":
-      return service.nameRu || "";
+      return category.nameRu || "";
     case "hy":
-      return service.nameHy || "";
+      return category.nameHy || "";
     case "en":
     default:
-      return service.nameEn || "";
+      return category.nameEn || "";
   }
 };
 
@@ -1044,17 +1044,17 @@ export default function EditOrderScreen() {
             </View>
           </View>
 
-          {order?.Service && (
+          {order?.Category && (
             <View style={styles.detailItem}>
               <IconSymbol name="briefcase.fill" size={20} color={colors.tint} />
               <View style={styles.detailContent}>
                 <Text
                   style={[styles.detailLabel, { color: colors.tabIconDefault }]}
                 >
-                  {t("service")}
+                  {t("category")}
                 </Text>
                 <Text style={[styles.detailValue, { color: colors.text }]}>
-                  {getLocalizedServiceName(order.Service, language)}
+                  {getLocalizedCategoryName(order.Category, language)}
                 </Text>
               </View>
             </View>

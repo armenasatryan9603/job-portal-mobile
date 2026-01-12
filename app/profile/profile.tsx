@@ -1825,7 +1825,7 @@ export default function ProfileScreen() {
                             { color: colors.tint },
                           ]}
                         >
-                          {review.Order.Service?.name || t("service")}
+                          {review.Order.Category?.name || t("category")}
                         </Text>
                       </View>
                       <View style={styles.userReviewRating}>

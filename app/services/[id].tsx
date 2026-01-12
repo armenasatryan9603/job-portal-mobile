@@ -29,7 +29,7 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { apiService, Service } from "@/services/api";
+import { apiService, Category } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
@@ -49,11 +49,11 @@ export default function ServiceDetailScreen() {
   const rateUnits = (rateUnitsData || []) as RateUnit[];
 
   // API state management
-  const [service, setService] = useState<Service | null>(null);
+  const [category, setCategory] = useState<Category | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const serviceId = parseInt(id as string);
+  const categoryId = parseInt(id as string);
 
   // Dismiss keyboard when screen comes into focus
   useFocusEffect(
@@ -63,47 +63,47 @@ export default function ServiceDetailScreen() {
     }, [])
   );
 
-  // Chunk child services into rows of 3 for grid layout
+  // Chunk child categories into rows of 3 for grid layout
   // This must be before any conditional returns to follow Rules of Hooks
-  const childServiceRows = useMemo(() => {
-    if (!service?.Children || service.Children.length === 0) return [];
-    const rows: Service[][] = [];
-    for (let i = 0; i < service.Children.length; i += 3) {
-      rows.push(service.Children.slice(i, i + 3));
+  const childCategoryRows = useMemo(() => {
+    if (!category?.Children || category.Children.length === 0) return [];
+    const rows: Category[][] = [];
+    for (let i = 0; i < category.Children.length; i += 3) {
+      rows.push(category.Children.slice(i, i + 3));
     }
     return rows;
-  }, [service]);
+  }, [category]);
 
-  const fetchServiceDetails = useCallback(async () => {
+  const fetchCategoryDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const serviceData = await apiService.getServiceById(serviceId, language);
-      setService(serviceData);
-      // Track service view
+      const categoryData = await apiService.getCategoryById(categoryId, language);
+      setCategory(categoryData);
+      // Track category view
       AnalyticsService.getInstance().logServiceViewed(
-        serviceId.toString(),
-        serviceData.name
+        categoryId.toString(),
+        categoryData.name
       );
     } catch (err) {
-      console.error("Error fetching service details:", err);
-      setError("Failed to load service details. Please try again.");
+      console.error("Error fetching category details:", err);
+      setError("Failed to load category details. Please try again.");
       Alert.alert(
         "Error",
-        "Failed to load service details. Please check your connection and try again."
+        "Failed to load category details. Please check your connection and try again."
       );
     } finally {
       setLoading(false);
     }
-  }, [serviceId, language]);
+  }, [categoryId, language]);
 
-  // Fetch service details from API
+  // Fetch category details from API
   useEffect(() => {
-    if (serviceId) {
-      fetchServiceDetails();
+    if (categoryId) {
+      fetchCategoryDetails();
     }
-  }, [serviceId, fetchServiceDetails]);
+  }, [categoryId, fetchCategoryDetails]);
 
   // Show loading state
   if (loading) {
@@ -134,13 +134,13 @@ export default function ServiceDetailScreen() {
   }
 
   // Show error state
-  if (error || !service) {
+  if (error || !category) {
     return (
       <Layout
         header={
           <Header
             showBackButton
-            title={t("serviceNotFound")}
+            title={t("categoryNotFound")}
             onBackPress={() => router.back()}
           />
         }
@@ -157,7 +157,7 @@ export default function ServiceDetailScreen() {
           </Text>
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: colors.tint }]}
-            onPress={fetchServiceDetails}
+            onPress={fetchCategoryDetails}
           >
             <Text
               style={[styles.retryButtonText, { color: colors.background }]}
@@ -177,47 +177,47 @@ export default function ServiceDetailScreen() {
     }
     AnalyticsService.getInstance().logEvent("button_clicked", {
       button_name: "create_order",
-      location: "service_detail",
-      service_id: serviceId.toString(),
+      location: "category_detail",
+      category_id: categoryId.toString(),
     });
-    router.push(`/orders/create?serviceId=${serviceId}`);
+    router.push(`/orders/create?serviceId=${categoryId}`);
   };
 
   const handleBrowseSpecialists = () => {
     AnalyticsService.getInstance().logEvent("button_clicked", {
       button_name: "browse_specialists",
-      location: "service_detail",
-      service_id: serviceId.toString(),
+      location: "category_detail",
+      category_id: categoryId.toString(),
     });
-    router.push(`/specialists?serviceId=${serviceId}`);
+    router.push(`/specialists?categoryId=${categoryId}`);
   };
 
-  const handleSubServicePress = (subServiceId: number) => {
-    AnalyticsService.getInstance().logEvent("service_clicked", {
-      service_id: subServiceId.toString(),
-      location: "service_detail",
-      parent_service_id: serviceId.toString(),
+  const handleSubCategoryPress = (subCategoryId: number) => {
+    AnalyticsService.getInstance().logEvent("category_clicked", {
+      category_id: subCategoryId.toString(),
+      location: "category_detail",
+      parent_category_id: categoryId.toString(),
     });
-    router.push(`/services/${subServiceId}`);
+    router.push(`/services/${subCategoryId}`);
   };
 
   const handleBrowseOrders = () => {
     AnalyticsService.getInstance().logEvent("button_clicked", {
       button_name: "browse_orders",
-      location: "service_detail",
-      service_id: serviceId.toString(),
+      location: "category_detail",
+      category_id: categoryId.toString(),
     });
-    router.push(`/orders?serviceId=${serviceId}`);
+    router.push(`/orders?categoryId=${categoryId}`);
   };
 
-  // Render a service card for grid view (reusable for both parent and child services)
-  const renderServiceCard = (service: Service) => {
-    const childCount = service.Children?.length || 0;
+  // Render a category card for grid view (reusable for both parent and child categories)
+  const renderCategoryCard = (category: Category) => {
+    const childCount = category.Children?.length || 0;
     return (
       <ServiceCard
-        key={service.id}
-        service={service}
-        onPress={handleSubServicePress}
+        key={category.id}
+        service={category}
+        onPress={handleSubCategoryPress}
         childCount={childCount}
         colors={{
           surface: colors.surface,
@@ -228,17 +228,17 @@ export default function ServiceDetailScreen() {
     );
   };
 
-  // Render a row of up to 3 service cards
-  const renderServiceRow = ({
+  // Render a row of up to 3 category cards
+  const renderCategoryRow = ({
     item: row,
     index,
   }: {
-    item: Service[];
+    item: Category[];
     index: number;
   }) => {
     return (
       <View key={`row-${index}`} style={styles.gridRow}>
-        {row.map((childService) => renderServiceCard(childService))}
+        {row.map((childCategory) => renderCategoryCard(childCategory))}
         {/* Add empty placeholders if row has less than 3 items */}
         {row.length < 3 &&
           Array.from({ length: 3 - row.length }).map((_, i) => (
@@ -253,8 +253,8 @@ export default function ServiceDetailScreen() {
 
   const header = (
     <Header
-      title={service.name}
-      subtitle={t("serviceDetails")}
+      title={category.name}
+      subtitle={t("categoryDetails")}
       showBackButton={true}
       onBackPress={() => router.back()}
       showNotificationsButton={isAuthenticated}
@@ -273,18 +273,18 @@ export default function ServiceDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>
-          {/* Service Overview */}
+          {/* Category Overview */}
           <ResponsiveCard padding={0}>
-            {service.imageUrl && (
+            {category.imageUrl && (
               <Image
-                source={{ uri: service.imageUrl }}
+                source={{ uri: category.imageUrl }}
                 style={styles.serviceImage}
                 resizeMode="contain"
               />
             )}
             <View style={{ padding: Spacing.lg }}>
               <Text style={[styles.serviceName, { color: colors.text }]}>
-                {service.name}
+                {category.name}
               </Text>
               <Text
                 style={[
@@ -292,7 +292,7 @@ export default function ServiceDetailScreen() {
                   { color: colors.tabIconDefault },
                 ]}
               >
-                {service.description}
+                {category.description}
               </Text>
 
               <View style={styles.statItem}>
@@ -307,7 +307,7 @@ export default function ServiceDetailScreen() {
                     { color: colors.tabIconDefault, marginLeft: 6 },
                   ]}
                 >
-                  {service.specialistCount} {t("specialists")}
+                  {category.specialistCount} {t("specialists")}
                 </Text>
               </View>
               <View style={styles.statItem}>
@@ -323,10 +323,10 @@ export default function ServiceDetailScreen() {
                   ]}
                 >
                   {formatPriceRangeDisplay(
-                    service.minPrice,
-                    service.maxPrice,
-                    service.currency,
-                    service.rateUnit,
+                    category.minPrice,
+                    category.maxPrice,
+                    category.currency,
+                    category.rateUnit,
                     rateUnits,
                     language
                   )}
@@ -344,7 +344,7 @@ export default function ServiceDetailScreen() {
                     { color: colors.tabIconDefault, marginLeft: 6 },
                   ]}
                 >
-                  {service.completionRate}% {t("successRate")}
+                  {category.completionRate}% {t("successRate")}
                 </Text>
               </View>
             </View>
@@ -355,7 +355,7 @@ export default function ServiceDetailScreen() {
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("whatsIncluded")}
             </Text>
-            {service.features.map((feature, index) => (
+            {category.features.map((feature, index) => (
               <View key={index} style={styles.featureItem}>
                 <IconSymbol
                   name="checkmark.circle.fill"
@@ -378,7 +378,7 @@ export default function ServiceDetailScreen() {
               {t("technologiesUsed")}
             </Text>
             <View style={styles.technologiesContainer}>
-              {service.technologies.map((tech, index) => (
+              {category.technologies.map((tech, index) => (
                 <View
                   key={index}
                   style={[
@@ -399,12 +399,12 @@ export default function ServiceDetailScreen() {
             </View>
           </ResponsiveCard>
 
-          {/* Sub-services in 3-column grid */}
-          {service.Children && service.Children.length > 0 && (
+          {/* Sub-categories in 3-column grid */}
+          {category.Children && category.Children.length > 0 && (
             <View style={styles.gridContainer}>
-              {childServiceRows.map((row, index) => (
+              {childCategoryRows.map((row, index) => (
                 <View key={`row-${index}`}>
-                  {renderServiceRow({ item: row, index })}
+                  {renderCategoryRow({ item: row, index })}
                 </View>
               ))}
             </View>

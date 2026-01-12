@@ -129,7 +129,7 @@ const OrderItem = ({
     }
   };
 
-  const displayServiceName = getLocalizedServiceName(order.Service);
+  const displayServiceName = getLocalizedServiceName(order.Category);
 
   // Parse location to extract coordinates if available
   const parseLocationCoordinates = (
@@ -292,7 +292,7 @@ const OrderItem = ({
         )}
         {/* Banner Image */}
         <View style={styles.bannerImageContainer}>
-          {order.Service && displayServiceName && (
+          {order.Category && displayServiceName && (
             <Text style={[styles.serviceName]}>{displayServiceName}</Text>
           )}
           {imageLoading && (

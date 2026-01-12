@@ -45,7 +45,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
     <>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("skillsAndServices")}
+          {t("skillsAndCategories")}
         </Text>
         {!userId && (
           <Button

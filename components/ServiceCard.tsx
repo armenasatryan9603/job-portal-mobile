@@ -1,12 +1,12 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Service } from "@/services/api";
+import { Category } from "@/services/api";
 import { Spacing } from "@/constants/styles";
 
 interface ServiceCardProps {
-  service: Service;
-  onPress: (serviceId: number) => void;
+  service: Category;
+  onPress: (categoryId: number) => void;
   childCount?: number;
   colors: {
     surface: string;

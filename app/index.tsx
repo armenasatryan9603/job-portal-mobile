@@ -74,7 +74,7 @@ export default function WelcomeScreen() {
 
   const quickActions = [
     {
-      title: t("browseServices"),
+      title: t("browseCategories"),
       description: t("findSpecialists"),
       icon: "briefcase.fill",
       route: "/services",
@@ -215,7 +215,7 @@ export default function WelcomeScreen() {
                     color={colors.primary}
                   />
                   <ThemedText style={styles.primaryButtonText}>
-                    {user ? t("browseServices") : t("getStarted")}
+                    {user ? t("browseCategories") : t("getStarted")}
                   </ThemedText>
                 </TouchableOpacity>
 

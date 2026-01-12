@@ -4,7 +4,7 @@ import { getApiBaseUrl } from "@/config/api";
 const API_BASE_URL = getApiBaseUrl();
 
 // Types based on your backend response structure
-export interface Service {
+export interface Category {
   id: number;
   name: string;
   description?: string;
@@ -27,8 +27,8 @@ export interface Service {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  Parent?: Service;
-  Children?: Service[];
+  Parent?: Category;
+  Children?: Category[];
   specialistCount: number;
   recentOrders: number;
   _count?: {
@@ -82,8 +82,8 @@ export interface Skill {
   updatedAt?: string;
 }
 
-export interface ServiceListResponse {
-  services: Service[];
+export interface CategoryListResponse {
+  categories: Category[];
   pagination: {
     page: number;
     limit: number;
@@ -102,14 +102,14 @@ export interface PlatformStats {
   supportAvailability: string;
 }
 
-export interface UserService {
+export interface UserCategory {
   id: number;
   userId: number;
-  serviceId: number;
+  categoryId: number;
   notificationsEnabled: boolean;
   createdAt: string;
   updatedAt: string;
-  Service: Service;
+  Category: Category;
 }
 
 // Specialist Profile Types
@@ -128,7 +128,7 @@ export interface User {
 export interface SpecialistProfile {
   id: number;
   userId: number;
-  serviceId?: number;
+  categoryId?: number;
   experienceYears?: number;
   priceMin?: number;
   priceMax?: number;
@@ -140,7 +140,7 @@ export interface SpecialistProfile {
     averageRating?: number;
     reviews?: Review[];
   };
-  Service?: Service;
+  Category?: Category;
   _count?: {
     Proposals: number;
   };
@@ -223,14 +223,14 @@ export interface ReviewUser {
 export interface ReviewOrder {
   id: number;
   clientId: number;
-  serviceId?: number;
+  categoryId?: number;
   title?: string;
   description?: string;
   budget?: number;
   status: string;
   createdAt: string;
   Client: ReviewUser;
-  Service?: Service;
+  Category?: Category;
 }
 
 export interface Review {
@@ -306,7 +306,7 @@ export interface Order {
   rejectionReason?: string | null;
   id: number;
   clientId: number;
-  serviceId?: number;
+  categoryId?: number;
   title: string;
   description: string;
   titleEn?: string;
@@ -332,7 +332,7 @@ export interface Order {
     fileType: string;
   };
   Client: OrderClient;
-  Service?: Service;
+  Category?: Category;
   Proposals?: any[];
   Reviews?: any[];
   MediaFiles?: MediaFile[];
@@ -585,21 +585,21 @@ class ApiService {
     }
   }
 
-  // Services API methods
-  async getRootServices(language: string = "en"): Promise<Service[]> {
-    return this.request<Service[]>(
-      `/services/root?language=${language}`,
+  // Categories API methods
+  async getRootCategories(language: string = "en"): Promise<Category[]> {
+    return this.request<Category[]>(
+      `/categories/root?language=${language}`,
       {},
       false
-    ); // No auth required for public services
+    ); // No auth required for public categories
   }
 
-  async getAllServices(
+  async getAllCategories(
     page: number = 1,
     limit: number = 10,
     parentId?: number,
     language: string = "en"
-  ): Promise<ServiceListResponse> {
+  ): Promise<CategoryListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -610,34 +610,34 @@ class ApiService {
       params.append("parentId", parentId.toString());
     }
 
-    return this.request<ServiceListResponse>(`/services?${params}`, {}, false); // No auth required
+    return this.request<CategoryListResponse>(`/categories?${params}`, {}, false); // No auth required
   }
 
-  async getServiceById(id: number, language: string = "en"): Promise<Service> {
-    return this.request<Service>(
-      `/services/${id}?language=${language}`,
+  async getCategoryById(id: number, language: string = "en"): Promise<Category> {
+    return this.request<Category>(
+      `/categories/${id}?language=${language}`,
       {},
       false
     ); // No auth required
   }
 
-  async getChildServices(
+  async getChildCategories(
     parentId: number,
     language: string = "en"
-  ): Promise<Service[]> {
-    return this.request<Service[]>(
-      `/services/parent/${parentId}?language=${language}`,
+  ): Promise<Category[]> {
+    return this.request<Category[]>(
+      `/categories/parent/${parentId}?language=${language}`,
       {},
       false
     ); // No auth required
   }
 
-  async searchServices(
+  async searchCategories(
     query: string,
     page: number = 1,
     limit: number = 10,
     language: string = "en"
-  ): Promise<ServiceListResponse> {
+  ): Promise<CategoryListResponse> {
     const params = new URLSearchParams({
       q: query,
       page: page.toString(),
@@ -645,7 +645,7 @@ class ApiService {
       language: language,
     });
 
-    return this.request<ServiceListResponse>(`/services/search?${params}`);
+    return this.request<CategoryListResponse>(`/categories/search?${params}`);
   }
 
   // Specialist Profiles API methods
@@ -743,7 +743,7 @@ class ApiService {
   async updateSpecialistProfile(
     id: number,
     data: {
-      serviceId?: number;
+      categoryId?: number;
       experienceYears?: number;
       priceMin?: number;
       priceMax?: number;
@@ -947,8 +947,8 @@ class ApiService {
     page: number = 1,
     limit: number = 10,
     status?: string,
-    serviceId?: number,
-    serviceIds?: number[],
+    categoryId?: number,
+    categoryIds?: number[],
     clientId?: number
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
@@ -957,10 +957,10 @@ class ApiService {
     });
 
     if (status) params.append("status", status);
-    if (serviceIds && serviceIds.length > 0) {
-      params.append("serviceIds", serviceIds.join(","));
-    } else if (serviceId) {
-      params.append("serviceId", serviceId.toString());
+    if (categoryIds && categoryIds.length > 0) {
+      params.append("categoryIds", categoryIds.join(","));
+    } else if (categoryId) {
+      params.append("categoryId", categoryId.toString());
     }
     if (clientId) params.append("clientId", clientId.toString());
 
@@ -973,7 +973,7 @@ class ApiService {
     budget: number;
     currency?: string;
     rateUnit?: string;
-    serviceId: number;
+    categoryId: number;
     location?: string;
     skills?: string[];
     skillIds?: number[];
@@ -1108,7 +1108,7 @@ class ApiService {
   async getAvailableOrders(
     page: number = 1,
     limit: number = 10,
-    serviceId?: number,
+    categoryId?: number,
     location?: string,
     budgetMin?: number,
     budgetMax?: number
@@ -1118,7 +1118,7 @@ class ApiService {
       limit: limit.toString(),
     });
 
-    if (serviceId) params.append("serviceId", serviceId.toString());
+    if (categoryId) params.append("categoryId", categoryId.toString());
     if (location) params.append("location", location);
     if (budgetMin !== undefined)
       params.append("budgetMin", budgetMin.toString());
@@ -1137,8 +1137,8 @@ class ApiService {
     page: number = 1,
     limit: number = 10,
     status?: string,
-    serviceId?: number,
-    serviceIds?: number[],
+    categoryId?: number,
+    categoryIds?: number[],
     clientId?: number
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
@@ -1147,10 +1147,10 @@ class ApiService {
     });
 
     if (status) params.append("status", status);
-    if (serviceIds && serviceIds.length > 0) {
-      params.append("serviceIds", serviceIds.join(","));
-    } else if (serviceId) {
-      params.append("serviceId", serviceId.toString());
+    if (categoryIds && categoryIds.length > 0) {
+      params.append("categoryIds", categoryIds.join(","));
+    } else if (categoryId) {
+      params.append("categoryId", categoryId.toString());
     }
     if (clientId) params.append("clientId", clientId.toString());
 
@@ -1161,7 +1161,7 @@ class ApiService {
     query: string,
     page: number = 1,
     limit: number = 10,
-    serviceIds?: number[]
+    categoryIds?: number[]
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       q: query,
@@ -1169,8 +1169,8 @@ class ApiService {
       limit: limit.toString(),
     });
 
-    if (serviceIds && serviceIds.length > 0) {
-      params.append("serviceIds", serviceIds.join(","));
+    if (categoryIds && categoryIds.length > 0) {
+      params.append("categoryIds", categoryIds.join(","));
     }
 
     return this.request<OrderListResponse>(`/orders/search?${params}`);
@@ -1204,28 +1204,28 @@ class ApiService {
     );
   }
 
-  // User Services API methods
-  async getUserServices(
+  // User Categories API methods
+  async getUserCategories(
     userId: number
-  ): Promise<{ userServices: UserService[] }> {
-    return this.request<{ userServices: UserService[] }>(
-      `/users/${userId}/services`,
+  ): Promise<{ userCategories: UserCategory[] }> {
+    return this.request<{ userCategories: UserCategory[] }>(
+      `/users/${userId}/categories`,
       {},
       true
     );
   }
 
-  async addUserService(
+  async addUserCategory(
     userId: number,
-    serviceId: number,
+    categoryId: number,
     notificationsEnabled: boolean = true
-  ): Promise<UserService> {
-    return this.request<UserService>(
-      `/users/${userId}/services`,
+  ): Promise<UserCategory> {
+    return this.request<UserCategory>(
+      `/users/${userId}/categories`,
       {
         method: "POST",
         body: JSON.stringify({
-          serviceId,
+          categoryId,
           notificationsEnabled,
         }),
       },
@@ -1233,12 +1233,12 @@ class ApiService {
     );
   }
 
-  async removeUserService(
+  async removeUserCategory(
     userId: number,
-    serviceId: number
+    categoryId: number
   ): Promise<{ message: string }> {
     return this.request<{ message: string }>(
-      `/users/${userId}/services/${serviceId}`,
+      `/users/${userId}/categories/${categoryId}`,
       {
         method: "DELETE",
       },
@@ -1246,13 +1246,13 @@ class ApiService {
     );
   }
 
-  async updateUserServiceNotifications(
+  async updateUserCategoryNotifications(
     userId: number,
-    serviceId: number,
+    categoryId: number,
     notificationsEnabled: boolean
-  ): Promise<UserService> {
-    return this.request<UserService>(
-      `/users/${userId}/services/${serviceId}/notifications`,
+  ): Promise<UserCategory> {
+    return this.request<UserCategory>(
+      `/users/${userId}/categories/${categoryId}/notifications`,
       {
         method: "PATCH",
         body: JSON.stringify({

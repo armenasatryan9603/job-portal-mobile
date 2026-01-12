@@ -81,7 +81,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
           />
           <TextInput
             style={[styles.searchInput, { color: colors.text }]}
-            placeholder={t("searchServices")}
+            placeholder={t("searchCategories")}
             placeholderTextColor={colors.textSecondary}
             value={searchQuery}
             onChangeText={onSearchChange}
