@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Order, apiService } from "@/services/api";
+import { Order } from "@/services/api";
 import { API_CONFIG } from "@/config/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
+import { useMySubscription } from "@/hooks/useApi";
 
 interface ApplyButtonProps {
   order: Order;
@@ -80,6 +81,13 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { data: subscription } = useMySubscription();
+
+  // Check if user has active subscription
+  const hasActiveSubscription =
+    subscription &&
+    subscription.status === "active" &&
+    new Date(subscription.endDate) > new Date();
 
   // Determine text color based on variant
   const getTextColor = () => {
@@ -198,7 +206,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
 
   return (
     <Button
-      style={style}
+      style={{ ...style, ...styles.container }}
       onPress={() => onApply(order)}
       icon="paperplane.fill"
       variant={variant}
@@ -210,7 +218,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
         >
           {t("apply") || "Apply"}
         </Text>
-        {baseBudgetLabel && (
+        {!hasActiveSubscription && baseBudgetLabel && (
           <View style={styles.applyButtonPriceContainer}>
             <Text
               style={[styles.applyButtonPrice, { color: textColor }]}
@@ -237,6 +245,10 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
 };
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: "flex-end",
+    gap: 10,
+  },
   applyButtonContent: {
     alignItems: "center",
     justifyContent: "center",
