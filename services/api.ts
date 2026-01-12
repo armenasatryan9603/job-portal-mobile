@@ -184,6 +184,8 @@ export interface UserProfile {
   priceMin?: number;
   priceMax?: number;
   location?: string;
+  currency?: string;
+  rateUnit?: string;
 }
 
 export interface UpdateUserProfileData {
@@ -465,9 +467,11 @@ class ApiService {
 
         // Try to parse JSON error response
         let errorMessage = errorText;
+        let errorData: any = null;
         try {
           const errorJson = JSON.parse(errorText);
           errorMessage = errorJson.message || errorJson.error || errorText;
+          errorData = errorJson; // Preserve full error object
         } catch (e) {
           // Not JSON, use text as is
         }
@@ -475,6 +479,10 @@ class ApiService {
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         (error as any).originalMessage = errorText;
+        (error as any).response = {
+          data: errorData || { message: errorMessage },
+          status: response.status,
+        };
         throw error;
       }
 
@@ -610,10 +618,17 @@ class ApiService {
       params.append("parentId", parentId.toString());
     }
 
-    return this.request<CategoryListResponse>(`/categories?${params}`, {}, false); // No auth required
+    return this.request<CategoryListResponse>(
+      `/categories?${params}`,
+      {},
+      false
+    ); // No auth required
   }
 
-  async getCategoryById(id: number, language: string = "en"): Promise<Category> {
+  async getCategoryById(
+    id: number,
+    language: string = "en"
+  ): Promise<Category> {
     return this.request<Category>(
       `/categories/${id}?language=${language}`,
       {},
@@ -1606,13 +1621,23 @@ class ApiService {
   }
 
   // Credit Refill API
-  async initiateCreditRefill(amount: number): Promise<{
+  async initiateCreditRefill(
+    amount: number,
+    currency?: string
+  ): Promise<{
     orderId: string;
     paymentUrl: string | null;
     paymentHtml?: string | null;
     paymentData: any;
+    conversionInfo?: {
+      currency: string;
+      originalAmount: number;
+      convertedAmount: number;
+      exchangeRate: number;
+      baseCurrency: string;
+    };
   }> {
-    return this.post("/credit/refill/initiate", { amount }, true);
+    return this.post("/credit/refill/initiate", { amount, currency }, true);
   }
 
   // Credit Transactions API

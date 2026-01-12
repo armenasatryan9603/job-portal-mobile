@@ -17,6 +17,7 @@ import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { API_CONFIG } from "@/config/api";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -29,9 +30,8 @@ import {
   View,
   ActivityIndicator,
   Animated,
+  Modal,
 } from "react-native";
-
-const PRESET_AMOUNTS = [10, 25, 50, 100, 200, 500];
 
 export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
@@ -43,11 +43,24 @@ export default function RefillCreditsScreen() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [currentBalance, setCurrentBalance] = useState<number>(0);
+  const [baseBalance, setBaseBalance] = useState<number>(0); // Balance in USD (base currency)
+  const [convertedBalance, setConvertedBalance] = useState<number>(0); // Balance in selected currency (for display)
+  const [currency, setCurrency] = useState<string>("USD");
+  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const [isLoadingRate, setIsLoadingRate] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [pendingAmount, setPendingAmount] = useState<number>(0);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const currencyOptions = ["USD", "EUR", "AMD", "RUB"];
+  const [conversionInfo, setConversionInfo] = useState<{
+    currency: string;
+    originalAmount: number;
+    convertedAmount: number;
+    exchangeRate: number;
+    baseCurrency: string;
+  } | null>(null);
 
   const header = (
     <Header
@@ -75,11 +88,90 @@ export default function RefillCreditsScreen() {
   const fetchCurrentBalance = async () => {
     try {
       const profile = await apiService.getUserProfile();
-      setCurrentBalance(profile.creditBalance || 0);
+      const balanceInUSD = profile.creditBalance || 0;
+      setBaseBalance(balanceInUSD);
+      setCurrency(profile.currency || "USD");
+      // Initial conversion will happen in useEffect when currency is set
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
   };
+
+  // Helper function to fetch exchange rate (similar to ApplyButton.tsx)
+  const fetchConversionRate = async (
+    from: string,
+    to: string
+  ): Promise<number | null> => {
+    const fetchWithTimeout = async (url: string, timeout: number = 5000) => {
+      return Promise.race([
+        fetch(url),
+        new Promise<Response>((_, reject) =>
+          setTimeout(() => reject(new Error("Request timeout")), timeout)
+        ) as Promise<Response>,
+      ]);
+    };
+
+    const frankfurterBase =
+      API_CONFIG.FRANKFURTER_API_URL || "https://api.frankfurter.app";
+    const attempts = [
+      `${frankfurterBase}/latest?from=${from}&to=${to}`,
+      `https://api.exchangerate-api.com/v4/latest/${from}`,
+      `https://api.exchangerate.host/latest?base=${from}&symbols=${to}`,
+    ];
+
+    for (const url of attempts) {
+      try {
+        const response = await fetchWithTimeout(url);
+        if (response.ok) {
+          const data = await response.json();
+          const rate =
+            data?.rates?.[to] ?? data?.conversion_rates?.[to] ?? null;
+          if (typeof rate === "number") {
+            return rate;
+          }
+        }
+      } catch {
+        // Try next provider
+      }
+    }
+
+    return null;
+  };
+
+  // Convert balance when currency changes
+  useEffect(() => {
+    const convertBalance = async () => {
+      if (baseBalance === 0) return; // Wait for balance to load
+
+      // If currency is USD, no conversion needed
+      if (currency === "USD") {
+        setConvertedBalance(baseBalance);
+        setExchangeRate(1);
+        return;
+      }
+
+      setIsLoadingRate(true);
+      try {
+        const rate = await fetchConversionRate("USD", currency);
+        if (rate) {
+          setExchangeRate(rate);
+          setConvertedBalance(Math.round(baseBalance * rate * 100) / 100);
+        } else {
+          // Fallback: show USD if conversion fails
+          setConvertedBalance(baseBalance);
+          setExchangeRate(1);
+        }
+      } catch (error) {
+        console.error("Error converting balance:", error);
+        setConvertedBalance(baseBalance);
+        setExchangeRate(1);
+      } finally {
+        setIsLoadingRate(false);
+      }
+    };
+
+    convertBalance();
+  }, [currency, baseBalance]);
 
   const handleAmountSelect = (amount: number) => {
     setSelectedAmount(amount);
@@ -127,7 +219,7 @@ export default function RefillCreditsScreen() {
     setLoading(true);
 
     try {
-      const result = await apiService.initiateCreditRefill(amount);
+      const result = await apiService.initiateCreditRefill(amount, currency);
 
       // Log full response for debugging
       console.log("🔍 Full payment response:", JSON.stringify(result, null, 2));
@@ -173,12 +265,13 @@ export default function RefillCreditsScreen() {
       AnalyticsService.getInstance().logPaymentInitiated(
         result.orderId || `refill_${Date.now()}`,
         amount,
-        "USD"
+        currency
       );
 
       // Store payment details and show WebView
       setPaymentUrl(url || null);
       setPendingAmount(amount);
+      setConversionInfo(result.conversionInfo || null);
       setShowPaymentWebView(true);
     } catch (error: any) {
       console.error("Error initiating credit refill:", error);
@@ -193,30 +286,36 @@ export default function RefillCreditsScreen() {
     AnalyticsService.getInstance().logPaymentCompleted(
       `refill_${Date.now()}`,
       pendingAmount,
-      "USD"
+      currency
     );
 
     // Refresh balance after successful payment
     await fetchCurrentBalance();
 
-    Alert.alert(
-      t("paymentSuccess"),
-      `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(2)} ${t(
-        "credits"
-      )}.`,
-      [
-        {
-          text: t("ok"),
-          onPress: () => {
-            setShowPaymentWebView(false);
-            setPaymentUrl(null);
-            setPendingAmount(0);
-            // Optionally go back to previous screen
-            // router.back();
-          },
+    // Build success message with conversion info if available
+    let successMessage = `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(
+      2
+    )} ${currency}`;
+    if (conversionInfo) {
+      successMessage += ` (${conversionInfo.convertedAmount.toFixed(2)} ${
+        conversionInfo.baseCurrency
+      } credits)`;
+    }
+    successMessage += ".";
+
+    Alert.alert(t("paymentSuccess"), successMessage, [
+      {
+        text: t("ok"),
+        onPress: () => {
+          setShowPaymentWebView(false);
+          setPaymentUrl(null);
+          setPendingAmount(0);
+          setConversionInfo(null);
+          // Optionally go back to previous screen
+          // router.back();
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handlePaymentFailure = (error: string) => {
@@ -227,6 +326,7 @@ export default function RefillCreditsScreen() {
           setShowPaymentWebView(false);
           setPaymentUrl(null);
           setPendingAmount(0);
+          setConversionInfo(null);
         },
       },
     ]);
@@ -236,6 +336,7 @@ export default function RefillCreditsScreen() {
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingAmount(0);
+    setConversionInfo(null);
   };
 
   const finalAmount = getFinalAmount();
@@ -289,7 +390,7 @@ export default function RefillCreditsScreen() {
                     >
                       <IconSymbol
                         name="creditcard.fill"
-                        size={28}
+                        size={20}
                         color={colors.tint}
                       />
                     </View>
@@ -305,7 +406,11 @@ export default function RefillCreditsScreen() {
                       <Text
                         style={[styles.balanceAmount, { color: colors.tint }]}
                       >
-                        {currentBalance.toFixed(2)}
+                        {isLoadingRate ? (
+                          <ActivityIndicator size="small" color={colors.tint} />
+                        ) : (
+                          `${convertedBalance.toFixed(2)} ${currency}`
+                        )}
                       </Text>
                       <Text
                         style={[
@@ -323,93 +428,22 @@ export default function RefillCreditsScreen() {
 
             {/* Amount Selection Section */}
             <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <IconSymbol
-                  name="dollarsign.circle.fill"
-                  size={20}
-                  color={colors.tint}
-                />
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("selectAmount")}
-                </Text>
-              </View>
+              {/* Currency Selector */}
+              <View
+                style={{
+                  marginBottom: 16,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              ></View>
 
               {/* Preset Amounts Grid */}
-              <View style={styles.presetAmountsContainer}>
-                <View style={styles.presetAmounts}>
-                  {PRESET_AMOUNTS.map((amount) => {
-                    const isSelected = selectedAmount === amount;
-                    return (
-                      <TouchableOpacity
-                        key={amount}
-                        style={[
-                          styles.amountButton,
-                          {
-                            backgroundColor: isSelected
-                              ? colors.tint
-                              : colors.background,
-                            borderColor: isSelected
-                              ? colors.tint
-                              : colors.border,
-                          },
-                          isSelected && styles.amountButtonSelected,
-                        ]}
-                        onPress={() => handleAmountSelect(amount)}
-                        activeOpacity={0.7}
-                      >
-                        {isSelected && (
-                          <View style={styles.checkmarkContainer}>
-                            <IconSymbol
-                              name="checkmark.circle.fill"
-                              size={18}
-                              color="black"
-                            />
-                          </View>
-                        )}
-                        <Text
-                          style={[
-                            styles.amountButtonText,
-                            {
-                              color: isSelected ? "black" : colors.text,
-                              fontWeight: isSelected ? "700" : "600",
-                            },
-                          ]}
-                        >
-                          {amount}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
 
               {/* Divider - Only show between preset and custom */}
-              <View style={styles.dividerWrapper}>
-                <View style={styles.dividerContainer}>
-                  <View
-                    style={[styles.divider, { backgroundColor: colors.border }]}
-                  />
-                  <Text
-                    style={[
-                      styles.dividerText,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {t("or")}
-                  </Text>
-                  <View
-                    style={[styles.divider, { backgroundColor: colors.border }]}
-                  />
-                </View>
-              </View>
 
               {/* Custom Amount Input */}
               <View style={styles.customAmountSection}>
-                <Text
-                  style={[styles.customAmountLabel, { color: colors.text }]}
-                >
-                  {t("orEnterCustomAmount")}
-                </Text>
                 <View
                   style={[
                     styles.customAmountInputContainer,
@@ -421,7 +455,7 @@ export default function RefillCreditsScreen() {
                 >
                   <IconSymbol
                     name="pencil.circle.fill"
-                    size={20}
+                    size={16}
                     color={colors.tabIconDefault}
                   />
                   <TextInput
@@ -433,7 +467,26 @@ export default function RefillCreditsScreen() {
                     keyboardType="decimal-pad"
                   />
                   <Text style={[styles.currencyLabel, { color: colors.text }]}>
-                    {t("credits")}
+                    {/* {currency} */}
+                    <TouchableOpacity
+                      style={[styles.currencySelectorButton]}
+                      onPress={() => setShowCurrencyModal(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.currencySelectorText,
+                          { color: colors.text },
+                        ]}
+                      >
+                        {currency}
+                      </Text>
+                      <IconSymbol
+                        name="chevron.down"
+                        size={14}
+                        color={colors.tabIconDefault}
+                      />
+                    </TouchableOpacity>
                   </Text>
                 </View>
               </View>
@@ -453,7 +506,7 @@ export default function RefillCreditsScreen() {
                 <View style={styles.summaryHeader}>
                   <IconSymbol
                     name="info.circle.fill"
-                    size={20}
+                    size={16}
                     color={colors.tint}
                   />
                   <Text style={[styles.summaryTitle, { color: colors.text }]}>
@@ -465,7 +518,7 @@ export default function RefillCreditsScreen() {
                   <View style={styles.summaryRowLeft}>
                     <IconSymbol
                       name="dollarsign.circle"
-                      size={18}
+                      size={14}
                       color={colors.tabIconDefault}
                     />
                     <Text style={[styles.summaryLabel, { color: colors.text }]}>
@@ -473,14 +526,14 @@ export default function RefillCreditsScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.summaryValue, { color: colors.text }]}>
-                    {finalAmount.toFixed(2)} {t("credits")}
+                    {finalAmount.toFixed(2)} {currency}
                   </Text>
                 </View>
                 <View style={styles.summaryRow}>
                   <View style={styles.summaryRowLeft}>
                     <IconSymbol
                       name="creditcard.fill"
-                      size={18}
+                      size={14}
                       color={colors.tabIconDefault}
                     />
                     <Text style={[styles.summaryLabel, { color: colors.text }]}>
@@ -493,7 +546,14 @@ export default function RefillCreditsScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    {currentBalance.toFixed(2)} {t("credits")}
+                    {isLoadingRate ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={colors.tabIconDefault}
+                      />
+                    ) : (
+                      `${convertedBalance.toFixed(2)} ${currency}`
+                    )}
                   </Text>
                 </View>
                 <View style={styles.summaryDivider} />
@@ -501,7 +561,7 @@ export default function RefillCreditsScreen() {
                   <View style={styles.summaryRowLeft}>
                     <IconSymbol
                       name="plus.circle.fill"
-                      size={18}
+                      size={14}
                       color={colors.tint}
                     />
                     <Text style={[styles.summaryLabel, { color: colors.text }]}>
@@ -511,7 +571,13 @@ export default function RefillCreditsScreen() {
                   <Text
                     style={[styles.summaryValueNew, { color: colors.tint }]}
                   >
-                    {(currentBalance + finalAmount).toFixed(2)} {t("credits")}
+                    {isLoadingRate ? (
+                      <ActivityIndicator size="small" color={colors.tint} />
+                    ) : (
+                      `${(convertedBalance + finalAmount).toFixed(
+                        2
+                      )} ${currency}`
+                    )}
                   </Text>
                 </View>
               </Animated.View>
@@ -542,7 +608,7 @@ export default function RefillCreditsScreen() {
                 <ActivityIndicator color="black" size="small" />
               ) : (
                 <>
-                  <IconSymbol name="creditcard.fill" size={22} color="black" />
+                  <IconSymbol name="creditcard.fill" size={18} color="black" />
                   <Text style={styles.refillButtonText}>
                     {t("refillCredits")}
                   </Text>
@@ -576,7 +642,7 @@ export default function RefillCreditsScreen() {
                 >
                   <IconSymbol
                     name="info.circle.fill"
-                    size={18}
+                    size={14}
                     color={colors.tint}
                   />
                 </View>
@@ -600,6 +666,56 @@ export default function RefillCreditsScreen() {
         onSuccess={handlePaymentSuccess}
         onFailure={handlePaymentFailure}
       />
+
+      {/* Currency Selection Modal */}
+      <Modal
+        visible={showCurrencyModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCurrencyModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.selectorModalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {t("selectCurrency")}
+              </Text>
+              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
+                <IconSymbol name="xmark" size={18} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            {currencyOptions.map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={[
+                  styles.modalOption,
+                  {
+                    backgroundColor:
+                      currency === option ? colors.tint + "10" : "transparent",
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  setCurrency(option);
+                  setShowCurrencyModal(false);
+                }}
+              >
+                <Text style={[styles.modalOptionText, { color: colors.text }]}>
+                  {option}
+                </Text>
+                {currency === option && (
+                  <IconSymbol name="checkmark" size={14} color={colors.tint} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </Layout>
   );
 }
@@ -607,7 +723,7 @@ export default function RefillCreditsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: 2 * Spacing.xxxl,
+    marginBottom: Spacing.xl,
   },
   animatedContainer: {
     flex: 1,
@@ -616,20 +732,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xl * 2,
+    padding: Spacing.md,
+    paddingBottom: Spacing.xl,
   },
   // Balance Card
   balanceCard: {
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.md,
     overflow: "hidden",
     ...Shadows.md,
   },
   balanceGradient: {
-    padding: Spacing.xl,
-    borderRadius: BorderRadius.xl,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
   },
   balanceContent: {
     width: "100%",
@@ -637,12 +753,12 @@ const styles = StyleSheet.create({
   balanceHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   balanceIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: BorderRadius.lg,
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -650,170 +766,94 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   balanceLabel: {
-    fontSize: Typography.sm,
+    fontSize: Typography.xs,
     fontWeight: "500",
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   balanceAmount: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: "800",
-    lineHeight: 42,
-    marginBottom: Spacing.xs,
+    lineHeight: 28,
+    marginBottom: 2,
   },
   balanceCurrency: {
-    fontSize: Typography.lg,
+    fontSize: Typography.sm,
     fontWeight: "500",
   },
   // Section
   section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: Typography.xxl,
-    fontWeight: Typography.bold,
-  },
-  // Preset Amounts Container
-  presetAmountsContainer: {
-    width: "100%",
-    marginBottom: 0,
-  },
-  // Preset Amounts
-  presetAmounts: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-    width: "100%",
-  },
-  amountButton: {
-    flex: 1,
-    minWidth: "30%",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 64,
-    position: "relative",
-  },
-  amountButtonSelected: {
-    ...Shadows.sm,
-    transform: [{ scale: 1.02 }],
-  },
-  checkmarkContainer: {
-    position: "absolute",
-    top: Spacing.xs,
-    right: Spacing.xs,
-  },
-  amountButtonText: {
-    fontSize: Typography.xxxl,
-    fontWeight: "600",
-  },
-  // Divider
-  dividerWrapper: {
-    width: "100%",
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.lg,
-    paddingHorizontal: 0,
-  },
-  dividerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    gap: Spacing.sm,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    maxHeight: 1,
-  },
-  dividerText: {
-    fontSize: Typography.sm,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    paddingHorizontal: Spacing.sm,
-    flexShrink: 0,
+    marginBottom: Spacing.md,
   },
   // Custom Amount
   customAmountSection: {
-    marginTop: Spacing.md,
-  },
-  customAmountLabel: {
-    fontSize: Typography.lg,
-    fontWeight: "500",
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
   },
   customAmountInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 2,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
-    minHeight: 56,
+    borderWidth: 1.5,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    gap: Spacing.xs,
+    minHeight: 44,
   },
   customAmountInput: {
     flex: 1,
-    fontSize: Typography.lg,
+    fontSize: Typography.md,
     fontWeight: "600",
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   currencyLabel: {
-    fontSize: Typography.lg,
+    fontSize: Typography.md,
     fontWeight: "600",
   },
   // Summary Card
   summaryCard: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    borderWidth: 2,
-    marginBottom: Spacing.xl,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1.5,
+    marginBottom: Spacing.md,
     ...Shadows.sm,
   },
   summaryHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
+    gap: Spacing.xs,
+    marginBottom: Spacing.sm,
   },
   summaryTitle: {
-    fontSize: Typography.xxxl,
+    fontSize: Typography.xl,
     fontWeight: "700",
   },
   summaryDivider: {
     height: 1,
     backgroundColor: "rgba(0,0,0,0.1)",
-    marginVertical: Spacing.md,
+    marginVertical: Spacing.sm,
   },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   summaryRowLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
     flex: 1,
   },
   summaryLabel: {
-    fontSize: Typography.lg,
+    fontSize: Typography.md,
     fontWeight: "500",
   },
   summaryValue: {
-    fontSize: Typography.lg,
+    fontSize: Typography.md,
     fontWeight: "600",
   },
   summaryValueNew: {
-    fontSize: Typography.xxxl,
+    fontSize: Typography.xl,
     fontWeight: "700",
   },
   // Refill Button
@@ -821,11 +861,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: Spacing.sm,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.lg,
-    minHeight: 56,
+    gap: Spacing.xs,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+    minHeight: 44,
     position: "relative",
   },
   refillButtonActive: {
@@ -835,52 +875,102 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   refillButtonText: {
-    fontSize: Typography.xxxl,
+    fontSize: Typography.xl,
     fontWeight: "700",
     color: "black",
   },
   refillButtonBadge: {
     position: "absolute",
-    top: -8,
-    right: 16,
+    top: -6,
+    right: 12,
     backgroundColor: "black",
     borderRadius: BorderRadius.round,
-    paddingHorizontal: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
-    minWidth: 24,
+    minWidth: 20,
     alignItems: "center",
     justifyContent: "center",
   },
   refillButtonBadgeText: {
     color: "white",
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
   },
   // Info Card
   infoCard: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
   },
   infoHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   infoIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: BorderRadius.md,
+    width: 24,
+    height: 24,
+    borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
   },
   infoTitle: {
-    fontSize: Typography.lg,
+    fontSize: Typography.md,
     fontWeight: "700",
   },
   infoText: {
-    fontSize: Typography.sm,
-    lineHeight: 20,
+    fontSize: Typography.xs,
+    lineHeight: 16,
+  },
+  // Currency Selector
+  currencySelectorButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  currencySelectorText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  selectorModalContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    maxHeight: "50%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  modalOptionText: {
+    fontSize: 14,
+    fontWeight: "500",
+    flex: 1,
+    marginLeft: 10,
   },
 });

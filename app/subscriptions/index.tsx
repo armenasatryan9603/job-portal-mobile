@@ -5,7 +5,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -19,6 +18,7 @@ import { ThemeColors, BorderRadius } from "@/constants/styles";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useSubscriptionPlans, useMySubscription } from "@/hooks/useApi";
 import type { SubscriptionPlan, UserSubscription } from "@/services/api";
+import { SubscriptionPlanSkeleton } from "@/components/SubscriptionPlanSkeleton";
 
 export default function SubscriptionsScreen() {
   useAnalytics("Subscriptions");
@@ -35,7 +35,6 @@ export default function SubscriptionsScreen() {
     useMySubscription();
 
   const plans: SubscriptionPlan[] = Array.isArray(plansData) ? plansData : [];
-  const loading = plansLoading || subscriptionLoading;
   const subscription = mySubscription as UserSubscription | null | undefined;
 
   useEffect(() => {
@@ -153,9 +152,81 @@ export default function SubscriptionsScreen() {
   return (
     <Layout header={header} showFooterTabs={false}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
+        {plansLoading ? (
+          <View style={styles.listContainer}>
+            {mySubscription && !subscriptionLoading && (
+              <View
+                style={[
+                  styles.currentCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.primary + "40",
+                  },
+                ]}
+              >
+                <View style={styles.currentHeader}>
+                  <View style={styles.currentInfo}>
+                    <View
+                      style={[
+                        styles.currentBadge,
+                        { backgroundColor: colors.primary + "15" },
+                      ]}
+                    >
+                      <IconSymbol
+                        name="checkmark.circle.fill"
+                        size={12}
+                        color={colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.currentBadgeText,
+                          { color: colors.primary },
+                        ]}
+                      >
+                        {t("active")}
+                      </Text>
+                    </View>
+                    <Text style={[styles.currentPlan, { color: colors.text }]}>
+                      {(subscription as UserSubscription)?.Plan?.name || ""}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.currentDate,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t("expiresOn")}{" "}
+                      {new Date(
+                        (subscription as UserSubscription).endDate
+                      ).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={[
+                      styles.manageButton,
+                      { backgroundColor: colors.primary },
+                    ]}
+                    onPress={() =>
+                      router.push("/subscriptions/my-subscription")
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.manageButtonText,
+                        { color: colors.background },
+                      ]}
+                    >
+                      {t("manage")}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            <SubscriptionPlanSkeleton itemCount={3} />
           </View>
         ) : (
           <>

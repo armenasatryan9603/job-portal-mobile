@@ -247,7 +247,8 @@ export function AccountInfo({
                 color={colors.primary}
               />
               <Text style={[styles.accountText, { color: colors.text }]}>
-                {t("creditBalance")}: {(profile.creditBalance || 0).toFixed(2)}
+                {t("creditBalance")}: {(profile.creditBalance || 0).toFixed(2)}{" "}
+                {profile.currency}
               </Text>
             </View>
           )}

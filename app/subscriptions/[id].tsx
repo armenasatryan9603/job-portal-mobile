@@ -13,7 +13,6 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { PaymentWebView } from "@/components/PaymentWebView";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors, BorderRadius, Spacing } from "@/constants/styles";
@@ -41,8 +40,6 @@ export default function SubscriptionDetailScreen() {
     error: planError,
   } = useSubscriptionPlan(planId);
   const purchaseMutation = usePurchaseSubscription();
-  const [showPaymentWebView, setShowPaymentWebView] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (planError) {
@@ -63,43 +60,61 @@ export default function SubscriptionDetailScreen() {
         planId: plan.id,
       });
 
-      const url = result.paymentUrl;
-      if (!url) {
-        throw new Error(
-          t("paymentUrlNotAvailable") || "Payment URL not available"
+      // If successful, subscription is already activated (credits deducted)
+      if (result.success) {
+        Alert.alert(
+          t("success"),
+          t("subscriptionActivated") || "Subscription activated successfully",
+          [
+            {
+              text: t("ok"),
+              onPress: () => router.replace("/subscriptions/my-subscription"),
+            },
+          ]
         );
       }
-
-      setPaymentUrl(url);
-      setShowPaymentWebView(true);
     } catch (error: any) {
       console.error("Error purchasing subscription:", error);
-      Alert.alert(
-        t("error"),
-        error.message || t("failedToPurchaseSubscription")
-      );
+
+      // Check if it's an insufficient credits error
+      if (
+        error?.response?.data?.code === "INSUFFICIENT_CREDITS" ||
+        error?.code === "INSUFFICIENT_CREDITS"
+      ) {
+        const required =
+          error?.response?.data?.required || error?.required || 0;
+        const available =
+          error?.response?.data?.available || error?.available || 0;
+
+        Alert.alert(
+          t("insufficientCredits") || "Insufficient Credits",
+          t("pleaseRefillCredits") ||
+            `You need ${required.toFixed(
+              2
+            )} USD credits but only have ${available.toFixed(
+              2
+            )} USD. Please refill your account.`,
+          [
+            {
+              text: t("cancel") || "Cancel",
+              style: "cancel",
+            },
+            {
+              text: t("refill") || "Refill Credits",
+              onPress: () => router.push("/profile/refill-credits"),
+            },
+          ]
+        );
+      } else {
+        // Other errors
+        Alert.alert(
+          t("error"),
+          error?.response?.data?.message ||
+            error?.message ||
+            t("failedToPurchaseSubscription")
+        );
+      }
     }
-  };
-
-  const handlePaymentClose = () => {
-    setShowPaymentWebView(false);
-    setPaymentUrl(null);
-  };
-
-  const handlePaymentSuccess = () => {
-    setShowPaymentWebView(false);
-    setPaymentUrl(null);
-    Alert.alert(t("success"), t("subscriptionActivated"), [
-      {
-        text: t("ok"),
-        onPress: () => router.replace("/subscriptions/my-subscription"),
-      },
-    ]);
-  };
-
-  const handlePaymentCancel = () => {
-    setShowPaymentWebView(false);
-    setPaymentUrl(null);
   };
 
   const header = (
@@ -143,120 +158,108 @@ export default function SubscriptionDetailScreen() {
 
   return (
     <Layout header={header} showFooterTabs={false}>
-      {showPaymentWebView && paymentUrl ? (
-        <PaymentWebView
-          visible={showPaymentWebView}
-          paymentUrl={paymentUrl ?? ""}
-          onSuccess={handlePaymentSuccess}
-          onFailure={handlePaymentCancel}
-          onClose={handlePaymentClose}
-        />
-      ) : (
-        <ScrollView
-          style={[styles.container, { paddingTop: insets.top }]}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
+      <ScrollView
+        style={[styles.container, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Plan Header */}
+        <View
+          style={[
+            styles.planCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
         >
-          {/* Plan Header */}
+          <Text style={[styles.planName, { color: colors.text }]}>
+            {plan.name}
+          </Text>
+          <View style={styles.priceRow}>
+            <Text style={[styles.price, { color: colors.primary }]}>
+              {plan.price.toLocaleString()} {plan.currency}
+            </Text>
+            <Text style={[styles.duration, { color: colors.textSecondary }]}>
+              {isMonthly
+                ? t("perMonth")
+                : isYearly
+                ? t("perYear")
+                : `/${plan.durationDays} ${t("days")}`}
+            </Text>
+          </View>
+          {plan.description ? (
+            <Text style={[styles.description, { color: colors.textSecondary }]}>
+              {plan.description}
+            </Text>
+          ) : null}
+        </View>
+
+        {/* Features */}
+        {featureList.length > 0 && (
           <View
             style={[
-              styles.planCard,
+              styles.featuresCard,
               {
                 backgroundColor: colors.surface,
                 borderColor: colors.border,
               },
             ]}
           >
-            <Text style={[styles.planName, { color: colors.text }]}>
-              {plan.name}
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t("features")}
             </Text>
-            <View style={styles.priceRow}>
-              <Text style={[styles.price, { color: colors.primary }]}>
-                {plan.price.toLocaleString()} {plan.currency}
-              </Text>
-              <Text style={[styles.duration, { color: colors.textSecondary }]}>
-                {isMonthly
-                  ? t("perMonth")
-                  : isYearly
-                  ? t("perYear")
-                  : `/${plan.durationDays} ${t("days")}`}
-              </Text>
+            <View style={styles.featuresList}>
+              {featureList.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <IconSymbol
+                    name="checkmark.circle.fill"
+                    size={14}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.featureText, { color: colors.text }]}>
+                    {feature}
+                  </Text>
+                </View>
+              ))}
             </View>
-            {plan.description ? (
-              <Text
-                style={[styles.description, { color: colors.textSecondary }]}
-              >
-                {plan.description}
-              </Text>
-            ) : null}
           </View>
+        )}
 
-          {/* Features */}
-          {featureList.length > 0 && (
-            <View
-              style={[
-                styles.featuresCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("features")}
-              </Text>
-              <View style={styles.featuresList}>
-                {featureList.map((feature, index) => (
-                  <View key={index} style={styles.featureItem}>
-                    <IconSymbol
-                      name="checkmark.circle.fill"
-                      size={14}
-                      color={colors.primary}
-                    />
-                    <Text style={[styles.featureText, { color: colors.text }]}>
-                      {feature}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Info Note */}
-          <View
-            style={[
-              styles.infoCard,
-              {
-                backgroundColor: colors.primary + "08",
-                borderColor: colors.primary + "20",
-              },
-            ]}
-          >
-            <IconSymbol
-              name="info.circle.fill"
-              size={14}
-              color={colors.primary}
-            />
-            <Text style={[styles.infoText, { color: colors.text }]}>
-              {t("manualRenewalNote")}
-            </Text>
-          </View>
-
-          {/* Purchase Button */}
-          <Button
-            variant="primary"
-            icon="star.fill"
-            iconSize={14}
-            backgroundColor={colors.primary}
-            onPress={handlePurchase}
-            disabled={purchaseMutation.isPending}
-            loading={purchaseMutation.isPending}
-            title={`${t("purchase")} - ${plan.price.toLocaleString()} ${
-              plan.currency
-            }`}
+        {/* Info Note */}
+        <View
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.primary + "08",
+              borderColor: colors.primary + "20",
+            },
+          ]}
+        >
+          <IconSymbol
+            name="info.circle.fill"
+            size={14}
+            color={colors.primary}
           />
-        </ScrollView>
-      )}
+          <Text style={[styles.infoText, { color: colors.text }]}>
+            {t("manualRenewalNote")}
+          </Text>
+        </View>
+
+        {/* Purchase Button */}
+        <Button
+          variant="primary"
+          icon="star.fill"
+          iconSize={14}
+          backgroundColor={colors.primary}
+          onPress={handlePurchase}
+          disabled={purchaseMutation.isPending}
+          loading={purchaseMutation.isPending}
+          title={`${t("purchase")} - ${plan.price.toLocaleString()} ${
+            plan.currency
+          }`}
+        />
+      </ScrollView>
     </Layout>
   );
 }
