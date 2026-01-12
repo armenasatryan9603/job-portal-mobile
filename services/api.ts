@@ -37,6 +37,39 @@ export interface Service {
   };
 }
 
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  currency: string;
+  durationDays: number;
+  isRecurring: boolean;
+  features?: {
+    unlimitedApplications?: boolean;
+    prioritySupport?: boolean;
+    advancedFilters?: boolean;
+    featuredProfile?: boolean;
+  } | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserSubscription {
+  id: number;
+  userId: number;
+  planId: number;
+  status: "active" | "expired" | "cancelled";
+  startDate: string;
+  endDate: string;
+  autoRenew: boolean;
+  paymentId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  Plan: SubscriptionPlan | null;
+}
+
 export interface Skill {
   id: number;
   nameEn: string;
@@ -445,8 +478,24 @@ class ApiService {
         throw error;
       }
 
-      const data = await response.json();
-      return data;
+      // Check if response has content before parsing JSON
+      const contentType = response.headers.get("content-type");
+      const text = await response.text();
+
+      // If response is empty, return null
+      if (!text || text.trim() === "") {
+        return null as T;
+      }
+
+      // Try to parse JSON, return null if parsing fails
+      try {
+        const data = JSON.parse(text);
+        return data;
+      } catch (e) {
+        // If JSON parsing fails, return null for empty/invalid responses
+        console.warn(`Failed to parse JSON response from ${url}:`, e);
+        return null as T;
+      }
     } catch (error) {
       console.error(`API request failed: ${url}`, error);
       throw error;
@@ -1892,6 +1941,91 @@ class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(skillData),
+      },
+      true
+    );
+  }
+
+  // Subscription API methods
+  async getSubscriptionPlans(
+    language: string = "en"
+  ): Promise<SubscriptionPlan[]> {
+    return this.request<SubscriptionPlan[]>(
+      `/subscriptions/plans?language=${language}`,
+      {},
+      false
+    );
+  }
+
+  async getSubscriptionPlanById(
+    id: number,
+    language: string = "en"
+  ): Promise<SubscriptionPlan> {
+    return this.request<SubscriptionPlan>(
+      `/subscriptions/plans/${id}?language=${language}`,
+      {},
+      false
+    );
+  }
+
+  async getMySubscription(
+    language: string = "en"
+  ): Promise<UserSubscription | null> {
+    return this.request<UserSubscription | null>(
+      `/subscriptions/my-subscription?language=${language}`,
+      {},
+      true
+    );
+  }
+
+  async getMySubscriptions(): Promise<UserSubscription[]> {
+    return this.request<UserSubscription[]>(
+      `/subscriptions/my-subscriptions`,
+      {},
+      true
+    );
+  }
+
+  async purchaseSubscription(data: {
+    planId: number;
+    autoRenew?: boolean;
+  }): Promise<any> {
+    return this.request(
+      `/subscriptions/purchase`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async cancelSubscription(subscriptionId: number): Promise<any> {
+    return this.request(
+      `/subscriptions/cancel`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subscriptionId }),
+      },
+      true
+    );
+  }
+
+  async renewSubscription(subscriptionId: number): Promise<any> {
+    return this.request(
+      `/subscriptions/renew`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ subscriptionId }),
       },
       true
     );

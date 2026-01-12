@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -62,6 +62,34 @@ const OrderItem = ({
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
   const [showSkillModal, setShowSkillModal] = useState(false);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean | null>(null);
+
+  // Check subscription status
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) {
+        setHasActiveSubscription(false);
+        return;
+      }
+      try {
+        const subscription = await apiService.getMySubscription();
+        if (subscription && subscription.status === "active") {
+          const endDate = new Date(subscription.endDate);
+          setHasActiveSubscription(endDate > new Date());
+        } else {
+          setHasActiveSubscription(false);
+        }
+      } catch (error: any) {
+        // No subscription or error - assume no subscription
+        // Don't log JSON parse errors as they're expected when there's no subscription
+        if (!error.message?.includes("end of input")) {
+          console.error("Error checking subscription:", error);
+        }
+        setHasActiveSubscription(false);
+      }
+    };
+    checkSubscription();
+  }, [user]);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -552,7 +580,11 @@ const OrderItem = ({
               order.creditCost && (
                 <Button
                   onPress={() => handleApplyToOrder(order)}
-                  title={`${t("apply")} (${order.creditCost} ${t("credit")})`}
+                  title={
+                    hasActiveSubscription
+                      ? t("apply") || "Apply"
+                      : `${t("apply")} (${order.creditCost} ${t("credit")})`
+                  }
                   icon="paperplane.fill"
                   variant="primary"
                 />

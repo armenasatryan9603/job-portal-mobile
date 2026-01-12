@@ -313,6 +313,41 @@ export default function PaymentsScreen() {
             </View>
           </ResponsiveCard>
 
+          {/* Subscriptions */}
+          <ResponsiveCard>
+            <View style={styles.cardHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("subscriptions") || "Subscriptions"}
+                </Text>
+                <Text
+                  style={[
+                    styles.sectionSubtitle,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t("subscriptionsDescription") ||
+                    "Subscribe to unlimited job applications"}
+                </Text>
+              </View>
+            </View>
+
+            <Button
+              title={t("viewSubscriptions") || "View Subscriptions"}
+              variant="primary"
+              icon="star.fill"
+              iconSize={14}
+              backgroundColor={colors.primary}
+              onPress={() => {
+                AnalyticsService.getInstance().logEvent("button_clicked", {
+                  button_name: "view_subscriptions",
+                  location: "payments_screen",
+                });
+                router.push("/subscriptions");
+              }}
+            />
+          </ResponsiveCard>
+
           {/* Payment Methods */}
           <ResponsiveCard>
             <View style={styles.cardHeaderRow}>

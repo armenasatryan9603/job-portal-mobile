@@ -1,0 +1,627 @@
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import { Header } from "@/components/Header";
+import { Layout } from "@/components/Layout";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ThemeColors, BorderRadius } from "@/constants/styles";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useMySubscription, useCancelSubscription } from "@/hooks/useApi";
+import type { UserSubscription } from "@/services/api";
+
+export default function MySubscriptionScreen() {
+  useAnalytics("MySubscription");
+  const { t } = useTranslation();
+  const colorScheme = useColorScheme();
+  const colors = ThemeColors[colorScheme ?? "light"];
+  const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
+  const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const {
+    data: subscriptionData,
+    isLoading: loading,
+    error: subscriptionError,
+  } = useMySubscription();
+  const cancelMutation = useCancelSubscription();
+
+  const subscription = subscriptionData as UserSubscription | null | undefined;
+
+  useEffect(() => {
+    if (
+      subscriptionError &&
+      (subscriptionError as any)?.message &&
+      !(subscriptionError as any)?.message.includes("end of input")
+    ) {
+      Alert.alert(
+        t("error"),
+        (subscriptionError as any)?.message || t("failedToLoadSubscription")
+      );
+    }
+  }, [subscriptionError]);
+
+  const handleCancel = () => {
+    if (!subscription) return;
+
+    Alert.alert(
+      t("cancelSubscription") || "Cancel Subscription",
+      t("cancelSubscriptionConfirm") ||
+        "Are you sure you want to cancel your subscription? You will still have access until the end of your current billing period.",
+      [
+        {
+          text: t("no") || "No",
+          style: "cancel",
+        },
+        {
+          text: t("yes") || "Yes",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await cancelMutation.mutateAsync(subscription.id);
+              Alert.alert(
+                t("success") || "Success",
+                t("subscriptionCancelled") ||
+                  "Your subscription has been cancelled.",
+                [
+                  {
+                    text: t("ok") || "OK",
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error("Error cancelling subscription:", error);
+              Alert.alert(
+                t("error"),
+                error.message || t("failedToCancelSubscription")
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const header = (
+    <Header
+      title={t("mySubscription") || "My Subscription"}
+      showBackButton
+      onBackPress={() => router.back()}
+      showNotificationsButton={isAuthenticated}
+      showChatButton={isAuthenticated}
+      unreadNotificationsCount={unreadNotificationsCount}
+      unreadMessagesCount={unreadMessagesCount}
+    />
+  );
+
+  if (loading) {
+    return (
+      <Layout showFooterTabs={false}>
+        <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </Layout>
+    );
+  }
+
+  if (!subscription) {
+    return (
+      <Layout header={header} showFooterTabs={false}>
+        <View style={[styles.container, { paddingTop: insets.top }]}>
+          <View style={styles.emptyContainer}>
+            <View
+              style={[
+                styles.emptyIcon,
+                { backgroundColor: colors.primary + "15" },
+              ]}
+            >
+              <IconSymbol name="star.fill" size={40} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {t("noActiveSubscription") || "No Active Subscription"}
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {t("noActiveSubscriptionDescription") ||
+                "You don't have an active subscription. Browse our plans to get started."}
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={() => router.push("/subscriptions")}
+            >
+              <Text
+                style={[styles.primaryButtonText, { color: colors.background }]}
+              >
+                {t("browsePlans") || "Browse Plans"}
+              </Text>
+              <IconSymbol
+                name="chevron.right"
+                size={14}
+                color={colors.background}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Layout>
+    );
+  }
+
+  const endDate = new Date(subscription.endDate);
+  const startDate = new Date(subscription.startDate);
+  const isActive = subscription.status === "active";
+  const daysRemaining = Math.ceil(
+    (endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+  const isExpiringSoon = daysRemaining <= 7 && daysRemaining > 0;
+
+  const features = subscription.Plan?.features || {};
+  const featureList = [
+    features.unlimitedApplications && t("unlimitedApplications"),
+    features.prioritySupport && t("prioritySupport"),
+    features.advancedFilters && t("advancedFilters"),
+    features.featuredProfile && t("featuredProfile"),
+  ].filter(Boolean);
+
+  return (
+    <Layout header={header} showFooterTabs={false}>
+      <ScrollView
+        style={[styles.container, { paddingTop: insets.top }]}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Compact Header */}
+        <View
+          style={[
+            styles.headerCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.headerRow}>
+            <View style={styles.planHeader}>
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isActive ? "#4CAF50" : "#FF9800",
+                  },
+                ]}
+              >
+                <Text style={styles.statusBadgeText}>
+                  {isActive ? t("active") : subscription.status}
+                </Text>
+              </View>
+              <Text style={[styles.planName, { color: colors.text }]}>
+                {subscription.Plan?.name || ""}
+              </Text>
+            </View>
+            {isExpiringSoon && (
+              <View
+                style={[
+                  styles.expiringBadge,
+                  { backgroundColor: colors.primary + "15" },
+                ]}
+              >
+                <Text style={[styles.expiringText, { color: colors.primary }]}>
+                  {daysRemaining}d
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Compact Info Row */}
+        <View
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.infoRow}>
+            <View style={styles.infoItem}>
+              <IconSymbol
+                name="calendar"
+                size={14}
+                color={colors.textSecondary}
+              />
+              <View style={styles.infoText}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  {t("startDate") || "Start"}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {startDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+
+            <View style={styles.infoItem}>
+              <IconSymbol
+                name="calendar"
+                size={14}
+                color={colors.textSecondary}
+              />
+              <View style={styles.infoText}>
+                <Text
+                  style={[styles.infoLabel, { color: colors.textSecondary }]}
+                >
+                  {t("endDate") || "End"}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {endDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </Text>
+              </View>
+            </View>
+
+            {isActive && (
+              <>
+                <View
+                  style={[styles.divider, { backgroundColor: colors.border }]}
+                />
+                <View style={styles.infoItem}>
+                  <IconSymbol
+                    name="clock.fill"
+                    size={14}
+                    color={colors.primary}
+                  />
+                  <View style={styles.infoText}>
+                    <Text
+                      style={[
+                        styles.infoLabel,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {t("daysRemaining") || "Left"}
+                    </Text>
+                    <Text style={[styles.infoValue, { color: colors.primary }]}>
+                      {daysRemaining}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        {/* Compact Features */}
+        {featureList.length > 0 && (
+          <View
+            style={[
+              styles.featuresCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.featuresGrid}>
+              {featureList.map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <IconSymbol
+                    name="checkmark.circle.fill"
+                    size={12}
+                    color={colors.primary}
+                  />
+                  <Text style={[styles.featureText, { color: colors.text }]}>
+                    {feature}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Expiring Banner */}
+        {isExpiringSoon && (
+          <TouchableOpacity
+            style={[
+              styles.expiringBanner,
+              { backgroundColor: colors.primary + "15" },
+            ]}
+            onPress={() => {
+              router.push({
+                pathname: "/subscriptions/[id]",
+                params: { id: subscription.planId.toString() },
+              });
+            }}
+          >
+            <IconSymbol
+              name="info.circle.fill"
+              size={14}
+              color={colors.primary}
+            />
+            <Text
+              style={[styles.expiringBannerText, { color: colors.primary }]}
+            >
+              {t("subscriptionExpiringSoon")
+                ? t("subscriptionExpiringSoon").replace(
+                    "{days}",
+                    daysRemaining.toString()
+                  )
+                : `Expires in ${daysRemaining} days`}
+            </Text>
+            <IconSymbol name="chevron.right" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
+        {/* Compact Actions */}
+        <View style={styles.actionsContainer}>
+          {isActive && isExpiringSoon && (
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: colors.primary },
+              ]}
+              onPress={() => {
+                router.push({
+                  pathname: "/subscriptions/[id]",
+                  params: { id: subscription.planId.toString() },
+                });
+              }}
+            >
+              <Text
+                style={[styles.primaryButtonText, { color: colors.background }]}
+              >
+                {t("renewNow") || "Renew Now"}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.actionRow}>
+            {isActive && (
+              <TouchableOpacity
+                style={[
+                  styles.secondaryButton,
+                  { borderColor: colors.border, flex: 1 },
+                ]}
+                onPress={handleCancel}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? (
+                  <ActivityIndicator color="#FF3B30" size="small" />
+                ) : (
+                  <>
+                    <IconSymbol name="xmark" size={14} color="#FF3B30" />
+                    <Text
+                      style={[styles.secondaryButtonText, { color: "#FF3B30" }]}
+                    >
+                      {t("cancelSubscription") || "Cancel"}
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                { borderColor: colors.border, flex: 1 },
+              ]}
+              onPress={() => router.push("/subscriptions")}
+            >
+              <IconSymbol name="star.fill" size={14} color={colors.primary} />
+              <Text
+                style={[styles.secondaryButtonText, { color: colors.primary }]}
+              >
+                {t("browseOtherPlans") || "Browse"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </Layout>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 12,
+    paddingBottom: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  emptyIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.round,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 24,
+    lineHeight: 18,
+    paddingHorizontal: 24,
+  },
+  headerCard: {
+    padding: 12,
+    borderRadius: BorderRadius.md,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  planHeader: {
+    flex: 1,
+  },
+  statusBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginBottom: 4,
+  },
+  statusBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  expiringBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  expiringText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  planName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  infoCard: {
+    padding: 10,
+    borderRadius: BorderRadius.md,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-around",
+  },
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  infoText: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 1,
+  },
+  infoValue: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  divider: {
+    width: 1,
+    height: 24,
+    marginHorizontal: 4,
+  },
+  featuresCard: {
+    padding: 10,
+    borderRadius: BorderRadius.md,
+    marginBottom: 8,
+    borderWidth: 1,
+  },
+  featuresGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  featureItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    flex: 1,
+    minWidth: "48%",
+  },
+  featureText: {
+    fontSize: 11,
+    flex: 1,
+  },
+  expiringBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 10,
+    borderRadius: BorderRadius.md,
+    marginBottom: 8,
+  },
+  expiringBannerText: {
+    fontSize: 11,
+    fontWeight: "600",
+    flex: 1,
+  },
+  actionsContainer: {
+    gap: 8,
+  },
+  primaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 12,
+    borderRadius: BorderRadius.md,
+  },
+  primaryButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  secondaryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    padding: 10,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+  },
+  secondaryButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+});

@@ -4,6 +4,8 @@ import { useNetworkStatus } from "./useNetworkStatus";
 import { apiService } from "@/services/api";
 import { CACHE_TTL } from "@/services/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { SubscriptionPlan, UserSubscription } from "@/services/api";
 
 // ===== AUTHENTICATION HOOKS =====
 
@@ -863,21 +865,20 @@ export const useMarkNotificationAsRead = () => {
       apiService.post(`/notifications/${notificationId}/read`, {}, true),
     onSuccess: (_, notificationId) => {
       // Optimistically update the cache
-      queryClient.setQueryData(
-        ["notifications", 1, 100],
-        (old: any) => {
-          if (!old?.notifications) return old;
-          return {
-            ...old,
-            notifications: old.notifications.map((n: any) =>
-              n.id === notificationId ? { ...n, isRead: true } : n
-            ),
-          };
-        }
-      );
+      queryClient.setQueryData(["notifications", 1, 100], (old: any) => {
+        if (!old?.notifications) return old;
+        return {
+          ...old,
+          notifications: old.notifications.map((n: any) =>
+            n.id === notificationId ? { ...n, isRead: true } : n
+          ),
+        };
+      });
       // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications", "unread-count"],
+      });
     },
   });
 };
@@ -888,7 +889,9 @@ export const useMarkAllNotificationsAsRead = () => {
     mutationFn: () => apiService.post("/notifications/mark-all-read", {}, true),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+      queryClient.invalidateQueries({
+        queryKey: ["notifications", "unread-count"],
+      });
     },
   });
 };
@@ -906,6 +909,84 @@ export const useClearAllNotifications = () => {
       queryClient.setQueryData(["notifications", "unread-count"], 0);
       // Also invalidate to ensure fresh data on next fetch
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+};
+
+// ===== SUBSCRIPTION HOOKS =====
+
+export const useSubscriptionPlans = () => {
+  const { isOnline } = useNetworkStatus();
+  const { language } = useLanguage();
+  return useQuery<SubscriptionPlan[]>({
+    queryKey: ["subscription-plans", language],
+    queryFn: () => apiService.getSubscriptionPlans(language),
+    staleTime: CACHE_TTL.STATIC,
+    gcTime: CACHE_TTL.STATIC * 2,
+    retry: isOnline,
+  });
+};
+
+export const useSubscriptionPlan = (planId: number | null) => {
+  const { isOnline } = useNetworkStatus();
+  const { language } = useLanguage();
+  return useQuery<SubscriptionPlan>({
+    queryKey: ["subscription-plan", planId, language],
+    queryFn: () => {
+      if (!planId) throw new Error("Plan ID is required");
+      return apiService.getSubscriptionPlanById(planId, language);
+    },
+    enabled: !!planId,
+    staleTime: CACHE_TTL.STATIC,
+    gcTime: CACHE_TTL.STATIC * 2,
+    retry: isOnline,
+  });
+};
+
+export const useMySubscription = () => {
+  const { isOnline } = useNetworkStatus();
+  const { isAuthenticated } = useAuth();
+  const { language } = useLanguage();
+  return useQuery<UserSubscription | null>({
+    queryKey: ["my-subscription", language],
+    queryFn: () => apiService.getMySubscription(language),
+    enabled: isAuthenticated,
+    staleTime: CACHE_TTL.STATIC,
+    gcTime: CACHE_TTL.STATIC * 2,
+    retry: isOnline,
+  });
+};
+
+export const usePurchaseSubscription = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { planId: number; autoRenew?: boolean }) =>
+      apiService.purchaseSubscription(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] });
+    },
+  });
+};
+
+export const useCancelSubscription = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (subscriptionId: number) =>
+      apiService.cancelSubscription(subscriptionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-subscription"] });
+    },
+  });
+};
+
+export const useRenewSubscription = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { subscriptionId: number }) =>
+      apiService.renewSubscription(data.subscriptionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-subscription"] });
     },
   });
 };
@@ -936,5 +1017,9 @@ export const useInvalidateQueries = () => {
       queryClient.invalidateQueries({ queryKey: ["reasons"] }),
     invalidateSkills: () =>
       queryClient.invalidateQueries({ queryKey: ["skills"] }),
+    invalidateSubscriptions: () =>
+      queryClient.invalidateQueries({ queryKey: ["subscription-plans"] }),
+    invalidateMySubscription: () =>
+      queryClient.invalidateQueries({ queryKey: ["my-subscription"] }),
   };
 };

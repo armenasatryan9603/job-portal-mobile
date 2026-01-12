@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -17,7 +17,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Order } from "@/services/api";
+import { Order, apiService } from "@/services/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { PeerSelector } from "./PeerSelector";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +57,36 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const [applyWithPeers, setApplyWithPeers] = useState(false);
   const [selectedPeerIds, setSelectedPeerIds] = useState<number[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | undefined>();
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<
+    boolean | null
+  >(null);
+
+  // Check subscription status
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!user) {
+        setHasActiveSubscription(false);
+        return;
+      }
+      try {
+        const subscription = await apiService.getMySubscription();
+        if (subscription && subscription.status === "active") {
+          const endDate = new Date(subscription.endDate);
+          setHasActiveSubscription(endDate > new Date());
+        } else {
+          setHasActiveSubscription(false);
+        }
+      } catch (error: any) {
+        // No subscription or error - assume no subscription
+        // Don't log JSON parse errors as they're expected when there's no subscription
+        if (!error.message?.includes("end of input")) {
+          console.error("Error checking subscription:", error);
+        }
+        setHasActiveSubscription(false);
+      }
+    };
+    checkSubscription();
+  }, [user]);
 
   const handleSubmit = async () => {
     // Clear previous errors
@@ -206,6 +236,29 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                   </View>
                 )}
               </View>
+              {hasActiveSubscription && (
+                <View
+                  style={[
+                    styles.subscriptionBadge,
+                    { backgroundColor: colors.primary + "20" },
+                  ]}
+                >
+                  <IconSymbol
+                    name="checkmark.circle.fill"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[
+                      styles.subscriptionBadgeText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    {t("unlimitedApplicationsWithSubscription") ||
+                      "Unlimited applications with your active subscription"}
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* Peer Selection Section */}
@@ -354,18 +407,21 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               )}
             </View>
 
-            <View style={styles.creditInfo}>
-              <View style={styles.creditRow}>
-                <IconSymbol
-                  name="creditcard.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.creditText, { color: colors.text }]}>
-                  {t("applicationCost")}: 1 {t("credit")}
-                </Text>
+            {!hasActiveSubscription && (
+              <View style={styles.creditInfo}>
+                <View style={styles.creditRow}>
+                  <IconSymbol
+                    name="creditcard.fill"
+                    size={16}
+                    color={colors.tint}
+                  />
+                  <Text style={[styles.creditText, { color: colors.text }]}>
+                    {t("applicationCost")}: {order.creditCost || 1}{" "}
+                    {t("credit")}
+                  </Text>
+                </View>
               </View>
-            </View>
+            )}
 
             <View style={styles.actions}>
               <TouchableOpacity
@@ -468,6 +524,19 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  subscriptionBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: 8,
+    marginTop: Spacing.md,
+  },
+  subscriptionBadgeText: {
+    fontSize: 14,
+    fontWeight: "600",
+    flex: 1,
   },
   messageSection: {
     paddingHorizontal: Spacing.lg,
