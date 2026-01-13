@@ -28,6 +28,10 @@ import { apiService, SpecialistProfile } from "@/services/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import AnalyticsService from "@/services/AnalyticsService";
 import { SpecialistDetailSkeleton } from "@/components/SpecialistDetailSkeleton";
+import { HiringDialog } from "@/components/HiringDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
+import { useMyOrders } from "@/hooks/useApi";
 
 export default function SpecialistDetailScreen() {
   useAnalytics("SpecialistDetail");
@@ -38,12 +42,21 @@ export default function SpecialistDetailScreen() {
   const colors = ThemeColors[colorScheme ?? "light"];
   const { data: rateUnitsData } = useRateUnits();
   const rateUnits: RateUnit[] = rateUnitsData || [];
+  const { isAuthenticated, user } = useAuth();
+  const { showLoginModal } = useModal();
+  const { data: ordersData } = useMyOrders();
 
   // API state management
   const [specialist, setSpecialist] = useState<SpecialistProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bannerImage, setBannerImage] = useState<string | null>(null);
+
+  // Hiring dialog state
+  const [hiringDialogVisible, setHiringDialogVisible] = useState(false);
+  const [hiringLoading, setHiringLoading] = useState(false);
+
+  const userOrders = ordersData?.orders || [];
 
   const specialistId = parseInt(id as string);
 
@@ -121,12 +134,65 @@ export default function SpecialistDetailScreen() {
   }
 
   const handleHireSpecialist = () => {
-    router.push(`/orders/create?specialistId=${specialistId}`);
+    if (!specialist) return;
+
+    // Track hire specialist action
+    AnalyticsService.getInstance().logEvent("hire_specialist_initiated", {
+      specialist_id: specialist.id.toString(),
+    });
+
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // User is not logged in, show login modal
+      showLoginModal();
+      return;
+    }
+
+    // Check if user has existing orders
+    if (userOrders.length > 0) {
+      // User has orders, show hiring dialog
+      setHiringDialogVisible(true);
+    } else {
+      // User has no orders, redirect to create order page
+      router.push(`/orders/create?specialistId=${specialistId}`);
+    }
   };
 
-  const handleSendMessage = () => {
-    // Navigate to messaging or contact form
-    console.log(t("sendMessageToSpecialist"));
+  const handleHiringSubmit = async (message: string, orderId: number) => {
+    if (!specialist) return;
+
+    try {
+      setHiringLoading(true);
+      const result = await apiService.hireSpecialist({
+        specialistId: specialist.id,
+        message,
+        orderId,
+      });
+
+      // Track successful hiring
+      AnalyticsService.getInstance().logEvent("specialist_hired", {
+        specialist_id: specialist.id.toString(),
+        order_id: orderId.toString(),
+      });
+
+      // Navigate to the conversation after successful hiring
+      if (result.conversation?.id) {
+        router.push(`/chat/${result.conversation.id}`);
+      } else {
+        Alert.alert(t("success"), t("hiringRequestSent"));
+      }
+
+      setHiringDialogVisible(false);
+    } catch (error) {
+      console.error("Error hiring specialist:", error);
+      Alert.alert(t("error"), t("failedToSendHiringRequest"));
+    } finally {
+      setHiringLoading(false);
+    }
+  };
+
+  const handleHiringClose = () => {
+    setHiringDialogVisible(false);
   };
 
   const formatTimeDifference = (createdAt: string) => {
@@ -193,27 +259,28 @@ export default function SpecialistDetailScreen() {
     />
   );
 
-  const footer = (
-    <Footer>
-      <View style={styles.footerButtons}>
-        <FooterButton
-          title={t("hire")}
-          onPress={handleHireSpecialist}
-          variant="primary"
-          icon="✓"
-        />
-        <FooterButton
+  const footer =
+    specialist.User?.id !== user?.id ? (
+      <Footer>
+        <View style={styles.footerButtons}>
+          <FooterButton
+            title={t("hire")}
+            onPress={handleHireSpecialist}
+            variant="primary"
+            icon="✓"
+          />
+          {/* <FooterButton
           title={t("message")}
           onPress={handleSendMessage}
           variant="secondary"
           icon="💬"
-        />
-      </View>
-    </Footer>
-  );
+        /> */}
+        </View>
+      </Footer>
+    ) : null;
 
   return (
-    <Layout header={header} footer={footer}>
+    <Layout header={header}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <ResponsiveContainer>
           {/* Specialist Overview */}
@@ -231,145 +298,141 @@ export default function SpecialistDetailScreen() {
                   </ImageBackground>
                 </View>
               )}
-              <View style={[styles.contentWrapper]}>
-                {/* Header with avatar and basic info */}
-                <View style={styles.specialistHeader}>
-                  <View style={styles.avatarContainer}>
-                    {specialist.User?.avatarUrl ? (
-                      <Image
-                        source={{ uri: specialist.User?.avatarUrl }}
-                        style={styles.avatar}
+              {/* Header with avatar and basic info */}
+              <View style={styles.specialistHeader}>
+                <View style={styles.avatarContainer}>
+                  {specialist.User?.avatarUrl ? (
+                    <Image
+                      source={{ uri: specialist.User?.avatarUrl }}
+                      style={styles.avatar}
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.avatar,
+                        styles.defaultAvatar,
+                        { backgroundColor: colors.border },
+                      ]}
+                    >
+                      <IconSymbol
+                        name="person.fill"
+                        size={45}
+                        color={colors.tabIconDefault}
                       />
-                    ) : (
-                      <View
-                        style={[
-                          styles.avatar,
-                          styles.defaultAvatar,
-                          { backgroundColor: colors.border },
-                        ]}
-                      >
-                        <IconSymbol
-                          name="person.fill"
-                          size={45}
-                          color={colors.tabIconDefault}
-                        />
-                      </View>
-                    )}
-                    {/* Verification badge on avatar */}
-                    {specialist.User?.verified && (
-                      <View style={styles.verificationBadge}>
-                        <IconSymbol
-                          name="checkmark.seal.fill"
-                          size={24}
-                          color="#4CAF50"
-                        />
-                      </View>
-                    )}
-                  </View>
+                    </View>
+                  )}
+                  {/* Verification badge on avatar */}
+                  {specialist.User?.verified && (
+                    <View style={styles.verificationBadge}>
+                      <IconSymbol
+                        name="checkmark.seal.fill"
+                        size={24}
+                        color="#4CAF50"
+                      />
+                    </View>
+                  )}
+                </View>
 
-                  <View style={styles.specialistInfo}>
-                    <Text
-                      style={[styles.specialistName, { color: colors.text }]}
-                    >
-                      {specialist.User?.name || t("deletedUser")}
-                    </Text>
-                    <Text
-                      style={[styles.specialistTitle, { color: colors.tint }]}
-                    >
-                      {specialist.Service?.name || t("specialist")}
-                    </Text>
+                <View style={styles.specialistInfo}>
+                  <Text style={[styles.specialistName, { color: colors.text }]}>
+                    {specialist.User?.name || t("deletedUser")}
+                  </Text>
+                  <Text
+                    style={[styles.specialistTitle, { color: colors.tint }]}
+                  >
+                    {specialist.User?.name || t("specialist")}
+                  </Text>
 
-                    {/* Rating with better design */}
-                    <View style={styles.ratingContainer}>
-                      {specialist.reviewCount && specialist.reviewCount > 0 ? (
-                        <>
-                          <View style={styles.ratingBadge}>
-                            <View style={styles.stars}>
-                              {renderStars(specialist.averageRating || 0)}
-                            </View>
-                            <Text
-                              style={[
-                                styles.ratingNumber,
-                                { color: colors.text },
-                              ]}
-                            >
-                              {specialist.averageRating || 0}
-                            </Text>
+                  {/* Rating with better design */}
+                  <View style={styles.ratingContainer}>
+                    {specialist.reviewCount && specialist.reviewCount > 0 ? (
+                      <>
+                        <View style={styles.ratingBadge}>
+                          <View style={styles.stars}>
+                            {renderStars(specialist.averageRating || 0)}
                           </View>
                           <Text
                             style={[
-                              styles.reviewCount,
-                              { color: colors.tabIconDefault },
+                              styles.ratingNumber,
+                              { color: colors.text },
                             ]}
                           >
-                            ({specialist.reviewCount || 0} {t("reviews")})
+                            {specialist.averageRating || 0}
                           </Text>
-                        </>
-                      ) : (
+                        </View>
                         <Text
                           style={[
-                            styles.notRatedText,
+                            styles.reviewCount,
                             { color: colors.tabIconDefault },
                           ]}
                         >
-                          {t("notRatedYet")}
+                          ({specialist.reviewCount || 0} {t("reviews")})
                         </Text>
-                      )}
-                    </View>
-
-                    {/* Status badges */}
-                    <View style={styles.badgesContainer}>
-                      <View
+                      </>
+                    ) : (
+                      <Text
                         style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: specialist.User?.verified
-                              ? "#4CAF50"
-                              : "#FFA500",
-                          },
+                          styles.notRatedText,
+                          { color: colors.tabIconDefault },
                         ]}
                       >
-                        <IconSymbol
-                          name={
-                            specialist.User?.verified
-                              ? "checkmark.circle.fill"
-                              : "clock.fill"
-                          }
-                          size={14}
-                          color="white"
-                        />
-                        <Text style={styles.statusBadgeText}>
-                          {specialist.User.verified
-                            ? t("verified")
-                            : t("pending")}
-                        </Text>
-                      </View>
+                        {t("notRatedYet")}
+                      </Text>
+                    )}
+                  </View>
 
-                      {specialist.experienceYears && (
-                        <View
-                          style={[
-                            styles.experienceBadge,
-                            { backgroundColor: colors.tint + "20" },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.experienceBadgeText,
-                              { color: colors.tint },
-                            ]}
-                          ></Text>
-                        </View>
-                      )}
+                  {/* Status badges */}
+                  <View style={styles.badgesContainer}>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: specialist.User?.verified
+                            ? "#4CAF50"
+                            : "#FFA500",
+                        },
+                      ]}
+                    >
+                      <IconSymbol
+                        name={
+                          specialist.User?.verified
+                            ? "checkmark.circle.fill"
+                            : "clock.fill"
+                        }
+                        size={14}
+                        color="white"
+                      />
+                      <Text style={styles.statusBadgeText}>
+                        {specialist.User.verified
+                          ? t("verified")
+                          : t("pending")}
+                      </Text>
                     </View>
+
+                    {specialist.experienceYears && (
+                      <View
+                        style={[
+                          styles.experienceBadge,
+                          { backgroundColor: colors.tint + "20" },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.experienceBadgeText,
+                            { color: colors.tint },
+                          ]}
+                        ></Text>
+                      </View>
+                    )}
                   </View>
                 </View>
-
+              </View>
+              {/*  */}
+              <View style={{ gap: 10, marginTop: 10 }}>
                 {/* Bio section with better styling */}
-                <View style={styles.bioSection}>
-                  <Text style={[styles.bio, { color: colors.text }]}>
-                    {specialist.User.bio || t("professionalSpecialistReady")}
-                  </Text>
-                </View>
+                <Text style={[styles.bio, { color: colors.text }]}>
+                  {specialist.User.bio || t("professionalSpecialistReady")}
+                </Text>
 
                 {/* Quick stats */}
                 <View style={styles.quickStats}>
@@ -447,7 +510,28 @@ export default function SpecialistDetailScreen() {
                   </View>
                 </View>
               </View>
+              {specialist.User?.id !== user?.id && (
+                <TouchableOpacity
+                  style={[
+                    styles.hireButton,
+                    {
+                      backgroundColor: colors.tint,
+                    },
+                  ]}
+                  onPress={handleHireSpecialist}
+                >
+                  <Text
+                    style={[
+                      styles.hireButtonText,
+                      { color: colors.background },
+                    ]}
+                  >
+                    {t("hire")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {/* </View> */}
           </ResponsiveCard>
 
           {/* Specialist Details */}
@@ -611,8 +695,8 @@ export default function SpecialistDetailScreen() {
           {/* Skills */}
           <ResponsiveCard style={{ paddingTop: 0 }}>
             <View style={styles.skillsHeader}>
-              {specialist.Service?.technologies &&
-                specialist.Service.technologies.length > 0 && (
+              {specialist.Category?.technologies &&
+                specialist.Category.technologies.length > 0 && (
                   <View
                     style={[
                       styles.skillsCount,
@@ -622,16 +706,16 @@ export default function SpecialistDetailScreen() {
                     <Text
                       style={[styles.skillsCountText, { color: colors.tint }]}
                     >
-                      {specialist.Service.technologies.length}
+                      {specialist.Category.technologies.length}
                     </Text>
                   </View>
                 )}
             </View>
 
             <View style={styles.skillsContainer}>
-              {specialist.Service?.technologies &&
-              specialist.Service.technologies.length > 0 ? (
-                specialist.Service.technologies.map((skill, index) => (
+              {specialist.Category?.technologies &&
+              specialist.Category.technologies.length > 0 ? (
+                specialist.Category.technologies.map((skill, index) => (
                   <View
                     key={index}
                     style={[
@@ -675,7 +759,7 @@ export default function SpecialistDetailScreen() {
           </ResponsiveCard>
 
           {/* Service Information */}
-          {specialist.Service && (
+          {specialist.Category && (
             <ResponsiveCard>
               <View style={styles.serviceInfo}>
                 <View style={styles.serviceItem}>
@@ -688,7 +772,7 @@ export default function SpecialistDetailScreen() {
                     {t("category")}: {specialist.Category.name}
                   </Text>
                 </View>
-                {specialist.Service.description && (
+                {specialist.Category.description && (
                   <View style={styles.serviceItem}>
                     <IconSymbol
                       name="info.circle.fill"
@@ -696,11 +780,11 @@ export default function SpecialistDetailScreen() {
                       color={colors.tint}
                     />
                     <Text style={[styles.serviceText, { color: colors.text }]}>
-                      {specialist.Service.description}
+                      {specialist.Category.description}
                     </Text>
                   </View>
                 )}
-                {specialist.Service.completionRate != null && (
+                {specialist.Category.completionRate != null && (
                   <View style={styles.serviceItem}>
                     <IconSymbol
                       name="checkmark.circle.fill"
@@ -709,7 +793,7 @@ export default function SpecialistDetailScreen() {
                     />
                     <Text style={[styles.serviceText, { color: colors.text }]}>
                       {t("serviceSuccessRate")}:{" "}
-                      {specialist.Service.completionRate}%
+                      {specialist.Category.completionRate}%
                     </Text>
                   </View>
                 )}
@@ -789,6 +873,16 @@ export default function SpecialistDetailScreen() {
           </ResponsiveCard>
         </ResponsiveContainer>
       </ScrollView>
+
+      <HiringDialog
+        visible={hiringDialogVisible}
+        onClose={handleHiringClose}
+        onSubmit={handleHiringSubmit}
+        specialistName={specialist?.User.name || ""}
+        specialistId={specialist?.id || 0}
+        userOrders={userOrders}
+        loading={hiringLoading}
+      />
     </Layout>
   );
 }
@@ -799,6 +893,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
+  },
+  hireButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
+    minWidth: 70,
+  },
+  hireButtonText: {
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "600",
   },
   errorText: {
     fontSize: 16,
@@ -846,11 +951,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  contentWrapper: {
-    position: "relative",
-    zIndex: 1,
-    gap: 20,
-  },
+  // contentWrapper: {
+  //   // backgroundColor: "red",
+  //   position: "relative",
+  //   zIndex: 1,
+  //   gap: 10,
+  // },
   specialistHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -942,13 +1048,6 @@ const styles = StyleSheet.create({
   },
   experienceBadgeText: {
     fontSize: 12,
-    fontWeight: "600",
-  },
-  bioSection: {
-    gap: 8,
-  },
-  bioTitle: {
-    fontSize: 18,
     fontWeight: "600",
   },
   bio: {

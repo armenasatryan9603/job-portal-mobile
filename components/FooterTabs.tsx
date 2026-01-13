@@ -28,7 +28,7 @@ export const FooterTabs: React.FC = () => {
       route: "/",
     },
     {
-      name: "services",
+      name: "categories",
       title: t("category"),
       icon: "gearshape.fill",
       route: "/services",
@@ -46,10 +46,10 @@ export const FooterTabs: React.FC = () => {
       route: "/specialists",
     },
     {
-      name: "teams",
-      title: t("teams"),
-      icon: "person.3.fill",
-      route: "/teams",
+      name: "services",
+      title: t("services"),
+      icon: "building.2.fill",
+      route: "/services",
     },
   ];
 

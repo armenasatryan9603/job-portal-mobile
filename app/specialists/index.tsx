@@ -5,13 +5,14 @@ import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { TopTabs } from "@/components/TopTabs";
 import { ThemeColors, Spacing } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
 import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import {
@@ -25,7 +26,7 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { apiService, SpecialistProfile } from "@/services/api";
+import { apiService, SpecialistProfile, User } from "@/services/api";
 import { useSpecialists, useCategories, useMyOrders } from "@/hooks/useApi";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,17 +35,58 @@ import { useModal } from "@/contexts/ModalContext";
 import AnalyticsService from "@/services/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
+interface Team {
+  id: number;
+  name: string;
+  createdBy: number;
+  createdAt: string;
+  isActive: boolean;
+  Creator?: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl?: string;
+  };
+  Members?: Array<{
+    id: number;
+    userId: number;
+    role: string;
+    status?: string;
+    memberStatus?: string;
+    isActive: boolean;
+    User: User;
+  }>;
+}
+
 export default function SpecialistsScreen() {
   useAnalytics("Specialists");
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
   const { language } = useLanguage();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { data: rateUnitsData } = useRateUnits();
   const rateUnits = (rateUnitsData || []) as RateUnit[];
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
+  const params = useLocalSearchParams<{ tab?: string }>();
+
+  // Tab state - initialize from URL params
+  const [activeTab, setActiveTab] = useState<"individuals" | "teams">(
+    (params.tab === "teams" ? "teams" : "individuals") as
+      | "individuals"
+      | "teams"
+  );
+
+  // Update tab when URL params change
+  useEffect(() => {
+    if (params.tab === "teams") {
+      setActiveTab("teams");
+    } else if (params.tab === "individuals" || !params.tab) {
+      setActiveTab("individuals");
+    }
+  }, [params.tab]);
+
   const [searchQuery, setSearchQuery] = useState("");
   type SpecialistFilterValue =
     | string
@@ -57,15 +99,24 @@ export default function SpecialistsScreen() {
     Record<string, SpecialistFilterValue>
   >({
     priceRange: { min: 0, max: 10000000 },
-    services: [],
+    categories: [],
   });
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+  const [teamImageErrors, setTeamImageErrors] = useState<Set<number>>(
+    new Set()
+  );
 
   // Hiring dialog state
   const [hiringDialogVisible, setHiringDialogVisible] = useState(false);
   const [selectedSpecialist, setSelectedSpecialist] =
     useState<SpecialistProfile | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [hiringLoading, setHiringLoading] = useState(false);
+
+  // Teams state
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+  const [teamsRefreshing, setTeamsRefreshing] = useState(false);
 
   // Use TanStack Query for data fetching
   const [tempCurrentPage, setTempCurrentPage] = useState(1);
@@ -112,6 +163,44 @@ export default function SpecialistsScreen() {
   useEffect(() => {
     setTempCurrentPage(currentPage);
   }, [currentPage]);
+
+  // Load teams
+  const loadTeams = useCallback(async () => {
+    try {
+      setTeamsLoading(true);
+      const teamsData = await apiService.getTeams();
+      if (Array.isArray(teamsData)) {
+        setTeams(teamsData);
+      } else if (teamsData && typeof teamsData === "object") {
+        const anyData = teamsData as any;
+        const teamsArray = Array.isArray(anyData.data)
+          ? anyData.data
+          : Array.isArray(anyData.teams)
+          ? anyData.teams
+          : [];
+        setTeams(teamsArray);
+      } else {
+        setTeams([]);
+      }
+    } catch (error: any) {
+      console.error("Error loading teams:", error);
+      setTeams([]);
+    } finally {
+      setTeamsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (activeTab === "teams") {
+      loadTeams();
+    }
+  }, [activeTab, loadTeams]);
+
+  const onTeamsRefresh = useCallback(async () => {
+    setTeamsRefreshing(true);
+    await loadTeams();
+    setTeamsRefreshing(false);
+  }, [loadTeams]);
 
   // Get category names and IDs from fetched categories
   const categoryOptions = useMemo(
@@ -192,6 +281,19 @@ export default function SpecialistsScreen() {
     [specialists, searchQuery, selectedFilters]
   );
 
+  // Filter teams based on search
+  const filteredTeams = useMemo(() => {
+    return teams.filter((team) => {
+      const matchesSearch =
+        !searchQuery ||
+        team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        team.Members?.some((member) =>
+          member.User?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      return matchesSearch;
+    });
+  }, [teams, searchQuery]);
+
   // Filter configuration
   const filterSections: FilterSection[] = useMemo(
     () => [
@@ -243,6 +345,7 @@ export default function SpecialistsScreen() {
     if (userOrders.length > 0) {
       // User has orders, show hiring dialog
       setSelectedSpecialist(specialist);
+      setSelectedTeam(null);
       setHiringDialogVisible(true);
     } else {
       // User has no orders, redirect to create order page
@@ -250,43 +353,107 @@ export default function SpecialistsScreen() {
     }
   };
 
-  const handleHiringSubmit = async (message: string, orderId: number) => {
-    if (!selectedSpecialist) return;
+  const handleHireTeam = (team: Team) => {
+    // Track hire team action
+    AnalyticsService.getInstance().logEvent("hire_team_initiated", {
+      team_id: team.id.toString(),
+    });
 
-    try {
-      setHiringLoading(true);
-      const result = await apiService.hireSpecialist({
-        specialistId: selectedSpecialist.id,
-        message,
-        orderId,
-      });
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // User is not logged in, show login modal
+      showLoginModal();
+      return;
+    }
 
-      // Track successful hiring
-      AnalyticsService.getInstance().logEvent("specialist_hired", {
-        specialist_id: selectedSpecialist.id.toString(),
-        order_id: orderId.toString(),
-      });
-
-      // Navigate to the conversation after successful hiring
-      if (result.conversation?.id) {
-        router.push(`/chat/${result.conversation.id}`);
-      } else {
-        Alert.alert(t("success"), t("hiringRequestSent"));
-      }
-
-      setHiringDialogVisible(false);
+    // Check if user has existing orders
+    if (userOrders.length > 0) {
+      // User has orders, show hiring dialog
+      setSelectedTeam(team);
       setSelectedSpecialist(null);
-    } catch (error) {
-      console.error("Error hiring specialist:", error);
-      Alert.alert(t("error"), t("failedToSendHiringRequest"));
-    } finally {
-      setHiringLoading(false);
+      setHiringDialogVisible(true);
+    } else {
+      // User has no orders, redirect to create order page
+      router.push(`/orders/create?teamId=${team.id}`);
+    }
+  };
+
+  const handleTeamPress = (teamId: number) => {
+    router.push(`/teams/${teamId}` as any);
+  };
+
+  const handleTeamImageError = (userId: number) => {
+    setTeamImageErrors((prev) => new Set(prev).add(userId));
+  };
+
+  const handleHiringSubmit = async (message: string, orderId: number) => {
+    if (selectedSpecialist) {
+      try {
+        setHiringLoading(true);
+        const result = await apiService.hireSpecialist({
+          specialistId: selectedSpecialist.id,
+          message,
+          orderId,
+        });
+
+        // Track successful hiring
+        AnalyticsService.getInstance().logEvent("specialist_hired", {
+          specialist_id: selectedSpecialist.id.toString(),
+          order_id: orderId.toString(),
+        });
+
+        // Navigate to the conversation after successful hiring
+        if (result.conversation?.id) {
+          router.push(`/chat/${result.conversation.id}`);
+        } else {
+          Alert.alert(t("success"), t("hiringRequestSent"));
+        }
+
+        setHiringDialogVisible(false);
+        setSelectedSpecialist(null);
+      } catch (error) {
+        console.error("Error hiring specialist:", error);
+        Alert.alert(t("error"), t("failedToSendHiringRequest"));
+      } finally {
+        setHiringLoading(false);
+      }
+    } else if (selectedTeam) {
+      try {
+        setHiringLoading(true);
+        const result = await apiService.hireTeam({
+          teamId: selectedTeam.id,
+          message,
+          orderId,
+        });
+
+        // Track successful hiring
+        AnalyticsService.getInstance().logEvent("team_hired", {
+          team_id: selectedTeam.id.toString(),
+          order_id: orderId.toString(),
+        });
+
+        // Navigate to the conversation after successful hiring
+        if (result.conversation?.id) {
+          router.push(`/chat/${result.conversation.id}`);
+        } else {
+          Alert.alert(t("success"), t("hiringRequestSent"));
+        }
+
+        setHiringDialogVisible(false);
+        setSelectedTeam(null);
+      } catch (error) {
+        console.error("Error hiring team:", error);
+        Alert.alert(t("error"), t("failedToSendHiringRequest"));
+      } finally {
+        setHiringLoading(false);
+      }
     }
   };
 
   const handleHiringClose = () => {
     setHiringDialogVisible(false);
     setSelectedSpecialist(null);
+    setSelectedTeam(null);
   };
 
   const handleImageError = (specialistId: number) => {
@@ -338,6 +505,238 @@ export default function SpecialistsScreen() {
     ),
     [t, isAuthenticated, unreadNotificationsCount, unreadMessagesCount]
   );
+
+  const tabs = useMemo(
+    () => [
+      { key: "individuals", label: t("individuals") },
+      { key: "teams", label: t("teams") },
+    ],
+    [t]
+  );
+
+  const handleTabChange = useCallback((tabKey: string) => {
+    setActiveTab(tabKey as "individuals" | "teams");
+    AnalyticsService.getInstance().logEvent("tab_changed", {
+      tab: tabKey,
+      location: "specialists_screen",
+    });
+  }, []);
+
+  const getAcceptedMembers = (team: Team) => {
+    return (
+      team.Members?.filter(
+        (m) =>
+          m.status === "accepted" ||
+          (m.memberStatus !== "pending" && !m.status && m.isActive)
+      ) || []
+    );
+  };
+
+  const renderTeamItem = useCallback(
+    ({ item: team }: { item: Team }) => {
+      const acceptedMembers = getAcceptedMembers(team);
+      const memberCount = acceptedMembers.length;
+
+      // Check if user is part of this team (creator or member)
+      const isUserPartOfTeam =
+        team.createdBy === user?.id ||
+        acceptedMembers.some((member) => member.userId === user?.id);
+
+      return (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => handleTeamPress(team.id)}
+        >
+          <ResponsiveCard padding={0}>
+            <View style={styles.teamCard}>
+              <View style={styles.teamHeader}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: colors.tint + "20" },
+                  ]}
+                >
+                  <IconSymbol
+                    name="person.3.fill"
+                    size={32}
+                    color={colors.tint}
+                  />
+                </View>
+                <View style={styles.teamInfo}>
+                  <Text style={[styles.teamName, { color: colors.text }]}>
+                    {team.name}
+                  </Text>
+                  <View style={styles.teamMeta}>
+                    <View style={styles.metaItem}>
+                      <IconSymbol
+                        name="person.fill"
+                        size={14}
+                        color={colors.tabIconDefault}
+                      />
+                      <Text
+                        style={[
+                          styles.metaText,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {memberCount} {t("members")}
+                      </Text>
+                    </View>
+                    {team.Creator && (
+                      <View style={styles.metaItem}>
+                        <IconSymbol
+                          name="person.circle.fill"
+                          size={14}
+                          color={colors.tabIconDefault}
+                        />
+                        <Text
+                          style={[
+                            styles.metaText,
+                            { color: colors.tabIconDefault },
+                          ]}
+                        >
+                          {team.Creator.name}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={20}
+                  color={colors.tabIconDefault}
+                />
+              </View>
+
+              {acceptedMembers.length > 0 && (
+                <View style={styles.membersContainer}>
+                  <Text
+                    style={[
+                      styles.membersTitle,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {t("teamMembers")}
+                  </Text>
+                  <View style={styles.membersList}>
+                    {acceptedMembers.slice(0, 5).map((member) => (
+                      <View
+                        key={member.id}
+                        style={[
+                          styles.memberAvatar,
+                          { backgroundColor: colors.border },
+                        ]}
+                      >
+                        {member.User?.avatarUrl &&
+                        !teamImageErrors.has(member.User?.id || 0) ? (
+                          <Image
+                            source={{ uri: member.User?.avatarUrl }}
+                            style={styles.avatar}
+                            onError={() =>
+                              handleTeamImageError(member.User?.id || 0)
+                            }
+                          />
+                        ) : (
+                          <View style={styles.defaultAvatar}>
+                            <Text
+                              style={[
+                                styles.avatarInitials,
+                                { color: colors.tabIconDefault },
+                              ]}
+                            >
+                              {(member.User?.name || t("deletedUser"))
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2)}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    ))}
+                    {memberCount > 5 && (
+                      <View
+                        style={[
+                          styles.memberAvatar,
+                          styles.moreMembers,
+                          { backgroundColor: colors.background },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.moreMembersText,
+                            { color: colors.tint },
+                          ]}
+                        >
+                          +{memberCount - 5}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.teamFooter}>
+                {!isUserPartOfTeam && (
+                  <TouchableOpacity
+                    style={[
+                      styles.hireButton,
+                      {
+                        backgroundColor: colors.tint,
+                      },
+                    ]}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleHireTeam(team);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.hireButtonText,
+                        { color: colors.background },
+                      ]}
+                    >
+                      {t("hire")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </ResponsiveCard>
+        </TouchableOpacity>
+      );
+    },
+    [
+      colors,
+      t,
+      user,
+      handleTeamPress,
+      handleHireTeam,
+      handleTeamImageError,
+      teamImageErrors,
+    ]
+  );
+
+  const renderTeamsEmptyComponent = useCallback(() => {
+    if (filteredTeams.length === 0 && !teamsLoading) {
+      return (
+        <EmptyPage
+          type="empty"
+          icon="person.3"
+          title={!isAuthenticated ? t("loginToViewTeams") : t("noTeams")}
+          subtitle={
+            !isAuthenticated
+              ? t("loginToViewTeamsDesc")
+              : searchQuery
+              ? t("tryAdjustingSearchTerms")
+              : t("noTeamsAvailable")
+          }
+        />
+      );
+    }
+    return null;
+  }, [filteredTeams.length, searchQuery, teamsLoading, isAuthenticated, t]);
 
   const renderSpecialistItem = useCallback(
     ({ item: specialist }: { item: SpecialistProfile }) => (
@@ -499,14 +898,14 @@ export default function SpecialistsScreen() {
                   {t("noSkillsListed")}
                 </Text>
               )}
-              {(specialist.Service?.technologies?.length || 0) > 5 && (
+              {(specialist.Category?.technologies?.length || 0) > 5 && (
                 <Text
                   style={[
                     styles.moreSkillsText,
                     { color: colors.tabIconDefault },
                   ]}
                 >
-                  +{(specialist.Service?.technologies?.length || 0) - 5}{" "}
+                  +{(specialist.Category?.technologies?.length || 0) - 5}{" "}
                   {t("more")}
                 </Text>
               )}
@@ -521,24 +920,26 @@ export default function SpecialistsScreen() {
                   {specialist.experienceYears || 0} {t("yearsExperience")}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={[
-                  styles.hireButton,
-                  {
-                    backgroundColor: colors.tint,
-                  },
-                ]}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleHireSpecialist(specialist);
-                }}
-              >
-                <Text
-                  style={[styles.hireButtonText, { color: colors.background }]}
+              {specialist.User?.id !== user?.id && (
+                <TouchableOpacity
+                  style={[
+                    styles.hireButton,
+                    {
+                      backgroundColor: colors.tint,
+                    },
+                  ]}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleHireSpecialist(specialist);
+                  }}
                 >
-                  {t("hire")}
-                </Text>
-              </TouchableOpacity>
+                  <Text
+                    style={[styles.hireButtonText, { color: colors.background }]}
+                  >
+                    {t("hire")}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </ResponsiveCard>
@@ -604,10 +1005,19 @@ export default function SpecialistsScreen() {
 
   return (
     <Layout header={header}>
+      <TopTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
       <View style={styles.container}>
         <ResponsiveCard padding={Spacing.md}>
           <Filter
-            searchPlaceholder={t("searchSpecialistsSkills")}
+            searchPlaceholder={
+              activeTab === "teams"
+                ? t("searchTeams") || "Search teams..."
+                : t("searchSpecialistsSkills")
+            }
             onSearchChange={handleSearchChange}
             filterSections={filterSections}
             selectedFilters={selectedFilters}
@@ -615,40 +1025,78 @@ export default function SpecialistsScreen() {
           />
         </ResponsiveCard>
 
-        {/* Show skeleton during initial load, otherwise show FlatList */}
-        {isInitialLoading ? (
-          <View style={{ flex: 1 }}>
-            <FloatingSkeleton
-              count={5}
-              itemHeight={300}
-              showImage={false}
-              showAvatar={true}
-              showTitle={false}
-              showDescription={true}
-              showDetails={true}
-              showTags={true}
-              showFooter={true}
-            />
-          </View>
-        ) : (
-          <FlatList
-            data={filteredSpecialists}
-            renderItem={renderSpecialistItem}
-            keyExtractor={(item) => item.id.toString()}
-            ListHeaderComponent={renderHeader}
-            ListFooterComponent={renderFooter}
-            ListEmptyComponent={renderEmptyComponent}
-            {...flatListProps}
-            refreshControl={
-              <RefreshControl
-                refreshing={isLoading}
-                onRefresh={onRefresh}
-                tintColor={colors.tint}
+        {/* Show content based on active tab */}
+        {activeTab === "individuals" ? (
+          <>
+            {/* Show skeleton during initial load, otherwise show FlatList */}
+            {isInitialLoading ? (
+              <View style={{ flex: 1 }}>
+                <FloatingSkeleton
+                  count={5}
+                  itemHeight={300}
+                  showImage={false}
+                  showAvatar={true}
+                  showTitle={false}
+                  showDescription={true}
+                  showDetails={true}
+                  showTags={true}
+                  showFooter={true}
+                />
+              </View>
+            ) : (
+              <FlatList
+                data={filteredSpecialists}
+                renderItem={renderSpecialistItem}
+                keyExtractor={(item) => item.id.toString()}
+                ListHeaderComponent={renderHeader}
+                ListFooterComponent={renderFooter}
+                ListEmptyComponent={renderEmptyComponent}
+                {...flatListProps}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isLoading}
+                    onRefresh={onRefresh}
+                    tintColor={colors.tint}
+                  />
+                }
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
               />
-            }
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
-          />
+            )}
+          </>
+        ) : (
+          <>
+            {/* Teams tab */}
+            {teamsLoading ? (
+              <FloatingSkeleton
+                count={5}
+                itemHeight={220}
+                showImage={false}
+                showAvatar={true}
+                showTitle={true}
+                showDescription={false}
+                showDetails={true}
+                showTags={false}
+                showFooter={true}
+              />
+            ) : (
+              <FlatList
+                data={filteredTeams}
+                renderItem={renderTeamItem}
+                keyExtractor={(item) => item.id.toString()}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={teamsRefreshing}
+                    onRefresh={onTeamsRefresh}
+                    tintColor={colors.tint}
+                  />
+                }
+                ListEmptyComponent={renderTeamsEmptyComponent}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 6 * Spacing.lg }}
+              />
+            )}
+          </>
         )}
       </View>
 
@@ -656,8 +1104,10 @@ export default function SpecialistsScreen() {
         visible={hiringDialogVisible}
         onClose={handleHiringClose}
         onSubmit={handleHiringSubmit}
-        specialistName={selectedSpecialist?.User.name || ""}
-        specialistId={selectedSpecialist?.id || 0}
+        specialistName={
+          selectedSpecialist?.User.name || selectedTeam?.name || ""
+        }
+        specialistId={selectedSpecialist?.id || selectedTeam?.id || 0}
         userOrders={userOrders}
         loading={hiringLoading}
       />
@@ -829,5 +1279,87 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     fontWeight: "600",
+  },
+  // Teams styles
+  teamCard: {
+    padding: 20,
+    borderRadius: 16,
+  },
+  teamHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  teamInfo: {
+    flex: 1,
+  },
+  teamName: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 8,
+    lineHeight: 26,
+  },
+  teamMeta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.md,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  metaText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  membersContainer: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  membersTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  membersList: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  memberAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarInitials: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  moreMembers: {
+    borderWidth: 1,
+    borderStyle: "dashed",
+  },
+  moreMembersText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  teamFooter: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.1)",
   },
 });
