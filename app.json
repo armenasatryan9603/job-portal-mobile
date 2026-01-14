@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "job-portal-mobile",
+    "name": "HotWork",
     "slug": "job-portal-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,7 +17,7 @@
     },
     "newArchEnabled": true,
     "ios": {
-      "name": "JobWise",
+      "name": "HotWork",
       "deploymentTarget": "17.0",
       "supportsTablet": true,
       "bundleIdentifier": "com.jobportalmobile.app",

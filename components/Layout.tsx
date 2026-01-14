@@ -190,11 +190,12 @@ export const Layout: React.FC<LayoutProps> = ({
           <View
             style={[
               styles.logoSection,
-              { paddingTop: insets.top + 16, borderBottomColor: colors.border },
+              { paddingTop: insets.top - 8, borderBottomColor: colors.border },
             ]}
           >
             <Logo
-              size={24}
+              size={33}
+              type="full"
               onPress={() => {
                 closeSidebar();
                 router.push("/");
@@ -519,14 +520,11 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   logoSection: {
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderBottomWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
   },
   sidebarLogo: {
-    alignSelf: "center",
+    marginHorizontal: 8,
   },
   userSection: {
     paddingVertical: 16,

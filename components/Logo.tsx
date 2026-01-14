@@ -1,22 +1,17 @@
-import React, { useState } from "react";
+import React from "react";
 import {
-  Image,
-  ImageStyle,
-  StyleProp,
-  StyleSheet,
   TouchableOpacity,
-  View,
   ViewStyle,
 } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { IconSymbol } from "./ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import LogoFullSvg from "@/assets/images/logo-full.svg";
+import LogoShortSvg from "@/assets/images/logo-short.svg";
 
 interface LogoProps {
   size?: number; // Default: 40
   style?: ViewStyle;
   onPress?: () => void; // Optional navigation to home
   variant?: "default" | "small" | "large"; // Predefined sizes
+  type?: "full" | "short"; // Logo type
 }
 
 const SIZE_VARIANTS = {
@@ -30,40 +25,19 @@ export const Logo: React.FC<LogoProps> = ({
   style,
   onPress,
   variant = "default",
+  type = "short",
 }) => {
-  const colorScheme = useColorScheme();
-  const colors = ThemeColors[colorScheme ?? "light"];
   const logoSize = size || SIZE_VARIANTS[variant];
-  const [imageError, setImageError] = useState(false);
 
-  const handleImageError = () => {
-    setImageError(true);
-  };
+  // Calculate dimensions based on aspect ratio
+  const aspectRatio = type === "full" ? 375 / 62.74 : 114 / 62;
+  const logoHeight = logoSize;
+  const logoWidth = logoSize * aspectRatio;
 
-  const logoContent = imageError ? (
-    <View
-      style={[
-        styles.placeholder,
-        { width: logoSize, height: logoSize, backgroundColor: colors.border },
-      ]}
-    >
-      <IconSymbol
-        name="photo"
-        size={logoSize * 0.5}
-        color={colors.tabIconDefault}
-      />
-    </View>
-  ) : (
-    <Image
-      source={require("@/assets/images/icon.png")}
-      style={[
-        styles.image,
-        { width: logoSize, height: logoSize },
-        style as StyleProp<ImageStyle>,
-      ]}
-      resizeMode="contain"
-      onError={handleImageError}
-    />
+  const LogoComponent = type === "full" ? LogoFullSvg : LogoShortSvg;
+
+  const logoContent = (
+    <LogoComponent width={logoWidth} height={logoHeight} style={style} />
   );
 
   if (onPress) {
@@ -74,17 +48,5 @@ export const Logo: React.FC<LogoProps> = ({
     );
   }
 
-  return <View style={style}>{logoContent}</View>;
+  return logoContent;
 };
-
-const styles = StyleSheet.create({
-  image: {
-    width: 40,
-    height: 40,
-  },
-  placeholder: {
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
