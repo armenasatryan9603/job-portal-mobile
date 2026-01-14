@@ -418,8 +418,8 @@ class ApiService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
 
-    // Get auth token only if authentication is required
-    const token = requireAuth ? await this.getAuthToken() : null;
+    // Always try to get auth token (for optional auth endpoints)
+    const token = await this.getAuthToken();
 
     // If auth is required but no token, throw immediately
     if (requireAuth && !token) {
@@ -1704,8 +1704,9 @@ class ApiService {
   }
 
   async getTeams(): Promise<any[]> {
-    // Use auth token so team leads get pending invitations included
-    return this.request(`/peers/teams`, {}, true);
+    // Optional auth - if token exists, team leads get pending invitations included
+    // If no token, public teams are returned
+    return this.request(`/peers/teams`, {}, false);
   }
 
   async createTeam(name: string): Promise<any> {

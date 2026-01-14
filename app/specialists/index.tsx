@@ -188,7 +188,7 @@ export default function SpecialistsScreen() {
     } finally {
       setTeamsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   useEffect(() => {
     if (activeTab === "teams") {
@@ -724,11 +724,9 @@ export default function SpecialistsScreen() {
         <EmptyPage
           type="empty"
           icon="person.3"
-          title={!isAuthenticated ? t("loginToViewTeams") : t("noTeams")}
+          title={t("noTeams")}
           subtitle={
-            !isAuthenticated
-              ? t("loginToViewTeamsDesc")
-              : searchQuery
+            searchQuery
               ? t("tryAdjustingSearchTerms")
               : t("noTeamsAvailable")
           }
@@ -736,7 +734,7 @@ export default function SpecialistsScreen() {
       );
     }
     return null;
-  }, [filteredTeams.length, searchQuery, teamsLoading, isAuthenticated, t]);
+  }, [filteredTeams.length, searchQuery, teamsLoading, t]);
 
   const renderSpecialistItem = useCallback(
     ({ item: specialist }: { item: SpecialistProfile }) => (
