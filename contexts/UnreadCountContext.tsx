@@ -7,6 +7,8 @@ import React, {
 } from "react";
 import NotificationService from "@/services/NotificationService";
 import { useUnreadNotificationCount } from "@/hooks/useApi";
+import { pusherService } from "@/services/pusherService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UnreadCountContextType {
   unreadNotificationsCount: number;
@@ -22,40 +24,60 @@ interface UnreadCountProviderProps {
   children: ReactNode;
 }
 
-// Inner component to use hooks (hooks can only be used in components)
-const UnreadCountProviderInner: React.FC<{
-  children: ReactNode;
-  setUnreadNotificationsCount: (count: number) => void;
-  setUnreadMessagesCount: (count: number) => void;
-}> = ({ children, setUnreadNotificationsCount, setUnreadMessagesCount }) => {
+export const UnreadCountProvider: React.FC<UnreadCountProviderProps> = ({
+  children,
+}) => {
+  const { user, isAuthenticated } = useAuth();
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+
   // Use TanStack Query for unread count (has minimal 60-second polling as fallback)
-  const { data: unreadCount = 0 } = useUnreadNotificationCount();
+  const { data: unreadCount = 0, refetch } = useUnreadNotificationCount();
 
   // Sync TanStack Query data to context state for Header badge
   useEffect(() => {
     setUnreadNotificationsCount(unreadCount);
-  }, [unreadCount, setUnreadNotificationsCount]);
+  }, [unreadCount]);
 
   // Initialize notifications on mount (only once)
   useEffect(() => {
-    const initializeNotifications = async () => {
-      try {
-        await NotificationService.getInstance().initialize();
-      } catch (error) {
-        console.error("Error initializing notifications:", error);
-      }
-    };
-    initializeNotifications();
+    NotificationService.getInstance()
+      .initialize()
+      .catch((error) =>
+        console.error("Error initializing notifications:", error)
+      );
   }, []);
 
-  return <>{children}</>;
-};
+  // Listen to Pusher notification events for real-time updates
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
 
-export const UnreadCountProvider: React.FC<UnreadCountProviderProps> = ({
-  children,
-}) => {
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
-  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+    let unsubscribe: (() => void) | undefined;
+
+    pusherService.initialize().then(() => {
+      unsubscribe = pusherService.subscribeToNotifications(
+        user.id,
+        (notificationData: any) => {
+          // Increment count immediately
+          setUnreadNotificationsCount((prev) => prev + 1);
+
+          // Trigger notification toast
+          NotificationService.getInstance().triggerNotificationToast({
+            id: notificationData.notificationId,
+            title: notificationData.title,
+            message: notificationData.message,
+            type: notificationData.type,
+            data: notificationData.data,
+          });
+
+          // Refetch for accuracy
+          refetch();
+        }
+      );
+    });
+
+    return () => unsubscribe?.();
+  }, [isAuthenticated, user?.id, refetch]);
 
   const value: UnreadCountContextType = {
     unreadNotificationsCount,
@@ -65,12 +87,7 @@ export const UnreadCountProvider: React.FC<UnreadCountProviderProps> = ({
 
   return (
     <UnreadCountContext.Provider value={value}>
-      <UnreadCountProviderInner
-        setUnreadNotificationsCount={setUnreadNotificationsCount}
-        setUnreadMessagesCount={setUnreadMessagesCount}
-      >
-        {children}
-      </UnreadCountProviderInner>
+      {children}
     </UnreadCountContext.Provider>
   );
 };

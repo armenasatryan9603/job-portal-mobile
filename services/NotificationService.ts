@@ -46,8 +46,18 @@ export interface ChatReminderPayload {
   conversationId?: string;
   messageId?: string;
   senderId?: string;
+  sender?: string;
   title: string;
   body: string;
+}
+
+export interface NotificationToastPayload {
+  id?: string;
+  title: string;
+  body: string;
+  type?: string;
+  sender?: string;
+  data?: any;
 }
 
 interface RemoteMessage {
@@ -76,6 +86,9 @@ class NotificationService {
   private activeConversationId: number | null = null;
   private chatReminderListeners = new Set<
     (payload: ChatReminderPayload) => void
+  >();
+  private notificationToastListeners = new Set<
+    (payload: NotificationToastPayload) => void
   >();
   // Track recently shown reminders to prevent duplicates (Pusher + FCM)
   private recentReminders = new Map<string, number>(); // messageId -> timestamp
@@ -107,6 +120,49 @@ class NotificationService {
       } catch (error) {
         console.error("Error delivering chat reminder:", error);
       }
+    });
+  }
+
+  onNotificationToast(
+    listener: (payload: NotificationToastPayload) => void
+  ): () => void {
+    this.notificationToastListeners.add(listener);
+    return () => {
+      this.notificationToastListeners.delete(listener);
+    };
+  }
+
+  private emitNotificationToast(payload: NotificationToastPayload) {
+    this.notificationToastListeners.forEach((listener) => {
+      try {
+        listener(payload);
+      } catch (error) {
+        console.error("Error delivering notification toast:", error);
+      }
+    });
+  }
+
+  /**
+   * Manually trigger a notification toast for a notification received via Pusher
+   * This is used when notifications come through real-time Pusher channels
+   */
+  triggerNotificationToast(notification: {
+    id?: number;
+    title: string;
+    message: string;
+    type?: string;
+    data?: any;
+  }): void {
+    const sender =
+      notification.data?.senderName || notification.data?.Sender?.name;
+
+    this.emitNotificationToast({
+      id: notification.id?.toString(),
+      title: notification.title,
+      body: notification.message,
+      type: notification.type,
+      sender,
+      data: notification.data,
     });
   }
 
@@ -694,11 +750,14 @@ class NotificationService {
     // When Firebase notifications are displayed via expo-notifications (in background-message-handler.ts),
     // tapping them will automatically trigger the response listener
     // This method is kept for logging purposes only
-    console.log("Notification tap detected (navigation handled by expo-notifications):", {
-      type: remoteMessage.data?.type,
-      conversationId: remoteMessage.data?.conversationId,
-      notificationId: remoteMessage.data?.notificationId,
-    });
+    console.log(
+      "Notification tap detected (navigation handled by expo-notifications):",
+      {
+        type: remoteMessage.data?.type,
+        conversationId: remoteMessage.data?.conversationId,
+        notificationId: remoteMessage.data?.notificationId,
+      }
+    );
   }
 
   // Method to get current unread count (for testing)

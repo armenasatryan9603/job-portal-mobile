@@ -3,24 +3,29 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 
 import NotificationService, {
   ChatReminderPayload,
+  NotificationToastPayload,
 } from "@/services/NotificationService";
 
-interface ChatReminder {
-  conversationId: number;
+interface ToastReminder {
+  type: "chat" | "notification";
+  conversationId?: number;
   messageId?: string;
   senderId?: string;
+  sender?: string;
   title: string;
   body: string;
+  notificationId?: string;
+  orderId?: string;
+  data?: any;
 }
 
 interface ChatReminderContextValue {
-  reminder: ChatReminder | null;
+  reminder: ToastReminder | null;
   dismissReminder: () => void;
   setActiveConversationId: (conversationId: number | null) => void;
 }
@@ -32,67 +37,69 @@ const ChatReminderContext = createContext<ChatReminderContextValue | undefined>(
 export const ChatReminderProvider: React.FC<React.PropsWithChildren> = ({
   children,
 }) => {
-  const [reminder, setReminder] = useState<ChatReminder | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [reminder, setReminder] = useState<ToastReminder | null>(null);
 
+  // Listen to both chat reminders and notification toasts
   useEffect(() => {
-    const unsubscribe = NotificationService.getInstance().onChatReminder(
+    const notificationService = NotificationService.getInstance();
+
+    const unsubscribeChat = notificationService.onChatReminder(
       (payload: ChatReminderPayload) => {
-        if (!payload.conversationId) {
-          return;
-        }
+        if (!payload.conversationId) return;
 
         const conversationId = Number(payload.conversationId);
-        if (Number.isNaN(conversationId)) {
-          return;
-        }
+        if (Number.isNaN(conversationId)) return;
 
         setReminder({
+          type: "chat",
           conversationId,
           messageId: payload.messageId,
           senderId: payload.senderId,
+          sender: payload.sender,
           title: payload.title,
           body: payload.body,
         });
       }
     );
 
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-
-    if (reminder) {
-      timeoutRef.current = setTimeout(() => {
-        setReminder(null);
-      }, 6000);
-    }
+    const unsubscribeNotification = notificationService.onNotificationToast(
+      (payload: NotificationToastPayload) => {
+        setReminder({
+          type: "notification",
+          title: payload.title,
+          body: payload.body,
+          sender: payload.sender,
+          notificationId: payload.id,
+          orderId: payload.data?.orderId,
+          data: payload.data,
+        });
+      }
+    );
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
-      }
+      unsubscribeChat();
+      unsubscribeNotification();
     };
+  }, []);
+
+  // Auto-dismiss reminder after 6 seconds
+  useEffect(() => {
+    if (!reminder) return;
+
+    const timeout = setTimeout(() => setReminder(null), 6000);
+    return () => clearTimeout(timeout);
   }, [reminder]);
 
-  const dismissReminder = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    setReminder(null);
-  }, []);
+  const dismissReminder = useCallback(() => setReminder(null), []);
 
-  const setActiveConversationId = useCallback((conversationId: number | null) => {
-    NotificationService.getInstance().setActiveConversationId(
-      conversationId ?? null
-    );
-  }, []);
+  const setActiveConversationId = useCallback(
+    (conversationId: number | null) => {
+      NotificationService.getInstance().setActiveConversationId(
+        conversationId ?? null
+      );
+    },
+    []
+  );
 
   const value: ChatReminderContextValue = {
     reminder,
@@ -116,4 +123,3 @@ export const useChatReminder = (): ChatReminderContextValue => {
   }
   return context;
 };
-

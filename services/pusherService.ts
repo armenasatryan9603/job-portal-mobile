@@ -221,7 +221,8 @@ class PusherService {
       orderId: number;
       status: string;
       updatedAt: string;
-    }) => void
+    }) => void,
+    onNotificationCreated?: (data: any) => void
   ) {
     if (!this.pusher) {
       return () => {};
@@ -234,61 +235,105 @@ class PusherService {
     if (this.channels.has(channelName)) {
       const existingChannel = this.channels.get(channelName);
 
-      // Unbind old handlers and bind new ones
-      existingChannel.unbind("conversation-updated");
-      existingChannel.unbind("conversation-status-updated");
-      existingChannel.unbind("order-status-updated");
-
-      existingChannel.bind("conversation-updated", (data: any) => {
+      // Store the specific handler functions so we can unbind them later
+      const conversationHandler = (data: any) => {
         console.log("💬 Conversation updated:", data);
         if (data) onConversationUpdated(data);
-      });
+      };
 
-      if (onStatusUpdate) {
-        existingChannel.bind("conversation-status-updated", (data: any) => {
-          console.log("🔄 Conversation status updated:", data);
-          onStatusUpdate(data);
-        });
+      const statusHandler = onStatusUpdate
+        ? (data: any) => {
+            console.log("🔄 Conversation status updated:", data);
+            onStatusUpdate(data);
+          }
+        : null;
+
+      const orderHandler = onOrderStatusUpdate
+        ? (data: any) => {
+            console.log("📦 Order status updated:", data);
+            onOrderStatusUpdate(data);
+          }
+        : null;
+
+      const notificationHandler = onNotificationCreated
+        ? (data: any) => {
+            console.log("🔔 Notification created:", data);
+            onNotificationCreated(data);
+          }
+        : null;
+
+      // Bind new handlers (don't unbind existing ones - they might be from other subscribers)
+      existingChannel.bind("conversation-updated", conversationHandler);
+
+      if (statusHandler) {
+        existingChannel.bind("conversation-status-updated", statusHandler);
       }
 
-      if (onOrderStatusUpdate) {
-        existingChannel.bind("order-status-updated", (data: any) => {
-          console.log("📦 Order status updated:", data);
-          onOrderStatusUpdate(data);
-        });
+      if (orderHandler) {
+        existingChannel.bind("order-status-updated", orderHandler);
       }
 
-      // Return cleanup function that doesn't unsubscribe (since we're reusing the channel)
-      // The channel will only be unsubscribed when the component fully unmounts
+      if (notificationHandler) {
+        existingChannel.bind("notification-created", notificationHandler);
+      }
+
+      // Return cleanup function that unbinds only our specific handlers
       return () => {
-        // Just unbind handlers, don't unsubscribe the channel
-        // This prevents the subscription_succeeded event from firing again
-        existingChannel.unbind("conversation-updated");
-        existingChannel.unbind("conversation-status-updated");
-        existingChannel.unbind("order-status-updated");
+        existingChannel.unbind("conversation-updated", conversationHandler);
+        if (statusHandler) {
+          existingChannel.unbind("conversation-status-updated", statusHandler);
+        }
+        if (orderHandler) {
+          existingChannel.unbind("order-status-updated", orderHandler);
+        }
+        if (notificationHandler) {
+          existingChannel.unbind("notification-created", notificationHandler);
+        }
       };
     }
 
     // New subscription - only happens once per user
     const channel = this.pusher.subscribe(channelName);
 
-    channel.bind("conversation-updated", (data: any) => {
+    // Store the specific handler functions so we can unbind them later
+    const conversationHandler = (data: any) => {
       console.log("💬 Conversation updated:", data);
       if (data) onConversationUpdated(data);
-    });
+    };
 
-    if (onStatusUpdate) {
-      channel.bind("conversation-status-updated", (data: any) => {
-        console.log("🔄 Conversation status updated:", data);
-        onStatusUpdate(data);
-      });
+    const statusHandler = onStatusUpdate
+      ? (data: any) => {
+          console.log("🔄 Conversation status updated:", data);
+          onStatusUpdate(data);
+        }
+      : null;
+
+    const orderHandler = onOrderStatusUpdate
+      ? (data: any) => {
+          console.log("📦 Order status updated:", data);
+          onOrderStatusUpdate(data);
+        }
+      : null;
+
+    const notificationHandler = onNotificationCreated
+      ? (data: any) => {
+          console.log("🔔 Notification created:", data);
+          onNotificationCreated(data);
+        }
+      : null;
+
+    channel.bind("conversation-updated", conversationHandler);
+
+    if (statusHandler) {
+      channel.bind("conversation-status-updated", statusHandler);
     }
 
-    if (onOrderStatusUpdate) {
-      channel.bind("order-status-updated", (data: any) => {
-        console.log("📦 Order status updated:", data);
-        onOrderStatusUpdate(data);
-      });
+    if (orderHandler) {
+      channel.bind("order-status-updated", orderHandler);
+    }
+
+    if (notificationHandler) {
+      channel.bind("notification-created", notificationHandler);
     }
 
     channel.bind("pusher:subscription_succeeded", () => {
@@ -302,14 +347,68 @@ class PusherService {
     this.channels.set(channelName, channel);
 
     return () => {
-      // Only unsubscribe if this is the last handler (when component unmounts)
-      // For now, we'll keep the channel subscribed and just unbind handlers
-      // The channel will be cleaned up when Pusher disconnects
+      // Unbind only our specific handlers
       const channel = this.channels.get(channelName);
       if (channel) {
-        channel.unbind("conversation-updated");
-        channel.unbind("conversation-status-updated");
-        channel.unbind("order-status-updated");
+        channel.unbind("conversation-updated", conversationHandler);
+        if (statusHandler) {
+          channel.unbind("conversation-status-updated", statusHandler);
+        }
+        if (orderHandler) {
+          channel.unbind("order-status-updated", orderHandler);
+        }
+        if (notificationHandler) {
+          channel.unbind("notification-created", notificationHandler);
+        }
+      }
+    };
+  }
+
+  /**
+   * Subscribe only to notification events without affecting conversation handlers
+   * Use this when you only need notification updates and don't want to interfere with chat
+   */
+  subscribeToNotifications(
+    userId: number,
+    onNotificationCreated: (data: any) => void
+  ) {
+    if (!this.pusher) {
+      return () => {};
+    }
+
+    const channelName = `user-${userId}`;
+
+    // Get or create the channel
+    let channel = this.channels.get(channelName);
+
+    if (!channel) {
+      // Channel doesn't exist yet, create it
+      channel = this.pusher.subscribe(channelName);
+      this.channels.set(channelName, channel);
+
+      channel.bind("pusher:subscription_succeeded", () => {
+        console.log(`✅ Subscribed to user-${userId} (notifications only)`);
+      });
+
+      channel.bind("pusher:subscription_error", (error: any) => {
+        console.error(`❌ Subscription error for user-${userId}:`, error);
+      });
+    }
+
+    // Create a specific handler function for proper cleanup
+    const notificationHandler = (data: any) => {
+      console.log("🔔 Notification created:", data);
+      onNotificationCreated(data);
+    };
+
+    // Bind to notification events
+    channel.bind("notification-created", notificationHandler);
+
+    // Return cleanup function that unbinds only this specific handler
+    return () => {
+      const channel = this.channels.get(channelName);
+      if (channel) {
+        channel.unbind("notification-created", notificationHandler);
       }
     };
   }

@@ -857,7 +857,7 @@ export const useUnreadNotificationCount = () => {
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: isAuthenticated,
     retry: isOnline,
-    refetchInterval: 60000, // Minimal polling: Refetch every 60 seconds (fallback when FCM fails)
+    refetchInterval: 300000, // 5 minutes (Pusher is primary, this is backup)
   });
 };
 

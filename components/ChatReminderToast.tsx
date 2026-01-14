@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useMemo } from "react";
 import {
   Animated,
+  PanResponder,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,11 +14,51 @@ import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useChatReminder } from "@/contexts/ChatReminderContext";
 
+const SWIPE_THRESHOLD = -50; // Swipe up this much to dismiss
+
 export const ChatReminderToast: React.FC = () => {
   const { reminder, dismissReminder } = useChatReminder();
   const translateY = useRef(new Animated.Value(-120)).current;
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, gestureState) => {
+          // Only capture vertical swipes
+          return Math.abs(gestureState.dy) > 5;
+        },
+        onPanResponderMove: (_, gestureState) => {
+          // Only allow upward movement (negative dy)
+          if (gestureState.dy < 0) {
+            translateY.setValue(gestureState.dy);
+          }
+        },
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dy < SWIPE_THRESHOLD) {
+            // Swiped up enough, dismiss
+            Animated.timing(translateY, {
+              toValue: -120,
+              duration: 200,
+              useNativeDriver: true,
+            }).start(() => {
+              dismissReminder();
+            });
+          } else {
+            // Not enough, spring back
+            Animated.spring(translateY, {
+              toValue: 0,
+              useNativeDriver: true,
+              tension: 100,
+              friction: 8,
+            }).start();
+          }
+        },
+      }),
+    [translateY, dismissReminder]
+  );
 
   useEffect(() => {
     Animated.timing(translateY, {
@@ -32,10 +73,14 @@ export const ChatReminderToast: React.FC = () => {
   }
 
   const handlePress = () => {
-    const targetConversationId = reminder.conversationId;
     dismissReminder();
-    if (targetConversationId) {
-      router.push(`/chat/${targetConversationId}`);
+
+    if (reminder.type === "chat" && reminder.conversationId) {
+      router.push(`/chat/${reminder.conversationId}`);
+    } else if (reminder.type === "notification") {
+      router.push(
+        reminder.orderId ? `/orders/${reminder.orderId}` : "/notifications"
+      );
     }
   };
 
@@ -44,40 +89,46 @@ export const ChatReminderToast: React.FC = () => {
       pointerEvents="box-none"
       style={[styles.container, { transform: [{ translateY }] }]}
     >
-      <TouchableOpacity
-        onPress={handlePress}
-        activeOpacity={0.9}
-        style={[
-          styles.toast,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
-        <View style={styles.iconWrapper}>
-          <IconSymbol
-            name="bubble.left.and.text.bubble.right.fill"
-            size={18}
-            color="white"
-          />
-        </View>
-        <View style={styles.textWrapper}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {reminder.title}
-          </Text>
-          <Text style={[styles.body, { color: colors.tabIconDefault }]}>
-            {reminder.body}
-          </Text>
-        </View>
-        <View style={styles.chevron}>
-          <IconSymbol
-            name="chevron.right"
-            size={16}
-            color={colors.tabIconDefault}
-          />
-        </View>
-      </TouchableOpacity>
+      <Animated.View style={{ width: "100%" }} {...panResponder.panHandlers}>
+        <TouchableOpacity
+          onPress={handlePress}
+          activeOpacity={0.9}
+          style={[
+            styles.toast,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.iconWrapper}>
+            <IconSymbol
+              name={
+                reminder.type === "chat"
+                  ? "bubble.left.and.text.bubble.right.fill"
+                  : "bell.fill"
+              }
+              size={18}
+              color="white"
+            />
+          </View>
+          <View style={styles.textWrapper}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {reminder.title}
+            </Text>
+            <Text style={[styles.body, { color: colors.tabIconDefault }]}>
+              {reminder.body}
+            </Text>
+          </View>
+          <View style={styles.chevron}>
+            <IconSymbol
+              name="chevron.right"
+              size={16}
+              color={colors.tabIconDefault}
+            />
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     </Animated.View>
   );
 };
@@ -94,7 +145,7 @@ const styles = StyleSheet.create({
   toast: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: 16,
     paddingHorizontal: 16,
     borderRadius: 14,
     borderWidth: 1,

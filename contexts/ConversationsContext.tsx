@@ -65,6 +65,15 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
     }, 0);
   };
 
+  // Update unread count whenever conversations change
+  useEffect(() => {
+    if (user?.id) {
+      const unreadCount = calculateUnreadCount(conversations);
+      setUnreadMessagesCount(unreadCount);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversations, user?.id]);
+
   // Fetch conversations
   const refreshConversations = async () => {
     if (!isAuthenticated || !user) {
@@ -138,10 +147,6 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
           return backendConv;
         });
 
-        // Update unread count after merge
-        const unreadCount = calculateUnreadCount(merged);
-        setUnreadMessagesCount(unreadCount);
-
         return merged;
       });
     } catch (err) {
@@ -170,25 +175,15 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       );
 
-      // Recalculate unread count after update
-      const unreadCount = calculateUnreadCount(sorted);
-      setUnreadMessagesCount(unreadCount);
-
       return sorted;
     });
   };
 
   // Remove a conversation from the list (when deleted)
   const removeConversation = (conversationId: number) => {
-    setConversations((prev) => {
-      const filtered = prev.filter((conv) => conv.id !== conversationId);
-
-      // Recalculate unread count after removal
-      const unreadCount = calculateUnreadCount(filtered);
-      setUnreadMessagesCount(unreadCount);
-
-      return filtered;
-    });
+    setConversations((prev) =>
+      prev.filter((conv) => conv.id !== conversationId)
+    );
   };
 
   // Fetch conversations when user is authenticated
@@ -241,8 +236,6 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
                   new Date(b.updatedAt).getTime() -
                   new Date(a.updatedAt).getTime()
               );
-              const unreadCount = calculateUnreadCount(sorted);
-              setUnreadMessagesCount(unreadCount);
               return sorted;
             } else {
               refreshConversations();

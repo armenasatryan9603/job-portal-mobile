@@ -24,7 +24,7 @@ import { queryClient } from "@/services/queryClient";
 
 import { GlobalModals } from "@/components/GlobalModals";
 import { ChatReminderToast } from "@/components/ChatReminderToast";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { CreditCardProvider } from "@/contexts/CreditCardContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ModalProvider } from "@/contexts/ModalContext";
@@ -105,7 +105,12 @@ function AppContent() {
 
         // Handle other notifications - notificationId should be present for all non-chat notifications
         // Check if notificationId exists and is valid (not empty, not "undefined", not "null")
-        if (notificationId && notificationId !== "" && notificationId !== "undefined" && notificationId !== "null") {
+        if (
+          notificationId &&
+          notificationId !== "" &&
+          notificationId !== "undefined" &&
+          notificationId !== "null"
+        ) {
           router.push(`/notifications/${notificationId}`);
           return;
         }
@@ -138,19 +143,21 @@ function AppContent() {
 
     messaging()
       .getInitialNotification()
-      .then((remoteMessage) => {
+      .then((remoteMessage: any) => {
         if (remoteMessage) {
           navigateFromNotification(remoteMessage.data);
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error("Error getting initial notification:", error);
       });
 
     // Also handle when app is opened from background
-    const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
-      navigateFromNotification(remoteMessage.data);
-    });
+    const unsubscribe = messaging().onNotificationOpenedApp(
+      (remoteMessage: any) => {
+        navigateFromNotification(remoteMessage.data);
+      }
+    );
 
     return () => {
       unsubscribe();
