@@ -15,7 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ResponsiveCard } from "./ResponsiveContainer";
 import { IconSymbol } from "./ui/icon-symbol";
-import { Skill } from "@/services/api";
+import { Skill } from "@/categories/api";
 import { SkillDescriptionModal } from "./SkillDescriptionModal";
 import { useSkills } from "@/hooks/useApi";
 

@@ -7,7 +7,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import React, { useMemo } from "react";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   ScrollView,
@@ -182,8 +182,17 @@ export default function NotificationDetailScreen() {
     return (
       <Layout header={header}>
         <View style={styles.errorContainer}>
-          <IconSymbol name="hourglass" size={32} color={colors.tabIconDefault} />
-          <Text style={[styles.errorText, { color: colors.textSecondary, marginTop: 12 }]}>
+          <IconSymbol
+            name="hourglass"
+            size={32}
+            color={colors.tabIconDefault}
+          />
+          <Text
+            style={[
+              styles.errorText,
+              { color: colors.textSecondary, marginTop: 12 },
+            ]}
+          >
             {t("loading") || "Loading..."}
           </Text>
         </View>
@@ -196,8 +205,14 @@ export default function NotificationDetailScreen() {
     return (
       <Layout header={header}>
         <View style={styles.errorContainer}>
-          <IconSymbol name="exclamationmark.circle" size={32} color={colors.tabIconDefault} />
-          <Text style={[styles.errorText, { color: colors.text, marginTop: 12 }]}>
+          <IconSymbol
+            name="exclamationmark.circle"
+            size={32}
+            color={colors.tabIconDefault}
+          />
+          <Text
+            style={[styles.errorText, { color: colors.text, marginTop: 12 }]}
+          >
             {t("notificationNotFound")}
           </Text>
         </View>

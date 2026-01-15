@@ -17,11 +17,11 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { chatService, Conversation } from "@/services/chatService";
-import { pusherService } from "@/services/pusherService";
+import { chatService, Conversation } from "@/categories/chatService";
+import { pusherService } from "@/categories/pusherService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/contexts/ConversationsContext";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { ChatListSkeleton } from "@/components/ChatListSkeleton";
 import { formatTimestamp } from "@/utils/dateFormatting";

@@ -21,7 +21,7 @@ import {
 } from "@/utils/creditCardValidation";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   Alert,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Order } from "@/services/api";
+import { Order } from "@/categories/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
 import { useMySubscription } from "@/hooks/useApi";

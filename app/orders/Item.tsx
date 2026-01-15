@@ -17,7 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Order, apiService } from "@/services/api";
+import { Order, apiService } from "@/categories/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";

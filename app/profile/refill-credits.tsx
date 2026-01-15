@@ -12,10 +12,10 @@ import {
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import { router } from "expo-router";
 import React, { useState, useEffect } from "react";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { API_CONFIG } from "@/config/api";
 import {

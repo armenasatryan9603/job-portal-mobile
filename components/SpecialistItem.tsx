@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
-import { User } from "@/services/api";
+import { User } from "@/categories/api";
 import { UserAvatar } from "./UserAvatar";
 
 interface SpecialistItemProps {
@@ -15,7 +15,13 @@ interface SpecialistItemProps {
 }
 
 export const SpecialistItem = memo(
-  ({ specialist, onAdd, onToggle, isSelected, selectionMode }: SpecialistItemProps) => {
+  ({
+    specialist,
+    onAdd,
+    onToggle,
+    isSelected,
+    selectionMode,
+  }: SpecialistItemProps) => {
     const { isDark } = useTheme();
     const colors = ThemeColors[isDark ? "dark" : "light"];
 
@@ -106,4 +112,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
-

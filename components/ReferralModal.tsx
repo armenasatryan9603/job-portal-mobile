@@ -16,7 +16,7 @@ import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 
 interface ReferralModalProps {
   visible: boolean;

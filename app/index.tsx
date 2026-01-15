@@ -77,7 +77,7 @@ export default function WelcomeScreen() {
       title: t("browseCategories"),
       description: t("findSpecialists"),
       icon: "briefcase.fill",
-      route: "/services",
+      route: "/categories",
       color: "#4CAF50",
       gradient: ["#4CAF50", "#45A049"],
     },
@@ -117,8 +117,8 @@ export default function WelcomeScreen() {
 
   const features = [
     {
-      title: t("professionalServices"),
-      description: t("professionalServicesDesc"),
+      title: t("professionalCategories"),
+      description: t("professionalCategoriesDesc"),
       icon: "star.fill",
     },
     {
@@ -203,10 +203,10 @@ export default function WelcomeScreen() {
                   style={styles.primaryButton}
                   onPress={() => {
                     analytics.logEvent("button_clicked", {
-                      button_name: "browse_services",
+                      button_name: "browse_categories",
                       location: "home_hero",
                     });
-                    router.push("/services");
+                    router.push("/categories");
                   }}
                 >
                   <IconSymbol

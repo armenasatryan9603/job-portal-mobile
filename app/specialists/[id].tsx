@@ -24,9 +24,9 @@ import {
   Alert,
   TouchableOpacity,
 } from "react-native";
-import { apiService, SpecialistProfile } from "@/services/api";
+import { apiService, SpecialistProfile } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { SpecialistDetailSkeleton } from "@/components/SpecialistDetailSkeleton";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useAuth } from "@/contexts/AuthContext";

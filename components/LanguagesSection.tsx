@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { apiService, UserProfile, UserLanguage } from "@/services/api";
+import { apiService, UserProfile, UserLanguage } from "@/categories/api";
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from "react";
 import {

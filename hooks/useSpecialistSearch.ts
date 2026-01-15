@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { Alert } from "react-native";
-import { apiService, User } from "@/services/api";
+import { apiService, User } from "@/categories/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { Team } from "./useTeamData";
 
@@ -23,9 +23,7 @@ export const useSpecialistSearch = (team: Team | null) => {
   const pendingInvitationIds = useMemo(
     () =>
       team?.Members?.filter(
-        (m) =>
-          m.status === "pending" ||
-          (m as any).memberStatus === "pending"
+        (m) => m.status === "pending" || (m as any).memberStatus === "pending"
       ).map((m) => m.User.id) || [],
     [team?.Members]
   );
@@ -146,4 +144,3 @@ export const useSpecialistSearch = (team: Team | null) => {
     setAllSpecialists,
   };
 };
-

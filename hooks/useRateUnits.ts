@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { apiService } from "@/services/api";
-import { CACHE_TTL } from "@/services/queryClient";
+import { apiService } from "@/categories/api";
+import { CACHE_TTL } from "@/categories/queryClient";
 
 export interface RateUnit {
   value: string;

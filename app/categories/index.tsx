@@ -33,9 +33,9 @@ import {
   Image,
   Dimensions,
 } from "react-native";
-import { Category } from "@/services/api";
+import { Category } from "@/categories/api";
 import { useCategories, useRootCategories } from "@/hooks/useApi";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { formatPriceDisplay } from "@/utils/currencyRateUnit";
 import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
@@ -158,7 +158,8 @@ const ServicesScreen = () => {
       const selectedCategoriesFilter = selectedFilters["categories"];
       const matchesCategoryFilter =
         !selectedCategoriesFilter ||
-        (Array.isArray(selectedCategoriesFilter) && selectedCategoriesFilter.length === 0) ||
+        (Array.isArray(selectedCategoriesFilter) &&
+          selectedCategoriesFilter.length === 0) ||
         (Array.isArray(selectedCategoriesFilter) &&
           selectedCategoriesFilter.includes(category.id.toString()));
 
@@ -200,7 +201,9 @@ const ServicesScreen = () => {
   // Get child categories for a specific child category (grandchildren)
   const getGrandchildCategories = useCallback(
     (childId: number) => {
-      return filteredCategories.filter((category) => category.parentId === childId);
+      return filteredCategories.filter(
+        (category) => category.parentId === childId
+      );
     },
     [filteredCategories]
   );
@@ -212,7 +215,7 @@ const ServicesScreen = () => {
     });
 
     // Navigate to category details page
-    router.push(`/services/${categoryId}`);
+    router.push(`/categories/${categoryId}`);
   }, []);
 
   // Wrap the handler to dismiss keyboard first if visible
@@ -370,9 +373,7 @@ const ServicesScreen = () => {
           icon="wrench.and.screwdriver"
           title={t("noCategories")}
           subtitle={
-            searchQuery
-              ? t("tryAdjustingSearchTerms")
-              : t("noCategories")
+            searchQuery ? t("tryAdjustingSearchTerms") : t("noCategories")
           }
         />
       );

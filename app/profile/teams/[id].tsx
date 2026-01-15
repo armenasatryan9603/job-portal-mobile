@@ -15,7 +15,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTeamId, useTeamData } from "@/hooks/useTeamData";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";

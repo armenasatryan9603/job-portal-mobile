@@ -20,7 +20,7 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 import { useSubscriptionPlan, usePurchaseSubscription } from "@/hooks/useApi";
-import type { SubscriptionPlan } from "@/services/api";
+import type { SubscriptionPlan } from "@/categories/api";
 
 export default function SubscriptionDetailScreen() {
   useAnalytics("SubscriptionDetail");

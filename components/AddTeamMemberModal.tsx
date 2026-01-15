@@ -14,7 +14,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { User } from "@/services/api";
+import { User } from "@/categories/api";
 
 interface AddTeamMemberModalProps {
   visible: boolean;

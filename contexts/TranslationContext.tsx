@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import TranslationService, {
   TranslationData,
-} from "../services/TranslationService";
+} from "../categories/TranslationService";
 import { useLanguage } from "./LanguageContext";
 import TRANSLATION_CONFIG from "../config/translations";
 

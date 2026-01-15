@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { usePathname } from "expo-router";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 
 /**
  * Hook to automatically track screen views when route changes

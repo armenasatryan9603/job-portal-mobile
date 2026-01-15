@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Category } from "@/services/api";
+import { Category } from "@/categories/api";
 import { Spacing } from "@/constants/styles";
 
 interface ServiceCardProps {

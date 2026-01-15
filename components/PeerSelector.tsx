@@ -15,7 +15,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, Shadows } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { apiService, User, SpecialistListResponse } from "@/services/api";
+import { apiService, User, SpecialistListResponse } from "@/categories/api";
 import { router } from "expo-router";
 import { CountBadge } from "@/components/CountBadge";
 
@@ -383,7 +383,10 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
   const handleAddPeer = useCallback(
     (peer: User) => {
       if (selectedPeerIds.length >= maxPeers) {
-        Alert.alert(t("error"), t("maximumPeersAllowed").replace("{maxPeers}", maxPeers.toString()));
+        Alert.alert(
+          t("error"),
+          t("maximumPeersAllowed").replace("{maxPeers}", maxPeers.toString())
+        );
         return;
       }
       if (!selectedPeerIds.includes(peer.id)) {
@@ -541,10 +544,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
 
   const handleAddSelectedPeers = useCallback(async () => {
     if (selectedPeersToAdd.length === 0) {
-      Alert.alert(
-        t("error"),
-        t("selectPeersToAdd")
-      );
+      Alert.alert(t("error"), t("selectPeersToAdd"));
       return;
     }
 
@@ -596,10 +596,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
       setShowAddPeerModal(false);
     } catch (error: any) {
       console.error("Error adding peers:", error);
-      Alert.alert(
-        t("error"),
-        error.message || t("failedToAddPeers")
-      );
+      Alert.alert(t("error"), error.message || t("failedToAddPeers"));
     } finally {
       setAddingPeers(false);
     }
@@ -692,9 +689,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
                 onPress={() => router.push("/profile/peers")}
               >
                 <IconSymbol name="person.3" size={16} color="#fff" />
-                <Text style={styles.actionButtonText}>
-                  {t("createTeam")}
-                </Text>
+                <Text style={styles.actionButtonText}>{t("createTeam")}</Text>
               </TouchableOpacity>
             </View>
           ) : (

@@ -17,7 +17,7 @@ import {
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Order, apiService } from "@/services/api";
+import { Order, apiService } from "@/categories/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { PeerSelector } from "./PeerSelector";
 import { useAuth } from "@/contexts/AuthContext";

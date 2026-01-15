@@ -24,7 +24,7 @@ import {
   FlatList,
 } from "react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import CalendarNotificationService from "@/services/CalendarNotificationService";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
 import { CountBadge } from "@/components/CountBadge";
 
 interface Application {

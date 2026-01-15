@@ -9,7 +9,7 @@ import React, {
 import NotificationService, {
   ChatReminderPayload,
   NotificationToastPayload,
-} from "@/services/NotificationService";
+} from "@/categories/NotificationService";
 
 interface ToastReminder {
   type: "chat" | "notification";

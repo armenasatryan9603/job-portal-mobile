@@ -29,10 +29,10 @@ import {
   Image,
   Keyboard,
 } from "react-native";
-import { apiService, Category } from "@/services/api";
+import { apiService, Category } from "@/categories/api";
 import { Button } from "@/components/ui/button";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { Spacing } from "@/constants/styles";
 
 export default function ServiceDetailScreen() {
@@ -79,7 +79,10 @@ export default function ServiceDetailScreen() {
       setLoading(true);
       setError(null);
 
-      const categoryData = await apiService.getCategoryById(categoryId, language);
+      const categoryData = await apiService.getCategoryById(
+        categoryId,
+        language
+      );
       setCategory(categoryData);
       // Track category view
       AnalyticsService.getInstance().logServiceViewed(
@@ -198,7 +201,7 @@ export default function ServiceDetailScreen() {
       location: "category_detail",
       parent_category_id: categoryId.toString(),
     });
-    router.push(`/services/${subCategoryId}`);
+    router.push(`/categories/${subCategoryId}`);
   };
 
   const handleBrowseOrders = () => {

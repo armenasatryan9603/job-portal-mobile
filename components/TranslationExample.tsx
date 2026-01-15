@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { useTranslation } from "../hooks/useTranslation";
-import TranslationService from "../services/TranslationService";
+import TranslationService from "../categories/TranslationService";
 
 /**
  * Example component showing how to use the new translation system

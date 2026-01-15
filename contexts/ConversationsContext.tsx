@@ -5,11 +5,11 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import { chatService, Conversation } from "@/services/chatService";
+import { chatService, Conversation } from "@/categories/chatService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { pusherService } from "@/services/pusherService";
-import NotificationService from "@/services/NotificationService";
+import { pusherService } from "@/categories/pusherService";
+import NotificationService from "@/categories/NotificationService";
 
 interface ConversationsContextType {
   conversations: Conversation[];

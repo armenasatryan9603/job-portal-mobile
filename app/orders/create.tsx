@@ -29,12 +29,12 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { apiService, Category } from "@/services/api";
-import { fileUploadService, MediaFile } from "@/services/fileUpload";
+import { apiService, Category } from "@/categories/api";
+import { fileUploadService, MediaFile } from "@/categories/fileUpload";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { API_CONFIG } from "@/config/api";
 import { DateTimeSelector } from "@/components/DateTimeSelector";
 import { useCategories } from "@/hooks/useApi";

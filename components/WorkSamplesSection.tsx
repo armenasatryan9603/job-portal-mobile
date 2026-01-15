@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { PortfolioItem, apiService } from "@/services/api";
+import { PortfolioItem, apiService } from "@/categories/api";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useAuth } from "@/contexts/AuthContext";

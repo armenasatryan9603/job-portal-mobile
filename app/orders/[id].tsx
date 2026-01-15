@@ -28,11 +28,11 @@ import {
   Platform,
 } from "react-native";
 import { Image } from "expo-image";
-import { apiService, Order, OrderChangeHistory } from "@/services/api";
-import { chatService } from "@/services/chatService";
+import { apiService, Order, OrderChangeHistory } from "@/categories/api";
+import { chatService } from "@/categories/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { ApplyModal } from "@/components/ApplyModal";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
@@ -981,7 +981,10 @@ export default function EditOrderScreen() {
                 rateUnit={order?.rateUnit}
                 showOriginal={true}
                 style={{ ...styles.detailValue, color: colors.text }}
-                originalStyle={{ ...styles.detailValueSmall, color: colors.tabIconDefault }}
+                originalStyle={{
+                  ...styles.detailValueSmall,
+                  color: colors.tabIconDefault,
+                }}
               />
             </View>
           </View>

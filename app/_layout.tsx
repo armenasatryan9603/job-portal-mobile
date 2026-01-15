@@ -20,7 +20,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 // No explicit Firebase initialization needed here (FCM only, no other services)
 
 // Initialize TanStack Query
-import { queryClient } from "@/services/queryClient";
+import { queryClient } from "@/categories/queryClient";
 
 import { GlobalModals } from "@/components/GlobalModals";
 import { ChatReminderToast } from "@/components/ChatReminderToast";
@@ -34,8 +34,8 @@ import { TranslationProvider } from "@/contexts/TranslationContext";
 import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
-import AnalyticsService from "@/services/AnalyticsService";
-import CalendarNotificationService from "@/services/CalendarNotificationService";
+import AnalyticsService from "@/categories/AnalyticsService";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
 import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 

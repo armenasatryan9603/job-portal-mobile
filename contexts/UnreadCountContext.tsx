@@ -5,9 +5,9 @@ import React, {
   useState,
   useEffect,
 } from "react";
-import NotificationService from "@/services/NotificationService";
+import NotificationService from "@/categories/NotificationService";
 import { useUnreadNotificationCount } from "@/hooks/useApi";
-import { pusherService } from "@/services/pusherService";
+import { pusherService } from "@/categories/pusherService";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface UnreadCountContextType {

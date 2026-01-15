@@ -14,7 +14,7 @@ import { ThemeColors, Shadows, BorderRadius } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface BecomeSpecialistModalProps {

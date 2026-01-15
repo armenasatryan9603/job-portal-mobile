@@ -17,7 +17,7 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { apiService, User } from "@/services/api";
+import { apiService, User } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface PeerInvitation {

@@ -26,13 +26,13 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { apiService, SpecialistProfile, User } from "@/services/api";
+import { apiService, SpecialistProfile, User } from "@/categories/api";
 import { useSpecialists, useCategories, useMyOrders } from "@/hooks/useApi";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useModal } from "@/contexts/ModalContext";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface Team {
@@ -726,9 +726,7 @@ export default function SpecialistsScreen() {
           icon="person.3"
           title={t("noTeams")}
           subtitle={
-            searchQuery
-              ? t("tryAdjustingSearchTerms")
-              : t("noTeamsAvailable")
+            searchQuery ? t("tryAdjustingSearchTerms") : t("noTeamsAvailable")
           }
         />
       );
@@ -932,7 +930,10 @@ export default function SpecialistsScreen() {
                   }}
                 >
                   <Text
-                    style={[styles.hireButtonText, { color: colors.background }]}
+                    style={[
+                      styles.hireButtonText,
+                      { color: colors.background },
+                    ]}
                   >
                     {t("hire")}
                   </Text>

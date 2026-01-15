@@ -29,7 +29,7 @@ import {
   TextInput,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
@@ -40,8 +40,8 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
-import AnalyticsService from "@/services/AnalyticsService";
-import { fileUploadService } from "@/services/fileUpload";
+import AnalyticsService from "@/categories/AnalyticsService";
+import { fileUploadService } from "@/categories/fileUpload";
 
 export default function TeamDetailScreen() {
   useAnalytics("TeamDetail");

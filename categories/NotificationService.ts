@@ -2,8 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { getApiBaseUrl } from "@/config/api";
 import * as Notifications from "expo-notifications";
-import { apiService } from "@/services/api";
-import { queryClient } from "@/services/queryClient";
+import { apiService } from "@/categories/api";
+import { queryClient } from "@/categories/queryClient";
 
 /**
  * NotificationService - Firebase Cloud Messaging (FCM) Only

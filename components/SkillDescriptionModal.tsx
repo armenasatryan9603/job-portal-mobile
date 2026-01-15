@@ -13,7 +13,7 @@ import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { apiService, Skill } from "@/services/api";
+import { apiService, Skill } from "@/categories/api";
 
 interface SkillDescriptionModalProps {
   visible: boolean;
@@ -54,9 +54,7 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
       setSkill(skillData);
     } catch (err: any) {
       console.error("Error loading skill:", err);
-      setError(
-        err?.message || t("failedToLoadSkill")
-      );
+      setError(err?.message || t("failedToLoadSkill"));
     } finally {
       setLoading(false);
     }
@@ -101,10 +99,7 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
         <TouchableOpacity
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
-          style={[
-            styles.modalContent,
-            { backgroundColor: colors.background },
-          ]}
+          style={[styles.modalContent, { backgroundColor: colors.background }]}
         >
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -119,7 +114,10 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.modalBody}
+            showsVerticalScrollIndicator={false}
+          >
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.tint} />
@@ -145,7 +143,10 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
                 </Text>
                 {getSkillDescription(skill) && (
                   <Text
-                    style={[styles.skillDescription, { color: colors.textSecondary }]}
+                    style={[
+                      styles.skillDescription,
+                      { color: colors.textSecondary },
+                    ]}
                   >
                     {getSkillDescription(skill)}
                   </Text>
@@ -246,4 +247,3 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
 });
-

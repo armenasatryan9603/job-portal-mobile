@@ -7,7 +7,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router, useFocusEffect } from "expo-router";
 import React from "react";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   FlatList,

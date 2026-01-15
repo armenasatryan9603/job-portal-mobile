@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { Service } from "@/services/api";
+import { Service } from "@/categories/api";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/hooks/useTranslation";
 

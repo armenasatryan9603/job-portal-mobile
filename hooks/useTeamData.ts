@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
 import { router } from "expo-router";
 import { Alert } from "react-native";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 export interface TeamMember {
@@ -63,9 +63,12 @@ export const useTeamData = (teamId: number | undefined) => {
     }, [loadTeam])
   );
 
-  const updateTeam = useCallback((updater: (team: Team | null) => Team | null) => {
-    setTeam(updater);
-  }, []);
+  const updateTeam = useCallback(
+    (updater: (team: Team | null) => Team | null) => {
+      setTeam(updater);
+    },
+    []
+  );
 
   return { team, loading, reloadTeam: loadTeam, updateTeam };
 };
@@ -78,4 +81,3 @@ export const useTeamId = () => {
     return undefined;
   }, [id]);
 };
-

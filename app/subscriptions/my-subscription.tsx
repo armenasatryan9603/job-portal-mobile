@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useMySubscription, useCancelSubscription } from "@/hooks/useApi";
-import type { UserSubscription } from "@/services/api";
+import type { UserSubscription } from "@/categories/api";
 
 export default function MySubscriptionScreen() {
   useAnalytics("MySubscription");

@@ -26,8 +26,8 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
-import { apiService } from "@/services/api";
-import AnalyticsService from "@/services/AnalyticsService";
+import { apiService } from "@/categories/api";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 

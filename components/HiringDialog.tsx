@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "./ui/button";
 import { useMySubscription } from "@/hooks/useApi";

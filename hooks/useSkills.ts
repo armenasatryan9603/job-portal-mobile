@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Alert } from "react-native";
-import { apiService, Category, UserCategory } from "@/services/api";
+import { apiService, Category, UserCategory } from "@/categories/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -10,7 +10,9 @@ export const useSkills = (userId?: number) => {
   const { language } = useLanguage();
   const { t } = useTranslation();
   const currentUserId = userId || user?.id;
-  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>(
+    []
+  );
   const [userCategories, setUserCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
@@ -88,10 +90,13 @@ export const useSkills = (userId?: number) => {
       const currentUserCategoriesResponse = await apiService.getUserCategories(
         currentUserId
       );
-      const currentUserCategories = currentUserCategoriesResponse.userCategories;
+      const currentUserCategories =
+        currentUserCategoriesResponse.userCategories;
 
       // Find categories to add and remove
-      const currentCategoryIds = currentUserCategories.map((uc) => uc.categoryId);
+      const currentCategoryIds = currentUserCategories.map(
+        (uc) => uc.categoryId
+      );
       const newCategoryIds = userCategories.map((c) => c.id);
 
       const categoriesToAdd = newCategoryIds.filter(
@@ -156,10 +161,7 @@ export const useSkills = (userId?: number) => {
 
   const toggleCategoryNotification = async (category: Category) => {
     if (!currentUserId) {
-      Alert.alert(
-        t("error"),
-        t("youMustBeLoggedInToUpdateNotifications")
-      );
+      Alert.alert(t("error"), t("youMustBeLoggedInToUpdateNotifications"));
       return;
     }
 
@@ -213,7 +215,7 @@ export const useSkills = (userId?: number) => {
     setSearchQuery,
     clearSearch,
     toggleCategoryNotification,
-    
+
     // Backward compatibility aliases
     availableServices: availableCategories,
     userServices: userCategories,

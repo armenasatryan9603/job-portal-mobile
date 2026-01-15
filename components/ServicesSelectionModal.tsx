@@ -10,7 +10,7 @@ import {
   Image,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Service } from "@/services/api";
+import { Service } from "@/categories/api";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 

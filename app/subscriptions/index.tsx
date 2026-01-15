@@ -17,7 +17,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors, BorderRadius } from "@/constants/styles";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useSubscriptionPlans, useMySubscription } from "@/hooks/useApi";
-import type { SubscriptionPlan, UserSubscription } from "@/services/api";
+import type { SubscriptionPlan, UserSubscription } from "@/categories/api";
 import { SubscriptionPlanSkeleton } from "@/components/SubscriptionPlanSkeleton";
 
 export default function SubscriptionsScreen() {

@@ -9,7 +9,7 @@ import {
 } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import React, { useState, useEffect } from "react";
 import {
   Alert,

@@ -1,4 +1,4 @@
-import { UserProfile } from "@/services/api";
+import { UserProfile } from "@/categories/api";
 
 /**
  * Calculates account completion percentage based on profile data

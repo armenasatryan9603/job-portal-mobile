@@ -14,8 +14,8 @@ import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { apiService, Order, OrderListResponse } from "@/services/api";
-import { chatService } from "@/services/chatService";
+import { apiService, Order, OrderListResponse } from "@/categories/api";
+import { chatService } from "@/categories/chatService";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import React, {
   useState,
@@ -38,7 +38,7 @@ import {
   useCategories,
 } from "@/hooks/useApi";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   FlatList,

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { apiService, UserProfile } from "@/services/api";
+import { apiService, UserProfile } from "@/categories/api";
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";

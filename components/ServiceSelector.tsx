@@ -15,7 +15,7 @@ import {
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Category } from "@/services/api";
+import { Category } from "@/categories/api";
 import { useCategories } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
 import { IconSymbol } from "@/components/ui/icon-symbol";

@@ -8,7 +8,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { OrderPricing, apiService } from "@/services/api";
+import { OrderPricing, apiService } from "@/categories/api";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {

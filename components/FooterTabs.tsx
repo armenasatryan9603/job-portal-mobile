@@ -31,7 +31,7 @@ export const FooterTabs: React.FC = () => {
       name: "categories",
       title: t("category"),
       icon: "gearshape.fill",
-      route: "/services",
+      route: "/categories",
     },
     {
       name: "orders",

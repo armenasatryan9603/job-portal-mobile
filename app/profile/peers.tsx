@@ -22,7 +22,7 @@ import {
   ScrollView,
   Modal,
 } from "react-native";
-import { apiService, User } from "@/services/api";
+import { apiService, User } from "@/categories/api";
 import { useFocusEffect } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -329,9 +329,7 @@ export default function PeersScreen() {
               {isPending && (
                 <View style={styles.pendingBadge}>
                   <IconSymbol name="clock.fill" size={12} color="#FF9500" />
-                  <Text style={styles.pendingBadgeText}>
-                    {t("pending")}
-                  </Text>
+                  <Text style={styles.pendingBadgeText}>{t("pending")}</Text>
                 </View>
               )}
             </View>

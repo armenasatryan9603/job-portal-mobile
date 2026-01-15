@@ -22,13 +22,13 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { chatService, Conversation, Message } from "@/services/chatService";
+import { chatService, Conversation, Message } from "@/categories/chatService";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { Review } from "@/services/api";
-import { pusherService } from "@/services/pusherService";
+import { Review } from "@/categories/api";
+import { pusherService } from "@/categories/pusherService";
 import { useChatReminder } from "@/contexts/ChatReminderContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { ChatSkeleton } from "@/components/ChatSkeleton";
 import { useConversations } from "@/contexts/ConversationsContext";
 import { formatTimestamp } from "@/utils/dateFormatting";

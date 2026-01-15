@@ -14,7 +14,7 @@ import * as ImagePicker from "expo-image-picker";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { fileUploadService } from "@/services/fileUpload";
+import { fileUploadService } from "@/categories/fileUpload";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface MediaFile {

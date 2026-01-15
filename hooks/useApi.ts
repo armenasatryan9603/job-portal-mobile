@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNetworkStatus } from "./useNetworkStatus";
-import { apiService } from "@/services/api";
-import { CACHE_TTL } from "@/services/queryClient";
+import { apiService } from "@/categories/api";
+import { CACHE_TTL } from "@/categories/queryClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import type { SubscriptionPlan, UserSubscription } from "@/services/api";
+import type { SubscriptionPlan, UserSubscription } from "@/categories/api";
 
 // ===== AUTHENTICATION HOOKS =====
 

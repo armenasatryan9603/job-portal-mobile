@@ -7,12 +7,12 @@ import React, {
   useState,
 } from "react";
 import * as Device from "expo-device";
-import { apiService, UserLanguage } from "@/services/api";
+import { apiService, UserLanguage } from "@/categories/api";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
-import PhoneVerificationService from "@/services/PhoneVerificationService";
-import NotificationService from "@/services/NotificationService";
-import CalendarNotificationService from "@/services/CalendarNotificationService";
-import AnalyticsService from "@/services/AnalyticsService";
+import PhoneVerificationService from "@/categories/PhoneVerificationService";
+import NotificationService from "@/categories/NotificationService";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import AnalyticsService from "@/categories/AnalyticsService";
 
 interface User {
   id: number;
@@ -93,7 +93,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const calendarService = CalendarNotificationService.getInstance();
           await calendarService.scheduleAllNotificationsForUser(userData.id);
         } catch (error) {
-          console.error("Error scheduling calendar notifications on app start:", error);
+          console.error(
+            "Error scheduling calendar notifications on app start:",
+            error
+          );
         }
       } else {
         setUser(null);
@@ -200,7 +203,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const calendarService = CalendarNotificationService.getInstance();
           await calendarService.scheduleAllNotificationsForUser(result.user.id);
         } catch (error) {
-          console.error("Error scheduling calendar notifications after login:", error);
+          console.error(
+            "Error scheduling calendar notifications after login:",
+            error
+          );
         }
 
         return true;
@@ -262,7 +268,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const calendarService = CalendarNotificationService.getInstance();
           await calendarService.scheduleAllNotificationsForUser(result.user.id);
         } catch (error) {
-          console.error("Error scheduling calendar notifications after signup:", error);
+          console.error(
+            "Error scheduling calendar notifications after signup:",
+            error
+          );
         }
 
         return true;

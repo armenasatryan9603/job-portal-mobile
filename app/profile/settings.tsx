@@ -10,7 +10,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
-import { apiService } from "@/services/api";
+import { apiService } from "@/categories/api";
 import DeleteAccountDialog from "@/components/DeleteAccountDialog";
 import TranslationExample from "@/components/TranslationExample";
 import { ReferralModal } from "@/components/ReferralModal";
@@ -32,7 +32,7 @@ import {
 } from "react-native";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AnalyticsService from "@/services/AnalyticsService";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Enable LayoutAnimation on Android
