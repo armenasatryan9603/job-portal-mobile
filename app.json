@@ -69,6 +69,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-dev-client",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
       "./plugins/withFirebaseAnalytics.js",

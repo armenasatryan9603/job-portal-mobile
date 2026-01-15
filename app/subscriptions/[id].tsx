@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -15,8 +14,7 @@ import { Layout } from "@/components/Layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, BorderRadius, Spacing } from "@/constants/styles";
-import { apiService } from "@/services/api";
+import { ThemeColors, BorderRadius } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -31,7 +29,7 @@ export default function SubscriptionDetailScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const planId = id ? parseInt(id as string, 10) : null;
   const {
@@ -81,30 +79,16 @@ export default function SubscriptionDetailScreen() {
         error?.response?.data?.code === "INSUFFICIENT_CREDITS" ||
         error?.code === "INSUFFICIENT_CREDITS"
       ) {
-        const required =
-          error?.response?.data?.required || error?.required || 0;
-        const available =
-          error?.response?.data?.available || error?.available || 0;
-
-        Alert.alert(
-          t("insufficientCredits") || "Insufficient Credits",
-          t("pleaseRefillCredits") ||
-            `You need ${required.toFixed(
-              2
-            )} USD credits but only have ${available.toFixed(
-              2
-            )} USD. Please refill your account.`,
-          [
-            {
-              text: t("cancel") || "Cancel",
-              style: "cancel",
-            },
-            {
-              text: t("refill") || "Refill Credits",
-              onPress: () => router.push("/profile/refill-credits"),
-            },
-          ]
-        );
+        Alert.alert(t("insufficientCredits"), t("pleaseRefillCredits"), [
+          {
+            text: t("cancel") || "Cancel",
+            style: "cancel",
+          },
+          {
+            text: t("refill") || "Refill Credits",
+            onPress: () => router.push("/profile/refill-credits"),
+          },
+        ]);
       } else {
         // Other errors
         Alert.alert(

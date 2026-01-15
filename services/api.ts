@@ -320,13 +320,23 @@ export interface Order {
   budget: number;
   currency?: string; // Optional currency code (e.g., USD)
   rateUnit?: string; // Optional rate unit (e.g., per_hour, per_project)
-  status: string;
+  status:
+    | "open"
+    | "in_progress"
+    | "completed"
+    | "cancelled"
+    | "pending"
+    | "pending_review"
+    | "rejected"
+    | "closed"
+    | "not_applied";
   location?: string;
   skills: string[];
   availableDates: string[];
   createdAt: string;
   updatedAt: string;
   creditCost?: number; // Credit cost based on order budget
+  refundPercentage?: number; // Refund percentage (0.0 to 1.0, e.g., 0.5 for 50%)
   bannerImageId?: number; // ID of the banner image
   BannerImage?: {
     id: number;

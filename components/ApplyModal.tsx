@@ -21,6 +21,7 @@ import { Order, apiService } from "@/services/api";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { PeerSelector } from "./PeerSelector";
 import { useAuth } from "@/contexts/AuthContext";
+import { PriceCurrency } from "./PriceCurrency";
 
 interface ApplyModalProps {
   visible: boolean;
@@ -407,19 +408,54 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               )}
             </View>
 
-            {!hasActiveSubscription && (
+            {!hasActiveSubscription && order.creditCost && (
               <View style={styles.creditInfo}>
                 <View style={styles.creditRow}>
                   <IconSymbol
-                    name="creditcard.fill"
+                    name="dollarsign.circle.fill"
                     size={16}
                     color={colors.tint}
                   />
-                  <Text style={[styles.creditText, { color: colors.text }]}>
-                    {t("applicationCost")}: {order.creditCost || 1}{" "}
-                    {t("credit")}
-                  </Text>
+                  <View style={styles.creditTextContainer}>
+                    <Text style={[styles.creditLabel, { color: colors.text }]}>
+                      {t("applicationCost")}:{" "}
+                    </Text>
+                    <PriceCurrency
+                      price={order.creditCost}
+                      currency={order.currency}
+                      showOriginal={false}
+                      showRateUnit={false}
+                      style={{ ...styles.creditText, color: colors.text }}
+                    />
+                  </View>
                 </View>
+                {order.refundPercentage !== null &&
+                  order.refundPercentage !== undefined &&
+                  order.creditCost && (
+                    <View style={styles.creditRow}>
+                      <IconSymbol
+                        name="arrow.counterclockwise.circle.fill"
+                        size={16}
+                        color={colors.tint}
+                      />
+                      <View style={styles.creditTextContainer}>
+                        <Text
+                          style={[styles.creditLabel, { color: colors.text }]}
+                        >
+                          {t("refundIfNotSelected")}:{" "}
+                        </Text>
+                        <PriceCurrency
+                          price={
+                            (order.creditCost * order.refundPercentage) / 100
+                          }
+                          currency={order.currency}
+                          showOriginal={false}
+                          showRateUnit={false}
+                          style={{ ...styles.creditText, color: colors.text }}
+                        />
+                      </View>
+                    </View>
+                  )}
               </View>
             )}
 
@@ -565,11 +601,21 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     backgroundColor: "rgba(0, 122, 255, 0.1)",
     borderRadius: 8,
+    gap: Spacing.sm,
   },
   creditRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
+  },
+  creditTextContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  creditLabel: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   creditText: {
     fontSize: 14,

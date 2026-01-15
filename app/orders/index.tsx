@@ -1537,11 +1537,6 @@ export default function OrdersScreen() {
     return null;
   };
 
-  console.log(
-    "currentPageOrders=============================================",
-    displayedOrders.length
-  );
-
   return (
     <>
       <Layout header={header}>
@@ -1555,7 +1550,7 @@ export default function OrdersScreen() {
               zIndex: 1,
             }}
           >
-            <ResponsiveCard padding={Spacing.md}>
+            <ResponsiveCard>
               <Filter
                 searchPlaceholder={t("searchOrdersSkills")}
                 initialSearchValue={searchQuery}
@@ -1572,7 +1567,7 @@ export default function OrdersScreen() {
           {/* Show skeleton loading during initial load */}
           {isInitialLoad ||
           (loading && !filterLoading && displayedOrders.length === 0) ? (
-            <View style={{ marginTop: 100, flex: 1 }}>
+            <View style={{ marginTop: 84, flex: 1 }}>
               <FloatingSkeleton
                 count={5}
                 itemHeight={280}
@@ -1585,7 +1580,7 @@ export default function OrdersScreen() {
             </View>
           ) : (
             <FlatList
-              style={{ marginTop: 100 }}
+              style={{ marginTop: 84 }}
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem

@@ -21,9 +21,8 @@ import { ThemeColors } from "@/constants/styles";
 import { apiService } from "@/services/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "./ui/button";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useRateUnits } from "@/hooks/useRateUnits";
-import { formatPriceDisplay } from "@/utils/currencyRateUnit";
+import { useMySubscription } from "@/hooks/useApi";
+import { PriceCurrency } from "./PriceCurrency";
 
 interface HiringDialogProps {
   visible: boolean;
@@ -47,9 +46,6 @@ export function HiringDialog({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
-  const { language } = useLanguage();
-  const { data: rateUnitsData } = useRateUnits();
-  const rateUnits = rateUnitsData || [];
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   const textInputRef = useRef<TextInput>(null);
@@ -58,6 +54,18 @@ export function HiringDialog({
   const [isAlreadyHired, setIsAlreadyHired] = useState(false);
   const [hiringStatusMessage, setHiringStatusMessage] = useState("");
   const [checkingStatus, setCheckingStatus] = useState(false);
+  const { data: subscription } = useMySubscription();
+
+  // Check if user has active subscription
+  const hasActiveSubscription =
+    subscription &&
+    subscription.status === "active" &&
+    new Date(subscription.endDate) > new Date();
+
+  // Get selected order
+  const selectedOrder = userOrders.find(
+    (order) => order.id === selectedOrderId
+  );
 
   // Check hiring status when order is selected
   useEffect(() => {
@@ -135,6 +143,7 @@ export function HiringDialog({
     onClose();
   };
 
+  console.log("selectedOrder", selectedOrder?.budget, selectedOrder?.currency);
   return (
     <Modal
       visible={visible}
@@ -219,24 +228,16 @@ export function HiringDialog({
                               >
                                 {order.title}
                               </Text>
-                              <Text
-                                style={[
-                                  styles.orderCost,
-                                  { color: colors.tabIconDefault },
-                                ]}
-                              >
-                                {formatPriceDisplay(
-                                  order.budget,
-                                  order.currency,
-                                  order.rateUnit,
-                                  rateUnits,
-                                  language,
-                                  {
-                                    defaultCurrency: "USD",
-                                    defaultRateUnit: "per project",
-                                  }
-                                )}
-                              </Text>
+                              <PriceCurrency
+                                price={order.budget}
+                                currency={order.currency}
+                                rateUnit={order.rateUnit}
+                                showOriginal={false}
+                                style={{
+                                  ...styles.orderCost,
+                                  color: colors.tabIconDefault,
+                                }}
+                              />
                             </View>
                           </View>
                           {selectedOrderId === order.id && (
@@ -289,6 +290,70 @@ export function HiringDialog({
                 </View>
               )}
 
+              {/* Credit Info Section */}
+              {!hasActiveSubscription &&
+                selectedOrder &&
+                selectedOrder.creditCost && (
+                  <View style={styles.creditInfo}>
+                    <View style={styles.creditRow}>
+                      <IconSymbol
+                        name="dollarsign.circle.fill"
+                        size={16}
+                        color={colors.tint}
+                      />
+                      <View style={styles.creditTextContainer}>
+                        <Text
+                          style={[styles.creditLabel, { color: colors.text }]}
+                        >
+                          {t("applicationCost")}:{" "}
+                        </Text>
+                        <PriceCurrency
+                          price={selectedOrder.creditCost}
+                          currency={selectedOrder.currency}
+                          showOriginal={false}
+                          showRateUnit={false}
+                          style={{ ...styles.creditText, color: colors.text }}
+                        />
+                      </View>
+                    </View>
+                    {selectedOrder.refundPercentage !== null &&
+                      selectedOrder.refundPercentage !== undefined &&
+                      selectedOrder.creditCost && (
+                        <View style={styles.creditRow}>
+                          <IconSymbol
+                            name="arrow.counterclockwise.circle.fill"
+                            size={16}
+                            color={colors.tint}
+                          />
+                          <View style={styles.creditTextContainer}>
+                            <Text
+                              style={[
+                                styles.creditLabel,
+                                { color: colors.text },
+                              ]}
+                            >
+                              {t("refundIfNotSelected")}:{" "}
+                            </Text>
+                            <PriceCurrency
+                              price={
+                                (selectedOrder.creditCost *
+                                  selectedOrder.refundPercentage) /
+                                100
+                              }
+                              currency={selectedOrder.currency}
+                              showOriginal={false}
+                              showRateUnit={false}
+                              style={{
+                                ...styles.creditText,
+                                color: colors.text,
+                              }}
+                            />
+                          </View>
+                        </View>
+                      )}
+                  </View>
+                )}
+
               <View style={styles.messageSection}>
                 <TextInput
                   ref={textInputRef}
@@ -325,13 +390,13 @@ export function HiringDialog({
           />
 
           <Button
-            title={t("sendHiringRequest")}
             onPress={handleSubmit}
             disabled={
               loading || !message.trim() || !selectedOrderId || isAlreadyHired
             }
             loading={loading}
             variant="primary"
+            title={t("sendHiringRequest")}
           />
         </View>
       </View>
@@ -474,5 +539,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     flex: 1,
+  },
+  creditInfo: {
+    marginBottom: 20,
+    padding: 12,
+    backgroundColor: "rgba(0, 122, 255, 0.1)",
+    borderRadius: 8,
+    gap: 8,
+  },
+  creditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  creditTextContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  creditLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  creditText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

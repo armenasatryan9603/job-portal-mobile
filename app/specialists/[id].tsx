@@ -259,29 +259,12 @@ export default function SpecialistDetailScreen() {
     />
   );
 
-  const footer =
-    specialist.User?.id !== user?.id ? (
-      <Footer>
-        <View style={styles.footerButtons}>
-          <FooterButton
-            title={t("hire")}
-            onPress={handleHireSpecialist}
-            variant="primary"
-            icon="✓"
-          />
-          {/* <FooterButton
-          title={t("message")}
-          onPress={handleSendMessage}
-          variant="secondary"
-          icon="💬"
-        /> */}
-        </View>
-      </Footer>
-    ) : null;
-
   return (
     <Layout header={header}>
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1, marginBottom: 100 }}
+        showsVerticalScrollIndicator={false}
+      >
         <ResponsiveContainer>
           {/* Specialist Overview */}
           <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
@@ -428,7 +411,7 @@ export default function SpecialistDetailScreen() {
                 </View>
               </View>
               {/*  */}
-              <View style={{ gap: 10, marginTop: 10 }}>
+              <View style={{ gap: 10, marginTop: 40 }}>
                 {/* Bio section with better styling */}
                 <Text style={[styles.bio, { color: colors.text }]}>
                   {specialist.User.bio || t("professionalSpecialistReady")}
@@ -951,16 +934,9 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
-  // contentWrapper: {
-  //   // backgroundColor: "red",
-  //   position: "relative",
-  //   zIndex: 1,
-  //   gap: 10,
-  // },
   specialistHeader: {
     flexDirection: "row",
     alignItems: "flex-start",
-    gap: 16,
   },
   avatarContainer: {
     position: "relative",
@@ -1189,12 +1165,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     flex: 1,
     fontWeight: "500",
-  },
-  portfolioImage: {
-    width: "100%",
-    height: 140,
-    borderRadius: 12,
-    marginBottom: 12,
   },
   reviewsList: {
     gap: 12,

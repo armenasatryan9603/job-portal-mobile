@@ -22,6 +22,7 @@ import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { ApplyButton } from "@/components/ApplyButton";
+import { PriceCurrency } from "@/components/PriceCurrency";
 
 interface OrderItemProps {
   order: Order;
@@ -185,20 +186,17 @@ const OrderItem = ({
     statusConfig[status as keyof typeof statusConfig]?.icon || "circle";
 
   const formatRateUnit = (value?: string | null) => {
-    if (!value) return t("perProject") || "per project";
+    if (!value) return t("perProject");
+
     const normalized = value.replace(/_/g, " ").trim().toLowerCase();
-    if (normalized === "per hour") return t("perHour") || "per hour";
-    if (normalized === "per day") return t("perDay") || "per day";
-    if (normalized === "per project") return t("perProject") || "per project";
+
+    if (normalized === "per hour") return t("perHour");
+    if (normalized === "per day") return t("perDay");
+    if (normalized === "per project") return t("perProject");
     return normalized;
   };
 
-  const currencyLabel = (order.currency || "AMD").toUpperCase();
-  const rateUnitLabel = formatRateUnit(order.rateUnit);
-  const budgetDisplay =
-    order.budget !== undefined && order.budget !== null
-      ? `${currencyLabel} ${order.budget.toLocaleString()} • ${rateUnitLabel}`
-      : t("notProvided");
+  const hasBudget = order.budget !== undefined && order.budget !== null;
 
   const handleSaveToggle = async (e: any) => {
     e.stopPropagation(); // Prevent triggering order press
@@ -375,7 +373,7 @@ const OrderItem = ({
                 color="white"
               />
               <Text style={styles.statusText}>
-                {order.status.replace("_", " ").toUpperCase()}
+                {t(`status_${order.status}`)}
               </Text>
             </View>
           </View>
@@ -394,9 +392,23 @@ const OrderItem = ({
                 size={16}
                 color={colors.tint}
               />
-              <Text style={[styles.detailText, { color: colors.text }]}>
-                {budgetDisplay}
-              </Text>
+              {hasBudget ? (
+                <PriceCurrency
+                  price={order.budget}
+                  currency={order.currency}
+                  rateUnit={order.rateUnit}
+                  showOriginal={true}
+                  style={{ ...styles.detailText, color: colors.text }}
+                  originalStyle={{
+                    ...styles.detailTextSmall,
+                    color: colors.tabIconDefault,
+                  }}
+                />
+              ) : (
+                <Text style={[styles.detailText, { color: colors.text }]}>
+                  {t("notProvided")}
+                </Text>
+              )}
             </View>
             {order.location && (
               <TouchableOpacity
@@ -579,19 +591,6 @@ const OrderItem = ({
                 onPress={() => handleDeleteOrder(order)}
               />
             )}
-
-            {/* {order.Service && displayServiceName && (
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="wrench.and.screwdriver.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {displayServiceName}
-                </Text>
-              </View>
-            )} */}
           </View>
         </View>
       </ResponsiveCard>
@@ -702,7 +701,7 @@ const styles = StyleSheet.create({
   orderDetails: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
+    gap: 20,
     marginBottom: 16,
     alignItems: "flex-start",
   },
@@ -723,6 +722,10 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 1,
     flex: 1,
+  },
+  detailTextSmall: {
+    fontSize: 10,
+    fontWeight: "500",
   },
   skillsContainer: {
     flexDirection: "row",

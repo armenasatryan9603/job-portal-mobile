@@ -20,7 +20,7 @@ platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
 
 prepare_react_native_project!
 
-target 'jobportalmobile' do
+target 'HotWork' do
   use_expo_modules!
 
   use_modular_headers!

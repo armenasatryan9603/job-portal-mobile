@@ -39,6 +39,7 @@ import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { useApplyToOrder } from "@/hooks/useApi";
 import { ApplyButton } from "@/components/ApplyButton";
+import { PriceCurrency } from "@/components/PriceCurrency";
 
 // Helper function to get localized service name
 const getLocalizedCategoryName = (
@@ -974,9 +975,14 @@ export default function EditOrderScreen() {
               >
                 {t("budget")}
               </Text>
-              <Text style={[styles.detailValue, { color: colors.text }]}>
-                ${order?.budget?.toLocaleString()}
-              </Text>
+              <PriceCurrency
+                price={order?.budget}
+                currency={order?.currency}
+                rateUnit={order?.rateUnit}
+                showOriginal={true}
+                style={{ ...styles.detailValue, color: colors.text }}
+                originalStyle={{ ...styles.detailValueSmall, color: colors.tabIconDefault }}
+              />
             </View>
           </View>
 
@@ -1524,6 +1530,10 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 15,
     fontWeight: "700",
+  },
+  detailValueSmall: {
+    fontSize: 12,
+    fontWeight: "500",
   },
   skillsContainer: {
     flexDirection: "row",
