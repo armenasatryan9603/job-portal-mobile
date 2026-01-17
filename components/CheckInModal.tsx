@@ -178,8 +178,6 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
       ...prev,
       { date: dateString, startTime, endTime, dateLabel },
     ]);
-
-    Alert.alert(t("success"), t("timeRangeAdded"));
   };
 
   // Remove a booking from the summary

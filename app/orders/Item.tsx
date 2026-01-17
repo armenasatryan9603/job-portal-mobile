@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Modal,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
@@ -23,6 +24,7 @@ import { MapViewComponent } from "@/components/MapView";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { ApplyButton } from "@/components/ApplyButton";
 import { PriceCurrency } from "@/components/PriceCurrency";
+import { CheckInModal } from "@/components/CheckInModal";
 
 interface OrderItemProps {
   order: Order;
@@ -36,6 +38,7 @@ interface OrderItemProps {
   onCancelProposal?: (order: Order) => void;
   onDeleteOrder?: (order: Order) => void;
   onSaveToggle?: (orderId: number, isSaved: boolean) => void;
+  onCheckIn?: (order: Order) => void;
 }
 
 const OrderItem = ({
@@ -50,6 +53,7 @@ const OrderItem = ({
   onCancelProposal,
   onDeleteOrder,
   onSaveToggle,
+  onCheckIn,
 }: OrderItemProps) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -64,6 +68,8 @@ const OrderItem = ({
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
   const [showSkillModal, setShowSkillModal] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
 
   // Helper function to get localized title/description
   const getLocalizedText = (
@@ -254,6 +260,30 @@ const OrderItem = ({
   const handleDeleteOrder = (order: Order) => {
     if (onDeleteOrder) {
       onDeleteOrder(order);
+    }
+  };
+
+  const handleCheckIn = (order: Order) => {
+    if (onCheckIn) {
+      onCheckIn(order);
+    } else {
+      // Fallback: open modal directly
+      setShowCheckInModal(true);
+    }
+  };
+
+  const handleSubmitCheckIn = async (
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+  ) => {
+    setCheckInLoading(true);
+    try {
+      await apiService.checkInToOrder(order.id, selectedSlots);
+      Alert.alert(t("success"), t("checkInSuccess"));
+      setShowCheckInModal(false);
+    } catch (error: any) {
+      Alert.alert(t("error"), error.message || t("checkInFailed"));
+    } finally {
+      setCheckInLoading(false);
     }
   };
 
@@ -555,14 +585,30 @@ const OrderItem = ({
                 {new Date(order.createdAt).toLocaleDateString()}
               </Text>
             </View>
-            {/* Apply Button - Only show for other users' orders (not owner) */}
-            {!isMyOrders && (
-              <ApplyButton
-                order={order}
-                hasAppliedToOrder={hasAppliedToOrder}
-                onApply={handleApplyToOrder}
-              />
-            )}
+            {/* Check-In Button - Only show for permanent orders (not owner) */}
+            {!isMyOrders &&
+              user?.id !== order.clientId &&
+              (order as any).orderType === "permanent" && (
+                <Button
+                  variant="primary"
+                  onPress={() => handleCheckIn(order)}
+                  icon="calendar.badge.plus"
+                  iconSize={16}
+                  iconPosition="left"
+                  title={t("checkIn")}
+                />
+              )}
+
+            {/* Apply Button - Only show for one-time orders (not owner) */}
+            {!isMyOrders &&
+              user?.id !== order.clientId &&
+              (order as any).orderType !== "permanent" && (
+                <ApplyButton
+                  order={order}
+                  hasAppliedToOrder={hasAppliedToOrder}
+                  onApply={handleApplyToOrder}
+                />
+              )}
 
             {/* Cancel Button - Only show for My Jobs */}
             {isMyJobs && order.Proposals && order.Proposals.length > 0 && (
@@ -621,6 +667,15 @@ const OrderItem = ({
           setShowSkillModal(false);
           setSelectedSkillId(null);
         }}
+      />
+
+      {/* Check-In Modal */}
+      <CheckInModal
+        visible={showCheckInModal}
+        onClose={() => setShowCheckInModal(false)}
+        order={order}
+        onSubmit={handleSubmitCheckIn}
+        loading={checkInLoading}
       />
     </TouchableOpacity>
   );
