@@ -331,7 +331,9 @@ export const useAllOrders = (
   status?: string,
   categoryId?: number,
   categoryIds?: number[],
-  clientId?: number
+  clientId?: number,
+  orderType?: "one_time" | "permanent",
+  enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
@@ -344,6 +346,7 @@ export const useAllOrders = (
       categoryId,
       categoryIds,
       clientId,
+      orderType,
     ],
     queryFn: () =>
       apiService.getAllOrders(
@@ -352,10 +355,11 @@ export const useAllOrders = (
         status,
         categoryId,
         categoryIds,
-        clientId
+        clientId,
+        orderType
       ),
     staleTime: CACHE_TTL.USER_DATA,
-    enabled: true,
+    enabled: enabled,
     retry: isOnline,
   });
 };
@@ -425,7 +429,9 @@ export const usePublicOrders = (
   status?: string,
   categoryId?: number,
   categoryIds?: number[],
-  clientId?: number
+  clientId?: number,
+  orderType?: "one_time" | "permanent",
+  enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
@@ -438,6 +444,7 @@ export const usePublicOrders = (
       categoryId,
       categoryIds,
       clientId,
+      orderType,
     ],
     queryFn: () =>
       apiService.getPublicOrders(
@@ -446,10 +453,11 @@ export const usePublicOrders = (
         status,
         categoryId,
         categoryIds,
-        clientId
+        clientId,
+        orderType
       ),
     staleTime: CACHE_TTL.DYNAMIC,
-    enabled: true,
+    enabled: enabled,
     retry: isOnline,
   });
 };
@@ -458,14 +466,17 @@ export const useSearchOrders = (
   query: string,
   page: number = 1,
   limit: number = 10,
-  categoryIds?: number[]
+  categoryIds?: number[],
+  orderType?: "one_time" | "permanent",
+  enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "search", query, page, limit, categoryIds],
-    queryFn: () => apiService.searchOrders(query, page, limit, categoryIds),
+    queryKey: ["orders", "search", query, page, limit, categoryIds, orderType],
+    queryFn: () =>
+      apiService.searchOrders(query, page, limit, categoryIds, orderType),
     staleTime: CACHE_TTL.DYNAMIC,
-    enabled: !!query,
+    enabled: enabled && !!query,
     retry: isOnline,
   });
 };

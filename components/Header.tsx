@@ -177,8 +177,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: ComponentSizes.button.lg,
-    paddingBottom: Spacing.sm,
   },
   leftSection: {
     flex: 1,

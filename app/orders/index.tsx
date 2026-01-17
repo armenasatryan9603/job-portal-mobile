@@ -84,6 +84,8 @@ export default function OrdersScreen() {
   const [activeOrderTab, setActiveOrderTab] = useState<
     "one_time" | "permanent"
   >("one_time");
+  const [tabLoaded, setTabLoaded] = useState(false);
+  const tabStorageKey = "ordersActiveTab";
   const filterCategoryId = categoryId
     ? isNaN(parseInt(categoryId as string))
       ? null
@@ -150,26 +152,37 @@ export default function OrdersScreen() {
   const myJobsQuery = useMyJobs();
   // For saved orders, fetch all at once (like My Orders/My Jobs) since users typically don't have many saved orders
   const savedOrdersQuery = useSavedOrders(1, 100);
+
   const allOrdersQuery = useAllOrders(
     tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
     undefined, // categoryId (single, for backward compatibility)
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    undefined, // clientId
+    activeOrderTab, // Pass the active tab to filter by orderType
+    tabLoaded // Only enable query after tab is loaded from storage
   );
+
   const publicOrdersQuery = usePublicOrders(
     tempCurrentPage,
     limit,
     status && status !== "all" ? status : undefined,
     undefined, // categoryId (single, for backward compatibility)
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    undefined, // clientId
+    activeOrderTab, // Pass the active tab to filter by orderType
+    tabLoaded // Only enable query after tab is loaded from storage
   );
   const searchOrdersQuery = useSearchOrders(
     searchQuery.trim(),
     tempCurrentPage,
     limit,
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined
+    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    activeOrderTab, // Pass the active tab to filter by orderType
+    tabLoaded // Only enable query after tab is loaded from storage
   );
+
   const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering
 
   // Mutations
@@ -204,6 +217,17 @@ export default function OrdersScreen() {
       try {
         const savedFiltersString = await AsyncStorage.getItem(filterStorageKey);
         const savedSearch = await AsyncStorage.getItem(searchStorageKey);
+        const savedTab = await AsyncStorage.getItem(tabStorageKey);
+
+        // Load saved tab BEFORE marking as loaded
+        let loadedTab: "one_time" | "permanent" = "one_time";
+        if (savedTab && (savedTab === "one_time" || savedTab === "permanent")) {
+          loadedTab = savedTab as "one_time" | "permanent";
+          setActiveOrderTab(loadedTab);
+        }
+
+        // Mark tab as loaded (enables queries)
+        setTabLoaded(true);
 
         if (savedFiltersString) {
           const parsed = JSON.parse(savedFiltersString);
@@ -212,18 +236,33 @@ export default function OrdersScreen() {
               ...prev,
               ...parsed,
             };
+            // For permanent orders, ensure status is "all" to show all statuses
+            if (loadedTab === "permanent" && updated.status !== "all") {
+              updated.status = "all";
+            }
             // If categoryId is in URL, it takes precedence over saved filters
             if (filterCategoryId !== null) {
               updated.categories = [filterCategoryId.toString()];
             }
             return updated;
           });
-        } else if (filterCategoryId !== null) {
-          // If no saved filters but categoryId in URL, set it
-          setSelectedFilters((prev) => ({
-            ...prev,
-            categories: [filterCategoryId.toString()],
-          }));
+        } else {
+          // If no saved filters, set appropriate defaults
+          if (filterCategoryId !== null) {
+            // If categoryId in URL, set it
+            setSelectedFilters((prev) => ({
+              ...prev,
+              categories: [filterCategoryId.toString()],
+              // For permanent orders, set status to "all"
+              status: loadedTab === "permanent" ? "all" : prev.status,
+            }));
+          } else if (loadedTab === "permanent") {
+            // If permanent tab and no saved filters, set status to "all"
+            setSelectedFilters((prev) => ({
+              ...prev,
+              status: "all",
+            }));
+          }
         }
         // Only load saved search if no URL parameter is present
         if (!q && savedSearch !== null) {
@@ -231,10 +270,11 @@ export default function OrdersScreen() {
         }
       } catch (error) {
         console.error("Error loading saved filters:", error);
+        setTabLoaded(true); // Still mark as loaded even on error
       }
     };
     loadSavedFilters();
-  }, [filterStorageKey, searchStorageKey, q, filterCategoryId]);
+  }, [filterStorageKey, searchStorageKey, tabStorageKey, q, filterCategoryId]);
 
   // Update search query when URL parameter changes
   useEffect(() => {
@@ -288,7 +328,14 @@ export default function OrdersScreen() {
     } else {
       setCurrentPage(1);
     }
-  }, [selectedFilters, searchQuery, isMyOrders, isMyJobs, isSavedOrders]);
+  }, [
+    selectedFilters,
+    searchQuery,
+    activeOrderTab,
+    isMyOrders,
+    isMyJobs,
+    isSavedOrders,
+  ]);
 
   // Extract data from active query
   const queryData = activeQuery.data as OrderListResponse | undefined;
@@ -320,7 +367,6 @@ export default function OrdersScreen() {
     resetDeps: [selectedFilters, searchQuery, activeOrderTab],
     enableScrollGate: true,
   });
-  // asdf
 
   // Sync tempCurrentPage with currentPage from hook
   useEffect(() => {
@@ -966,8 +1012,8 @@ export default function OrdersScreen() {
       // Apply sorting
       filteredOrders = sortOrders(filteredOrders, sortBy);
 
-      // Filter by order type (tab)
-      // Treat orders without orderType as "one_time" for backward compatibility
+      // Filter by order type (tab) - needed for My Orders/My Jobs/Saved Orders
+      // since these queries fetch all order types
       filteredOrders = filteredOrders.filter((order) => {
         const orderType = (order as any).orderType || "one_time";
         return orderType === activeOrderTab;
@@ -1031,22 +1077,17 @@ export default function OrdersScreen() {
     // Apply sorting
     filteredOrders = sortOrders(filteredOrders, sortBy);
 
-    // Filter by order type (tab)
-    // Treat orders without orderType as "one_time" for backward compatibility
-    filteredOrders = filteredOrders.filter((order) => {
-      const orderType = (order as any).orderType || "one_time";
-
-      // For non-owners, hide draft permanent orders (only show published ones)
-      if (
-        !isMyOrders &&
-        orderType === "permanent" &&
-        (order as any).status === "draft"
-      ) {
-        return false;
-      }
-
-      return orderType === activeOrderTab;
-    });
+    // For non-owners, hide draft permanent orders (only show published ones)
+    // Note: Backend now filters by orderType, so we only need to filter drafts
+    if (!isMyOrders) {
+      filteredOrders = filteredOrders.filter((order) => {
+        const orderType = (order as any).orderType || "one_time";
+        if (orderType === "permanent" && (order as any).status === "draft") {
+          return false;
+        }
+        return true;
+      });
+    }
 
     return filteredOrders;
   }, [
@@ -1728,8 +1769,15 @@ export default function OrdersScreen() {
   );
 
   const handleTabChange = useCallback(
-    (tabKey: string) => {
+    async (tabKey: string) => {
       setActiveOrderTab(tabKey as "one_time" | "permanent");
+
+      // Save to AsyncStorage
+      try {
+        await AsyncStorage.setItem(tabStorageKey, tabKey);
+      } catch (error) {
+        console.error("Error saving tab:", error);
+      }
 
       // Reset search query
       setSearchQuery("");
@@ -1738,7 +1786,14 @@ export default function OrdersScreen() {
       setClientSidePage(1);
 
       // Reset filters when switching tabs
+      // For permanent orders, set status to "all" to show all statuses (draft, pending_review, open, etc.)
       setSelectedFilters({
+        status:
+          tabKey === "permanent"
+            ? "all"
+            : isMyJobs || isSavedOrders || isMyOrders
+            ? "all"
+            : "open",
         categories: [],
         services: [],
         priceRange: { min: 0, max: 10000 },
@@ -1755,7 +1810,7 @@ export default function OrdersScreen() {
         location: "orders_screen",
       });
     },
-    [router]
+    [router, tabStorageKey]
   );
 
   return (

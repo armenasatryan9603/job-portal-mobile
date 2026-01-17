@@ -1603,10 +1603,12 @@ export default function CreateOrderScreen() {
                         ? colors.primary
                         : colors.background,
                     borderColor: colors.border,
+                    opacity: orderId ? 0.6 : 1,
                   },
                 ]}
-                onPress={() => handleOrderTypeChange("one_time")}
-                activeOpacity={0.7}
+                onPress={() => !orderId && handleOrderTypeChange("one_time")}
+                activeOpacity={orderId ? 1 : 0.7}
+                disabled={!!orderId}
               >
                 <IconSymbol
                   name="checkmark.circle.fill"
@@ -1637,10 +1639,12 @@ export default function CreateOrderScreen() {
                         ? colors.primary
                         : colors.background,
                     borderColor: colors.border,
+                    opacity: orderId ? 0.6 : 1,
                   },
                 ]}
-                onPress={() => handleOrderTypeChange("permanent")}
-                activeOpacity={0.7}
+                onPress={() => !orderId && handleOrderTypeChange("permanent")}
+                activeOpacity={orderId ? 1 : 0.7}
+                disabled={!!orderId}
               >
                 <IconSymbol
                   name="repeat.circle.fill"
@@ -1678,6 +1682,17 @@ export default function CreateOrderScreen() {
                 : t("permanentOrderDesc") ||
                   "Recurring service for multiple bookings"}
             </Text>
+            {orderId && (
+              <Text
+                style={[
+                  styles.orderTypeDescription,
+                  { color: colors.tabIconDefault, fontStyle: "italic" },
+                ]}
+              >
+                {t("orderTypeCannotBeChanged") ||
+                  "Order type cannot be changed when editing"}
+              </Text>
+            )}
 
             {/* Work Duration Input (only for permanent orders) */}
             {orderType === "permanent" && (

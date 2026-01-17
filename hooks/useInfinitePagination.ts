@@ -49,6 +49,7 @@ export function useInfinitePagination<T extends { id: number | string }>(
     isFetching,
     enableScrollGate = false,
     onRefreshCallback,
+    resetDeps,
   } = options;
 
   // State for accumulated items and current page
