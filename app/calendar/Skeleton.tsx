@@ -52,7 +52,7 @@ const CalendarSkeleton = () => {
         <View
           style={[
             styles.skeletonMonthCard,
-            { backgroundColor: (colors as any).surface || colors.background },
+            { backgroundColor: colors.border + "30" },
           ]}
         />
 
