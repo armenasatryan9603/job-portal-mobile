@@ -4,9 +4,11 @@ import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { ApplyModal } from "@/components/ApplyModal";
+import { CheckInModal } from "@/components/CheckInModal";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { TopTabs } from "@/components/TopTabs";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -77,6 +79,11 @@ export default function OrdersScreen() {
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
   const isSavedOrders = saved === "true";
+
+  // Add tab state for order type
+  const [activeOrderTab, setActiveOrderTab] = useState<
+    "one_time" | "permanent"
+  >("one_time");
   const filterCategoryId = categoryId
     ? isNaN(parseInt(categoryId as string))
       ? null
@@ -197,6 +204,7 @@ export default function OrdersScreen() {
       try {
         const savedFiltersString = await AsyncStorage.getItem(filterStorageKey);
         const savedSearch = await AsyncStorage.getItem(searchStorageKey);
+
         if (savedFiltersString) {
           const parsed = JSON.parse(savedFiltersString);
           setSelectedFilters((prev) => {
@@ -309,7 +317,7 @@ export default function OrdersScreen() {
     pagination,
     isLoading: activeQuery.isLoading,
     isFetching: activeQuery.isFetching,
-    resetDeps: [selectedFilters, searchQuery],
+    resetDeps: [selectedFilters, searchQuery, activeOrderTab],
     enableScrollGate: true,
   });
   // asdf
@@ -329,8 +337,8 @@ export default function OrdersScreen() {
   const categories = categoriesData?.categories || [];
 
   // Filter configuration
-  const filterSections = useMemo<FilterSection[]>(
-    () => [
+  const filterSections = useMemo<FilterSection[]>(() => {
+    const sections: FilterSection[] = [
       {
         key: "sortBy",
         title: t("sortBy"),
@@ -342,7 +350,11 @@ export default function OrdersScreen() {
           { key: "price_asc", label: t("lowestPrice") },
         ],
       },
-      {
+    ];
+
+    // Only show status filter for one-time orders
+    if (activeOrderTab === "one_time") {
+      sections.push({
         key: "status",
         title: t("filterByStatus"),
         options: [
@@ -361,7 +373,10 @@ export default function OrdersScreen() {
             ? [{ key: "not_applied", label: t("notApplied") }]
             : []),
         ],
-      },
+      });
+    }
+
+    sections.push(
       {
         key: "priceRange",
         title: t("priceRange"),
@@ -395,10 +410,19 @@ export default function OrdersScreen() {
           key: category.id.toString(),
           label: category.name,
         })),
-      },
-    ],
-    [t, isMyOrders, categories]
-  );
+      }
+    );
+
+    return sections;
+  }, [
+    t,
+    isMyOrders,
+    categories,
+    activeOrderTab,
+    isAuthenticated,
+    isMyJobs,
+    isSavedOrders,
+  ]);
 
   // Loading states - use hook's provided values for better pagination handling
   const loading = activeQuery.isLoading && !activeQuery.isFetching;
@@ -427,6 +451,7 @@ export default function OrdersScreen() {
 
   // Apply modal state
   const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [applyLoading, setApplyLoading] = useState(false);
 
@@ -941,6 +966,13 @@ export default function OrdersScreen() {
       // Apply sorting
       filteredOrders = sortOrders(filteredOrders, sortBy);
 
+      // Filter by order type (tab)
+      // Treat orders without orderType as "one_time" for backward compatibility
+      filteredOrders = filteredOrders.filter((order) => {
+        const orderType = (order as any).orderType || "one_time";
+        return orderType === activeOrderTab;
+      });
+
       // Get paginated results
       return getPaginatedOrders(filteredOrders, clientSidePage, limit);
     }
@@ -999,6 +1031,23 @@ export default function OrdersScreen() {
     // Apply sorting
     filteredOrders = sortOrders(filteredOrders, sortBy);
 
+    // Filter by order type (tab)
+    // Treat orders without orderType as "one_time" for backward compatibility
+    filteredOrders = filteredOrders.filter((order) => {
+      const orderType = (order as any).orderType || "one_time";
+
+      // For non-owners, hide draft permanent orders (only show published ones)
+      if (
+        !isMyOrders &&
+        orderType === "permanent" &&
+        (order as any).status === "draft"
+      ) {
+        return false;
+      }
+
+      return orderType === activeOrderTab;
+    });
+
     return filteredOrders;
   }, [
     isMyOrders,
@@ -1007,6 +1056,7 @@ export default function OrdersScreen() {
     allUserOrders,
     searchQuery,
     status,
+    selectedFilters.categories,
     selectedFilters.services,
     selectedFilters.sortBy,
     priceRange,
@@ -1014,6 +1064,7 @@ export default function OrdersScreen() {
     selectedFilters.location,
     selectedFilters.rating,
     orders,
+    activeOrderTab,
     filterOrdersBySearch,
     filterOrdersByStatus,
     filterOrdersByCategories,
@@ -1079,6 +1130,11 @@ export default function OrdersScreen() {
         if (ratingFilter.length > 0) {
           filtered = filterOrdersByRating(filtered, ratingFilter);
         }
+        // Filter by order type (tab)
+        filtered = filtered.filter((order) => {
+          const orderType = (order as any).orderType || "one_time";
+          return orderType === activeOrderTab;
+        });
         return filtered;
       })();
 
@@ -1102,6 +1158,7 @@ export default function OrdersScreen() {
     priceRange,
     clientSidePage,
     pagination,
+    activeOrderTab,
     filterOrdersBySearch,
     filterOrdersByStatus,
     filterOrdersByCategories,
@@ -1316,7 +1373,7 @@ export default function OrdersScreen() {
     ]);
   };
 
-  const handleApplyToOrder = (order: Order) => {
+  const handleApplyToOrder = async (order: Order) => {
     // Check if user is authenticated
     if (!user?.id) {
       // Show login modal for non-authenticated users
@@ -1325,7 +1382,89 @@ export default function OrdersScreen() {
     }
 
     setSelectedOrder(order);
-    setShowApplyModal(true);
+
+    // Check if this is a draft permanent order (needs publishing)
+    if (
+      (order as any).orderType === "permanent" &&
+      (order as any).status === "draft"
+    ) {
+      handlePublishOrder(order);
+      return;
+    }
+
+    // Check if this is a permanent order (for check-in)
+    if ((order as any).orderType === "permanent") {
+      setShowCheckInModal(true);
+    } else {
+      setShowApplyModal(true);
+    }
+  };
+
+  const handlePublishOrder = async (order: Order) => {
+    try {
+      // Check subscription first
+      const subscription = await apiService.getMySubscription();
+      if (
+        !subscription ||
+        subscription.status !== "active" ||
+        new Date(subscription.endDate) < new Date()
+      ) {
+        Alert.alert(
+          t("subscriptionRequiredForPermanent") || "Subscription Required",
+          t("subscriptionRequiredForPermanentDesc") ||
+            "An active subscription is required to publish permanent orders.",
+          [
+            { text: t("cancel"), style: "cancel" },
+            {
+              text: t("viewSubscriptions") || "View Subscriptions",
+              onPress: () => {
+                router.push("/subscriptions" as any);
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      // Confirm publishing
+      Alert.alert(
+        t("publishPermanentOrder") || "Publish Permanent Order",
+        t("publishToMakeVisible") ||
+          "Publish this order to make it visible to clients",
+        [
+          { text: t("cancel"), style: "cancel" },
+          {
+            text: t("publishOrder") || "Publish",
+            onPress: async () => {
+              setApplyLoading(true);
+              try {
+                await apiService.publishPermanentOrder(order.id);
+                Alert.alert(
+                  t("orderPublished") || "Success!",
+                  t("orderPublishedDesc") ||
+                    "Your permanent order has been submitted for review."
+                );
+                // Refresh orders list
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+              } catch (error: any) {
+                console.error("Error publishing order:", error);
+                Alert.alert(
+                  t("error"),
+                  error.message ||
+                    t("failedToPublishOrder") ||
+                    "Failed to publish order"
+                );
+              } finally {
+                setApplyLoading(false);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error checking subscription:", error);
+      Alert.alert(t("error"), t("failedToLoadSubscription"));
+    }
   };
 
   const handleSubmitApplication = async (
@@ -1401,6 +1540,57 @@ export default function OrdersScreen() {
     setSelectedOrder(null);
   };
 
+  const handleCheckInSubmit = async (
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+  ) => {
+    if (!selectedOrder) return;
+
+    setApplyLoading(true);
+
+    try {
+      const result = await apiService.checkInToOrder(
+        selectedOrder.id,
+        selectedSlots
+      );
+
+      if (result.bookings && result.bookings.length > 0) {
+        Alert.alert(
+          t("checkInSuccess"),
+          `${t("checkInSuccess")} ${result.bookings.length} ${
+            result.bookings.length === 1
+              ? t("slotSelected")
+              : t("slotsSelected")
+          }`,
+          [
+            {
+              text: t("ok"),
+              onPress: () => {
+                setShowCheckInModal(false);
+                setSelectedOrder(null);
+                // Refresh the orders list
+                queryClient.invalidateQueries({ queryKey: ["orders"] });
+              },
+            },
+          ]
+        );
+      }
+
+      if (result.errors && result.errors.length > 0) {
+        console.warn("Some bookings failed:", result.errors);
+      }
+    } catch (error: any) {
+      console.error("Error checking in:", error);
+      Alert.alert(t("error"), t("failedToCheckIn"));
+    } finally {
+      setApplyLoading(false);
+    }
+  };
+
+  const handleCloseCheckInModal = () => {
+    setShowCheckInModal(false);
+    setSelectedOrder(null);
+  };
+
   const handleFilterChange = (
     sectionKey: string,
     value:
@@ -1468,15 +1658,6 @@ export default function OrdersScreen() {
           ? t("savedOrders")
           : t("orders")
       }
-      subtitle={
-        isMyOrders
-          ? t("myOrdersDesc")
-          : isMyJobs
-          ? t("myJobsDesc")
-          : isSavedOrders
-          ? t("savedOrdersDesc")
-          : t("browseAvailableJobOrders")
-      }
       showNotificationsButton={isAuthenticated}
       showChatButton={isAuthenticated}
       unreadNotificationsCount={unreadNotificationsCount}
@@ -1537,9 +1718,54 @@ export default function OrdersScreen() {
     return null;
   };
 
+  // Tab configuration
+  const tabs = useMemo(
+    () => [
+      { key: "one_time", label: t("oneTimeOrders") || "One-Time Orders" },
+      { key: "permanent", label: t("permanentOrders") || "Permanent Orders" },
+    ],
+    [t]
+  );
+
+  const handleTabChange = useCallback(
+    (tabKey: string) => {
+      setActiveOrderTab(tabKey as "one_time" | "permanent");
+
+      // Reset search query
+      setSearchQuery("");
+
+      // Reset client-side pagination
+      setClientSidePage(1);
+
+      // Reset filters when switching tabs
+      setSelectedFilters({
+        categories: [],
+        services: [],
+        priceRange: { min: 0, max: 10000 },
+        location: "",
+        rating: null,
+        sortBy: "relevance",
+      });
+
+      // Reset status filter and search from URL
+      router.setParams({ status: undefined, q: undefined });
+
+      AnalyticsService.getInstance().logEvent("tab_changed", {
+        tab: tabKey,
+        location: "orders_screen",
+      });
+    },
+    [router]
+  );
+
   return (
     <>
       <Layout header={header}>
+        <TopTabs
+          tabs={tabs}
+          activeTab={activeOrderTab}
+          onTabChange={handleTabChange}
+        />
         <View style={{ flex: 1 }}>
           <View
             style={{
@@ -1642,6 +1868,14 @@ export default function OrdersScreen() {
         onClose={handleCloseApplyModal}
         order={selectedOrder}
         onSubmit={handleSubmitApplication}
+        loading={applyLoading}
+      />
+
+      <CheckInModal
+        visible={showCheckInModal}
+        onClose={handleCloseCheckInModal}
+        order={selectedOrder}
+        onSubmit={handleCheckInSubmit}
         loading={applyLoading}
       />
 

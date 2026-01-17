@@ -36,8 +36,14 @@ import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { API_CONFIG } from "@/config/api";
-import { DateTimeSelector } from "@/components/DateTimeSelector";
 import { useCategories } from "@/hooks/useApi";
+import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
+import {
+  WeeklySchedulePicker,
+  WeeklySchedule,
+} from "@/components/WeeklySchedulePicker";
+
+// Note: Slot generation removed - clients now book custom time ranges within work hours
 
 export default function CreateOrderScreen() {
   const { serviceId, orderId } = useLocalSearchParams();
@@ -117,6 +123,15 @@ export default function CreateOrderScreen() {
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
   const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [showRateUnitModal, setShowRateUnitModal] = useState(false);
+  const [orderType, setOrderType] = useState<"one_time" | "permanent">(
+    "one_time"
+  );
+  const [workDurationPerClient, setWorkDurationPerClient] =
+    useState<string>("");
+  const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
+  const [isSpecialist, setIsSpecialist] = useState<boolean>(false);
+  const [showBecomeSpecialistModal, setShowBecomeSpecialistModal] =
+    useState(false);
   const canAddAnotherQuestion = () =>
     questions.length === 0 || questions[questions.length - 1].trim().length > 0;
 
@@ -195,6 +210,36 @@ export default function CreateOrderScreen() {
 
   // Fetch services (same hook used by ServiceSelector to avoid duplicate calls)
   const { data: categoriesData } = useCategories(1, 100, undefined, language);
+
+  // Check if user is a specialist
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Check if user has categories (is a specialist)
+        const profile = await apiService.getUserProfile();
+        const userCategories = (profile as any).UserCategories || [];
+        setIsSpecialist(userCategories.length > 0);
+      } catch (error) {
+        console.error("Error checking user status:", error);
+        setIsSpecialist(false);
+      }
+    };
+
+    checkUserStatus();
+  }, [user?.id, user?.role]); // Also watch for role changes
+
+  // When modal closes, recheck specialist status
+  useEffect(() => {
+    if (!showBecomeSpecialistModal && user?.role === "specialist") {
+      setIsSpecialist(true);
+      // Automatically switch to permanent if user just became specialist
+      if (orderType === "one_time") {
+        setOrderType("permanent");
+      }
+    }
+  }, [showBecomeSpecialistModal, user?.role]);
 
   // Fetch rate units from API on component mount
   useEffect(() => {
@@ -520,6 +565,60 @@ export default function CreateOrderScreen() {
           } else {
             setSkillIds([]);
           }
+
+          // Load permanent order specific fields
+          if (orderData.orderType) {
+            setOrderType(orderData.orderType as "one_time" | "permanent");
+          }
+          if (orderData.workDurationPerClient) {
+            setWorkDurationPerClient(
+              orderData.workDurationPerClient.toString()
+            );
+          }
+          if (orderData.weeklySchedule) {
+            console.log(
+              "Loading weeklySchedule from order:",
+              orderData.weeklySchedule
+            );
+            setWeeklySchedule(orderData.weeklySchedule);
+          } else if (
+            orderData.orderType === "permanent" &&
+            orderData.workDurationPerClient
+          ) {
+            // Generate default weekly schedule for orders created before this feature
+            console.log(
+              "Generating default weeklySchedule for existing permanent order"
+            );
+            const defaultSchedule: WeeklySchedule = {
+              monday: {
+                enabled: true,
+                workHours: { start: "09:00", end: "17:00" },
+              },
+              tuesday: {
+                enabled: true,
+                workHours: { start: "09:00", end: "17:00" },
+              },
+              wednesday: {
+                enabled: true,
+                workHours: { start: "09:00", end: "17:00" },
+              },
+              thursday: {
+                enabled: true,
+                workHours: { start: "09:00", end: "17:00" },
+              },
+              friday: {
+                enabled: true,
+                workHours: { start: "09:00", end: "17:00" },
+              },
+              saturday: { enabled: false },
+              sunday: { enabled: false },
+            };
+
+            // No need to generate slots - clients book custom time ranges
+            setWeeklySchedule(defaultSchedule);
+          } else {
+            console.log("No weeklySchedule found in order data");
+          }
         } catch (error) {
           console.error("Error loading order for edit:", error);
           Alert.alert(t("error"), t("failedToLoadOrder"));
@@ -746,6 +845,27 @@ export default function CreateOrderScreen() {
         break; // Stop at first error found
       }
     }
+  };
+
+  const handleOrderTypeChange = (newType: "one_time" | "permanent") => {
+    if (newType === "permanent") {
+      // Only check if user is a specialist (subscription checked at publish time)
+      // Check both isSpecialist state and user role for reliability
+      if (!isSpecialist && user?.role !== "specialist") {
+        setShowBecomeSpecialistModal(true);
+        return;
+      }
+    }
+
+    setOrderType(newType);
+  };
+
+  const handleBecomeSpecialistSuccess = () => {
+    setShowBecomeSpecialistModal(false);
+    // Refresh user status
+    setIsSpecialist(true);
+    // Optionally switch to permanent type
+    setOrderType("permanent");
   };
 
   const handleServiceSelect = (category: Category | null) => {
@@ -1118,7 +1238,20 @@ export default function CreateOrderScreen() {
 
     try {
       // Add enhanced fields if using enhanced data
-      const finalOrderData = { ...orderData, currency, rateUnit };
+      const finalOrderData = {
+        ...orderData,
+        currency,
+        rateUnit,
+        orderType,
+        workDurationPerClient:
+          orderType === "permanent" && workDurationPerClient
+            ? parseInt(workDurationPerClient)
+            : undefined,
+        weeklySchedule:
+          orderType === "permanent" && Object.keys(weeklySchedule).length > 0
+            ? weeklySchedule
+            : undefined,
+      };
       if (useEnhanced && enhancedData) {
         finalOrderData.titleEn = enhancedData.titleEn;
         finalOrderData.titleRu = enhancedData.titleRu;
@@ -1451,6 +1584,159 @@ export default function CreateOrderScreen() {
     <Layout header={header}>
       <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 100 }}>
         <ResponsiveContainer>
+          {/* Order Type Selector - Compact Modern Design */}
+          <ResponsiveCard>
+            <View style={styles.orderTypeHeader}>
+              <Text style={[styles.orderTypeTitle, { color: colors.text }]}>
+                {t("orderType") || "Order Type"}
+              </Text>
+            </View>
+
+            {/* Compact Toggle Buttons */}
+            <View style={styles.orderTypeToggleContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.orderTypeToggle,
+                  {
+                    backgroundColor:
+                      orderType === "one_time"
+                        ? colors.primary
+                        : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => handleOrderTypeChange("one_time")}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  name="checkmark.circle.fill"
+                  size={16}
+                  color={
+                    orderType === "one_time" ? "#FFFFFF" : colors.tabIconDefault
+                  }
+                />
+                <Text
+                  style={[
+                    styles.orderTypeToggleText,
+                    {
+                      color: orderType === "one_time" ? "#FFFFFF" : colors.text,
+                      fontWeight: orderType === "one_time" ? "600" : "500",
+                    },
+                  ]}
+                >
+                  {t("oneTimeOrder") || "One-Time"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.orderTypeToggle,
+                  {
+                    backgroundColor:
+                      orderType === "permanent"
+                        ? colors.primary
+                        : colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => handleOrderTypeChange("permanent")}
+                activeOpacity={0.7}
+              >
+                <IconSymbol
+                  name="repeat.circle.fill"
+                  size={16}
+                  color={
+                    orderType === "permanent"
+                      ? "#FFFFFF"
+                      : colors.tabIconDefault
+                  }
+                />
+                <Text
+                  style={[
+                    styles.orderTypeToggleText,
+                    {
+                      color:
+                        orderType === "permanent" ? "#FFFFFF" : colors.text,
+                      fontWeight: orderType === "permanent" ? "600" : "500",
+                    },
+                  ]}
+                >
+                  {t("permanentOrder") || "Permanent"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Subtle description */}
+            <Text
+              style={[
+                styles.orderTypeDescription,
+                { color: colors.tabIconDefault },
+              ]}
+            >
+              {orderType === "one_time"
+                ? t("oneTimeOrderDesc") || "Standard one-time service"
+                : t("permanentOrderDesc") ||
+                  "Recurring service for multiple bookings"}
+            </Text>
+
+            {/* Work Duration Input (only for permanent orders) */}
+            {orderType === "permanent" && (
+              <View style={styles.workDurationContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  {t("workDurationPerClient") || "Session Duration"}
+                </Text>
+                <View style={styles.durationInputWrapper}>
+                  <TextInput
+                    style={[
+                      styles.durationInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={workDurationPerClient}
+                    onChangeText={setWorkDurationPerClient}
+                    placeholder="60"
+                    placeholderTextColor={colors.tabIconDefault}
+                    keyboardType="numeric"
+                  />
+                  <Text
+                    style={[
+                      styles.durationUnit,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {t("minutesPerSession") || "min"}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </ResponsiveCard>
+
+          {/* Weekly Schedule (only for permanent orders) */}
+          {orderType === "permanent" &&
+            workDurationPerClient &&
+            parseInt(workDurationPerClient) > 0 && (
+              <ResponsiveCard>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("setWeeklySchedule") || "Set Weekly Schedule"}
+                </Text>
+                <Text
+                  style={[styles.sectionDesc, { color: colors.tabIconDefault }]}
+                >
+                  {t("setWeeklyScheduleDesc") ||
+                    "Define when you're available each week"}
+                </Text>
+                <WeeklySchedulePicker
+                  value={weeklySchedule}
+                  onChange={setWeeklySchedule}
+                  workDurationPerClient={parseInt(workDurationPerClient)}
+                  disabled={isSubmitting}
+                />
+              </ResponsiveCard>
+            )}
+
           {/* Basic Information */}
           <ResponsiveCard>
             <View ref={basicInfoSectionRef}>
@@ -1686,14 +1972,6 @@ export default function CreateOrderScreen() {
             />
           </View>
 
-          <DateTimeSelector
-            error={errors.availableDates}
-            selectedDates={selectedDates}
-            selectedDateTimes={selectedDateTimes}
-            onDatesChange={setSelectedDates}
-            onDateTimesChange={setSelectedDateTimes}
-          />
-
           {/* Questions Section */}
           <ResponsiveCard style={{ position: "relative" }}>
             <View>
@@ -1889,6 +2167,12 @@ export default function CreateOrderScreen() {
           loading={isSubmitting}
         />
       )}
+
+      {/* Become Specialist Modal */}
+      <BecomeSpecialistModal
+        visible={showBecomeSpecialistModal}
+        onClose={() => setShowBecomeSpecialistModal(false)}
+      />
 
       {/* Currency Selection Modal */}
       <Modal
@@ -2289,6 +2573,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
     marginBottom: 4,
   },
+  sectionDesc: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
   priceHint: {
     fontSize: 12,
     marginBottom: 12,
@@ -2387,5 +2675,70 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     gap: 8,
+  },
+  // Modern compact order type styles
+  orderTypeHeader: {
+    marginBottom: 12,
+  },
+  orderTypeTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    opacity: 0.7,
+  },
+  orderTypeToggleContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  orderTypeToggle: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+  },
+  orderTypeToggleText: {
+    fontSize: 14,
+  },
+  orderTypeDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.6,
+    marginBottom: 4,
+  },
+  workDurationContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  durationInputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  durationInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  durationUnit: {
+    fontSize: 13,
+    fontWeight: "500",
   },
 });

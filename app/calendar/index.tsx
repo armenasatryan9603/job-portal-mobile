@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { EmptyPage } from "@/components/EmptyPage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { CalendarGrid } from "@/components/CalendarGrid";
+import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import {
   ThemeColors,
   Shadows,
@@ -22,10 +22,16 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
+  Alert,
 } from "react-native";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import CalendarNotificationService from "@/categories/CalendarNotificationService";
 import { CountBadge } from "@/components/CountBadge";
+import { apiService, Booking } from "@/categories/api";
+import { EditBookingModal } from "@/components/EditBookingModal";
+import { pusherService } from "@/categories/pusherService";
+import CalendarSkeleton from "./Skeleton";
+import { Button } from "@/components/ui/button";
 
 interface Application {
   id: number;
@@ -47,7 +53,7 @@ interface DateGroupedApplication {
 }
 
 type ViewMode = "calendar" | "list";
-type DateFilterMode = "applied" | "scheduled";
+type DateFilterMode = "applied" | "scheduled" | "checkIns";
 
 // Helper functions for date handling (using local time, not UTC)
 const normalizeDate = (date: Date): Date => {
@@ -76,6 +82,11 @@ export default function CalendarScreen() {
     useState<DateFilterMode>("scheduled");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showEditBookingModal, setShowEditBookingModal] = useState(false);
+  const [editingBooking, setEditingBooking] = useState(false);
 
   // Fetch proposals the user submitted
   const {
@@ -93,16 +104,93 @@ export default function CalendarScreen() {
     refetch: refetchMyOrders,
   } = useMyOrders();
 
-  // Combine loading and error states
+  // Fetch bookings
+  const fetchBookings = async () => {
+    if (!user) return;
+
+    setIsLoadingBookings(true);
+    try {
+      const data = await apiService.getMyBookings();
+      setBookings(data);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+    } finally {
+      setIsLoadingBookings(false);
+    }
+  };
+
+  // Fetch bookings when component mounts (always fetch, not just when switching to checkIns)
+  useEffect(() => {
+    if (user) {
+      fetchBookings();
+    }
+  }, [user]);
+
+  // Subscribe to Pusher events for real-time booking updates
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = pusherService.subscribeToUserUpdates(
+      user.id,
+      () => {}, // conversation updates
+      undefined, // status updates
+      undefined, // order status updates
+      () => {
+        // On any notification, refetch bookings
+        fetchBookings();
+      }
+    );
+
+    return unsubscribe;
+  }, [user]);
+
+  // Combine loading and error states (only show loading on initial load, not when switching tabs)
   const isLoading = isLoadingUserProposals || isLoadingMyOrders;
   const error = userProposalsError || myOrdersError;
   const refetch = () => {
     refetchUserProposals();
     refetchMyOrders();
+    fetchBookings();
   };
 
+  // Process bookings and group by date (always process, not just when in checkIns mode)
+  const groupedBookings = useMemo(() => {
+    const dateMap = new Map<string, Booking[]>();
+
+    bookings.forEach((booking) => {
+      if (booking.status === "cancelled") return; // Skip cancelled bookings
+
+      // Normalize date to YYYY-MM-DD format (remove time component if present)
+      const bookingDate = new Date(booking.scheduledDate);
+      const dateKey = getDateKey(bookingDate);
+
+      if (!dateMap.has(dateKey)) {
+        dateMap.set(dateKey, []);
+      }
+      dateMap.get(dateKey)!.push(booking);
+    });
+
+    // Convert to array and sort
+    const grouped = Array.from(dateMap.entries())
+      .map(([dateKey, bookings]) => {
+        const date = new Date(dateKey);
+        return {
+          date: dateKey,
+          dateLabel: date.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          }),
+          bookings: bookings,
+        };
+      })
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return grouped;
+  }, [bookings]);
+
   // Process applications and group by date (separate for applied and scheduled)
-  const processedApplications = useMemo(() => {
+  const groupedApplications = useMemo(() => {
     // Collect proposals the user submitted
     const userSubmittedProposals: Application[] =
       userProposalsData?.proposals || [];
@@ -178,7 +266,11 @@ export default function CalendarScreen() {
 
     // Select the appropriate map based on filter mode
     const dateMap =
-      dateFilterMode === "applied" ? appliedDateMap : scheduledDateMap;
+      dateFilterMode === "applied"
+        ? appliedDateMap
+        : dateFilterMode === "scheduled"
+        ? scheduledDateMap
+        : new Map(); // Return empty map for checkIns mode (bookings are handled separately)
 
     // Convert to array and sort
     const grouped: DateGroupedApplication[] = Array.from(dateMap.entries())
@@ -202,8 +294,15 @@ export default function CalendarScreen() {
   // Get applications for a specific date
   const getApplicationsForDate = (date: Date): Application[] => {
     const dateKey = getDateKey(date);
-    const group = processedApplications.find((g) => g.date === dateKey);
+    const group = groupedApplications.find((g) => g.date === dateKey);
     return group?.applications || [];
+  };
+
+  // Get bookings for a specific date
+  const getBookingsForDate = (date: Date): Booking[] => {
+    const dateKey = getDateKey(date);
+    const group = groupedBookings.find((g) => g.date === dateKey);
+    return group?.bookings || [];
   };
 
   // Schedule notifications for accepted jobs when data changes
@@ -325,21 +424,19 @@ export default function CalendarScreen() {
     }
   };
 
-  const navigateMonth = (direction: "prev" | "next") => {
-    setCurrentMonth((prev) => {
-      const newDate = new Date(prev);
-      if (direction === "prev") {
-        newDate.setMonth(prev.getMonth() - 1);
-      } else {
-        newDate.setMonth(prev.getMonth() + 1);
-      }
-      return newDate;
-    });
-  };
-
   const handleDateSelect = (date: Date) => {
-    const apps = getApplicationsForDate(date);
-    if (apps.length > 0) {
+    // Check if there's data for this date based on current filter mode
+    let hasData = false;
+
+    if (dateFilterMode === "checkIns") {
+      const bookings = getBookingsForDate(date);
+      hasData = bookings.length > 0;
+    } else {
+      const apps = getApplicationsForDate(date);
+      hasData = apps.length > 0;
+    }
+
+    if (hasData) {
       setSelectedDate(date);
       if (viewMode === "calendar") {
         setViewMode("list");
@@ -347,30 +444,111 @@ export default function CalendarScreen() {
     }
   };
 
+  // Build marked dates for calendar
+  const markedDatesForCalendar = useMemo(() => {
+    const marked: { [key: string]: MarkedDate } = {};
+
+    // Mark dates for applications (proposals)
+    if (dateFilterMode !== "checkIns") {
+      groupedApplications.forEach((group) => {
+        const dateString = group.date; // Already in YYYY-MM-DD format
+        const apps = group.applications;
+
+        if (apps.length > 0) {
+          // Get unique status colors for this date
+          const statusColors = Array.from(
+            new Set(apps.map((app) => getStatusColor(app.status)))
+          );
+
+          // Use the primary status color for styling
+          const primaryColor = statusColors[0];
+
+          marked[dateString] = {
+            customStyles: {
+              container: {
+                backgroundColor: primaryColor + "10",
+                borderRadius: 8,
+                borderWidth: 1.5,
+                borderColor: primaryColor,
+              },
+              text: {
+                color: colors.text,
+                fontWeight: "600",
+              },
+            },
+          };
+        }
+      });
+    }
+
+    // Mark dates for bookings (check-ins)
+    if (dateFilterMode === "checkIns") {
+      groupedBookings.forEach((group) => {
+        const dateString = group.date;
+        const bookingsOnDate = group.bookings;
+
+        if (bookingsOnDate.length > 0) {
+          marked[dateString] = {
+            customStyles: {
+              container: {
+                backgroundColor: "#9333EA15",
+                borderRadius: 8,
+                borderWidth: 1.5,
+                borderColor: "#9333EA",
+              },
+              text: {
+                color: colors.text,
+                fontWeight: "600",
+              },
+            },
+          };
+        }
+      });
+    }
+
+    // Mark selected date
+    if (selectedDate) {
+      const dateString = normalizeDate(selectedDate)
+        .toISOString()
+        .split("T")[0];
+      if (marked[dateString]) {
+        marked[dateString].selected = true;
+        marked[dateString].selectedColor = colors.primary;
+      } else {
+        marked[dateString] = {
+          selected: true,
+          selectedColor: colors.primary,
+        };
+      }
+    }
+
+    return marked;
+  }, [
+    groupedApplications,
+    groupedBookings,
+    dateFilterMode,
+    selectedDate,
+    colors.text,
+    colors.primary,
+  ]);
+
   const renderCalendarView = () => {
     return (
       <View>
-        <CalendarGrid
-          currentMonth={currentMonth}
-          onMonthNavigate={navigateMonth}
-          onDatePress={handleDateSelect}
-          getDateIndicators={(date) => {
-            const apps = getApplicationsForDate(date);
-            if (apps.length === 0) return {};
-            const statusColors = Array.from(
-              new Set(apps.map((app) => getStatusColor(app.status)))
-            );
-            return {
-              colors: statusColors,
-              count: apps.length,
-            };
+        <CalendarComponent
+          mode="single"
+          selectedDates={selectedDate ? [selectedDate] : []}
+          onDateSelect={(date) => {
+            if (!Array.isArray(date)) {
+              handleDateSelect(date);
+            }
           }}
-          isDateSelected={(date) => {
-            if (!selectedDate) return false;
-            return (
-              normalizeDate(selectedDate).toDateString() ===
-              normalizeDate(date).toDateString()
-            );
+          markedDates={markedDatesForCalendar}
+          monthFormat="MMMM yyyy"
+          firstDay={1} // Monday
+          onMonthChange={(month) => {
+            const newMonth = new Date(month.year, month.month - 1, 1);
+            setCurrentMonth(newMonth);
           }}
         />
 
@@ -389,14 +567,9 @@ export default function CalendarScreen() {
             {t("status")}
           </Text>
           <View style={styles.legendItems}>
-            {[
-              { status: "pending", label: t("pending") },
-              { status: "accepted", label: t("accepted") },
-              { status: "rejected", label: t("rejected") },
-              { status: "cancelled", label: t("cancelled") },
-            ].map((item) => (
+            {dateFilterMode === "checkIns" ? (
+              // Show booking legend for check-ins mode
               <View
-                key={item.status}
                 style={[
                   styles.legendItem,
                   {
@@ -411,8 +584,8 @@ export default function CalendarScreen() {
                   style={[
                     styles.legendDot,
                     {
-                      backgroundColor: getStatusColor(item.status),
-                      shadowColor: getStatusColor(item.status),
+                      backgroundColor: "#9333EA",
+                      shadowColor: "#9333EA",
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 0.3,
                       shadowRadius: 2,
@@ -421,30 +594,328 @@ export default function CalendarScreen() {
                   ]}
                 />
                 <Text style={[styles.legendText, { color: colors.text }]}>
-                  {item.label}
+                  {t("booked")}
                 </Text>
               </View>
-            ))}
+            ) : (
+              // Show status legends for applications mode
+              [
+                { status: "pending", label: t("pending") },
+                { status: "accepted", label: t("accepted") },
+                { status: "rejected", label: t("rejected") },
+                { status: "cancelled", label: t("cancelled") },
+              ].map((item) => (
+                <View
+                  key={item.status}
+                  style={[
+                    styles.legendItem,
+                    {
+                      backgroundColor: colors.background,
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: BorderRadius.md,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.legendDot,
+                      {
+                        backgroundColor: getStatusColor(item.status),
+                        shadowColor: getStatusColor(item.status),
+                        shadowOffset: { width: 0, height: 1 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 2,
+                        elevation: 2,
+                      },
+                    ]}
+                  />
+                  <Text style={[styles.legendText, { color: colors.text }]}>
+                    {item.label}
+                  </Text>
+                </View>
+              ))
+            )}
           </View>
         </View>
       </View>
     );
   };
 
+  // Handler functions for bookings
+  const handleEditBooking = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowEditBookingModal(true);
+  };
+
+  const handleCancelBooking = async (booking: Booking) => {
+    Alert.alert(
+      t("confirmCancelBooking"),
+      `${t("scheduledDate")}: ${booking.scheduledDate}\n${
+        booking.startTime
+      } - ${booking.endTime}`,
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("confirmCancel"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiService.cancelBooking(booking.id);
+              Alert.alert(t("success"), t("bookingCancelledSuccess"));
+              fetchBookings(); // Refresh bookings list
+            } catch (error) {
+              console.error("Error cancelling booking:", error);
+              Alert.alert(t("error"), t("failedToCancelBooking"));
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSubmitEditBooking = async (
+    scheduledDate: string,
+    startTime: string,
+    endTime: string
+  ) => {
+    if (!selectedBooking) return;
+
+    setEditingBooking(true);
+    try {
+      await apiService.updateBooking(selectedBooking.id, {
+        scheduledDate,
+        startTime,
+        endTime,
+      });
+      Alert.alert(t("success"), t("bookingUpdated"));
+      fetchBookings(); // Refresh bookings list
+      setShowEditBookingModal(false);
+      setSelectedBooking(null);
+    } catch (error: any) {
+      console.error("Error updating booking:", error);
+      Alert.alert(t("error"), error.message || t("failedToUpdateBooking"));
+    } finally {
+      setEditingBooking(false);
+    }
+  };
+
   const renderListView = () => {
+    // Handle bookings view
+    if (dateFilterMode === "checkIns") {
+      const displayData = selectedDate
+        ? groupedBookings.filter((g) => g.date === getDateKey(selectedDate))
+        : groupedBookings;
+
+      if (displayData.length === 0) {
+        return (
+          <EmptyPage
+            type="empty"
+            title={t("noBookings")}
+            subtitle={selectedDate ? t("noBookingsOnDate") : t("noBookingsYet")}
+            icon="calendar"
+          />
+        );
+      }
+
+      return (
+        <FlatList
+          style={[
+            styles.container,
+            { backgroundColor: colors.background, marginTop: Spacing.lg },
+          ]}
+          data={displayData}
+          keyExtractor={(item) => item.date}
+          renderItem={({ item }) => (
+            <View style={styles.dateGroup}>
+              <View
+                style={[
+                  styles.dateHeader,
+                  {
+                    backgroundColor:
+                      (colors as any).surface || colors.background,
+                    borderBottomColor: colors.border,
+                    ...Shadows.sm,
+                  },
+                ]}
+              >
+                <View style={styles.dateHeaderContent}>
+                  <View
+                    style={[
+                      styles.dateHeaderIndicator,
+                      { backgroundColor: "#9333EA" }, // Purple for bookings
+                    ]}
+                  />
+                  <Text style={[styles.dateHeaderText, { color: colors.text }]}>
+                    {item.dateLabel}
+                  </Text>
+                </View>
+                <CountBadge count={item.bookings.length} color="#9333EA" />
+              </View>
+              {item.bookings.map((booking) => {
+                const isMyOrderBooking = booking.Order?.Client?.id === user?.id;
+                const canEdit = isMyOrderBooking;
+
+                return (
+                  <TouchableOpacity
+                    key={booking.id}
+                    style={[
+                      styles.applicationCard,
+                      {
+                        backgroundColor:
+                          (colors as any).surface || colors.background,
+                        borderColor: colors.border,
+                        ...Shadows.md,
+                      },
+                    ]}
+                    onPress={() => router.push(`/orders/${booking.orderId}`)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.applicationHeader}>
+                      <View style={styles.applicationTitleContainer}>
+                        <Text
+                          style={[
+                            styles.applicationTitle,
+                            { color: colors.text },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {booking.Order?.title ||
+                            t("order") + " #" + booking.orderId}
+                        </Text>
+                        {isMyOrderBooking && booking.Client && (
+                          <Text
+                            style={[
+                              styles.applicationMetaText,
+                              { color: colors.tabIconDefault, marginTop: 4 },
+                            ]}
+                          >
+                            {t("bookedBy")}: {booking.Client.name}
+                          </Text>
+                        )}
+                      </View>
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          {
+                            backgroundColor: "#9333EA" + "20",
+                            borderWidth: 1,
+                            borderColor: "#9333EA" + "40",
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.statusDot,
+                            { backgroundColor: "#9333EA" },
+                          ]}
+                        />
+                        <Text style={[styles.statusText, { color: "#9333EA" }]}>
+                          {t("booked")}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={styles.applicationMetaContainer}>
+                      <View style={styles.applicationMeta}>
+                        <IconSymbol
+                          name="clock.fill"
+                          size={14}
+                          color={colors.tabIconDefault}
+                        />
+                        <Text
+                          style={[
+                            styles.applicationMetaText,
+                            { color: colors.tabIconDefault },
+                          ]}
+                        >
+                          {booking.startTime} - {booking.endTime}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Action buttons */}
+                    <View style={styles.bookingActions}>
+                      {canEdit && (
+                        <TouchableOpacity
+                          style={[
+                            styles.bookingActionButton,
+                            {
+                              backgroundColor: colors.primary + "15",
+                              borderColor: colors.primary,
+                            },
+                          ]}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleEditBooking(booking);
+                          }}
+                        >
+                          <IconSymbol
+                            name="pencil"
+                            size={16}
+                            color={colors.primary}
+                          />
+                          <Text
+                            style={[
+                              styles.bookingActionText,
+                              { color: colors.primary },
+                            ]}
+                          >
+                            {t("edit")}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+
+                      <TouchableOpacity
+                        style={[
+                          styles.bookingActionButton,
+                          {
+                            backgroundColor: "#FF3B30" + "15",
+                            borderColor: "#FF3B30",
+                          },
+                        ]}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleCancelBooking(booking);
+                        }}
+                      >
+                        <IconSymbol
+                          name="xmark.circle"
+                          size={16}
+                          color="#FF3B30"
+                        />
+                        <Text
+                          style={[
+                            styles.bookingActionText,
+                            { color: "#FF3B30" },
+                          ]}
+                        >
+                          {t("remove")}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+          contentContainerStyle={styles.listContent}
+        />
+      );
+    }
+
+    // Handle applications view
     const displayData = selectedDate
-      ? processedApplications.filter((g) => g.date === getDateKey(selectedDate))
-      : processedApplications;
+      ? groupedApplications.filter((g) => g.date === getDateKey(selectedDate))
+      : groupedApplications;
 
     if (displayData.length === 0) {
       const emptyTitle =
         dateFilterMode === "applied"
-          ? t("noAppliedApplications") ||
-            t("noApplications") ||
-            t("noApplications")
-          : t("noScheduledApplications") ||
-            t("noApplications") ||
-            t("noApplications");
+          ? t("noAppliedApplications")
+          : t("noScheduledApplications") || t("noApplications");
       const emptySubtitle =
         dateFilterMode === "applied"
           ? selectedDate
@@ -466,7 +937,10 @@ export default function CalendarScreen() {
 
     return (
       <FlatList
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, marginTop: Spacing.lg },
+        ]}
         data={displayData}
         keyExtractor={(item) => item.date}
         renderItem={({ item }) => (
@@ -624,92 +1098,7 @@ export default function CalendarScreen() {
   };
 
   if (isLoading) {
-    return (
-      <Layout>
-        <Header
-          title={t("calendar")}
-          showBackButton
-          onBackPress={() => router.back()}
-        />
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.skeletonTopRow}>
-            <View
-              style={[
-                styles.skeletonTitle,
-                { backgroundColor: colors.border + "40" },
-              ]}
-            />
-            <View style={styles.skeletonToggleGroup}>
-              {[1, 2].map((i) => (
-                <View
-                  key={`view-toggle-${i}`}
-                  style={[
-                    styles.skeletonSquare,
-                    { backgroundColor: colors.border + "30" },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.skeletonFilterRow}>
-            {[1, 2].map((i) => (
-              <View
-                key={`filter-${i}`}
-                style={[
-                  styles.skeletonPill,
-                  { backgroundColor: colors.border + "30" },
-                ]}
-              />
-            ))}
-          </View>
-
-          <View
-            style={[
-              styles.skeletonMonthCard,
-              { backgroundColor: (colors as any).surface || colors.background },
-            ]}
-          />
-
-          <View style={styles.skeletonCalendarGrid}>
-            {Array.from({ length: 6 }).map((_, row) => (
-              <View key={`row-${row}`} style={styles.skeletonCalendarRow}>
-                {Array.from({ length: 7 }).map((_, col) => (
-                  <View
-                    key={`cell-${row}-${col}`}
-                    style={[
-                      styles.skeletonDay,
-                      { backgroundColor: colors.border + "35" },
-                      col === 6 && { marginRight: 0 },
-                    ]}
-                  />
-                ))}
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.skeletonLegend}>
-            <View
-              style={[
-                styles.skeletonLine,
-                { width: "35%", backgroundColor: colors.border + "40" },
-              ]}
-            />
-            <View style={styles.skeletonLegendRow}>
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <View
-                  key={`legend-${idx}`}
-                  style={[
-                    styles.skeletonLegendPill,
-                    { backgroundColor: colors.border + "30" },
-                  ]}
-                />
-              ))}
-            </View>
-          </View>
-        </ScrollView>
-      </Layout>
-    );
+    return <CalendarSkeleton />;
   }
 
   if (error) {
@@ -821,93 +1210,50 @@ export default function CalendarScreen() {
                   />
                 </TouchableOpacity>
               </View>
-              <View style={styles.dateFilterToggle}>
-                <TouchableOpacity
-                  style={[
-                    styles.dateFilterButton,
-                    dateFilterMode === "applied" && {
-                      backgroundColor: colors.tint,
-                      ...Shadows.sm,
-                    },
-                    {
-                      borderColor:
-                        dateFilterMode === "applied"
-                          ? colors.tint
-                          : colors.border,
-                      borderWidth: dateFilterMode === "applied" ? 0 : 1,
-                    },
-                  ]}
-                  onPress={() => setDateFilterMode("applied")}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol
-                    name="clock.fill"
-                    size={14}
-                    color={
-                      dateFilterMode === "applied"
-                        ? colors.background
-                        : colors.tabIconDefault
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.dateFilterText,
-                      {
-                        color:
-                          dateFilterMode === "applied"
-                            ? colors.background
-                            : colors.tabIconDefault,
-                      },
-                    ]}
-                  >
-                    {t("applied")}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.dateFilterButton,
-                    dateFilterMode === "scheduled" && {
-                      backgroundColor: colors.tint,
-                      ...Shadows.sm,
-                    },
-                    {
-                      borderColor:
-                        dateFilterMode === "scheduled"
-                          ? colors.tint
-                          : colors.border,
-                      borderWidth: dateFilterMode === "scheduled" ? 0 : 1,
-                    },
-                  ]}
-                  onPress={() => setDateFilterMode("scheduled")}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol
-                    name="calendar"
-                    size={14}
-                    color={
-                      dateFilterMode === "scheduled"
-                        ? colors.background
-                        : colors.tabIconDefault
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.dateFilterText,
-                      {
-                        color:
-                          dateFilterMode === "scheduled"
-                            ? colors.background
-                            : colors.tabIconDefault,
-                      },
-                    ]}
-                  >
-                    {t("scheduledDate")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
           }
         />
+        <View style={styles.dateFilterToggle}>
+          <Button
+            variant={dateFilterMode === "applied" ? "primary" : "outline"}
+            icon="checkmark.circle"
+            iconSize={14}
+            textStyle={{ fontSize: 12 }}
+            style={{ paddingHorizontal: Spacing.sm }}
+            iconPosition="left"
+            title={t("applied")}
+            onPress={() => {
+              setDateFilterMode("applied");
+              setSelectedDate(null);
+            }}
+          />
+          <Button
+            variant={dateFilterMode === "scheduled" ? "primary" : "outline"}
+            icon="clock.fill"
+            iconSize={14}
+            textStyle={{ fontSize: 12 }}
+            style={{ paddingHorizontal: Spacing.sm }}
+            iconPosition="left"
+            title={t("scheduledDate")}
+            onPress={() => {
+              setDateFilterMode("scheduled");
+              setSelectedDate(null);
+            }}
+          />
+          <Button
+            variant={dateFilterMode === "checkIns" ? "primary" : "outline"}
+            icon="calendar"
+            iconSize={14}
+            textStyle={{ fontSize: 12 }}
+            style={{ paddingHorizontal: Spacing.sm }}
+            iconPosition="left"
+            title={t("checkIns")}
+            onPress={() => {
+              setDateFilterMode("checkIns");
+              setSelectedDate(null);
+            }}
+          />
+        </View>
       </View>
       {viewMode === "calendar" ? (
         <ScrollView contentContainerStyle={styles.content}>
@@ -916,6 +1262,18 @@ export default function CalendarScreen() {
       ) : (
         renderListView()
       )}
+
+      {/* Edit Booking Modal */}
+      <EditBookingModal
+        visible={showEditBookingModal}
+        onClose={() => {
+          setShowEditBookingModal(false);
+          setSelectedBooking(null);
+        }}
+        booking={selectedBooking}
+        onSubmit={handleSubmitEditBooking}
+        loading={editingBooking}
+      />
     </Layout>
   );
 }
@@ -946,10 +1304,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dateFilterToggle: {
+    justifyContent: "center",
     marginTop: Spacing.lg,
     flexDirection: "row",
     gap: 6,
-    backgroundColor: "transparent",
   },
   dateFilterButton: {
     flexDirection: "row",
@@ -967,10 +1325,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   legend: {
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.lg,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     borderTopWidth: 0,
   },
   legendTitle: {
@@ -996,7 +1354,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   legendText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "500",
   },
   listContent: {
@@ -1104,80 +1462,24 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.2,
   },
-  skeletonCard: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.md,
-  },
-  skeletonLine: {
-    height: 12,
-    borderRadius: BorderRadius.sm,
-    marginBottom: 8,
-  },
-  skeletonTopRow: {
+  bookingActions: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing.lg,
-  },
-  skeletonTitle: {
-    height: 22,
-    borderRadius: BorderRadius.md,
-    width: "55%",
-  },
-  skeletonToggleGroup: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  skeletonSquare: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
-  },
-  skeletonFilterRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: Spacing.lg,
-  },
-  skeletonPill: {
-    height: 40,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    minWidth: 120,
-  },
-  skeletonMonthCard: {
-    height: 74,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.lg,
-  },
-  skeletonCalendarGrid: {
-    marginBottom: Spacing.lg,
-  },
-  skeletonCalendarRow: {
-    flexDirection: "row",
-    marginBottom: Spacing.xs,
-  },
-  skeletonDay: {
-    flex: 1,
-    aspectRatio: 1,
-    borderRadius: BorderRadius.md,
-    marginRight: 6,
-    minHeight: 44,
-  },
-  skeletonLegend: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  skeletonLegendRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
-  skeletonLegendPill: {
-    height: 34,
-    borderRadius: BorderRadius.md,
+  bookingActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 12,
-    minWidth: 80,
+    paddingVertical: 8,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+  },
+  bookingActionText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
 });

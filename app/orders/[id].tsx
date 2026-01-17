@@ -40,6 +40,7 @@ import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { useApplyToOrder } from "@/hooks/useApi";
 import { ApplyButton } from "@/components/ApplyButton";
 import { PriceCurrency } from "@/components/PriceCurrency";
+import { CheckInModal } from "@/components/CheckInModal";
 
 // Helper function to get localized service name
 const getLocalizedCategoryName = (
@@ -164,6 +165,10 @@ export default function EditOrderScreen() {
   // Apply modal state
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
+
+  // Check-in modal state (for permanent orders)
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
 
   // Apply to order mutation
   const applyToOrderMutation = useApplyToOrder();
@@ -365,6 +370,73 @@ export default function EditOrderScreen() {
 
   const handleCloseApplyModal = () => {
     setShowApplyModal(false);
+  };
+
+  // Check-in handlers for permanent orders
+  const handleCheckIn = () => {
+    // Check if user is authenticated
+    if (!user?.id) {
+      setPendingApply(true);
+      showLoginModal();
+      return;
+    }
+
+    // Ensure we have a valid order
+    if (!order) {
+      Alert.alert(t("error"), t("orderNotFound"));
+      return;
+    }
+
+    // Check if this is actually a permanent order
+    if ((order as any).orderType !== "permanent") {
+      Alert.alert(t("error"), "This is not a permanent order");
+      return;
+    }
+
+    // Track check-in button clicked
+    AnalyticsService.getInstance().logEvent("check_in_clicked", {
+      order_id: order.id.toString(),
+    });
+
+    // Show check-in modal
+    setShowCheckInModal(true);
+  };
+
+  const handleSubmitCheckIn = async (
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+  ) => {
+    if (!order) return;
+
+    setCheckInLoading(true);
+
+    try {
+      await apiService.checkInToOrder(order.id, selectedSlots);
+
+      // Track successful check-in
+      AnalyticsService.getInstance().logEvent("check_in_success", {
+        order_id: order.id.toString(),
+        slots_count: selectedSlots.length.toString(),
+      });
+
+      Alert.alert(t("success"), t("checkInSuccess"), [
+        {
+          text: t("ok"),
+          onPress: () => {
+            setShowCheckInModal(false);
+            router.back();
+          },
+        },
+      ]);
+    } catch (error: any) {
+      console.error("Error checking in:", error);
+      Alert.alert(t("error"), error.message || t("failedToCheckIn"));
+    } finally {
+      setCheckInLoading(false);
+    }
+  };
+
+  const handleCloseCheckInModal = () => {
+    setShowCheckInModal(false);
   };
 
   const handleFeedbackSubmit = async (
@@ -854,14 +926,28 @@ export default function EditOrderScreen() {
             </View>
           )}
 
-          {/* Apply Button or Applied Status */}
-          {order && (
-            <ApplyButton
-              order={order}
-              hasAppliedToOrder={hasAppliedToOrder}
-              onApply={handleApplyToOrder}
-              style={{ paddingVertical: 10 }}
-            />
+          {/* Check-In Button (for permanent orders) or Apply Button (for one-time orders) */}
+          {order && !isMyJobs && user?.id !== order.clientId && (
+            <>
+              {(order as any).orderType === "permanent" ? (
+                <Button
+                  variant="primary"
+                  icon="calendar.badge.plus"
+                  iconSize={16}
+                  iconPosition="left"
+                  title={t("checkIn")}
+                  onPress={handleCheckIn}
+                  style={{ marginTop: Spacing.md }}
+                />
+              ) : (
+                <ApplyButton
+                  order={order}
+                  hasAppliedToOrder={hasAppliedToOrder}
+                  onApply={handleApplyToOrder}
+                  style={{ paddingVertical: 10 }}
+                />
+              )}
+            </>
           )}
 
           {/* Cancel Button - Only show for My Jobs */}
@@ -1425,6 +1511,15 @@ export default function EditOrderScreen() {
         order={order}
         onSubmit={handleSubmitApplication}
         loading={applyLoading}
+      />
+
+      {/* Check-In Modal (for permanent orders) */}
+      <CheckInModal
+        visible={showCheckInModal}
+        onClose={handleCloseCheckInModal}
+        order={order}
+        onSubmit={handleSubmitCheckIn}
+        loading={checkInLoading}
       />
     </Layout>
   );

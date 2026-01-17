@@ -372,9 +372,7 @@ const OrderItem = ({
                 size={12}
                 color="white"
               />
-              <Text style={styles.statusText}>
-                {t(`status_${order.status}`)}
-              </Text>
+              <Text style={styles.statusText}>{t(`${order.status}`)}</Text>
             </View>
           </View>
 

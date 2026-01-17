@@ -14,6 +14,7 @@
   "dependencies": {
     "@expo/cli": "^54.0.8",
     "@expo/vector-icons": "^15.0.2",
+    "@ptomasroos/react-native-multi-slider": "^2.2.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/netinfo": "^11.4.1",
@@ -50,6 +51,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-calendars": "^1.1313.0",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
     "react-native-phone-number-input": "^2.1.0",
@@ -63,6 +65,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@types/react-native-calendars": "^1.1264.7",
     "baseline-browser-mapping": "^2.9.14",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",

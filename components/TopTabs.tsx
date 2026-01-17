@@ -100,6 +100,6 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.xs,
   },
   tabLabel: {
-    fontSize: 15,
+    fontSize: 16,
   },
 });

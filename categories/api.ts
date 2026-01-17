@@ -274,6 +274,22 @@ export interface ReviewListResponse {
 }
 
 // Order Types
+export interface DaySchedule {
+  enabled: boolean;
+  workHours?: { start: string; end: string };
+  slots?: string[];
+}
+
+export interface WeeklySchedule {
+  monday?: DaySchedule;
+  tuesday?: DaySchedule;
+  wednesday?: DaySchedule;
+  thursday?: DaySchedule;
+  friday?: DaySchedule;
+  saturday?: DaySchedule;
+  sunday?: DaySchedule;
+}
+
 export interface OrderClient {
   id: number;
   name: string;
@@ -304,6 +320,35 @@ export interface OrderQuestion {
   createdAt: string;
 }
 
+export interface Booking {
+  id: number;
+  orderId: number;
+  clientId: number;
+  scheduledDate: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  Order?: Order;
+  Client?: OrderClient;
+}
+
+export interface AvailableDay {
+  date: string;
+  workHours: { start: string; end: string };
+  bookings: Array<{
+    startTime: string;
+    endTime: string;
+    clientId?: number;
+  }>;
+}
+
+export interface AvailableSlotsResponse {
+  workDurationPerClient?: number;
+  availableDays: AvailableDay[];
+}
+
 export interface Order {
   rejectionReason?: string | null;
   id: number;
@@ -329,12 +374,17 @@ export interface Order {
     | "pending_review"
     | "rejected"
     | "closed"
-    | "not_applied";
+    | "not_applied"
+    | "draft";
   location?: string;
   skills: string[];
   availableDates: string[];
   createdAt: string;
   updatedAt: string;
+  orderType?: string; // "one_time" or "permanent"
+  workDurationPerClient?: number; // Duration in minutes
+  weeklySchedule?: WeeklySchedule; // Recurring weekly schedule for permanent orders
+  Bookings?: Booking[];
   creditCost?: number; // Credit cost based on order budget
   refundPercentage?: number; // Refund percentage (0.0 to 1.0, e.g., 0.5 for 50%)
   bannerImageId?: number; // ID of the banner image
@@ -1005,6 +1055,9 @@ class ApiService {
     availableDates?: string[];
     useAIEnhancement?: boolean;
     questions?: string[];
+    orderType?: string;
+    workDurationPerClient?: number;
+    weeklySchedule?: WeeklySchedule;
   }): Promise<any> {
     return this.request(
       `/orders/create`,
@@ -1040,6 +1093,7 @@ class ApiService {
       descriptionRu?: string;
       descriptionHy?: string;
       questions?: string[];
+      weeklySchedule?: WeeklySchedule;
     }
   ): Promise<any> {
     return this.request(
@@ -2062,6 +2116,132 @@ class ApiService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ subscriptionId }),
+      },
+      true
+    );
+  }
+
+  // Booking methods for permanent orders
+
+  /**
+   * Get available slots for a permanent order
+   */
+  async getAvailableSlots(
+    orderId: number,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<AvailableSlotsResponse> {
+    const params = new URLSearchParams();
+    if (startDate) {
+      params.append("startDate", startDate.toISOString().split("T")[0]);
+    }
+    if (endDate) {
+      params.append("endDate", endDate.toISOString().split("T")[0]);
+    }
+
+    const queryString = params.toString();
+    const url = `/orders/${orderId}/available-slots${
+      queryString ? `?${queryString}` : ""
+    }`;
+
+    return this.request(url, {
+      method: "GET",
+    });
+  }
+
+  /**
+   * Check in to a permanent order (create booking)
+   */
+  async checkInToOrder(
+    orderId: number,
+    slots: Array<{ date: string; startTime: string; endTime: string }>
+  ): Promise<{ bookings: Booking[]; errors: any[] }> {
+    return this.request(
+      `/bookings`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId, slots }),
+      },
+      true
+    );
+  }
+
+  /**
+   * Get user's bookings
+   */
+  async getMyBookings(): Promise<Booking[]> {
+    return this.request(
+      `/bookings/my`,
+      {
+        method: "GET",
+      },
+      true
+    );
+  }
+
+  /**
+   * Update a booking (change date/time)
+   */
+  async updateBooking(
+    bookingId: number,
+    data: {
+      scheduledDate?: string;
+      startTime?: string;
+      endTime?: string;
+    }
+  ): Promise<Booking> {
+    return this.request(
+      `/bookings/${bookingId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  /**
+   * Cancel a booking
+   */
+  async cancelBooking(bookingId: number): Promise<Booking> {
+    return this.request(
+      `/bookings/${bookingId}/cancel`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      true
+    );
+  }
+
+  /**
+   * Get bookings for a specific order
+   */
+  async getOrderBookings(orderId: number): Promise<Booking[]> {
+    return this.request(`/bookings/order/${orderId}`, {
+      method: "GET",
+    });
+  }
+
+  /**
+   * Publish a permanent order (requires subscription)
+   */
+  async publishPermanentOrder(orderId: number): Promise<Order> {
+    return this.request(
+      `/orders/${orderId}/publish`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       },
       true
     );

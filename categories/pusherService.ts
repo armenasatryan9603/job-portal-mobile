@@ -222,7 +222,10 @@ class PusherService {
       status: string;
       updatedAt: string;
     }) => void,
-    onNotificationCreated?: (data: any) => void
+    onNotificationCreated?: (data: any) => void,
+    onBookingCreated?: (data: any) => void,
+    onBookingUpdated?: (data: any) => void,
+    onBookingCancelled?: (data: any) => void
   ) {
     if (!this.pusher) {
       return () => {};
@@ -262,6 +265,27 @@ class PusherService {
           }
         : null;
 
+      const bookingCreatedHandler = onBookingCreated
+        ? (data: any) => {
+            console.log("📅 Booking created:", data);
+            onBookingCreated(data);
+          }
+        : null;
+
+      const bookingUpdatedHandler = onBookingUpdated
+        ? (data: any) => {
+            console.log("📅 Booking updated:", data);
+            onBookingUpdated(data);
+          }
+        : null;
+
+      const bookingCancelledHandler = onBookingCancelled
+        ? (data: any) => {
+            console.log("📅 Booking cancelled:", data);
+            onBookingCancelled(data);
+          }
+        : null;
+
       // Bind new handlers (don't unbind existing ones - they might be from other subscribers)
       existingChannel.bind("conversation-updated", conversationHandler);
 
@@ -277,6 +301,18 @@ class PusherService {
         existingChannel.bind("notification-created", notificationHandler);
       }
 
+      if (bookingCreatedHandler) {
+        existingChannel.bind("booking-created", bookingCreatedHandler);
+      }
+
+      if (bookingUpdatedHandler) {
+        existingChannel.bind("booking-updated", bookingUpdatedHandler);
+      }
+
+      if (bookingCancelledHandler) {
+        existingChannel.bind("booking-cancelled", bookingCancelledHandler);
+      }
+
       // Return cleanup function that unbinds only our specific handlers
       return () => {
         existingChannel.unbind("conversation-updated", conversationHandler);
@@ -288,6 +324,15 @@ class PusherService {
         }
         if (notificationHandler) {
           existingChannel.unbind("notification-created", notificationHandler);
+        }
+        if (bookingCreatedHandler) {
+          existingChannel.unbind("booking-created", bookingCreatedHandler);
+        }
+        if (bookingUpdatedHandler) {
+          existingChannel.unbind("booking-updated", bookingUpdatedHandler);
+        }
+        if (bookingCancelledHandler) {
+          existingChannel.unbind("booking-cancelled", bookingCancelledHandler);
         }
       };
     }
@@ -322,6 +367,27 @@ class PusherService {
         }
       : null;
 
+    const bookingCreatedHandler = onBookingCreated
+      ? (data: any) => {
+          console.log("📅 Booking created:", data);
+          onBookingCreated(data);
+        }
+      : null;
+
+    const bookingUpdatedHandler = onBookingUpdated
+      ? (data: any) => {
+          console.log("📅 Booking updated:", data);
+          onBookingUpdated(data);
+        }
+      : null;
+
+    const bookingCancelledHandler = onBookingCancelled
+      ? (data: any) => {
+          console.log("📅 Booking cancelled:", data);
+          onBookingCancelled(data);
+        }
+      : null;
+
     channel.bind("conversation-updated", conversationHandler);
 
     if (statusHandler) {
@@ -334,6 +400,18 @@ class PusherService {
 
     if (notificationHandler) {
       channel.bind("notification-created", notificationHandler);
+    }
+
+    if (bookingCreatedHandler) {
+      channel.bind("booking-created", bookingCreatedHandler);
+    }
+
+    if (bookingUpdatedHandler) {
+      channel.bind("booking-updated", bookingUpdatedHandler);
+    }
+
+    if (bookingCancelledHandler) {
+      channel.bind("booking-cancelled", bookingCancelledHandler);
     }
 
     channel.bind("pusher:subscription_succeeded", () => {
@@ -359,6 +437,15 @@ class PusherService {
         }
         if (notificationHandler) {
           channel.unbind("notification-created", notificationHandler);
+        }
+        if (bookingCreatedHandler) {
+          channel.unbind("booking-created", bookingCreatedHandler);
+        }
+        if (bookingUpdatedHandler) {
+          channel.unbind("booking-updated", bookingUpdatedHandler);
+        }
+        if (bookingCancelledHandler) {
+          channel.unbind("booking-cancelled", bookingCancelledHandler);
         }
       }
     };
