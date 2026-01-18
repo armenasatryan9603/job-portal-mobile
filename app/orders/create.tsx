@@ -1595,7 +1595,7 @@ export default function CreateOrderScreen() {
           <ResponsiveCard>
             <View style={styles.orderTypeHeader}>
               <Text style={[styles.orderTypeTitle, { color: colors.text }]}>
-                {t("orderType") || "Order Type"}
+                {t("orderType")}
               </Text>
             </View>
 
@@ -1633,7 +1633,7 @@ export default function CreateOrderScreen() {
                     },
                   ]}
                 >
-                  {t("oneTimeOrder") || "One-Time"}
+                  {t("oneTimeOrder")}
                 </Text>
               </TouchableOpacity>
 
@@ -1672,7 +1672,7 @@ export default function CreateOrderScreen() {
                     },
                   ]}
                 >
-                  {t("permanentOrder") || "Permanent"}
+                  {t("permanentOrder")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1685,9 +1685,8 @@ export default function CreateOrderScreen() {
               ]}
             >
               {orderType === "one_time"
-                ? t("oneTimeOrderDesc") || "Standard one-time service"
-                : t("permanentOrderDesc") ||
-                  "Recurring service for multiple bookings"}
+                ? t("oneTimeOrderDesc")
+                : t("permanentOrderDesc")}
             </Text>
             {orderId && (
               <Text
@@ -1696,8 +1695,7 @@ export default function CreateOrderScreen() {
                   { color: colors.tabIconDefault, fontStyle: "italic" },
                 ]}
               >
-                {t("orderTypeCannotBeChanged") ||
-                  "Order type cannot be changed when editing"}
+                {t("orderTypeCannotBeChanged")}
               </Text>
             )}
 
@@ -1705,7 +1703,7 @@ export default function CreateOrderScreen() {
             {orderType === "permanent" && (
               <View style={styles.workDurationContainer}>
                 <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                  {t("workDurationPerClient") || "Session Duration"}
+                  {t("workDurationPerClient")}
                 </Text>
                 <View style={styles.durationInputWrapper}>
                   <TextInput
@@ -2040,6 +2038,7 @@ export default function CreateOrderScreen() {
           </View>
 
           {/* Questions Section */}
+          {orderType === "one_time" && (
           <ResponsiveCard style={{ position: "relative" }}>
             <View>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -2110,6 +2109,7 @@ export default function CreateOrderScreen() {
               <IconSymbol name="plus.circle" size={20} color={colors.tint} />
             </TouchableOpacity>
           </ResponsiveCard>
+          )}
 
           {/* Action Buttons */}
           <ResponsiveCard>

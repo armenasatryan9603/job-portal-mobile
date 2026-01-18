@@ -16,7 +16,7 @@ import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, Spacing, BorderRadius } from "@/constants/styles";
+import { ThemeColors, Spacing, BorderRadius, Typography } from "@/constants/styles";
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import {
@@ -775,10 +775,11 @@ export default function MarketDetailScreen() {
                   label: `${t("reviews")} (${reviews.length})`,
                 },
               ]}
-              style={{ borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md }}
+              style={{ borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md, paddingTop: Spacing.sm }}
               activeTab={activeTab}
               onTabChange={(tabKey) => setActiveTab(tabKey as "orders" | "reviews")}
               compact={true}
+              labelStyle={{ fontSize: Typography.md }}
             />
           </ResponsiveCard>
           
