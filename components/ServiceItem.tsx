@@ -165,7 +165,7 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
 
   return (
     <TouchableOpacity onPress={handlePress} activeOpacity={1} style={styles.wrapper}>
-      <ResponsiveCard padding={0} marginHorizontal={0} marginBlock={Spacing.xs}>
+      <ResponsiveCard padding={0} marginHorizontal={0} marginBlock={Spacing.xs} style={styles.card}>
         {/* Banner Image */}
         <View style={styles.bannerImageContainer}>
           {imageLoading && (
@@ -211,7 +211,7 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
           )}
         </View>
 
-        <View style={{ padding: Spacing.sm }}>
+        <View style={[styles.contentContainer, { padding: Spacing.sm }]}>
           {/* Header */}
           <View style={styles.serviceHeader}>
             <View style={styles.serviceTitleContainer}>
@@ -371,6 +371,7 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     marginHorizontal: Spacing.xs,
+    height: 240,
   },
   bannerImageContainer: {
     width: "100%",
@@ -471,5 +472,14 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginLeft: 4,
     flexShrink: 1,
+  },
+  card: {
+    flex: 1,
+    height: "100%",
+    justifyContent: "flex-start",
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: "space-between",
   },
 });
