@@ -1729,7 +1729,7 @@ export default function CreateOrderScreen() {
                       { color: colors.tabIconDefault },
                     ]}
                   >
-                    {t("minutesPerSession") || "min"}
+                    {t("minutesPerSession")}
                   </Text>
                 </View>
               </View>
@@ -1766,8 +1766,7 @@ export default function CreateOrderScreen() {
                     <Text
                       style={[styles.checkboxLabel, { color: colors.text }]}
                     >
-                      {t("requireApprovalForCheckins") ||
-                        "Require approval for check-ins"}
+                      {t("requireApprovalForCheckins")}
                     </Text>
                     <Text
                       style={[
@@ -1775,8 +1774,7 @@ export default function CreateOrderScreen() {
                         { color: colors.tabIconDefault },
                       ]}
                     >
-                      {t("requireApprovalForCheckinsDesc") ||
-                        "Clients can request bookings, but you'll need to approve them"}
+                      {t("requireApprovalForCheckinsDesc")}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -1790,13 +1788,12 @@ export default function CreateOrderScreen() {
             parseInt(workDurationPerClient) > 0 && (
               <ResponsiveCard>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("setWeeklySchedule") || "Set Weekly Schedule"}
+                  {t("setWeeklySchedule")}
                 </Text>
                 <Text
                   style={[styles.sectionDesc, { color: colors.tabIconDefault }]}
                 >
-                  {t("setWeeklyScheduleDesc") ||
-                    "Define when you're available each week"}
+                  {t("setWeeklyScheduleDesc")}
                 </Text>
                 <WeeklySchedulePicker
                   value={weeklySchedule}
