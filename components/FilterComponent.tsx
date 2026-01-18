@@ -11,6 +11,7 @@ import {
   Pressable,
   Dimensions,
   Animated,
+  PanResponder,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -84,6 +85,8 @@ export const Filter: React.FC<FilterProps> = ({
   >({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const panY = useRef(new Animated.Value(0)).current;
+  const lastGestureY = useRef(0);
 
   // Helper function to get range values
   const getRangeValues = (
@@ -277,12 +280,15 @@ export const Filter: React.FC<FilterProps> = ({
       useNativeDriver: true,
     }).start(() => {
       setFilterModalVisible(false);
+      panY.setValue(0);
     });
   };
 
   // Animate modal content when it opens
   useEffect(() => {
     if (filterModalVisible) {
+      // Reset pan gesture
+      panY.setValue(0);
       // Animate in
       Animated.spring(slideAnim, {
         toValue: 1,
@@ -293,13 +299,78 @@ export const Filter: React.FC<FilterProps> = ({
     } else {
       // Reset animation
       slideAnim.setValue(0);
+      panY.setValue(0);
     }
-  }, [filterModalVisible, slideAnim]);
+  }, [filterModalVisible, slideAnim, panY]);
 
   const modalContentTranslateY = slideAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [Dimensions.get("window").height, 0],
   });
+
+  // PanResponder for swipe-down gesture
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to downward swipes
+        return gestureState.dy > 0;
+      },
+      onPanResponderGrant: () => {
+        lastGestureY.current = 0;
+        panY.setValue(0);
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow downward movement
+        if (gestureState.dy > 0) {
+          panY.setValue(gestureState.dy);
+          lastGestureY.current = gestureState.dy;
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const screenHeight = Dimensions.get("window").height;
+        const threshold = screenHeight * 0.2; // Close if swiped down more than 20% of screen height
+        const velocity = gestureState.vy;
+
+        // Close if swiped down enough or with sufficient velocity
+        if (gestureState.dy > threshold || velocity > 0.5) {
+          // Animate both panY to 0 and slideAnim to 0 simultaneously
+          Animated.parallel([
+            Animated.timing(panY, {
+              toValue: 0,
+              duration: 250,
+              useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+              toValue: 0,
+              duration: 250,
+              useNativeDriver: true,
+            }),
+          ]).start(() => {
+            setFilterModalVisible(false);
+            panY.setValue(0);
+          });
+        } else {
+          // Spring back to original position
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // Combine slide animation with pan gesture
+  const combinedTranslateY = Animated.add(
+    slideAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [Dimensions.get("window").height, 0],
+    }),
+    panY
+  );
 
   return (
     <View style={styles.container}>
@@ -400,13 +471,14 @@ export const Filter: React.FC<FilterProps> = ({
               styles.modalContent,
               {
                 backgroundColor: colors.background,
-                transform: [{ translateY: modalContentTranslateY }],
+                transform: [{ translateY: combinedTranslateY }],
               },
             ]}
           >
             <Pressable style={{ flex: 1 }} onPress={(e) => e.stopPropagation()}>
               {/* Modal Header */}
               <View
+                {...panResponder.panHandlers}
                 style={[
                   styles.modalHeader,
                   { borderBottomColor: colors.border },

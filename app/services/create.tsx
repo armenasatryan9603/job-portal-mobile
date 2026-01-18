@@ -851,7 +851,7 @@ export default function CreateMarketScreen() {
               </Text>
               <Button
                 onPress={() => setShowAttachOrderModal(true)}
-                title={t("attachOrder")}
+                title={t("attach")}
                 variant="primary"
                 icon="plus.circle"
                 iconSize={14}
@@ -1002,7 +1002,7 @@ export default function CreateMarketScreen() {
                 </Text>
                 <Button
                   onPress={() => setShowAddMemberModal(true)}
-                  title={t("addMember")}
+                  title={t("add")}
                   variant="primary"
                   icon="person.badge.plus"
                   iconSize={14}

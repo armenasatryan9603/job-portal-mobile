@@ -161,7 +161,7 @@ export const AttachOrderModal = memo(
               <IconSymbol name="xmark" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {t("attachOrder")}
+              {t("attach")}
               {selectedOrders.length > 0 && ` (${selectedOrders.length})`}
             </Text>
             {selectedOrders.length > 0 && (

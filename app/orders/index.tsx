@@ -1780,7 +1780,7 @@ export default function OrdersScreen() {
         categories: [],
         services: [],
         priceRange: { min: 0, max: 10000 },
-        location: "",
+        location: null,
         rating: null,
         sortBy: "relevance",
       });

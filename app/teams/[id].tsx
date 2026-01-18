@@ -764,7 +764,7 @@ export default function TeamDetailScreen() {
               {isTeamLead && (
                 <Button
                   onPress={handleOpenModal}
-                  title={t("addMember")}
+                  title={t("add")}
                   variant="primary"
                   icon="person.badge.plus"
                   iconSize={14}
