@@ -113,6 +113,14 @@ export default function WelcomeScreen() {
       color: "#9C27B0",
       gradient: ["#9C27B0", "#7B1FA2"],
     },
+    {
+      title: t("findBusinesses"),
+      description: t("findBusinessesDesc"),
+      icon: "building.2.fill",
+      route: "/services",
+      color: "#FF9800",
+      gradient: ["#FF9800", "#F57C00"],
+    },
   ];
 
   const features = [

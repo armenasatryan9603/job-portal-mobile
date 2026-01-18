@@ -2818,4 +2818,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  checkboxLabelContainer: {
+    flex: 1,
+  },
 });

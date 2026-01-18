@@ -142,8 +142,6 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
   };
 
   const memberCount = service._count?.Members || service.Members?.length || 0;
-  const orderCount = service._count?.Orders || service.Orders?.length || 0;
-  const reviewCount = service._count?.Reviews || 0;
 
   // Status configuration
   const statusConfig = {
@@ -333,33 +331,6 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
               </View>
             )}
 
-            {/* Orders */}
-            {orderCount > 0 && (
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="doc.text.fill"
-                  size={12}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {orderCount} {orderCount === 1 ? (t("order") || "order") : (t("orders") || "orders")}
-                </Text>
-              </View>
-            )}
-
-            {/* Reviews */}
-            {reviewCount > 0 && (
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="star.fill"
-                  size={12}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {reviewCount} {reviewCount === 1 ? (t("review") || "review") : (t("reviews") || "reviews")}
-                </Text>
-              </View>
-            )}
           </View>
         </View>
       </ResponsiveCard>
