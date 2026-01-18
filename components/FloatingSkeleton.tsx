@@ -14,7 +14,7 @@ interface FloatingSkeletonProps {
   showDetails?: boolean;
   showTags?: boolean;
   showFooter?: boolean;
-  variant?: "list" | "grid";
+  variant?: "list" | "grid" | "grid2";
 }
 
 export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
@@ -111,6 +111,82 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
         </View>
       </View>
     </View>
+  );
+
+  const Grid2SkeletonItem = () => (
+    <ResponsiveCard padding={0} marginHorizontal={Spacing.xs} marginBlock={Spacing.xs}>
+      <Animated.View
+        style={[
+          styles.grid2Image,
+          {
+            backgroundColor: colors.border,
+            opacity,
+          },
+        ]}
+      />
+      <View style={styles.grid2CardContent}>
+        <View style={styles.grid2Header}>
+          <Animated.View
+            style={[
+              styles.grid2Title,
+              {
+                backgroundColor: colors.border,
+                opacity,
+                flex: 1,
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.grid2Badge,
+              {
+                backgroundColor: colors.border,
+                opacity,
+              },
+            ]}
+          />
+        </View>
+        <Animated.View
+          style={[
+            styles.grid2Price,
+            {
+              backgroundColor: colors.border,
+              opacity,
+            },
+          ]}
+        />
+        <View style={styles.grid2Details}>
+          <Animated.View
+            style={[
+              styles.grid2DetailItem,
+              {
+                backgroundColor: colors.border,
+                opacity,
+              },
+            ]}
+          />
+          <Animated.View
+            style={[
+              styles.grid2DetailItem,
+              {
+                backgroundColor: colors.border,
+                opacity,
+                width: 25,
+              },
+            ]}
+          />
+        </View>
+        <Animated.View
+          style={[
+            styles.grid2Button,
+            {
+              backgroundColor: colors.border,
+              opacity,
+            },
+          ]}
+        />
+      </View>
+    </ResponsiveCard>
   );
 
   const SkeletonItem = () => (
@@ -317,6 +393,36 @@ export const FloatingSkeleton: React.FC<FloatingSkeletonProps> = ({
     </ResponsiveCard>
   );
 
+  if (variant === "grid2") {
+    // Render grid layout (2 items per row)
+    const rows = Math.ceil(count / 2);
+    return (
+      <View style={styles.grid2Container}>
+        {Array.from({ length: rows }).map((_, rowIndex) => (
+          <View key={`row-${rowIndex}`} style={styles.grid2Row}>
+            {Array.from({ length: 2 }).map((_, colIndex) => {
+              const itemIndex = rowIndex * 2 + colIndex;
+              if (itemIndex >= count) {
+                // Empty placeholder for incomplete rows
+                return (
+                  <View
+                    key={`placeholder-${colIndex}`}
+                    style={styles.grid2ItemPlaceholder}
+                  />
+                );
+              }
+              return (
+                <View key={`item-${itemIndex}`} style={styles.grid2Item}>
+                  <Grid2SkeletonItem />
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   if (variant === "grid") {
     // Render grid layout (3 items per row)
     const rows = Math.ceil(count / 3);
@@ -486,5 +592,68 @@ const styles = StyleSheet.create({
     width: 70,
     height: 36,
     borderRadius: 10,
+  },
+  grid2Container: {
+    flex: 1,
+    paddingHorizontal: Spacing.md,
+  },
+  grid2Row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  grid2Item: {
+    flex: 1,
+  },
+  grid2ItemPlaceholder: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  grid2Image: {
+    width: "100%",
+    height: 120,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  grid2CardContent: {
+    padding: Spacing.sm,
+  },
+  grid2Header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: Spacing.xs,
+  },
+  grid2Title: {
+    height: 12,
+    borderRadius: 4,
+    marginRight: Spacing.xs,
+  },
+  grid2Badge: {
+    height: 16,
+    width: 45,
+    borderRadius: 12,
+  },
+  grid2Price: {
+    height: 14,
+    width: "50%",
+    borderRadius: 4,
+    marginBottom: Spacing.xs,
+  },
+  grid2Details: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
+  grid2DetailItem: {
+    height: 9,
+    width: 35,
+    borderRadius: 4,
+  },
+  grid2Button: {
+    height: 28,
+    width: "100%",
+    borderRadius: 8,
+    marginTop: Spacing.xs,
   },
 });

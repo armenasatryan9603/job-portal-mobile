@@ -2252,6 +2252,456 @@ class ApiService {
       true
     );
   }
+
+  // Markets API methods
+  async createMarket(data: {
+    name: string;
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+    description?: string;
+    descriptionEn?: string;
+    descriptionRu?: string;
+    descriptionHy?: string;
+    location?: string;
+    weeklySchedule?: any;
+  }): Promise<any> {
+    return this.request(
+      `/markets`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async publishMarket(marketId: number): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/publish`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+      true
+    );
+  }
+
+  async getMarkets(filters: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    location?: string;
+    verified?: boolean;
+    search?: string;
+    myServices?: boolean;
+  }): Promise<{
+    markets: any[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const params = new URLSearchParams();
+    if (filters.page) params.append("page", filters.page.toString());
+    if (filters.limit) params.append("limit", filters.limit.toString());
+    if (filters.status) params.append("status", filters.status);
+    if (filters.location) params.append("location", filters.location);
+    if (filters.verified !== undefined)
+      params.append("verified", filters.verified.toString());
+    if (filters.search) params.append("search", filters.search);
+    if (filters.myServices) params.append("myServices", "true");
+
+    return this.request(`/markets?${params}`, {}, false);
+  }
+
+  async getMarketById(marketId: number): Promise<any> {
+    return this.request(`/markets/${marketId}`, {}, false);
+  }
+
+  async updateMarket(
+    marketId: number,
+    data: {
+      name?: string;
+      nameEn?: string;
+      nameRu?: string;
+      nameHy?: string;
+      description?: string;
+      descriptionEn?: string;
+      descriptionRu?: string;
+      descriptionHy?: string;
+      location?: string;
+      weeklySchedule?: any;
+    }
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async deleteMarket(marketId: number): Promise<any> {
+    return this.request(
+      `/markets/${marketId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async addMarketMember(
+    marketId: number,
+    userId: number,
+    role?: string
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/members`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId, role: role || "member" }),
+      },
+      true
+    );
+  }
+
+  async updateMarketMember(
+    marketId: number,
+    memberId: number,
+    role: string
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/members/${memberId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role }),
+      },
+      true
+    );
+  }
+
+  async removeMarketMember(
+    marketId: number,
+    memberId: number
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/members/${memberId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async getPendingMarketInvitations(): Promise<any[]> {
+    return this.request(`/markets/invitations/pending`, {}, true);
+  }
+
+  async acceptMarketInvitation(marketMemberId: number): Promise<any> {
+    return this.request(
+      `/markets/invitations/${marketMemberId}/accept`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async rejectMarketInvitation(marketMemberId: number): Promise<any> {
+    return this.request(
+      `/markets/invitations/${marketMemberId}/reject`,
+      {
+        method: "POST",
+      },
+      true
+    );
+  }
+
+  async attachOrderToMarket(
+    marketId: number,
+    orderId: number
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/orders`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ orderId }),
+      },
+      true
+    );
+  }
+
+  async detachOrderFromMarket(
+    marketId: number,
+    orderId: number
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/orders/${orderId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  async setMarketBanner(
+    marketId: number,
+    mediaFileId: number
+  ): Promise<any> {
+    return this.request(
+      `/markets/${marketId}/banner`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mediaFileId }),
+      },
+      true
+    );
+  }
+
+  // Market Reviews API methods
+  async createMarketReview(data: {
+    marketId: number;
+    rating: number;
+    comment?: string;
+  }): Promise<any> {
+    return this.request(
+      `/market-reviews`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async getMarketReviews(
+    marketId: number,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{
+    reviews: any[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }> {
+    return this.request(
+      `/market-reviews/market/${marketId}?page=${page}&limit=${limit}`,
+      {},
+      false
+    );
+  }
+
+  async getMarketRating(marketId: number): Promise<{
+    averageRating: number;
+    totalReviews: number;
+  }> {
+    return this.request(
+      `/market-reviews/market/${marketId}/rating`,
+      {},
+      false
+    );
+  }
+
+  async updateMarketReview(
+    reviewId: number,
+    data: { rating?: number; comment?: string }
+  ): Promise<any> {
+    return this.request(
+      `/market-reviews/${reviewId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async deleteMarketReview(reviewId: number): Promise<any> {
+    return this.request(
+      `/market-reviews/${reviewId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
+
+  // Market Roles API methods
+  async getDefaultMarketRoles(): Promise<any[]> {
+    return this.request(`/market-roles/defaults`, {}, false);
+  }
+
+  async getMarketRoles(marketId: number): Promise<{
+    defaultRoles: any[];
+    customRoles: any[];
+    allRoles: any[];
+  }> {
+    return this.request(`/market-roles/market/${marketId}`, {}, false);
+  }
+
+  async createMarketRole(data: {
+    marketId: number;
+    name: string;
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+    permissions?: any;
+  }): Promise<any> {
+    return this.request(
+      `/market-roles`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async updateMarketRole(
+    roleId: number,
+    data: {
+      marketId: number;
+      name?: string;
+      nameEn?: string;
+      nameRu?: string;
+      nameHy?: string;
+      permissions?: any;
+    }
+  ): Promise<any> {
+    return this.request(
+      `/market-roles/${roleId}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      },
+      true
+    );
+  }
+
+  async deleteMarketRole(roleId: number, marketId: number): Promise<any> {
+    return this.request(
+      `/market-roles/${roleId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ marketId }),
+      },
+      true
+    );
+  }
+
+  // Market Subscriptions API methods
+  async purchaseMarketSubscription(
+    marketId: number,
+    planId: number
+  ): Promise<any> {
+    return this.request(
+      `/subscriptions/markets/${marketId}/purchase`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ planId }),
+      },
+      true
+    );
+  }
+
+  async getMarketActiveSubscription(marketId: number): Promise<any> {
+    return this.request(
+      `/subscriptions/markets/${marketId}/active`,
+      {},
+      false
+    );
+  }
+
+  async getMarketSubscriptions(marketId: number): Promise<any[]> {
+    return this.request(
+      `/subscriptions/markets/${marketId}/subscriptions`,
+      {},
+      false
+    );
+  }
+
+  // Market Media Files API methods
+  async uploadMarketMediaFile(mediaData: {
+    marketId: number;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    mimeType: string;
+    fileSize: number;
+  }): Promise<any> {
+    return this.request(
+      `/media-files/markets`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(mediaData),
+      },
+      true
+    );
+  }
+
+  async getMarketMediaFiles(marketId: number): Promise<any[]> {
+    return this.request(`/media-files/markets/${marketId}`, {}, false);
+  }
+
+  async deleteMarketMediaFile(mediaFileId: number): Promise<any> {
+    return this.request(
+      `/media-files/markets/${mediaFileId}`,
+      {
+        method: "DELETE",
+      },
+      true
+    );
+  }
 }
 
 // Export singleton instance

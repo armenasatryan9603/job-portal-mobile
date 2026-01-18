@@ -15,15 +15,17 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface BasicInformationFormProps {
   formData: {
-    title: string;
+    title?: string;
+    name?: string;
     description: string;
-    budget: string;
+    budget?: string;
     location: string;
   };
   errors: {
-    title: string;
+    title?: string;
+    name?: string;
     description: string;
-    budget: string;
+    budget?: string;
     location: string;
   };
   onFieldChange: (field: string, value: string) => void;
@@ -32,6 +34,8 @@ interface BasicInformationFormProps {
     longitude: number;
     address: string;
   }) => void;
+  titleLabel?: string;
+  titlePlaceholder?: string;
 }
 
 export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
@@ -39,6 +43,8 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
   errors,
   onFieldChange,
   onLocationChange,
+  titleLabel,
+  titlePlaceholder,
 }) => {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -70,30 +76,32 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
         {t("basicInformation")}
       </Text>
 
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: colors.text }]}>
-          {t("jobTitle")} *
-        </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            {
-              backgroundColor: colors.background,
-              borderColor: errors.title ? "#ff4444" : colors.border,
-              color: colors.text,
-            },
-          ]}
-          value={formData.title}
-          onChangeText={(value) => onFieldChange("title", value)}
-          placeholder={t("orderTitlePlaceholder")}
-          placeholderTextColor={colors.tabIconDefault}
-        />
-        {errors.title ? (
-          <Text style={[styles.errorText, { color: "#ff4444" }]}>
-            {errors.title}
+      {(formData.title !== undefined || formData.name !== undefined) && (
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: colors.text }]}>
+            {titleLabel || t("jobTitle")} *
           </Text>
-        ) : null}
-      </View>
+          <TextInput
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: colors.background,
+                borderColor: (errors.title || errors.name) ? "#ff4444" : colors.border,
+                color: colors.text,
+              },
+            ]}
+            value={formData.title || formData.name || ""}
+            onChangeText={(value) => onFieldChange(formData.title !== undefined ? "title" : "name", value)}
+            placeholder={titlePlaceholder || t("orderTitlePlaceholder")}
+            placeholderTextColor={colors.tabIconDefault}
+          />
+          {(errors.title || errors.name) ? (
+            <Text style={[styles.errorText, { color: "#ff4444" }]}>
+              {errors.title || errors.name}
+            </Text>
+          ) : null}
+        </View>
+      )}
 
       <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { color: colors.text }]}>

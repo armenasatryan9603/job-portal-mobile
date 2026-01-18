@@ -21,6 +21,7 @@ interface NavigationContextType {
   navigateToCalendar: () => void;
   navigateToSavedOrders: () => void;
   navigateToHelp: () => void;
+  navigateToServices: () => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(
@@ -96,6 +97,11 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     router.push("/profile/help");
   };
 
+  const navigateToServices = () => {
+    closeSidebar();
+    router.push("/services?myServices=true");
+  };
+
   const value: NavigationContextType = {
     sidebarVisible,
     openSidebar,
@@ -111,6 +117,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     navigateToCalendar,
     navigateToSavedOrders,
     navigateToHelp,
+    navigateToServices,
   };
 
   return (

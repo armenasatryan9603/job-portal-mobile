@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, TextStyle } from "react-native";
 import { ThemeColors, Spacing } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import * as Haptics from "expo-haptics";
@@ -14,12 +14,20 @@ interface TopTabsProps {
   tabs: Tab[];
   activeTab: string;
   onTabChange: (tabKey: string) => void;
+  style?: StyleProp<ViewStyle>;
+  compact?: boolean;
+  tabStyle?: StyleProp<ViewStyle>;
+  labelStyle?: StyleProp<TextStyle>;
 }
 
 export const TopTabs: React.FC<TopTabsProps> = ({
   tabs,
   activeTab,
   onTabChange,
+  style,
+  compact = false,
+  tabStyle,
+  labelStyle,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -35,8 +43,8 @@ export const TopTabs: React.FC<TopTabsProps> = ({
     <View
       style={[
         styles.container,
+        compact && styles.containerCompact,
         {
-          backgroundColor: colors.background,
           borderBottomColor: colors.border,
         },
       ]}
@@ -44,9 +52,11 @@ export const TopTabs: React.FC<TopTabsProps> = ({
       <View
         style={[
           styles.tabsContainer,
+          compact && styles.tabsContainerCompact,
           {
             backgroundColor: colors.background,
           },
+          style,
         ]}
       >
         {tabs.map((tab) => {
@@ -56,6 +66,8 @@ export const TopTabs: React.FC<TopTabsProps> = ({
               key={tab.key}
               style={[
                 styles.tab,
+                compact && styles.tabCompact,
+                tabStyle,
                 isActive && {
                   borderBottomColor: colors.tint,
                   borderBottomWidth: 2,
@@ -67,6 +79,8 @@ export const TopTabs: React.FC<TopTabsProps> = ({
               <Text
                 style={[
                   styles.tabLabel,
+                  compact && styles.tabLabelCompact,
+                  labelStyle,
                   {
                     color: isActive ? colors.tint : colors.tabIconDefault,
                     fontWeight: isActive ? "700" : "500",
@@ -88,9 +102,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: Spacing.xs / 2,
   },
+  containerCompact: {
+    marginBottom: Spacing.xs / 4,
+  },
   tabsContainer: {
     flexDirection: "row",
     paddingHorizontal: Spacing.md,
+  },
+  tabsContainerCompact: {
+    paddingHorizontal: Spacing.sm,
   },
   tab: {
     flex: 1,
@@ -99,7 +119,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginHorizontal: Spacing.xs,
   },
+  tabCompact: {
+    paddingVertical: Spacing.sm,
+    marginHorizontal: Spacing.xs / 2,
+  },
   tabLabel: {
     fontSize: 16,
+  },
+  tabLabelCompact: {
+    fontSize: 14,
   },
 });

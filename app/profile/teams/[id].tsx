@@ -21,7 +21,7 @@ import { useTeamId, useTeamData } from "@/hooks/useTeamData";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
 import { TeamInfo } from "@/components/TeamInfo";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
-import { AddTeamMemberModal } from "@/components/AddTeamMemberModal";
+import { AddMemberModal } from "@/components/AddMemberModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 export default function TeamDetailScreen() {
@@ -64,7 +64,8 @@ export default function TeamDetailScreen() {
   );
 
   const handleAddMember = useCallback(
-    async (userId: number) => {
+    async (userId: number, role?: string) => {
+      // Teams don't use roles, so we ignore the role parameter
       if (!teamId || typeof teamId !== "number") return;
 
       try {
@@ -85,9 +86,10 @@ export default function TeamDetailScreen() {
   );
 
   const handleAddMembers = useCallback(
-    async (userIds: number[]) => {
+    async (members: Array<{ userId: number; role?: string }>) => {
+      // Teams don't use roles, so we extract just the userIds
       if (!teamId || typeof teamId !== "number") return;
-      if (userIds.length === 0) {
+      if (members.length === 0) {
         Alert.alert(t("error"), t("selectMembersToAdd"));
         return;
       }
@@ -96,7 +98,7 @@ export default function TeamDetailScreen() {
       const failedMemberIds: number[] = [];
 
       try {
-        for (const userId of userIds) {
+        for (const { userId } of members) {
           try {
             await apiService.addTeamMember(teamId, userId);
             addedMemberIds.push(userId);
@@ -298,7 +300,7 @@ export default function TeamDetailScreen() {
         </View>
       </ScrollView>
 
-      <AddTeamMemberModal
+      <AddMemberModal
         visible={showAddMemberModal}
         onClose={handleCloseModal}
         onAddMember={handleAddMember}

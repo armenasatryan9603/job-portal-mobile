@@ -313,6 +313,34 @@ class ChatService {
   }
 
   /**
+   * Create a review for a permanent order
+   */
+  async createOrderReview(data: {
+    orderId: number;
+    reviewerId: number;
+    rating: number;
+    comment?: string;
+  }): Promise<any> {
+    return this.makeRequest<any>("/reviews", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a review for a permanent order
+   */
+  async updateOrderReview(
+    reviewId: number,
+    data: { rating?: number; comment?: string }
+  ): Promise<any> {
+    return this.makeRequest<any>(`/reviews/${reviewId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Send typing status for a conversation
    */
   async sendTypingStatus(

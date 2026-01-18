@@ -43,6 +43,7 @@ import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { calculateAccountCompletion } from "@/utils/accountCompletion";
+import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 import { CircularProgress } from "@/components/CircularProgress";
 import { LocationPicker } from "@/components/LocationPicker";
 import { MapViewComponent } from "@/components/MapView";
@@ -457,76 +458,47 @@ export default function ProfileScreen() {
   };
 
   const handleBannerUpload = async () => {
+    setUploadingBanner(true);
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.granted === false) {
-        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [3, 1], // Banner ratio
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        const mediaFile = {
-          uri: asset.uri,
-          fileName: `banner_${Date.now()}.jpg`,
-          type: "image" as const,
-          mimeType: "image/jpeg",
-          fileSize: asset.fileSize || 0,
-        };
-
-        setBannerImage(asset.uri);
-        setUploadingBanner(true);
-
-        try {
-          const uploadResult = await fileUploadService.uploadProfilePicture(
-            mediaFile
-          );
-          if (uploadResult.success && uploadResult.fileUrl) {
-            setBannerImage(uploadResult.fileUrl);
-            if (user) {
-              await apiService.updateUserProfile({
+      await handleBannerUploadUtil({
+        fileNamePrefix: "banner",
+        onUploadSuccess: async (fileUrl) => {
+          setBannerImage(fileUrl);
+          if (user) {
+            await apiService.updateUserProfile({
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore backend supports bannerUrl
+              bannerUrl: fileUrl,
+            });
+            AnalyticsService.getInstance().logEvent("profile_updated", {
+              update_type: "banner",
+            });
+            if (profile) {
+              setProfile({
+                ...profile,
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore backend supports bannerUrl
-                bannerUrl: uploadResult.fileUrl,
-              });
-              AnalyticsService.getInstance().logEvent("profile_updated", {
-                update_type: "banner",
-              });
-              if (profile) {
-                setProfile({
-                  ...profile,
-                  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                  // @ts-ignore extend profile with bannerUrl
-                  bannerUrl: uploadResult.fileUrl,
-                } as UserProfile);
-              }
-              await updateUser({
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore allow bannerUrl on user
-                bannerUrl: uploadResult.fileUrl,
-              } as any);
+                // @ts-ignore extend profile with bannerUrl
+                bannerUrl: fileUrl,
+              } as UserProfile);
             }
-          } else {
-            throw new Error(uploadResult.error || t("uploadFailed"));
+            await updateUser({
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore allow bannerUrl on user
+              bannerUrl: fileUrl,
+            } as any);
           }
-        } catch (error) {
-          console.error("Error uploading banner:", error);
-          Alert.alert(t("error"), t("failedToUploadProfilePicture"));
-        } finally {
-          setUploadingBanner(false);
-        }
-      }
-    } catch (error) {
-      console.error("Error selecting banner:", error);
-      Alert.alert(t("error"), t("failedToSelectImage"));
+        },
+        onError: (error) => {
+          Alert.alert(t("error"), error || t("failedToUploadProfilePicture"));
+        },
+        permissionRequiredText: t("permissionRequired"),
+        permissionToAccessText: t("permissionToAccessCameraRoll"),
+        uploadFailedText: t("uploadFailed"),
+        failedToSelectImageText: t("failedToSelectImage"),
+        failedToUploadText: t("failedToUploadProfilePicture"),
+      });
+    } finally {
+      setUploadingBanner(false);
     }
   };
 

@@ -42,6 +42,7 @@ import {
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/utils/locationParsing";
 import {
   FlatList,
   StyleSheet,
@@ -734,38 +735,13 @@ export default function OrdersScreen() {
   );
 
   // Helper function to parse location string to coordinates (synchronous)
+  // Uses the shared utility and extracts only coordinates for distance calculation
   const parseLocationCoordinates = useCallback(
     (
       locationString: string
     ): { latitude: number; longitude: number } | null => {
-      if (!locationString) return null;
-
-      // Try to parse coordinates from string like "address (lat, lng)"
-      // This matches the format used in create.tsx: `${address} (${latitude}, ${longitude})`
-      const coordMatch = locationString.match(
-        /\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)/
-      );
-      if (coordMatch) {
-        const lat = parseFloat(coordMatch[1]);
-        const lng = parseFloat(coordMatch[2]);
-        // Validate coordinates
-        if (
-          !isNaN(lat) &&
-          !isNaN(lng) &&
-          lat >= -90 &&
-          lat <= 90 &&
-          lng >= -180 &&
-          lng <= 180
-        ) {
-          return {
-            latitude: lat,
-            longitude: lng,
-          };
-        }
-      }
-
-      // If no coordinates found, return null (can't calculate distance without coordinates)
-      return null;
+      const parsed = parseLocationCoordinatesUtil(locationString);
+      return parsed ? { latitude: parsed.latitude, longitude: parsed.longitude } : null;
     },
     []
   );
@@ -1079,8 +1055,14 @@ export default function OrdersScreen() {
 
     // For non-owners, hide draft permanent orders (only show published ones)
     // Note: Backend now filters by orderType, so we only need to filter drafts
-    if (!isMyOrders) {
+    // Also exclude user's own created orders
+    if (!isMyOrders && !isMyJobs && !isSavedOrders) {
       filteredOrders = filteredOrders.filter((order) => {
+        // Exclude user's own created orders
+        if (user?.id && order.clientId === user.id) {
+          return false;
+        }
+        // Hide draft permanent orders (only show published ones)
         const orderType = (order as any).orderType || "one_time";
         if (orderType === "permanent" && (order as any).status === "draft") {
           return false;
@@ -1096,6 +1078,7 @@ export default function OrdersScreen() {
     isSavedOrders,
     allUserOrders,
     searchQuery,
+    user?.id,
     status,
     selectedFilters.categories,
     selectedFilters.services,
@@ -1850,18 +1833,13 @@ export default function OrdersScreen() {
           (loading && !filterLoading && displayedOrders.length === 0) ? (
             <View style={{ marginTop: 84, flex: 1 }}>
               <FloatingSkeleton
-                count={5}
-                itemHeight={280}
-                showImage={true}
-                showTitle={true}
-                showDescription={true}
-                showDetails={true}
-                showTags={true}
+                count={6}
+                variant="grid2"
               />
             </View>
           ) : (
             <FlatList
-              style={{ marginTop: 84 }}
+              style={{ marginBlock: 84, width: '100%'}}
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem
@@ -1880,6 +1858,8 @@ export default function OrdersScreen() {
               )}
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
+              numColumns={2}
+              columnWrapperStyle={{ justifyContent: "space-between", marginRight: -Spacing.sm }}
               ListEmptyComponent={renderEmptyComponent}
               {...(isMyOrders || isMyJobs || isSavedOrders
                 ? {}
@@ -1894,7 +1874,7 @@ export default function OrdersScreen() {
                 />
               }
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 6 * Spacing.lg + 80 }}
+              contentContainerStyle={{ marginHorizontal: Spacing.lg, paddingBottom: Spacing.lg }}
             />
           )}
 

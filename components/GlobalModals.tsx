@@ -4,7 +4,6 @@ import { BecomeSpecialistModal, shouldShowBecomeSpecialistModal } from "@/compon
 import { useModal } from "@/contexts/ModalContext";
 import { useAuth } from "@/contexts/AuthContext";
 import React, { useEffect, useState, useRef } from "react";
-import { AppState, AppStateStatus } from "react-native";
 
 export const GlobalModals: React.FC = () => {
   const { currentModal, hideModal, switchToLogin, switchToSignup } = useModal();
@@ -13,7 +12,7 @@ export const GlobalModals: React.FC = () => {
     useState(false);
   const [becomeSpecialistModalVisible, setBecomeSpecialistModalVisible] =
     useState(false);
-  const showModalTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const showModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasShownAfterSignupRef = useRef(false);
   const hasShownInCurrentSessionRef = useRef(false);
 

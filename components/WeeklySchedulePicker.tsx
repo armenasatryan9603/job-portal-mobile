@@ -35,7 +35,7 @@ export interface WeeklySchedule {
 interface WeeklySchedulePickerProps {
   value: WeeklySchedule;
   onChange: (schedule: WeeklySchedule) => void;
-  workDurationPerClient: number;
+  workDurationPerClient?: number; // Optional - only used for display recommendation
   disabled?: boolean;
 }
 
@@ -48,12 +48,6 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
-
-  // Debug: Log the value prop
-  useEffect(() => {
-    console.log("WeeklySchedulePicker received value:", value);
-    console.log("Value keys:", Object.keys(value || {}));
-  }, [value]);
 
   const [activeTab, setActiveTab] = useState<"pattern" | "preview">("pattern");
   const [defaultStartTime, setDefaultStartTime] = useState("09:00");
@@ -74,18 +68,18 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
   }, []);
 
   const days = [
-    { key: "monday", label: t("monday") || "Monday" },
-    { key: "tuesday", label: t("tuesday") || "Tuesday" },
-    { key: "wednesday", label: t("wednesday") || "Wednesday" },
-    { key: "thursday", label: t("thursday") || "Thursday" },
-    { key: "friday", label: t("friday") || "Friday" },
-    { key: "saturday", label: t("saturday") || "Saturday" },
-    { key: "sunday", label: t("sunday") || "Sunday" },
+    { key: "monday", label: t("monday") },
+    { key: "tuesday", label: t("tuesday") },
+    { key: "wednesday", label: t("wednesday") },
+    { key: "thursday", label: t("thursday") },
+    { key: "friday", label: t("friday") },
+    { key: "saturday", label: t("saturday") },
+    { key: "sunday", label: t("sunday") },
   ];
 
   const tabs = [
-    { key: "pattern", label: t("weeklyPattern") || "Weekly Pattern" },
-    { key: "preview", label: t("calendarPreview") || "Calendar Preview" },
+    { key: "pattern", label: t("weeklyPattern")  },
+    { key: "preview", label: t("calendarPreview")  },
   ];
 
   // Slot generation removed - clients now book custom time ranges within work hours
@@ -95,7 +89,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
     if (!defaultStartTime || !defaultEndTime) {
       Alert.alert(
         t("error"),
-        t("pleaseSetDefaultHours") || "Please set default work hours first"
+        t("pleaseSetDefaultHours") 
       );
       return;
     }
@@ -194,29 +188,29 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
   const renderPatternTab = () => (
     <ScrollView style={styles.tabContent}>
       {/* Default Hours Section */}
-      <View style={[styles.section, { backgroundColor: colors.background }]}>
+      <View style={[styles.section, { backgroundColor: colors.background, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("defaultWorkHours") || "Default Work Hours"}
+          {t("defaultWorkHours")}
         </Text>
         <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
-          {t("defaultWorkHoursDesc") ||
-            "Set default hours to apply to all working days"}
+          {t("defaultWorkHoursDesc")}
         </Text>
-        <Text style={[styles.suggestionText, { color: colors.tabIconDefault }]}>
-          {t("recommendedDuration") || "Recommended duration"}:{" "}
-          {workDurationPerClient} {t("minutes") || "minutes"}
-        </Text>
+        {workDurationPerClient && (
+          <Text style={[styles.suggestionText, { color: colors.tabIconDefault }]}>
+            {t("recommendedDuration")}:{" "}
+            {workDurationPerClient} {t("minutes")}
+          </Text>
+        )}
         <Text
           style={[styles.suggestionSubtext, { color: colors.tabIconDefault }]}
         >
-          {t("clientsCanBookCustomRange") ||
-            "Clients can book any time range within your work hours"}
+          {t("clientsCanBookCustomRange")}
         </Text>
 
         <View style={styles.timeRow}>
           <View style={styles.timeInputContainer}>
             <Text style={[styles.timeLabel, { color: colors.text }]}>
-              {t("startTime") || "Start"}
+              {t("startTime")}
             </Text>
             <TextInput
               style={[
@@ -237,13 +231,14 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
 
           <IconSymbol
             name="arrow.right"
-            size={20}
+            size={16}
             color={colors.tabIconDefault}
+            style={{ marginTop: 18 }}
           />
 
           <View style={styles.timeInputContainer}>
             <Text style={[styles.timeLabel, { color: colors.text }]}>
-              {t("endTime") || "End"}
+              {t("endTime")}
             </Text>
             <TextInput
               style={[
@@ -265,18 +260,18 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
 
         <Button
           variant="outline"
-          title={t("applyToAllWorkingDays") || "Apply to All Working Days"}
+          title={t("applyToAllWorkingDays")}
           onPress={handleApplyToAllDays}
           disabled={disabled}
           icon="arrow.down.circle"
-          iconSize={18}
+          iconSize={14}
         />
       </View>
 
       {/* Day-by-Day Schedule */}
       <View style={[styles.section, { backgroundColor: colors.background }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("dayByDaySchedule") || "Day-by-Day Schedule"}
+          {t("dayByDaySchedule")}
         </Text>
 
         {days.map((day) => {
@@ -310,7 +305,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                     ]}
                   >
                     {isEnabled && (
-                      <IconSymbol name="checkmark" size={14} color="#FFFFFF" />
+                      <IconSymbol name="checkmark" size={12} color="#FFFFFF" />
                     )}
                   </View>
                   <Text
@@ -408,10 +403,9 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
     if (!hasSchedule) {
       return (
         <View style={styles.emptyPreview}>
-          <IconSymbol name="calendar" size={48} color={colors.tabIconDefault} />
+          <IconSymbol name="calendar" size={36} color={colors.tabIconDefault} />
           <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-            {t("setWeeklyPatternFirst") ||
-              "Set your weekly pattern first to see the calendar preview"}
+            {t("setWeeklyPatternFirst")}
           </Text>
         </View>
       );
@@ -421,11 +415,10 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
       <ScrollView style={styles.tabContent}>
         <View style={[styles.section, { backgroundColor: colors.background }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            {t("next3Months") || "Next 3 Months"}
+            {t("next3Months")}
           </Text>
           <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
-            {t("previewYourAvailability") ||
-              "Preview your availability. Marked dates show when you'll be available."}
+            {t("previewYourAvailability")}
           </Text>
 
           <CalendarComponent
@@ -448,7 +441,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                 style={[styles.legendDot, { backgroundColor: colors.primary }]}
               />
               <Text style={[styles.legendText, { color: colors.text }]}>
-                {t("workingDay") || "Working Day"}
+                {t("workingDay")}
               </Text>
             </View>
             <View style={styles.legendItem}>
@@ -459,7 +452,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                 ]}
               />
               <Text style={[styles.legendText, { color: colors.text }]}>
-                {t("dayOff") || "Day Off"}
+                {t("dayOff")}
               </Text>
             </View>
           </View>
@@ -474,6 +467,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
         tabs={tabs}
         activeTab={activeTab}
         onTabChange={(key) => setActiveTab(key as "pattern" | "preview")}
+        style={{ borderTopLeftRadius: BorderRadius.lg, borderTopRightRadius: BorderRadius.lg }}
       />
 
       {activeTab === "pattern" && renderPatternTab()}
@@ -490,8 +484,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   section: {
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
     borderRadius: BorderRadius.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -500,63 +494,63 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   sectionTitle: {
-    fontSize: 19,
+    fontSize: 16,
     fontWeight: "700",
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
     letterSpacing: 0.3,
   },
   sectionDesc: {
-    fontSize: 14,
-    marginBottom: Spacing.lg,
-    lineHeight: 20,
+    fontSize: 12,
+    marginBottom: Spacing.md,
+    lineHeight: 16,
     opacity: 0.7,
   },
   timeRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: Spacing.lg,
-    gap: Spacing.md,
+    marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   timeInputContainer: {
     flex: 1,
   },
   timeLabel: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   timeInput: {
-    height: 48,
-    borderWidth: 2,
+    height: 40,
+    borderWidth: 1.5,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: 17,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 15,
     textAlign: "center",
     fontWeight: "600",
   },
   dayRow: {
     borderBottomWidth: 1,
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   dayHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.xs / 2,
   },
   dayInfo: {
     flexDirection: "row",
     alignItems: "center",
   },
   checkbox: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    borderWidth: 2.5,
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -564,34 +558,34 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   dayLabel: {
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: "600",
   },
   slotCount: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
     opacity: 0.7,
   },
   dayTimeRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: Spacing.md,
-    paddingLeft: 42,
-    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    paddingLeft: 36,
+    gap: Spacing.xs,
   },
   dayTimeInput: {
-    height: 44,
+    height: 36,
     flex: 1,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: 15,
+    paddingHorizontal: Spacing.sm,
+    fontSize: 13,
     textAlign: "center",
     fontWeight: "600",
   },
   timeSeparator: {
-    marginHorizontal: Spacing.xs,
-    fontSize: 18,
+    marginHorizontal: Spacing.xs / 2,
+    fontSize: 14,
     fontWeight: "700",
     opacity: 0.5,
   },
@@ -599,32 +593,32 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.xl * 3,
+    paddingVertical: Spacing.xl * 2,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
-    marginTop: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
-    lineHeight: 24,
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    lineHeight: 20,
     opacity: 0.7,
   },
   legend: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: Spacing.lg,
-    gap: Spacing.xl,
-    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+    gap: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
   },
   legendDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    marginRight: Spacing.sm,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: Spacing.xs,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.15,
@@ -632,22 +626,22 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   legendText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "500",
   },
   suggestionText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "600",
-    marginTop: Spacing.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
   },
   suggestionSubtext: {
-    fontSize: 13,
+    fontSize: 11,
     fontStyle: "italic",
-    marginTop: Spacing.sm,
+    marginTop: Spacing.xs,
     opacity: 0.7,
-    lineHeight: 18,
+    lineHeight: 15,
   },
 });

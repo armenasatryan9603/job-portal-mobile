@@ -13,6 +13,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -26,6 +27,7 @@ import {
   Modal,
   Share,
   Platform,
+  TextInput,
 } from "react-native";
 import { Image } from "expo-image";
 import { apiService, Order, OrderChangeHistory } from "@/categories/api";
@@ -41,6 +43,7 @@ import { useApplyToOrder } from "@/hooks/useApi";
 import { ApplyButton } from "@/components/ApplyButton";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { CheckInModal } from "@/components/CheckInModal";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Helper function to get localized service name
 const getLocalizedCategoryName = (
@@ -101,40 +104,6 @@ export default function EditOrderScreen() {
     return order[fieldKey] || "";
   };
 
-  // Parse location to extract coordinates if available
-  const parseLocationCoordinates = (
-    locationString?: string | null
-  ): { latitude: number; longitude: number; address: string } | null => {
-    if (!locationString) return null;
-
-    // Try to parse coordinates from string like "address (lat, lng)"
-    const coordMatch = locationString.match(
-      /^(.+?)\s*\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/
-    );
-    if (coordMatch) {
-      const address = coordMatch[1].trim();
-      const lat = parseFloat(coordMatch[2]);
-      const lng = parseFloat(coordMatch[3]);
-
-      // Validate coordinates
-      if (
-        !isNaN(lat) &&
-        !isNaN(lng) &&
-        lat >= -90 &&
-        lat <= 90 &&
-        lng >= -180 &&
-        lng <= 180
-      ) {
-        return {
-          latitude: lat,
-          longitude: lng,
-          address: address,
-        };
-      }
-    }
-
-    return null;
-  };
 
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
@@ -170,8 +139,15 @@ export default function EditOrderScreen() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
 
+  // Review modal state (for permanent orders)
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
+
   // Apply to order mutation
   const applyToOrderMutation = useApplyToOrder();
+  const queryClient = useQueryClient();
 
   // Helper function to check if user has applied to an order
   const hasAppliedToOrder = (orderId: number): boolean => {
@@ -246,6 +222,19 @@ export default function EditOrderScreen() {
       setChangeHistoryLoading(false);
     }
   };
+
+  // Fetch reviews for permanent orders
+  const orderId = parseInt(id as string);
+  const isPermanentOrder = order?.orderType === "permanent";
+  const { data: reviewsData, refetch: refetchReviews } = useQuery({
+    queryKey: ["order-reviews", orderId],
+    queryFn: () => chatService.getReviewsByOrder(orderId),
+    enabled: !!orderId && isPermanentOrder,
+  });
+
+  const reviews = reviewsData?.reviews || order?.Reviews || [];
+  const userReview = reviews?.find((r: any) => r.reviewerId === user?.id);
+  const hasReviewed = !!userReview;
 
   // Reload applied orders when screen comes into focus
   useFocusEffect(
@@ -437,6 +426,65 @@ export default function EditOrderScreen() {
 
   const handleCloseCheckInModal = () => {
     setShowCheckInModal(false);
+  };
+
+  // Review handlers for permanent orders
+  const handleOpenReviewModal = () => {
+    if (userReview) {
+      // Editing existing review
+      setReviewRating(userReview.rating);
+      setReviewComment(userReview.comment || "");
+      setEditingReviewId(userReview.id);
+    } else {
+      // Creating new review
+      setReviewRating(0);
+      setReviewComment("");
+      setEditingReviewId(null);
+    }
+    setShowReviewModal(true);
+  };
+
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) {
+      Alert.alert(t("error"), t("pleaseSelectRating"));
+      return;
+    }
+
+    if (!order) return;
+
+    try {
+      if (editingReviewId) {
+        // Update existing review
+        await chatService.updateOrderReview(editingReviewId, {
+          rating: reviewRating,
+          comment: reviewComment.trim() || undefined,
+        });
+      } else {
+        // Create new review
+        if (!user?.id) {
+          Alert.alert(t("error"), t("pleaseLogin"));
+          return;
+        }
+        await chatService.createOrderReview({
+          orderId: order.id,
+          reviewerId: user.id,
+          rating: reviewRating,
+          comment: reviewComment.trim() || undefined,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: ["order-reviews", order.id] });
+      // Reload order to refresh Reviews
+      const orderData = await apiService.getOrderById(order.id);
+      setOrder(orderData);
+      refetchReviews();
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewComment("");
+      setEditingReviewId(null);
+    } catch (error: any) {
+      console.error("Error submitting review:", error);
+      Alert.alert(t("error"), error.message || t("failedToSubmitReview"));
+    }
   };
 
   const handleFeedbackSubmit = async (
@@ -1266,6 +1314,120 @@ export default function EditOrderScreen() {
     ) : null;
   };
 
+  const renderReviewsSection = () => {
+    if (!isPermanentOrder) return null;
+
+    // Calculate average rating
+    const avgRating =
+      reviews.length > 0
+        ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) /
+          reviews.length
+        : 0;
+
+    return (
+      <ResponsiveCard>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {t("reviews")}
+          </Text>
+          <View style={styles.reviewsHeaderRight}>
+            {avgRating > 0 && (
+              <View style={styles.ratingBadge}>
+                <IconSymbol name="star.fill" size={14} color="#FFD700" />
+                <Text style={[styles.ratingBadgeText, { color: colors.text }]}>
+                  {avgRating.toFixed(1)}
+                </Text>
+              </View>
+            )}
+            {user && !hasReviewed && (
+              <Button
+                onPress={handleOpenReviewModal}
+                title={t("submitMarketReview")}
+                variant="primary"
+                icon="star"
+                iconSize={14}
+                backgroundColor={colors.primary}
+              />
+            )}
+          </View>
+        </View>
+
+        {reviews.length > 0 ? (
+          reviews.map((review: any) => (
+            <View
+              key={review.id}
+              style={[
+                styles.reviewItem,
+                { borderBottomColor: colors.border },
+              ]}
+            >
+              <View style={styles.reviewHeader}>
+                <View style={styles.reviewerInfo}>
+                  <Text
+                    style={[styles.reviewerName, { color: colors.text }]}
+                  >
+                    {review.Reviewer?.name || t("anonymous")}
+                  </Text>
+                  <View style={styles.reviewRating}>
+                    {[...Array(5)].map((_, i) => (
+                      <IconSymbol
+                        key={i}
+                        name="star.fill"
+                        size={12}
+                        color={i < review.rating ? "#FFD700" : colors.border}
+                      />
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.reviewHeaderRight}>
+                  <Text
+                    style={[
+                      styles.reviewDate,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </Text>
+                  {user && review.reviewerId === user.id && (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setReviewRating(review.rating);
+                        setReviewComment(review.comment || "");
+                        setEditingReviewId(review.id);
+                        setShowReviewModal(true);
+                      }}
+                      style={styles.editReviewButton}
+                    >
+                      <IconSymbol
+                        name="pencil"
+                        size={16}
+                        color={colors.tint}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+              {review.comment && (
+                <Text style={[styles.reviewComment, { color: colors.text }]}>
+                  {review.comment}
+                </Text>
+              )}
+            </View>
+          ))
+        ) : (
+          <Text
+            style={[
+              styles.noReviews,
+              { color: colors.tabIconDefault },
+            ]}
+          >
+            {t("noReviews")}
+          </Text>
+        )}
+      </ResponsiveCard>
+    );
+  };
+
   const renderClientInformation = () => {
     return (
       <ResponsiveCard>
@@ -1441,6 +1603,9 @@ export default function EditOrderScreen() {
 
           {/* Change History */}
           {renderChangeHistory()}
+
+          {/* Reviews Section (only for permanent orders) */}
+          {isPermanentOrder && renderReviewsSection()}
         </ResponsiveContainer>
       </ScrollView>
 
@@ -1521,6 +1686,109 @@ export default function EditOrderScreen() {
         onSubmit={handleSubmitCheckIn}
         loading={checkInLoading}
       />
+
+      {/* Review Modal (for permanent orders) */}
+      {isPermanentOrder && (
+        <Modal
+          visible={showReviewModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowReviewModal(false)}
+        >
+          <View style={styles.reviewModalOverlay}>
+            <View
+              style={[
+                styles.reviewModalContent,
+                { backgroundColor: colors.background },
+              ]}
+            >
+              <View style={styles.reviewModalHeader}>
+                <Text style={[styles.reviewModalTitle, { color: colors.text }]}>
+                  {editingReviewId
+                    ? `${t("edit")} ${t("reviews")?.toLowerCase() || t("submitMarketReview")}`
+                    : t("submitMarketReview")}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setShowReviewModal(false);
+                    setReviewRating(0);
+                    setReviewComment("");
+                    setEditingReviewId(null);
+                  }}
+                >
+                  <IconSymbol name="xmark" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.reviewRatingSection}>
+                <Text style={[styles.reviewRatingLabel, { color: colors.text }]}>
+                  {t("rating")}
+                </Text>
+                <View style={styles.reviewStarsContainer}>
+                  {[...Array(5)].map((_, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setReviewRating(i + 1)}
+                    >
+                      <IconSymbol
+                        name="star.fill"
+                        size={32}
+                        color={i < reviewRating ? "#FFD700" : colors.border}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <View style={styles.reviewCommentSection}>
+                <Text style={[styles.reviewCommentLabel, { color: colors.text }]}>
+                  {t("comment")} ({t("optional")})
+                </Text>
+                <TextInput
+                  style={[
+                    styles.reviewCommentInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  value={reviewComment}
+                  onChangeText={setReviewComment}
+                  placeholder={t("writeYourReview") || t("writeYourFeedback")}
+                  placeholderTextColor={colors.tabIconDefault}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.reviewModalActions}>
+                <Button
+                  variant="outline"
+                  title={t("cancel")}
+                  onPress={() => {
+                    setShowReviewModal(false);
+                    setReviewRating(0);
+                    setReviewComment("");
+                    setEditingReviewId(null);
+                  }}
+                  backgroundColor={colors.background}
+                  textColor={colors.text}
+                />
+                <Button
+                  variant="primary"
+                  title={t("submit")}
+                  onPress={handleSubmitReview}
+                  backgroundColor={colors.primary}
+                  textColor="white"
+                  disabled={reviewRating === 0}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </Layout>
   );
 }
@@ -1568,6 +1836,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.xxl,
     fontWeight: Typography.bold,
     marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
   },
   orderTitle: {
     fontSize: 24,
@@ -1913,5 +2187,123 @@ const styles = StyleSheet.create({
   rejectionReasonText: {
     fontSize: 12,
     lineHeight: 20,
+  },
+  // Review Section Styles
+  reviewsHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "#FFD70020",
+  },
+  ratingBadgeText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  reviewItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  reviewerInfo: {
+    flex: 1,
+  },
+  reviewerName: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  reviewRating: {
+    flexDirection: "row",
+    gap: 2,
+  },
+  reviewHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  reviewDate: {
+    fontSize: 12,
+  },
+  editReviewButton: {
+    padding: 4,
+  },
+  reviewComment: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  noReviews: {
+    fontSize: 14,
+    fontStyle: "italic",
+    textAlign: "center",
+    paddingVertical: 24,
+  },
+  // Review Modal Styles
+  reviewModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  reviewModalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: Spacing.card,
+    maxHeight: "80%",
+  },
+  reviewModalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  reviewModalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  reviewRatingSection: {
+    marginBottom: 24,
+  },
+  reviewRatingLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  reviewStarsContainer: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+  },
+  reviewCommentSection: {
+    marginBottom: 24,
+  },
+  reviewCommentLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  reviewCommentInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  reviewModalActions: {
+    flexDirection: "row",
+    gap: 12,
+    justifyContent: "flex-end",
   },
 });

@@ -1,5 +1,5 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ComponentSizes, Spacing, ThemeColors } from "@/constants/styles";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { router } from "expo-router";
@@ -170,7 +170,7 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: Spacing.lg,
+    marginBlock: Spacing.md,
     paddingHorizontal: Spacing.container,
   },
   content: {

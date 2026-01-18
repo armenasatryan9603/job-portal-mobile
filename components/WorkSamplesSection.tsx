@@ -28,7 +28,7 @@ interface WorkSamplesSectionProps {
   isOwnProfile: boolean;
 }
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const ITEM_SIZE = (width - 60) / 3; // 3 items per row with padding
 
 export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
@@ -44,6 +44,7 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [selectedImage, setSelectedImage] = useState<PortfolioItem | null>(null);
 
   useEffect(() => {
     if (userId) {
@@ -99,7 +100,7 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
             fileSize: asset.fileSize || 0,
           };
 
-          const uploadResult = await apiService.uploadPortfolioItem(
+          await apiService.uploadPortfolioItem(
             {
               uri: asset.uri,
               type: "image/jpeg",
@@ -110,7 +111,6 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
           );
 
           await loadPortfolio();
-          Alert.alert(t("success"), t("portfolioItemUploaded"));
         } catch (error: any) {
           console.error("Error uploading portfolio item:", error);
           Alert.alert(t("error"), error.message || t("uploadFailed"));
@@ -222,11 +222,16 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
         >
           {portfolioItems.map((item) => (
             <View key={item.id} style={styles.itemContainer}>
-              <Image
-                source={{ uri: item.fileUrl }}
-                style={[styles.itemImage, { backgroundColor: colors.border }]}
-                resizeMode="cover"
-              />
+              <TouchableOpacity
+                onPress={() => setSelectedImage(item)}
+                activeOpacity={0.8}
+              >
+                <Image
+                  source={{ uri: item.fileUrl }}
+                  style={[styles.itemImage, { backgroundColor: colors.border }]}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
               {isOwnProfile && (
                 <View style={styles.itemActions}>
                   <TouchableOpacity
@@ -261,6 +266,53 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
           ))}
         </ScrollView>
       )}
+
+      {/* Image Zoom Modal */}
+      <Modal
+        visible={!!selectedImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <TouchableOpacity
+          style={styles.imageModalOverlay}
+          activeOpacity={1}
+          onPress={() => setSelectedImage(null)}
+        >
+          <View
+            style={styles.imageModalContent}
+            onStartShouldSetResponder={() => true}
+          >
+            <View style={styles.imageContainer}>
+              <Image
+                source={{ uri: selectedImage?.fileUrl || "" }}
+                style={styles.modalImage}
+                resizeMode="contain"
+                onError={(error) => {
+                  console.log("Image load error:", error);
+                }}
+                onLoad={() => {
+                  console.log("Image loaded successfully");
+                }}
+              />
+            </View>
+            {(selectedImage?.title || selectedImage?.description) && (
+              <View style={[styles.imageModalInfo, { backgroundColor: colors.background }]}>
+                {selectedImage.title && (
+                  <Text style={[styles.imageModalTitle, { color: colors.text }]}>
+                    {selectedImage.title}
+                  </Text>
+                )}
+                {selectedImage.description && (
+                  <Text style={[styles.imageModalDescription, { color: colors.textSecondary }]}>
+                    {selectedImage.description}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Edit Modal */}
       <Modal
@@ -446,5 +498,45 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginTop: 8,
+  },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageModalContent: {
+    width: "90%",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingTop: 20,
+  },
+  imageContainer: {
+    width: "100%",
+    height: height * 0.6,
+    backgroundColor: "transparent",
+    overflow: "hidden",
+  },
+  modalImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageModalInfo: {
+    width: "100%",
+    padding: 16,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
+    marginTop: 0,
+  },
+  imageModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  imageModalDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

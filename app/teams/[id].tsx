@@ -28,20 +28,19 @@ import {
   ImageBackground,
   TextInput,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useTeamData } from "@/hooks/useTeamData";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
-import { AddTeamMemberModal } from "@/components/AddTeamMemberModal";
+import { AddMemberModal } from "@/components/AddMemberModal";
 import { TeamGallerySection } from "@/components/TeamGallerySection";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { HiringDialog } from "@/components/HiringDialog";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
 import AnalyticsService from "@/categories/AnalyticsService";
-import { fileUploadService } from "@/categories/fileUpload";
+import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 
 export default function TeamDetailScreen() {
   useAnalytics("TeamDetail");
@@ -116,7 +115,8 @@ export default function TeamDetailScreen() {
   }, [team]);
 
   const handleAddMember = useCallback(
-    async (userId: number) => {
+    async (userId: number, role?: string) => {
+      // Teams don't use roles, so we ignore the role parameter
       if (!teamId || typeof teamId !== "number") return;
 
       try {
@@ -137,9 +137,10 @@ export default function TeamDetailScreen() {
   );
 
   const handleAddMembers = useCallback(
-    async (userIds: number[]) => {
+    async (members: Array<{ userId: number; role?: string }>) => {
+      // Teams don't use roles, so we extract just the userIds
       if (!teamId || typeof teamId !== "number") return;
-      if (userIds.length === 0) {
+      if (members.length === 0) {
         Alert.alert(t("error"), t("selectMembersToAdd"));
         return;
       }
@@ -148,7 +149,7 @@ export default function TeamDetailScreen() {
       const failedMemberIds: number[] = [];
 
       try {
-        for (const userId of userIds) {
+        for (const { userId } of members) {
           try {
             await apiService.addTeamMember(teamId, userId);
 
@@ -349,63 +350,34 @@ export default function TeamDetailScreen() {
   const handleBannerUpload = async () => {
     if (!isTeamLead) return;
 
+    setUploadingBanner(true);
     try {
-      const permissionResult =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (permissionResult.granted === false) {
-        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [3, 1], // Banner ratio
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        const mediaFile = {
-          uri: asset.uri,
-          fileName: `team_banner_${Date.now()}.jpg`,
-          type: "image" as const,
-          mimeType: "image/jpeg",
-          fileSize: asset.fileSize || 0,
-        };
-
-        setBannerImage(asset.uri);
-        setUploadingBanner(true);
-
-        try {
-          const uploadResult = await fileUploadService.uploadProfilePicture(
-            mediaFile
-          );
-          if (uploadResult.success && uploadResult.fileUrl) {
-            if (teamId) {
-              await apiService.updateTeam(teamId, {
-                bannerUrl: uploadResult.fileUrl,
-              });
-              await reloadTeam();
-            }
-            setBannerImage(uploadResult.fileUrl);
-            AnalyticsService.getInstance().logEvent("team_updated", {
-              update_type: "banner",
+      await handleBannerUploadUtil({
+        fileNamePrefix: "team_banner",
+        onUploadSuccess: async (fileUrl) => {
+          if (teamId) {
+            await apiService.updateTeam(teamId, {
+              bannerUrl: fileUrl,
             });
-          } else {
-            throw new Error(uploadResult.error || t("uploadFailed"));
+            await reloadTeam();
           }
-        } catch (error) {
-          console.error("Error uploading banner:", error);
-          Alert.alert(t("error"), t("failedToUploadProfilePicture"));
+          setBannerImage(fileUrl);
+          AnalyticsService.getInstance().logEvent("team_updated", {
+            update_type: "banner",
+          });
+        },
+        onError: (error) => {
+          Alert.alert(t("error"), error || t("failedToUploadProfilePicture"));
           setBannerImage(null);
-        } finally {
-          setUploadingBanner(false);
-        }
-      }
-    } catch (error) {
-      console.error("Error selecting banner:", error);
-      Alert.alert(t("error"), t("failedToSelectImage"));
+        },
+        permissionRequiredText: t("permissionRequired"),
+        permissionToAccessText: t("permissionToAccessCameraRoll"),
+        uploadFailedText: t("uploadFailed"),
+        failedToSelectImageText: t("failedToSelectImage"),
+        failedToUploadText: t("failedToUploadProfilePicture"),
+      });
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -851,7 +823,7 @@ export default function TeamDetailScreen() {
         </ResponsiveContainer>
       </ScrollView>
 
-      <AddTeamMemberModal
+      <AddMemberModal
         visible={showAddMemberModal}
         onClose={handleCloseModal}
         onAddMember={handleAddMember}
@@ -1054,7 +1026,7 @@ const styles = StyleSheet.create({
 
   // Members
   membersList: {
-    gap: 12,
+    gap: 6,
   },
   emptyMembersContainer: {
     alignItems: "center",

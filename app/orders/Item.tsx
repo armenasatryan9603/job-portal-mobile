@@ -20,8 +20,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Order, apiService } from "@/categories/api";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
+import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { MapViewComponent } from "@/components/MapView";
-import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { ApplyButton } from "@/components/ApplyButton";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { CheckInModal } from "@/components/CheckInModal";
@@ -61,13 +61,12 @@ const OrderItem = ({
   const { user } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
-  const [imageLoading, setImageLoading] = useState(false);
-  const [imageError, setImageError] = useState(true);
+  const hasBannerImage = !!order.BannerImage?.fileUrl;
+  const [imageLoading, setImageLoading] = useState(hasBannerImage);
+  const [imageError, setImageError] = useState(!hasBannerImage);
   const [saved, setSaved] = useState(isSaved);
   const [saving, setSaving] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
-  const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
-  const [showSkillModal, setShowSkillModal] = useState(false);
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
 
@@ -137,42 +136,6 @@ const OrderItem = ({
   };
 
   const displayServiceName = getLocalizedServiceName(order.Category);
-
-  // Parse location to extract coordinates if available
-  const parseLocationCoordinates = (
-    locationString?: string
-  ): { latitude: number; longitude: number; address: string } | null => {
-    if (!locationString) return null;
-
-    // Try to parse coordinates from string like "address (lat, lng)"
-    const coordMatch = locationString.match(
-      /^(.+?)\s*\((-?\d+\.?\d*),\s*(-?\d+\.?\d*)\)$/
-    );
-    if (coordMatch) {
-      const address = coordMatch[1].trim();
-      const lat = parseFloat(coordMatch[2]);
-      const lng = parseFloat(coordMatch[3]);
-
-      // Validate coordinates
-      if (
-        !isNaN(lat) &&
-        !isNaN(lng) &&
-        lat >= -90 &&
-        lat <= 90 &&
-        lng >= -180 &&
-        lng <= 180
-      ) {
-        return {
-          latitude: lat,
-          longitude: lng,
-          address: address,
-        };
-      }
-    }
-
-    return null;
-  };
-
   const locationCoordinates = parseLocationCoordinates(order.location);
 
   // Status configuration
@@ -299,15 +262,30 @@ const OrderItem = ({
     setSaved(isSaved);
   }, [isSaved]);
 
+  // Reset image state when order changes
+  React.useEffect(() => {
+    const hasImage = !!order.BannerImage?.fileUrl;
+    setImageLoading(hasImage);
+    setImageError(!hasImage);
+  }, [order.BannerImage?.fileUrl]);
+
   return (
-    <TouchableOpacity onPress={() => handleOrderPress(order)} activeOpacity={1}>
-      <ResponsiveCard
-        padding={0}
-        style={[
-          isViewed && styles.viewedCard,
-          isViewed && { borderWidth: 2, borderColor: colors.border },
-        ]}
+    <View style={styles.wrapper}>
+      <TouchableOpacity 
+        onPress={() => handleOrderPress(order)} 
+        activeOpacity={1}
+        style={styles.touchable}
       >
+        <ResponsiveCard
+          padding={0}
+          marginHorizontal={0}
+          marginBlock={Spacing.xs}
+          style={[
+            isViewed && styles.viewedCard,
+            isViewed && { borderWidth: 2, borderColor: colors.border },
+            styles.card,
+          ]}
+        >
         {isViewed && (
           <View style={[styles.viewedTag, { backgroundColor: colors.border }]}>
             <IconSymbol name="eye" size={12} color={colors.tabIconDefault} />
@@ -323,40 +301,56 @@ const OrderItem = ({
           {order.Category && displayServiceName && (
             <Text style={[styles.serviceName]}>{displayServiceName}</Text>
           )}
-          {imageLoading && (
-            <View
-              style={[
-                styles.bannerImageSkeleton,
-                { backgroundColor: colors.border },
-              ]}
-            >
-              <ActivityIndicator size="small" color={colors.tint} />
-            </View>
-          )}
-          <Image
-            source={{
-              uri: order.BannerImage?.fileUrl || "",
-            }}
-            style={[
-              styles.bannerImage,
-              imageLoading && styles.bannerImageHidden,
-            ]}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            onLoadStart={() => {
-              const hasUri = !!order.BannerImage?.fileUrl;
-              setImageLoading(hasUri);
-              setImageError(!hasUri);
-            }}
-            onLoad={() => setImageLoading(false)}
-            onError={() => {
-              setImageLoading(false);
-              setImageError(true);
-            }}
-            transition={150}
-          />
-          {imageError && (
-            <View style={[styles.bannerImageSkeleton]}>
+          {hasBannerImage ? (
+            <>
+              {imageLoading && (
+                <View
+                  style={[
+                    styles.bannerImageSkeleton,
+                    { backgroundColor: colors.border },
+                  ]}
+                >
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              )}
+              {order.BannerImage?.fileUrl && (
+                <Image
+                  source={{
+                    uri: order.BannerImage.fileUrl,
+                  }}
+                  style={[
+                    styles.bannerImage,
+                    (imageLoading || imageError) && styles.bannerImageHidden,
+                  ]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  onLoadStart={() => {
+                    setImageLoading(true);
+                    setImageError(false);
+                  }}
+                  onLoad={() => {
+                    setImageLoading(false);
+                    setImageError(false);
+                  }}
+                  onError={() => {
+                    setImageLoading(false);
+                    setImageError(true);
+                  }}
+                  transition={150}
+                />
+              )}
+              {imageError && !imageLoading && (
+                <View style={[styles.bannerImageSkeleton, { backgroundColor: colors.border }]}>
+                  <IconSymbol
+                    name="photo"
+                    size={24}
+                    color={colors.tabIconDefault}
+                  />
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.bannerImageSkeleton, { backgroundColor: colors.border }]}>
               <IconSymbol
                 name="photo"
                 size={24}
@@ -365,13 +359,14 @@ const OrderItem = ({
             </View>
           )}
         </View>
-        <View style={{ padding: Spacing.md }}>
+        <View style={styles.contentContainer}>
+          {/* Header with Title and Status */}
           <View style={styles.orderHeader}>
             <View style={styles.orderTitleContainer}>
-              <Text style={[styles.orderTitle, { color: colors.text }]}>
+              <Text style={[styles.orderTitle, { color: colors.text }]} numberOfLines={1}>
                 {displayTitle}
               </Text>
-              {/* Bookmark Button - Only show for authenticated users and not for own orders */}
+              {/* Bookmark Button */}
               {user?.id && !isMyOrders && user.id !== order.clientId && (
                 <TouchableOpacity
                   onPress={handleSaveToggle}
@@ -384,7 +379,7 @@ const OrderItem = ({
                   ) : (
                     <IconSymbol
                       name={saved ? "bookmark.fill" : "bookmark"}
-                      size={20}
+                      size={16}
                       color={saved ? colors.tint : colors.tabIconDefault}
                     />
                   )}
@@ -399,192 +394,59 @@ const OrderItem = ({
             >
               <IconSymbol
                 name={getStatusIcon(order.status) as any}
-                size={12}
+                size={10}
                 color="white"
               />
               <Text style={styles.statusText}>{t(`${order.status}`)}</Text>
             </View>
           </View>
 
-          <Text
-            style={[styles.orderDescription, { color: colors.tabIconDefault }]}
-            numberOfLines={2}
-          >
-            {displayDescription}
-          </Text>
-
-          <View style={styles.orderDetails}>
-            <View style={styles.detailItem}>
-              <IconSymbol
-                name="dollarsign.circle.fill"
-                size={16}
-                color={colors.tint}
+          {/* Price */}
+          <View style={styles.priceContainer}>
+            {hasBudget ? (
+              <PriceCurrency
+                price={order.budget}
+                currency={order.currency}
+                rateUnit={order.rateUnit}
+                showOriginal={false}
+                style={{ ...styles.priceText, color: colors.text }}
               />
-              {hasBudget ? (
-                <PriceCurrency
-                  price={order.budget}
-                  currency={order.currency}
-                  rateUnit={order.rateUnit}
-                  showOriginal={true}
-                  style={{ ...styles.detailText, color: colors.text }}
-                  originalStyle={{
-                    ...styles.detailTextSmall,
-                    color: colors.tabIconDefault,
-                  }}
-                />
-              ) : (
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {t("notProvided")}
-                </Text>
-              )}
-            </View>
+            ) : (
+              <Text style={[styles.priceText, { color: colors.tabIconDefault }]}>
+                {t("notProvided")}
+              </Text>
+            )}
+          </View>
+
+          {/* Details Row */}
+          <View style={styles.orderDetails}>
             {order.location && (
-              <TouchableOpacity
-                style={styles.detailItem}
-                onPress={handleLocationPress}
-                disabled={!locationCoordinates}
-                activeOpacity={locationCoordinates ? 0.6 : 1}
-              >
-                <View style={styles.detailIconContainer}>
-                  <IconSymbol
-                    name="location.fill"
-                    size={16}
-                    color={
-                      locationCoordinates ? colors.tint : colors.tabIconDefault
-                    }
-                  />
-                </View>
+              <View style={styles.detailItem}>
+                <IconSymbol
+                  name="location.fill"
+                  size={10}
+                  color={colors.tabIconDefault}
+                />
                 <Text
-                  style={[
-                    styles.detailText,
-                    {
-                      color: locationCoordinates ? colors.tint : colors.text,
-                      textDecorationLine: locationCoordinates
-                        ? "underline"
-                        : "none",
-                    },
-                  ]}
-                  numberOfLines={2}
+                  style={[styles.detailText, { color: colors.tabIconDefault }]}
+                  numberOfLines={1}
                 >
-                  {locationCoordinates?.address || order.location}
+                  {order.location.length > 20 
+                    ? order.location.substring(0, 20) + "..." 
+                    : order.location}
                 </Text>
-              </TouchableOpacity>
+              </View>
             )}
             <View style={styles.detailItem}>
-              <IconSymbol name="person.fill" size={16} color={colors.tint} />
-              <Text style={[styles.detailText, { color: colors.text }]}>
-                {order._count?.Proposals ?? order.Proposals?.length ?? 0}{" "}
-                {t("application")}
+              <IconSymbol name="person.fill" size={10} color={colors.tabIconDefault} />
+              <Text style={[styles.detailText, { color: colors.tabIconDefault }]}>
+                {order._count?.Proposals ?? order.Proposals?.length ?? 0}
               </Text>
             </View>
           </View>
 
-          {(() => {
-            // Get skills from OrderSkills if available, otherwise fallback to order.skills
-            const orderSkills = (order as any).OrderSkills;
-            let skillsToDisplay: Array<{
-              name: string;
-              skillId: number | null;
-            }> = [];
-
-            if (
-              orderSkills &&
-              Array.isArray(orderSkills) &&
-              orderSkills.length > 0
-            ) {
-              // Use OrderSkills structure (preferred)
-              skillsToDisplay = orderSkills
-                .filter((os: any) => !!os.Skill)
-                .map((os: any) => {
-                  const skill = os.Skill;
-                  // Get skill name based on current language
-                  let skillName = "";
-                  switch (language) {
-                    case "ru":
-                      skillName =
-                        skill.nameRu || skill.nameEn || skill.nameHy || "";
-                      break;
-                    case "hy":
-                      skillName =
-                        skill.nameHy || skill.nameEn || skill.nameRu || "";
-                      break;
-                    case "en":
-                    default:
-                      skillName =
-                        skill.nameEn || skill.nameRu || skill.nameHy || "";
-                      break;
-                  }
-                  return {
-                    name: skillName,
-                    skillId: skill.id,
-                  };
-                })
-                .filter((s: any) => s !== null && s.name);
-            } else if (order.skills && order.skills.length > 0) {
-              // Fallback to order.skills array (backward compatibility)
-              skillsToDisplay = order.skills.map((skill: string) => ({
-                name: skill,
-                skillId: null,
-              }));
-            }
-
-            if (skillsToDisplay.length === 0) return null;
-
-            return (
-              <View style={styles.skillsContainer}>
-                {skillsToDisplay.slice(0, 4).map((skill, index) => (
-                  <TouchableOpacity
-                    key={skill.skillId || index}
-                    style={[
-                      styles.skillTag,
-                      {
-                        backgroundColor: colors.background,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                    onPress={() => {
-                      // Navigate to orders list with skill search
-                      router.push(
-                        `/orders?q=${encodeURIComponent(skill.name)}`
-                      );
-                    }}
-                    onLongPress={() => {
-                      if (skill.skillId) {
-                        setSelectedSkillId(skill.skillId);
-                        setShowSkillModal(true);
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.skillText, { color: colors.text }]}>
-                      {skill.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {skillsToDisplay.length > 4 && (
-                  <Text
-                    style={[
-                      styles.moreSkillsText,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    +{skillsToDisplay.length - 4} {t("more")}
-                  </Text>
-                )}
-              </View>
-            );
-          })()}
-
-          {/* Action Buttons */}
+          {/* Action Button */}
           <View style={styles.actionButtons}>
-            <View style={{ flex: 1, flexWrap: "nowrap" }}>
-              <Text
-                style={[styles.clientName, { color: colors.tabIconDefault }]}
-              >
-                {t("postedBy")} {order.Client?.name || t("deletedUser")} •{" "}
-                {new Date(order.createdAt).toLocaleDateString()}
-              </Text>
-            </View>
             {/* Check-In Button - Only show for permanent orders (not owner) */}
             {!isMyOrders &&
               user?.id !== order.clientId &&
@@ -593,7 +455,7 @@ const OrderItem = ({
                   variant="primary"
                   onPress={() => handleCheckIn(order)}
                   icon="calendar.badge.plus"
-                  iconSize={16}
+                  iconSize={14}
                   iconPosition="left"
                   title={t("checkIn")}
                 />
@@ -616,7 +478,7 @@ const OrderItem = ({
                 variant="outline"
                 onPress={() => handleCancelProposal(order)}
                 icon="xmark.circle"
-                iconSize={16}
+                iconSize={14}
                 iconPosition="left"
                 title={t("cancel")}
                 textColor="#FF3B30"
@@ -628,7 +490,7 @@ const OrderItem = ({
               <Button
                 variant="outline"
                 icon="trash"
-                iconSize={16}
+                iconSize={14}
                 iconPosition="left"
                 title={t("delete")}
                 textColor="#FF3B30"
@@ -637,7 +499,8 @@ const OrderItem = ({
             )}
           </View>
         </View>
-      </ResponsiveCard>
+        </ResponsiveCard>
+      </TouchableOpacity>
 
       {/* Map Modal */}
       {locationCoordinates && (
@@ -659,16 +522,6 @@ const OrderItem = ({
         </Modal>
       )}
 
-      {/* Skill Description Modal */}
-      <SkillDescriptionModal
-        visible={showSkillModal}
-        skillId={selectedSkillId}
-        onClose={() => {
-          setShowSkillModal(false);
-          setSelectedSkillId(null);
-        }}
-      />
-
       {/* Check-In Modal */}
       <CheckInModal
         visible={showCheckInModal}
@@ -677,15 +530,24 @@ const OrderItem = ({
         onSubmit={handleSubmitCheckIn}
         loading={checkInLoading}
       />
-    </TouchableOpacity>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  touchable: {
+    flex: 1,
+  },
+  card: {
+    flex: 1,
+  },
   bannerImageContainer: {
     width: "100%",
-    height: 200,
-    marginBottom: 16,
+    height: 120,
     position: "relative",
     overflow: "hidden",
   },
@@ -712,114 +574,84 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  contentContainer: {
+    padding: Spacing.sm,
+    flex: 1,
+  },
   orderHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 10,
+    marginBottom: Spacing.xs,
   },
   orderTitleContainer: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     flex: 1,
-    marginRight: 12,
+    marginRight: Spacing.xs,
   },
   orderTitle: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: "700",
     flex: 1,
-    lineHeight: 26,
+    lineHeight: 16,
   },
   bookmarkButton: {
-    padding: 4,
-    marginLeft: 8,
+    padding: 2,
+    marginLeft: Spacing.xs / 2,
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.xs / 2,
+    borderRadius: 12,
+    gap: Spacing.xs / 2,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: "700",
     color: "white",
   },
-  orderDescription: {
+  priceContainer: {
+    marginBottom: Spacing.xs,
+  },
+  priceText: {
     fontSize: 14,
-    marginBottom: 10,
+    fontWeight: "700",
   },
   orderDetails: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 20,
-    marginBottom: 16,
-    alignItems: "flex-start",
+    alignItems: "center",
+    marginBottom: Spacing.xs,
+    gap: Spacing.sm,
   },
   detailItem: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
+    alignItems: "center",
+    gap: Spacing.xs / 2,
     flexShrink: 1,
-    maxWidth: "100%",
-    flex: 1,
-    minWidth: 0,
-  },
-  detailIconContainer: {
-    marginTop: 2,
   },
   detailText: {
-    fontSize: 12,
-    fontWeight: "600",
-    flexShrink: 1,
-    flex: 1,
-  },
-  detailTextSmall: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "500",
   },
-  skillsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 6,
-  },
-  skillTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  skillText: {
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  moreSkillsText: {
-    fontSize: 12,
-    fontStyle: "italic",
-    opacity: 0.7,
-  },
-  clientName: {
-    fontSize: 13,
-    opacity: 0.7,
-  },
   serviceName: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: Typography.bold,
     textAlign: "right",
     position: "absolute",
-    bottom: 5,
-    left: 10,
+    bottom: Spacing.xs / 2,
+    left: Spacing.xs,
     zIndex: 1,
+    color: "white",
+    textShadowColor: "rgba(0, 0, 0, 0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   actionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    gap: 2,
+    marginTop: "auto",
+    paddingTop: Spacing.xs,
   },
   appliedButton: {
     flexDirection: "row",

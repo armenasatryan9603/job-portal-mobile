@@ -253,7 +253,6 @@ export default function SpecialistDetailScreen() {
   const header = (
     <Header
       title={t("specialistProfile")}
-      subtitle={specialist.User.name}
       showBackButton={true}
       onBackPress={() => router.back()}
     />
@@ -902,8 +901,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  // Overview Section Styles
-
   overviewSection: {
     position: "relative",
     gap: 20,
@@ -935,6 +932,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   specialistHeader: {
+    gap: 14,
     flexDirection: "row",
     alignItems: "flex-start",
   },

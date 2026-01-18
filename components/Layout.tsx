@@ -71,6 +71,7 @@ export const Layout: React.FC<LayoutProps> = ({
     navigateToCalendar,
     navigateToSavedOrders,
     navigateToHelp,
+    navigateToServices,
   } = useNavigation();
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
   const [imageError, setImageError] = React.useState(false);
@@ -309,6 +310,22 @@ export const Layout: React.FC<LayoutProps> = ({
               <>
                 {/* Authenticated User Menu */}
 
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    { borderBottomColor: colors.border },
+                  ]}
+                  onPress={navigateToServices}
+                >
+                  <IconSymbol
+                    name="building.2.fill"
+                    size={20}
+                    color={colors.tint}
+                  />
+                  <Text style={[styles.menuItemText, { color: colors.text }]}>
+                    {t("myServices")}
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
