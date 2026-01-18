@@ -488,13 +488,26 @@ export default function CalendarScreen() {
         const bookingsOnDate = group.bookings;
 
         if (bookingsOnDate.length > 0) {
+          // Check if there are any pending bookings on this date (for orders owned by user)
+          const hasPendingBookings = bookingsOnDate.some(
+            (booking) =>
+              booking.status === "pending" &&
+              booking.Order?.Client?.id === user?.id
+          );
+
+          // Use orange color for dates with pending bookings, purple for confirmed
+          const borderColor = hasPendingBookings ? "#FFA500" : "#9333EA";
+          const backgroundColor = hasPendingBookings
+            ? "#FFA50015"
+            : "#9333EA15";
+
           marked[dateString] = {
             customStyles: {
               container: {
-                backgroundColor: "#9333EA15",
+                backgroundColor: backgroundColor,
                 borderRadius: 8,
                 borderWidth: 1.5,
-                borderColor: "#9333EA",
+                borderColor: borderColor,
               },
               text: {
                 color: colors.text,
@@ -530,6 +543,7 @@ export default function CalendarScreen() {
     selectedDate,
     colors.text,
     colors.primary,
+    user?.id,
   ]);
 
   const renderCalendarView = () => {
@@ -677,6 +691,65 @@ export default function CalendarScreen() {
     );
   };
 
+  const handleApproveBooking = async (booking: Booking) => {
+    Alert.alert(
+      t("approveBooking") || "Approve Booking",
+      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}`,
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("approve"),
+          onPress: async () => {
+            try {
+              await apiService.updateBookingStatus(booking.id, "confirmed");
+              Alert.alert(t("success"), t("bookingApproved") || "Booking approved successfully");
+              fetchBookings(); // Refresh bookings list
+            } catch (error: any) {
+              console.error("Error approving booking:", error);
+              Alert.alert(
+                t("error"),
+                error?.message || t("failedToUpdateBooking") || "Failed to approve booking"
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRejectBooking = async (booking: Booking) => {
+    Alert.alert(
+      t("rejectBooking") || "Reject Booking",
+      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}`,
+      [
+        {
+          text: t("cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("reject"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await apiService.updateBookingStatus(booking.id, "cancelled");
+              Alert.alert(t("success"), t("bookingRejected") || "Booking rejected");
+              fetchBookings(); // Refresh bookings list
+            } catch (error: any) {
+              console.error("Error rejecting booking:", error);
+              Alert.alert(
+                t("error"),
+                error?.message || t("failedToUpdateBooking") || "Failed to reject booking"
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSubmitEditBooking = async (
     scheduledDate: string,
     startTime: string,
@@ -753,11 +826,26 @@ export default function CalendarScreen() {
                     {item.dateLabel}
                   </Text>
                 </View>
-                <CountBadge count={item.bookings.length} color="#9333EA" />
+                {(() => {
+                  const pendingCount = item.bookings.filter(
+                    (b) =>
+                      b.status === "pending" &&
+                      b.Order?.Client?.id === user?.id
+                  ).length;
+                  const hasPending = pendingCount > 0;
+                  return (
+                    <CountBadge
+                      count={item.bookings.length}
+                      color={hasPending ? "#FFA500" : "#9333EA"}
+                    />
+                  );
+                })()}
               </View>
               {item.bookings.map((booking) => {
                 const isMyOrderBooking = booking.Order?.Client?.id === user?.id;
-                const canEdit = isMyOrderBooking;
+                const isPending = booking.status === "pending";
+                const canEdit = isMyOrderBooking && !isPending;
+                const canApproveReject = isMyOrderBooking && isPending;
 
                 return (
                   <TouchableOpacity
@@ -767,7 +855,10 @@ export default function CalendarScreen() {
                       {
                         backgroundColor:
                           (colors as any).surface || colors.background,
-                        borderColor: colors.border,
+                        borderColor: isPending && isMyOrderBooking
+                          ? "#FFA500"
+                          : colors.border,
+                        borderWidth: isPending && isMyOrderBooking ? 2 : 1,
                         ...Shadows.md,
                       },
                     ]}
@@ -801,20 +892,31 @@ export default function CalendarScreen() {
                         style={[
                           styles.statusBadge,
                           {
-                            backgroundColor: "#9333EA" + "20",
+                            backgroundColor: isPending
+                              ? "#FFA500" + "20"
+                              : "#9333EA" + "20",
                             borderWidth: 1,
-                            borderColor: "#9333EA" + "40",
+                            borderColor: isPending
+                              ? "#FFA500" + "40"
+                              : "#9333EA" + "40",
                           },
                         ]}
                       >
                         <View
                           style={[
                             styles.statusDot,
-                            { backgroundColor: "#9333EA" },
+                            {
+                              backgroundColor: isPending ? "#FFA500" : "#9333EA",
+                            },
                           ]}
                         />
-                        <Text style={[styles.statusText, { color: "#9333EA" }]}>
-                          {t("booked")}
+                        <Text
+                          style={[
+                            styles.statusText,
+                            { color: isPending ? "#FFA500" : "#9333EA" },
+                          ]}
+                        >
+                          {isPending ? t("pending") : t("booked")}
                         </Text>
                       </View>
                     </View>
@@ -838,63 +940,124 @@ export default function CalendarScreen() {
 
                     {/* Action buttons */}
                     <View style={styles.bookingActions}>
-                      {canEdit && (
-                        <TouchableOpacity
-                          style={[
-                            styles.bookingActionButton,
-                            {
-                              backgroundColor: colors.primary + "15",
-                              borderColor: colors.primary,
-                            },
-                          ]}
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleEditBooking(booking);
-                          }}
-                        >
-                          <IconSymbol
-                            name="pencil"
-                            size={16}
-                            color={colors.primary}
-                          />
-                          <Text
+                      {canApproveReject ? (
+                        <>
+                          <TouchableOpacity
                             style={[
-                              styles.bookingActionText,
-                              { color: colors.primary },
+                              styles.bookingActionButton,
+                              {
+                                backgroundColor: "#4CAF50" + "15",
+                                borderColor: "#4CAF50",
+                              },
                             ]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleApproveBooking(booking);
+                            }}
                           >
-                            {t("edit")}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
+                            <IconSymbol
+                              name="checkmark.circle.fill"
+                              size={16}
+                              color="#4CAF50"
+                            />
+                            <Text
+                              style={[
+                                styles.bookingActionText,
+                                { color: "#4CAF50" },
+                              ]}
+                            >
+                              {t("approve")}
+                            </Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.bookingActionButton,
+                              {
+                                backgroundColor: "#FF3B30" + "15",
+                                borderColor: "#FF3B30",
+                              },
+                            ]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleRejectBooking(booking);
+                            }}
+                          >
+                            <IconSymbol
+                              name="xmark.circle.fill"
+                              size={16}
+                              color="#FF3B30"
+                            />
+                            <Text
+                              style={[
+                                styles.bookingActionText,
+                                { color: "#FF3B30" },
+                              ]}
+                            >
+                              {t("reject")}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      ) : (
+                        <>
+                          {canEdit && (
+                            <TouchableOpacity
+                              style={[
+                                styles.bookingActionButton,
+                                {
+                                  backgroundColor: colors.primary + "15",
+                                  borderColor: colors.primary,
+                                },
+                              ]}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleEditBooking(booking);
+                              }}
+                            >
+                              <IconSymbol
+                                name="pencil"
+                                size={16}
+                                color={colors.primary}
+                              />
+                              <Text
+                                style={[
+                                  styles.bookingActionText,
+                                  { color: colors.primary },
+                                ]}
+                              >
+                                {t("edit")}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
 
-                      <TouchableOpacity
-                        style={[
-                          styles.bookingActionButton,
-                          {
-                            backgroundColor: "#FF3B30" + "15",
-                            borderColor: "#FF3B30",
-                          },
-                        ]}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleCancelBooking(booking);
-                        }}
-                      >
-                        <IconSymbol
-                          name="xmark.circle"
-                          size={16}
-                          color="#FF3B30"
-                        />
-                        <Text
-                          style={[
-                            styles.bookingActionText,
-                            { color: "#FF3B30" },
-                          ]}
-                        >
-                          {t("remove")}
-                        </Text>
-                      </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.bookingActionButton,
+                              {
+                                backgroundColor: "#FF3B30" + "15",
+                                borderColor: "#FF3B30",
+                              },
+                            ]}
+                            onPress={(e) => {
+                              e.stopPropagation();
+                              handleCancelBooking(booking);
+                            }}
+                          >
+                            <IconSymbol
+                              name="xmark.circle"
+                              size={16}
+                              color="#FF3B30"
+                            />
+                            <Text
+                              style={[
+                                styles.bookingActionText,
+                                { color: "#FF3B30" },
+                              ]}
+                            >
+                              {t("remove")}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );

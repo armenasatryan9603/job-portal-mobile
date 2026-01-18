@@ -139,6 +139,11 @@ export default function EditOrderScreen() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
 
+  // Bookings state (for permanent orders)
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const [updatingBookingStatus, setUpdatingBookingStatus] = useState<number | null>(null);
+
   // Review modal state (for permanent orders)
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -192,6 +197,11 @@ export default function EditOrderScreen() {
         if (user?.id) {
           loadChangeHistory(parseInt(id as string));
         }
+
+        // Load bookings if this is a permanent order and user is the owner
+        if (orderData.orderType === "permanent" && user?.id === orderData.clientId) {
+          loadBookings(parseInt(id as string));
+        }
       } catch (error) {
         console.error("Error loading order:", error);
         Alert.alert(t("error"), t("failedToLoadOrder"));
@@ -220,6 +230,45 @@ export default function EditOrderScreen() {
       // Don't show error to user - change history is optional
     } finally {
       setChangeHistoryLoading(false);
+    }
+  };
+
+  // Load bookings for the order
+  const loadBookings = async (orderId: number) => {
+    try {
+      setBookingsLoading(true);
+      const orderBookings = await apiService.getOrderBookings(orderId);
+      setBookings(orderBookings);
+    } catch (error) {
+      console.error("Error loading bookings:", error);
+    } finally {
+      setBookingsLoading(false);
+    }
+  };
+
+  // Handle booking approval/rejection
+  const handleBookingStatusUpdate = async (bookingId: number, status: "confirmed" | "cancelled") => {
+    if (!order) return;
+
+    setUpdatingBookingStatus(bookingId);
+    try {
+      await apiService.updateBookingStatus(bookingId, status);
+      // Reload bookings
+      await loadBookings(order.id);
+      Alert.alert(
+        t("success"),
+        status === "confirmed"
+          ? t("bookingApproved") || "Booking approved successfully"
+          : t("bookingRejected") || "Booking rejected"
+      );
+    } catch (error: any) {
+      console.error("Error updating booking status:", error);
+      Alert.alert(
+        t("error"),
+        error?.message || t("failedToUpdateBooking") || "Failed to update booking"
+      );
+    } finally {
+      setUpdatingBookingStatus(null);
     }
   };
 
@@ -407,7 +456,13 @@ export default function EditOrderScreen() {
         slots_count: selectedSlots.length.toString(),
       });
 
-      Alert.alert(t("success"), t("checkInSuccess"), [
+      // Check if approval is required
+      const requiresApproval = (order as any).checkinRequiresApproval;
+      const successMessage = requiresApproval
+        ? t("checkInRequestSubmitted") || "Your booking request has been submitted and is pending approval."
+        : t("checkInSuccess") || "Check-in successful!";
+
+      Alert.alert(t("success"), successMessage, [
         {
           text: t("ok"),
           onPress: () => {
@@ -1428,6 +1483,122 @@ export default function EditOrderScreen() {
     );
   };
 
+  const renderPendingBookings = () => {
+    // Only show for permanent orders where user is the owner
+    if (!isPermanentOrder || !order || user?.id !== order.clientId) {
+      return null;
+    }
+
+    const pendingBookings = bookings.filter((b) => b.status === "pending");
+
+    if (pendingBookings.length === 0) {
+      return null;
+    }
+
+    return (
+      <ResponsiveCard>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {t("pendingBookings") || "Pending Bookings"}
+          </Text>
+          <Text
+            style={[
+              styles.sectionSubtitle,
+              { color: colors.tabIconDefault },
+            ]}
+          >
+            {pendingBookings.length}{" "}
+            {t("pendingBookingsCount") || "awaiting approval"}
+          </Text>
+        </View>
+
+        {bookingsLoading ? (
+          <ActivityIndicator size="small" color={colors.primary} />
+        ) : (
+          pendingBookings.map((booking) => (
+            <View
+              key={booking.id}
+              style={[
+                styles.bookingItem,
+                { borderBottomColor: colors.border },
+              ]}
+            >
+              <View style={styles.bookingInfo}>
+                <View style={styles.bookingHeader}>
+                  <Text style={[styles.bookingClientName, { color: colors.text }]}>
+                    {booking.Client?.name || t("client")}
+                  </Text>
+                  <View
+                    style={[
+                      styles.bookingStatusBadge,
+                      { backgroundColor: "#FFA500" },
+                    ]}
+                  >
+                    <Text style={styles.bookingStatusText}>
+                      {t("pending")}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.bookingDateTime}>
+                  <IconSymbol
+                    name="calendar"
+                    size={16}
+                    color={colors.tabIconDefault}
+                  />
+                  <Text
+                    style={[
+                      styles.bookingDateText,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {new Date(booking.scheduledDate).toLocaleDateString()}
+                  </Text>
+                </View>
+                <View style={styles.bookingDateTime}>
+                  <IconSymbol
+                    name="clock"
+                    size={16}
+                    color={colors.tabIconDefault}
+                  />
+                  <Text
+                    style={[
+                      styles.bookingTimeText,
+                      { color: colors.tabIconDefault },
+                    ]}
+                  >
+                    {booking.startTime} - {booking.endTime}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.bookingActions}>
+                <Button
+                  onPress={() =>
+                    handleBookingStatusUpdate(booking.id, "confirmed")
+                  }
+                  title={t("approve") || "Approve"}
+                  variant="primary"
+                  disabled={updatingBookingStatus === booking.id}
+                  loading={updatingBookingStatus === booking.id}
+                  style={styles.approveButton}
+                />
+                <Button
+                  onPress={() =>
+                    handleBookingStatusUpdate(booking.id, "cancelled")
+                  }
+                  title={t("reject") || "Reject"}
+                  variant="outline"
+                  textColor="#FF3B30"
+                  disabled={updatingBookingStatus === booking.id}
+                  style={styles.rejectButton}
+                />
+              </View>
+            </View>
+          ))
+        )}
+      </ResponsiveCard>
+    );
+  };
+
   const renderClientInformation = () => {
     return (
       <ResponsiveCard>
@@ -1603,6 +1774,9 @@ export default function EditOrderScreen() {
 
           {/* Change History */}
           {renderChangeHistory()}
+
+          {/* Pending Bookings (only for permanent orders, owner only) */}
+          {renderPendingBookings()}
 
           {/* Reviews Section (only for permanent orders) */}
           {isPermanentOrder && renderReviewsSection()}
@@ -2305,5 +2479,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     justifyContent: "flex-end",
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  bookingItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  bookingInfo: {
+    marginBottom: 12,
+  },
+  bookingHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  bookingClientName: {
+    fontSize: 16,
+    fontWeight: "600",
+    flex: 1,
+  },
+  bookingStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  bookingStatusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "white",
+  },
+  bookingDateTime: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+    gap: 6,
+  },
+  bookingDateText: {
+    fontSize: 14,
+  },
+  bookingTimeText: {
+    fontSize: 14,
+  },
+  bookingActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  approveButton: {
+    flex: 1,
+  },
+  rejectButton: {
+    flex: 1,
   },
 });

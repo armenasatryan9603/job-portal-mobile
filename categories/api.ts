@@ -384,6 +384,7 @@ export interface Order {
   orderType?: string; // "one_time" or "permanent"
   workDurationPerClient?: number; // Duration in minutes
   weeklySchedule?: WeeklySchedule; // Recurring weekly schedule for permanent orders
+  checkinRequiresApproval?: boolean; // If true, bookings require owner approval
   Bookings?: Booking[];
   creditCost?: number; // Credit cost based on order budget
   refundPercentage?: number; // Refund percentage (0.0 to 1.0, e.g., 0.5 for 50%)
@@ -2235,6 +2236,23 @@ class ApiService {
     return this.request(`/bookings/order/${orderId}`, {
       method: "GET",
     });
+  }
+
+  /**
+   * Update booking status (for approving/rejecting pending bookings)
+   */
+  async updateBookingStatus(bookingId: number, status: string): Promise<Booking> {
+    return this.request(
+      `/bookings/${bookingId}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      },
+      true
+    );
   }
 
   /**

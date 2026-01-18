@@ -129,6 +129,8 @@ export default function CreateOrderScreen() {
   const [workDurationPerClient, setWorkDurationPerClient] =
     useState<string>("");
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
+  const [checkinRequiresApproval, setCheckinRequiresApproval] =
+    useState<boolean>(false);
   const [isSpecialist, setIsSpecialist] = useState<boolean>(false);
   const [showBecomeSpecialistModal, setShowBecomeSpecialistModal] =
     useState(false);
@@ -574,6 +576,9 @@ export default function CreateOrderScreen() {
             setWorkDurationPerClient(
               orderData.workDurationPerClient.toString()
             );
+          }
+          if ((orderData as any).checkinRequiresApproval !== undefined) {
+            setCheckinRequiresApproval((orderData as any).checkinRequiresApproval);
           }
           if (orderData.weeklySchedule) {
             console.log(
@@ -1251,6 +1256,8 @@ export default function CreateOrderScreen() {
           orderType === "permanent" && Object.keys(weeklySchedule).length > 0
             ? weeklySchedule
             : undefined,
+        checkinRequiresApproval:
+          orderType === "permanent" ? checkinRequiresApproval : false,
       };
       if (useEnhanced && enhancedData) {
         finalOrderData.titleEn = enhancedData.titleEn;
@@ -1725,6 +1732,54 @@ export default function CreateOrderScreen() {
                     {t("minutesPerSession") || "min"}
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {/* Check-in Approval Toggle (only for permanent orders) */}
+            {orderType === "permanent" && (
+              <View style={styles.approvalContainer}>
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() =>
+                    setCheckinRequiresApproval(!checkinRequiresApproval)
+                  }
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      {
+                        backgroundColor: checkinRequiresApproval
+                          ? colors.primary
+                          : "transparent",
+                        borderColor: checkinRequiresApproval
+                          ? colors.primary
+                          : colors.borderTertiary,
+                      },
+                    ]}
+                  >
+                    {checkinRequiresApproval && (
+                      <IconSymbol name="checkmark" size={14} color="white" />
+                    )}
+                  </View>
+                  <View style={styles.checkboxLabelContainer}>
+                    <Text
+                      style={[styles.checkboxLabel, { color: colors.text }]}
+                    >
+                      {t("requireApprovalForCheckins") ||
+                        "Require approval for check-ins"}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.checkboxDescription,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("requireApprovalForCheckinsDesc") ||
+                        "Clients can request bookings, but you'll need to approve them"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
               </View>
             )}
           </ResponsiveCard>
@@ -2755,5 +2810,37 @@ const styles = StyleSheet.create({
   durationUnit: {
     fontSize: 13,
     fontWeight: "500",
+  },
+  approvalContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  checkboxContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    marginRight: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+  },
+  checkboxLabelContainer: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  checkboxDescription: {
+    fontSize: 13,
+    lineHeight: 18,
   },
 });

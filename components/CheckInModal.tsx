@@ -224,6 +224,9 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 
   if (!order) return null;
 
+  // Check if approval is required
+  const requiresApproval = order.checkinRequiresApproval === true;
+
   return (
     <Modal
       visible={visible}
@@ -235,7 +238,9 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={[styles.title, { color: colors.text }]}>
-              {t("checkIn")}
+              {requiresApproval
+                ? t("requestBooking")
+                : t("checkIn")}
             </Text>
             <Text style={[styles.subtitle, { color: colors.tabIconDefault }]}>
               {order.title}
@@ -374,6 +379,31 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                 </View>
               )}
 
+              {/* Approval Required Info Banner */}
+              {requiresApproval && selectedBookings.length > 0 && (
+                <View
+                  style={[
+                    styles.infoBanner,
+                    {
+                      backgroundColor: colors.primary + "15",
+                      borderColor: colors.primary + "30",
+                    },
+                  ]}
+                >
+                  <IconSymbol
+                    name="info.circle.fill"
+                    size={20}
+                    color={colors.primary}
+                  />
+                  <Text
+                    style={[styles.infoBannerText, { color: colors.text }]}
+                  >
+                    {t("bookingRequiresApproval") ||
+                      "Your booking request will be sent for approval. The order owner will review and confirm your booking."}
+                  </Text>
+                </View>
+              )}
+
               {/* Selected Bookings Summary */}
               {selectedBookings.length > 0 && (
                 <View
@@ -383,7 +413,10 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                   ]}
                 >
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("selectedBookings")} ({selectedBookings.length})
+                    {requiresApproval
+                      ? t("selectedBookingRequests") || "Selected Booking Requests"
+                      : t("selectedBookings")}{" "}
+                    ({selectedBookings.length})
                   </Text>
 
                   {selectedBookings.map((booking, index) => (
@@ -470,12 +503,22 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
             variant="primary"
             title={
               loading
-                ? t("checkingIn") || "Checking In..."
-                : t("confirmBookings") || "Confirm Bookings"
+                ? requiresApproval
+                  ? t("submittingRequest")
+                  : t("checkingIn")
+                : requiresApproval
+                  ? t("submitBookingRequest")
+                  : t("confirmBookings")
             }
             onPress={handleSubmit}
             disabled={loading || selectedBookings.length === 0}
-            icon={loading ? undefined : "checkmark.circle.fill"}
+            icon={
+              loading
+                ? undefined
+                : requiresApproval
+                  ? "paperplane.fill"
+                  : "checkmark.circle.fill"
+            }
             iconSize={20}
             style={{ flex: 2 }}
           />
@@ -676,5 +719,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 3,
     elevation: 5,
+  },
+  infoBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    gap: Spacing.sm,
+  },
+  infoBannerText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
