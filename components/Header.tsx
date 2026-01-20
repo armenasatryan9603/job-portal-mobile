@@ -170,12 +170,11 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBlock: Spacing.md,
     paddingHorizontal: Spacing.container,
   },
   content: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
   },
   leftSection: {

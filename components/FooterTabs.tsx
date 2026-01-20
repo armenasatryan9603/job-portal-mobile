@@ -23,7 +23,7 @@ export const FooterTabs: React.FC = () => {
   const tabs: TabItem[] = [
     {
       name: "index",
-      title: t("home"),
+      title: t("general"),
       icon: "house.fill",
       route: "/",
     },
@@ -47,8 +47,8 @@ export const FooterTabs: React.FC = () => {
     },
     {
       name: "services",
-      title: t("businesses"),
-      icon: "building.2.fill",
+      title: t("services"),
+      icon: "briefcase.fill",
       route: "/services",
     },
   ];

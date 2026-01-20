@@ -496,7 +496,6 @@ export default function SpecialistsScreen() {
     () => (
       <Header
         title={t("specialists")}
-        subtitle={t("findSpecialistsDesc")}
         showNotificationsButton={isAuthenticated}
         showChatButton={isAuthenticated}
         unreadNotificationsCount={unreadNotificationsCount}
@@ -968,8 +967,6 @@ export default function SpecialistsScreen() {
     return null;
   }, [isLoadingMore, colors, t]);
 
-  const renderHeader = () => null;
-
   const renderEmptyComponent = useCallback(() => {
     if (filteredSpecialists.length === 0) {
       return (
@@ -1014,7 +1011,7 @@ export default function SpecialistsScreen() {
           <Filter
             searchPlaceholder={
               activeTab === "teams"
-                ? t("searchTeams") || "Search teams..."
+                ? t("searchTeams")
                 : t("searchSpecialistsSkills")
             }
             onSearchChange={handleSearchChange}
@@ -1047,7 +1044,6 @@ export default function SpecialistsScreen() {
                 data={filteredSpecialists}
                 renderItem={renderSpecialistItem}
                 keyExtractor={(item) => item.id.toString()}
-                ListHeaderComponent={renderHeader}
                 ListFooterComponent={renderFooter}
                 ListEmptyComponent={renderEmptyComponent}
                 {...flatListProps}

@@ -13,6 +13,7 @@ import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ThemedText } from "@/components/themed-text";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { UserAvatar } from "@/components/UserAvatar";
 import {
   BorderRadius,
   createThemeShadow,
@@ -74,12 +75,12 @@ export default function WelcomeScreen() {
 
   const quickActions = [
     {
-      title: t("browseCategories"),
-      description: t("findSpecialists"),
+      title: t("findJobs"),
+      description: t("findJobsDesc"),
       icon: "briefcase.fill",
-      route: "/categories",
-      color: "#4CAF50",
-      gradient: ["#4CAF50", "#45A049"],
+      route: "/orders/create",
+      color: "#2196F3",
+      gradient: ["#2196F3", "#1976D2"],
     },
     {
       title: t("postJob"),
@@ -90,20 +91,12 @@ export default function WelcomeScreen() {
       gradient: ["#2196F3", "#1976D2"],
     },
     {
-      title: t("myOrders"),
-      description: t("myOrdersDesc"),
-      icon: "list.bullet.rectangle.fill",
-      route: "/orders",
-      color: "#FF9800",
-      gradient: ["#FF9800", "#F57C00"],
-    },
-    {
-      title: t("savedOrders"),
-      description: t("savedOrdersDesc"),
-      icon: "bookmark.fill",
-      route: "/orders?saved=true",
-      color: "#E91E63",
-      gradient: ["#E91E63", "#C2185B"],
+      title: t("browseCategories"),
+      description: t("findSpecialists"),
+      icon: "briefcase.fill",
+      route: "/categories",
+      color: "#4CAF50",
+      gradient: ["#4CAF50", "#45A049"],
     },
     {
       title: t("findSpecialistsTitle"),
@@ -114,9 +107,9 @@ export default function WelcomeScreen() {
       gradient: ["#9C27B0", "#7B1FA2"],
     },
     {
-      title: t("findBusinesses"),
-      description: t("findBusinessesDesc"),
-      icon: "building.2.fill",
+      title: t("servicesForMe"),
+      description: t("servicesForMeDesc"),
+      icon: "briefcase.fill",
       route: "/services",
       color: "#FF9800",
       gradient: ["#FF9800", "#F57C00"],
@@ -150,7 +143,7 @@ export default function WelcomeScreen() {
     <Header
       title={t("welcome")}
       subtitle={
-        user?.name ? `${t("hello")}, ${user.name}!` : t("welcomeToJobPortal")
+        user?.name ? `${t("hello")}, ${user.name}!` : t("welcomeToHotWork")
       }
       showNotificationsButton={isAuthenticated}
       showChatButton={isAuthenticated}
@@ -166,90 +159,156 @@ export default function WelcomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
-          {/* Hero Section */}
+          {/* User Profile Card */}
           <ResponsiveCard
             marginBlock={0}
             marginHorizontal={0}
-            style={[styles.heroSection, { backgroundColor: colors.primary }]}
+            style={[
+              styles.userCardWrapper,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                ...createThemeShadow(isDark, 3),
+              },
+            ]}
           >
-            <View>
-              <View style={styles.heroContent}>
-                <View style={styles.heroTextContainer}>
-                  <View style={styles.heroBadge}>
-                    <IconSymbol name="star.fill" size={14} color="white" />
-                    <ThemedText style={styles.heroBadgeText}>
-                      {t("trustedByClients")}
+            {user ? (
+              <TouchableOpacity
+                style={styles.userCardContent}
+                onPress={() => {
+                  analytics.logEvent("button_clicked", {
+                    button_name: "view_profile",
+                    location: "home_user_card",
+                  });
+                  router.push("/profile/profile");
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
+                  <UserAvatar user={user} size={56} />
+                  {user.verified && (
+                    <View style={[styles.verifiedBadge, { backgroundColor: colors.success }]}>
+                      <IconSymbol
+                        name="checkmark.seal.fill"
+                        size={12}
+                        color="white"
+                      />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.userInfo}>
+                  <ThemedText
+                    style={[styles.welcomeText, { color: colors.textSecondary }]}
+                  >
+                    {t("welcomeBack")}
+                  </ThemedText>
+                  <View style={styles.userNameRow}>
+                    <ThemedText
+                      style={[styles.userName, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {user.name}
                     </ThemedText>
                   </View>
-                  {/* Trusted by 5,000+ clients */}
-                  <ThemedText style={styles.heroTitle}>
-                    {user
-                      ? `${t("welcomeBack")}, ${user.name}!`
-                      : t("findPerfectSpecialist")}
-                  </ThemedText>
-                  <ThemedText style={styles.heroSubtitle}>
-                    {user
-                      ? t("readyToStartNextProject")
-                      : t("connectWithSkilledProfessionals")}
-                  </ThemedText>
+                  <View style={styles.userMetaRow}>
+                    <ThemedText
+                      style={[styles.userRole, { color: colors.textSecondary }]}
+                      numberOfLines={1}
+                    >
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </ThemedText>
+                    {user.creditBalance !== undefined && (
+                      <>
+                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                        <View style={styles.creditContainer}>
+                          <IconSymbol
+                            name="creditcard.fill"
+                            size={12}
+                            color={colors.primary}
+                          />
+                          <ThemedText
+                            style={[styles.creditText, { color: colors.primary }]}
+                          >
+                            {user.creditBalance.toFixed(0)}
+                          </ThemedText>
+                        </View>
+                      </>
+                    )}
+                  </View>
                 </View>
-
-                <View style={styles.heroImage}>
-                  <View style={styles.heroIconContainer}>
-                    <IconSymbol name="person.2.fill" size={40} color="white" />
-                  </View>
-                  <View style={styles.heroIconContainer}>
-                    <IconSymbol name="briefcase.fill" size={40} color="white" />
-                  </View>
-                  <View style={styles.heroIconContainer}>
-                    <IconSymbol name="star.fill" size={40} color="white" />
-                  </View>
-                </View>
-              </View>
-              <View style={styles.heroActions}>
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={() => {
-                    analytics.logEvent("button_clicked", {
-                      button_name: "browse_categories",
-                      location: "home_hero",
-                    });
-                    router.push("/categories");
-                  }}
-                >
+                <View style={[styles.arrowContainer, { backgroundColor: colors.backgroundSecondary }]}>
                   <IconSymbol
-                    name="briefcase.fill"
+                    name="chevron.right"
                     size={18}
+                    color={colors.textSecondary}
+                  />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.loginPrompt}>
+                <View style={[styles.loginIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
+                  <IconSymbol
+                    name="person.circle.fill"
+                    size={32}
                     color={colors.primary}
                   />
-                  <ThemedText style={styles.primaryButtonText}>
-                    {user ? t("browseCategories") : t("getStarted")}
+                </View>
+                <View style={styles.loginTextContainer}>
+                  <ThemedText
+                    style={[styles.loginTitle, { color: colors.text }]}
+                  >
+                    {t("signUpToAccess")}
                   </ThemedText>
-                </TouchableOpacity>
-
-                {!user && (
+                  <ThemedText
+                    style={[styles.loginSubtitle, { color: colors.textSecondary }]}
+                    numberOfLines={2}
+                  >
+                    {t("signUpToAccessDescription")}
+                  </ThemedText>
+                </View>
+                <View style={styles.loginButtons}>
                   <TouchableOpacity
-                    style={styles.primaryButton}
+                    style={[styles.loginButton, { backgroundColor: colors.primary }]}
                     onPress={() => {
                       analytics.logEvent("button_clicked", {
                         button_name: "login",
-                        location: "home_hero",
+                        location: "home_user_card",
                       });
                       showLoginModal();
                     }}
+                    activeOpacity={0.8}
                   >
-                    <IconSymbol
-                      name="person.fill"
-                      size={18}
-                      color={colors.primary}
-                    />
-                    <ThemedText style={styles.primaryButtonText}>
-                      {t("getStarted")}
+                    <ThemedText style={styles.loginButtonText}>
+                      {t("login")}
                     </ThemedText>
                   </TouchableOpacity>
-                )}
+                  <TouchableOpacity
+                    style={[
+                      styles.signupButton,
+                      { 
+                        backgroundColor: colors.surface,
+                        borderColor: colors.primary,
+                        borderWidth: 1.5,
+                      },
+                    ]}
+                    onPress={() => {
+                      analytics.logEvent("button_clicked", {
+                        button_name: "signup",
+                        location: "home_user_card",
+                      });
+                      showLoginModal();
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <ThemedText
+                      style={[styles.signupButtonText, { color: colors.primary }]}
+                    >
+                      {t("signup")}
+                    </ThemedText>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
           </ResponsiveCard>
 
           {/* Quick Actions */}
@@ -442,84 +501,148 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     gap: Spacing.xl,
   },
-  // Hero section
-  heroSection: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-  },
-  heroContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xl,
-  },
-  heroTextContainer: {
-    flex: 1,
-  },
-  heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.round,
-    alignSelf: "flex-start",
-    marginBottom: Spacing.lg,
-    gap: Spacing.xs,
-  },
-  heroBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "white",
-  },
-  heroTitle: {
-    fontSize: 32,
-    fontWeight: "700",
+  // User Card
+  userCardWrapper: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.md,
-    lineHeight: 38,
-    color: "white",
+    borderWidth: 1,
   },
-  heroSubtitle: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: Spacing.xl,
-    color: "rgba(255, 255, 255, 0.9)",
-  },
-  heroActions: {
+  userCardContent: {
     flexDirection: "row",
+    alignItems: "center",
     gap: Spacing.md,
   },
-  primaryButton: {
-    flex: 1,
-    flexDirection: "row",
+  avatarContainer: {
+    position: "relative",
+    borderWidth: 2,
+    borderRadius: 30,
+    padding: 2,
+  },
+  verifiedBadge: {
+    position: "absolute",
+    bottom: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "white",
+  },
+  userInfo: {
+    flex: 1,
+    gap: Spacing.xs / 2,
+  },
+  welcomeText: {
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  userNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: "700",
+    flex: 1,
+  },
+  userMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginTop: 2,
+  },
+  userRole: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  divider: {
+    width: 1,
+    height: 12,
+  },
+  creditContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: "transparent",
+  },
+  creditText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  arrowContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  // Login Prompt
+  loginPrompt: {
+    alignItems: "center",
+    gap: Spacing.md,
+  },
+  loginIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.xs,
+  },
+  loginTextContainer: {
+    alignItems: "center",
+    gap: Spacing.xs / 2,
+    marginBottom: Spacing.xs,
+  },
+  loginTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  loginSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    paddingHorizontal: Spacing.md,
+  },
+  loginButtons: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    width: "100%",
+    marginTop: Spacing.xs,
+  },
+  loginButton: {
+    flex: 1,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    gap: Spacing.sm,
-    minHeight: 48,
-    backgroundColor: "white",
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0a7ea4",
-  },
-  heroImage: {
-    flexDirection: "column",
-    width: 120,
-    height: 120,
-    alignItems: "flex-end",
-    justifyContent: "flex-end",
-    gap: Spacing.sm,
-  },
-  heroIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  loginButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "white",
+  },
+  signupButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signupButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
   },
 
   // Section containers

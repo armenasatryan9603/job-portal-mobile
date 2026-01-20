@@ -99,7 +99,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
           style={[styles.applyButtonText, { color: textColor }]}
           numberOfLines={1}
         >
-          {t("apply") || "Apply"}
+          {t("apply")}
         </Text>
         {!hasActiveSubscription && order.creditCost && (
           <PriceCurrency

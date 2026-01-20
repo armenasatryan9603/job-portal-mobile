@@ -6,6 +6,7 @@ import {
 } from "@/components/ResponsiveContainer";
 import { ServiceCard } from "@/components/ServiceCard";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { CategoryDetailSkeleton } from "@/components/CategoryDetailSkeleton";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,7 +25,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
   Alert,
   Image,
   Keyboard,
@@ -111,7 +111,7 @@ export default function ServiceDetailScreen() {
   // Show loading state
   if (loading) {
     return (
-      <Layout
+      <CategoryDetailSkeleton
         header={
           <Header
             showBackButton
@@ -119,20 +119,7 @@ export default function ServiceDetailScreen() {
             onBackPress={() => router.back()}
           />
         }
-        footer={null}
-      >
-        <View
-          style={[
-            styles.loadingContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <ActivityIndicator size="large" color={colors.tint} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            Loading service details...
-          </Text>
-        </View>
-      </Layout>
+      />
     );
   }
 
@@ -257,7 +244,6 @@ export default function ServiceDetailScreen() {
   const header = (
     <Header
       title={category.name}
-      subtitle={t("categoryDetails")}
       showBackButton={true}
       onBackPress={() => router.back()}
       showNotificationsButton={isAuthenticated}
@@ -267,12 +253,10 @@ export default function ServiceDetailScreen() {
     />
   );
 
-  const footer = null;
-
   return (
-    <Layout header={header} footer={footer}>
+    <Layout header={header}>
       <ScrollView
-        style={{ flex: 1, marginBottom: 90 }}
+        style={{ flex: 1, marginBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>
@@ -417,21 +401,21 @@ export default function ServiceDetailScreen() {
           <ResponsiveCard>
             <View
               style={{
-                flexDirection: "row",
                 gap: Spacing.sm,
-                justifyContent: "space-between",
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexWrap: "wrap",
               }}
             >
               <Button
-                onPress={handleCreateOrder}
+                onPress={handleBrowseOrders}
                 variant="primary"
                 iconSize={14}
-                title={t("postJob")}
-                icon="plus.circle.fill"
+                title={t("orders")}
+                icon="list.bullet"
                 backgroundColor={colors.primary}
-                style={{ paddingHorizontal: Spacing.sm }}
-                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm, width: '100%' }}
+                textStyle={{ fontSize: 18 }}
               />
               <Button
                 onPress={handleBrowseSpecialists}
@@ -440,18 +424,18 @@ export default function ServiceDetailScreen() {
                 title={t("specialists")}
                 icon="person.2.fill"
                 backgroundColor={colors.primary}
-                style={{ paddingHorizontal: Spacing.sm }}
-                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm, width: '100%' }}
+                textStyle={{ fontSize: 18 }}
               />
               <Button
-                onPress={handleBrowseOrders}
+                onPress={handleCreateOrder}
                 variant="primary"
                 iconSize={14}
-                title={t("orders")}
-                icon="list.bullet"
+                title={t("postJob")}
+                icon="plus.circle.fill"
                 backgroundColor={colors.primary}
-                style={{ paddingHorizontal: Spacing.sm }}
-                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm, width: '100%' }}
+                textStyle={{ fontSize: 18 }}
               />
             </View>
           </ResponsiveCard>

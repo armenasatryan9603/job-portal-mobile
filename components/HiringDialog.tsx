@@ -143,7 +143,6 @@ export function HiringDialog({
     onClose();
   };
 
-  console.log("selectedOrder", selectedOrder?.budget, selectedOrder?.currency);
   return (
     <Modal
       visible={visible}

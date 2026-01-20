@@ -1,6 +1,6 @@
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { EmptyPage } from "@/components/EmptyPage";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
@@ -283,7 +283,6 @@ const ServicesScreen = () => {
   const header = (
     <Header
       title={t("categories")}
-      subtitle={t("findSpecialists")}
       showNotificationsButton={isAuthenticated}
       showChatButton={isAuthenticated}
       unreadNotificationsCount={unreadNotificationsCount}
@@ -383,7 +382,7 @@ const ServicesScreen = () => {
 
   return (
     <Layout header={header}>
-      <View style={{ flex: 1 }}>
+      
         {/* Fixed Header with Filter */}
         <View
           style={{
@@ -407,16 +406,17 @@ const ServicesScreen = () => {
           </ResponsiveCard>
         </View>
 
+        <ResponsiveContainer padding={Spacing.xs}>
         {/* Show skeleton during initial load, otherwise show FlatList */}
         {isInitialLoading ? (
           <View
-            style={{ flex: 1, marginTop: 100, paddingHorizontal: Spacing.sm }}
+            style={{ flex: 1, marginTop: 80, paddingHorizontal: Spacing.sm }}
           >
             <FloatingSkeleton count={9} variant="grid" />
           </View>
         ) : (
           <FlatList
-            style={{ marginTop: 100 }}
+            style={{ marginTop: 80 }}
             data={parentCategoryRows}
             renderItem={renderCategoryRow}
             keyExtractor={(item, index) => `row-${index}`}
@@ -439,7 +439,7 @@ const ServicesScreen = () => {
             keyboardDismissMode="on-drag"
           />
         )}
-      </View>
+      </ResponsiveContainer>
     </Layout>
   );
 };
