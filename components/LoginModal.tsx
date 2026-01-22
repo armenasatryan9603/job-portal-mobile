@@ -10,12 +10,10 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { apiService } from "@/categories/api";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
-  Keyboard,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -27,6 +25,7 @@ import { IconSymbol } from "./ui/icon-symbol";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ReferralCodeInput } from "./ReferralCodeInput";
 import { Logo } from "./Logo";
+import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 
 interface LoginModalProps {
   visible: boolean;
@@ -56,37 +55,7 @@ export function LoginModal({
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-
-  const scrollViewRef = useRef<ScrollView>(null);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-
-  // Handle keyboard visibility and scroll to bottom when keyboard appears
-  useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      () => {
-        setKeyboardVisible(true);
-        // Scroll to bottom after a short delay to ensure layout is updated
-        setTimeout(() => {
-          scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, Platform.OS === "ios" ? 100 : 300);
-      }
-    );
-
-    const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setKeyboardVisible(false);
-      }
-    );
-
-    return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
-    };
-  }, []);
-
-  console.log("keyboardVisible", keyboardVisible);
+  const { isKeyboardVisible } = useKeyboardAwarePress();
 
   // Watch for user state changes after login
   useEffect(() => {
@@ -306,7 +275,7 @@ export function LoginModal({
       transparent={true}
       onRequestClose={step === "name" ? undefined : handleClose}
     >
-      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay, marginTop: keyboardVisible ? -200 : 0 }]}>
+      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay, marginTop: isKeyboardVisible ? -200 : 0 }]}>
         <View
           style={[
             styles.modalContainer,

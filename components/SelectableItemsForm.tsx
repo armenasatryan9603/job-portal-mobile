@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  View,
+  Platform,
+  Pressable,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
-  Pressable,
-  Platform,
+  View,
 } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { ResponsiveCard } from "./ResponsiveContainer";
+
 import { IconSymbol } from "./ui/icon-symbol";
+import { ResponsiveCard } from "./ResponsiveContainer";
 import { SkillDescriptionModal } from "./SkillDescriptionModal";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 // Generic item interface
 export interface SelectableItem {
@@ -48,6 +49,8 @@ interface SelectableItemsFormProps {
   maxItems?: number;
   containerStyle?: any;
   hideCard?: boolean;
+  onInputFocus?: () => void;
+  onInputBlur?: () => void;
 }
 
 export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
@@ -67,6 +70,8 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   maxItems,
   containerStyle,
   hideCard = false,
+  onInputFocus,
+  onInputBlur,
 }) => {
   const { t } = useTranslation();
   const { language } = useLanguage();
@@ -225,11 +230,12 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
       const filtered = filterSuggestions(query, itemBadges);
       const suggestionsKey = filtered.map((item) => item.id).join(",");
       
-      if (suggestionsKey !== lastSuggestionsKeyRef.current) {
-        lastSuggestionsKeyRef.current = suggestionsKey;
-        setSuggestions(filtered);
-      }
-      setShowSuggestions(true);
+      // Always update suggestions when focused, even if key is the same
+      // This ensures suggestions show up after clicking again
+      lastSuggestionsKeyRef.current = suggestionsKey;
+      setSuggestions(filtered);
+      // Always show suggestions when input is focused (if there are any)
+      setShowSuggestions(filtered.length > 0 || query.length > 0);
     } else {
       if (!currentInput || currentInput.trim().length === 0) {
         setShowSuggestions(false);
@@ -379,6 +385,15 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   // Handle input focus
   const handleInputFocus = () => {
     setIsInputFocused(true);
+    onInputFocus?.();
+    setTimeout(() => {
+      const query = currentInput.trim().toLowerCase();
+      const filtered = filterSuggestions(query, itemBadges);
+      const suggestionsKey = filtered.map((item) => item.id).join(",");
+      lastSuggestionsKeyRef.current = suggestionsKey;
+      setSuggestions(filtered);
+      setShowSuggestions(filtered.length > 0);
+    }, 0);
   };
 
   // Handle input blur
@@ -389,6 +404,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     blurTimeoutRef.current = setTimeout(() => {
       if (!isSelectingSuggestionRef.current) {
         setIsInputFocused(false);
+        onInputBlur?.();
       }
     }, 200);
   };
@@ -438,8 +454,15 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   // Focus input when container is pressed
   const handleContainerPress = () => {
     if (!multi || itemBadges.length === 0 || (!maxItems || itemBadges.length < maxItems)) {
+      // Focus the input - handleInputFocus will be called by the onFocus event
       inputRef.current?.focus();
-      setIsInputFocused(true);
+      // Also explicitly show suggestions in case input is already focused
+      if (isInputFocused) {
+        const query = currentInput.trim().toLowerCase();
+        const filtered = filterSuggestions(query, itemBadges);
+        setSuggestions(filtered);
+        setShowSuggestions(filtered.length > 0);
+      }
     }
   };
 
@@ -473,6 +496,12 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
       <Pressable
         onPress={handleContainerPress}
+        onPressIn={() => {
+          // Ensure input gets focus when container is pressed
+          if (!isInputFocused && (!maxItems || itemBadges.length < maxItems)) {
+            inputRef.current?.focus();
+          }
+        }}
         style={[
           styles.inputContainer,
           {

@@ -1,47 +1,51 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Keyboard,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Category, apiService } from "@/categories/api";
+import { MediaFile, fileUploadService } from "@/categories/fileUpload";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
-import { ServiceSelector } from "@/components/ServiceSelector";
-import { BasicInformationForm } from "@/components/BasicInformationForm";
-import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
-import { MediaUploader } from "@/components/MediaUploader";
-import { AIPreviewModal } from "@/components/AIPreviewModal";
 import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect, useRef } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  Image,
-  Modal,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+  WeeklySchedule,
+  WeeklySchedulePicker,
+} from "@/components/WeeklySchedulePicker";
+import { router, useLocalSearchParams } from "expo-router";
+
+import { AIPreviewModal } from "@/components/AIPreviewModal";
+import { API_CONFIG } from "@/config/api";
+import AnalyticsService from "@/categories/AnalyticsService";
+import { BasicInformationForm } from "@/components/BasicInformationForm";
+import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
 import { Button } from "@/components/ui/button";
-import { apiService, Category } from "@/categories/api";
-import { fileUploadService, MediaFile } from "@/categories/fileUpload";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { MediaUploader } from "@/components/MediaUploader";
+import { ServiceSelector } from "@/components/ServiceSelector";
+import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCategories } from "@/hooks/useApi";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { API_CONFIG } from "@/config/api";
-import { useCategories } from "@/hooks/useApi";
-import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
-import {
-  WeeklySchedulePicker,
-  WeeklySchedule,
-} from "@/components/WeeklySchedulePicker";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Note: Slot generation removed - clients now book custom time ranges within work hours
 
@@ -54,6 +58,8 @@ export default function CreateOrderScreen() {
   const { isAuthenticated, user } = useAuth();
   const { showLoginModal } = useModal();
   const queryClient = useQueryClient();
+
+  
 
   const [formData, setFormData] = useState({
     title: "",
@@ -73,6 +79,7 @@ export default function CreateOrderScreen() {
   const [isConvertingCurrency, setIsConvertingCurrency] = useState(false);
   const [rateUnit, setRateUnit] = useState<string>("per project");
   const currencyOptions = ["USD", "EUR", "AMD", "RUB"];
+  const { isKeyboardVisible } = useKeyboardAwarePress();
 
   // Rate units from API with translations
   const [rateUnitOptions, setRateUnitOptions] = useState<
@@ -183,6 +190,7 @@ export default function CreateOrderScreen() {
   const basicInfoSectionRef = useRef<View>(null);
   const priceSectionRef = useRef<View>(null);
   const skillsSectionRef = useRef<View>(null);
+  const questionsSectionRef = useRef<View>(null);
 
   // Format dates with times for form submission in JSON string format
   const formatAllDatesWithTimes = () => {
@@ -231,17 +239,6 @@ export default function CreateOrderScreen() {
 
     checkUserStatus();
   }, [user?.id, user?.role]); // Also watch for role changes
-
-  // When modal closes, recheck specialist status
-  useEffect(() => {
-    if (!showBecomeSpecialistModal && user?.role === "specialist") {
-      setIsSpecialist(true);
-      // Automatically switch to permanent if user just became specialist
-      if (orderType === "one_time") {
-        setOrderType("permanent");
-      }
-    }
-  }, [showBecomeSpecialistModal, user?.role]);
 
   // Fetch rate units from API on component mount
   useEffect(() => {
@@ -422,6 +419,30 @@ export default function CreateOrderScreen() {
           const orderData = await apiService.getOrderById(
             parseInt(orderId as string)
           );
+
+          const TranslatedContent = {
+            name: '',
+            description: ''
+          }
+
+          switch (language) {
+            case "ru":
+                TranslatedContent.name = orderData.titleRu || orderData.title;
+                TranslatedContent.description = orderData.descriptionRu || orderData.description;
+              break;
+              case "hy":
+                TranslatedContent.name = orderData.titleHy || orderData.title;
+                TranslatedContent.description = orderData.descriptionHy || orderData.description;
+              break;
+              case "en":
+                TranslatedContent.name = orderData.titleEn || orderData.title;
+                TranslatedContent.description = orderData.descriptionEn || orderData.description;
+              break;
+            default:
+              TranslatedContent.name = orderData.title;
+              TranslatedContent.description = orderData.description;
+          }
+          
 
           // Store order status
           setOrderStatus(orderData.status || null);
@@ -815,7 +836,7 @@ export default function CreateOrderScreen() {
           try {
             ref.current.measureLayout(
               scrollViewRef.current as any,
-              (x, y, width, height) => {
+              (x, y) => {
                 if (scrollViewRef.current) {
                   scrollViewRef.current.scrollTo({
                     y: Math.max(0, y - 100), // Add padding from top
@@ -948,135 +969,6 @@ export default function CreateOrderScreen() {
     address: string;
   }) => {
     setSelectedLocation(location);
-  };
-
-  const handleSubmit = async () => {
-    // Validate all required fields before submission
-    const validationErrors = {
-      title: validateField("title", formData.title, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      description: validateField("description", formData.description, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      budget: validateField("budget", formData.budget, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      location: validateField("location", formData.location, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      skills: validateField("skills", formData.skills, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      availableDates: validateField("availableDates", formData.availableDates, {
-        selectedDates,
-        selectedDateTimes,
-      }),
-      categoryId: validateField("categoryId", formData.categoryId || "", {
-        selectedDates,
-        selectedDateTimes,
-      }),
-    };
-
-    setErrors(validationErrors);
-
-    // Check if there are any validation errors
-    const hasErrors = Object.values(validationErrors).some(
-      (error) => error !== ""
-    );
-    if (hasErrors) {
-      // Scroll to first error after state and layout are updated
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          scrollToFirstError(validationErrors);
-        }, 100);
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Prepare data for API call
-      const orderData: any = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        budget: parseFloat(formData.budget),
-        currency,
-        rateUnit,
-        categoryId: formData.categoryId!,
-        location: selectedLocation
-          ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
-          : formData.location.trim() || undefined,
-        availableDates:
-          formatAllDatesWithTimes().length > 0
-            ? formatAllDatesWithTimes()
-            : undefined,
-        useAIEnhancement: useAIEnhancement, // For both new and existing orders
-        questions: questions.filter((q) => q.trim().length > 0),
-      };
-
-      // Handle skills: send skillIds for existing skills, and skills array for new skills
-      if (skillIds.length > 0 || newSkillNames.length > 0) {
-        if (skillIds.length > 0) {
-          orderData.skillIds = skillIds;
-        }
-        // If there are new skills (without IDs), send them as skills array
-        // Backend will create them via findOrCreateSkills
-        if (newSkillNames.length > 0) {
-          orderData.skills = newSkillNames;
-        }
-      } else if (formData.skills.trim()) {
-        // Fallback: if no skillIds or newSkillNames, use skills string (backward compatibility)
-        orderData.skills = formData.skills
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s);
-      }
-
-      // If orderId exists, update the order; otherwise create a new one
-      if (orderId) {
-        // Update existing order
-        await apiService.updateOrder(parseInt(orderId as string), orderData);
-      } else {
-        // Create new order
-        await apiService.createOrder(orderData);
-      }
-
-      // Invalidate orders queries to refresh the list
-      await queryClient.invalidateQueries({ queryKey: ["orders"] });
-
-      // Order posted successfully
-      router.replace("/orders");
-    } catch (error: any) {
-      console.error("Error posting order:", error);
-
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : typeof error === "string"
-          ? error
-          : t("unknownError");
-
-      // Check if it's an insufficient credits error and AI enhancement was enabled
-      if (
-        (errorMessage.includes("Insufficient credit balance") ||
-          errorMessage.includes("insufficient credit")) &&
-        useAIEnhancement
-      ) {
-        // Directly navigate to credit refill page
-        router.push("/profile/refill-credits");
-      } else {
-        Alert.alert(t("error"), t("failedToCreateOrder"));
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleDeleteOrder = () => {
@@ -1628,9 +1520,50 @@ export default function CreateOrderScreen() {
     />
   );
 
+  const [focusedSection, setFocusedSection] = useState<"skills" | "questions" | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const showListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setKeyboardHeight(e.endCoordinates.height)
+    );
+    const hideListener = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardHeight(0)
+    );
+    return () => {
+      showListener.remove();
+      hideListener.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isKeyboardVisible || !focusedSection) return;
+
+    const sectionRef = focusedSection === "skills" ? skillsSectionRef : questionsSectionRef;
+    if (!sectionRef.current || !scrollViewRef.current) return;
+
+    setTimeout(() => {
+      sectionRef.current?.measureLayout(
+        scrollViewRef.current as any,
+        (x, y) => {
+          scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 100), animated: true });
+        },
+        () => {}
+      );
+    }, Platform.OS === "ios" ? 300 : 150);
+  }, [isKeyboardVisible, focusedSection]);
+
   return (
     <Layout header={header}>
-      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 100 }}>
+      <ScrollView 
+        ref={scrollViewRef} 
+        style={{ flex: 1, marginBottom: 86 }}
+        contentContainerStyle={{ 
+          paddingBottom: keyboardHeight > 0 ? keyboardHeight + 50 : 0 
+        }}
+      >
         <ResponsiveContainer>
           {/* Order Type Selector - Compact Modern Design */}
           <ResponsiveCard>
@@ -2061,7 +1994,6 @@ export default function CreateOrderScreen() {
           </ResponsiveCard>
 
           {/* Skills and Requirements */}
-
           <View ref={skillsSectionRef}>
             <SkillsAndRequirementsForm
               formData={{
@@ -2075,13 +2007,15 @@ export default function CreateOrderScreen() {
                 setSkillIds(ids);
                 setNewSkillNames(newNames || []);
               }}
+              onInputFocus={() => setFocusedSection("skills")}
+              onInputBlur={() => setFocusedSection(null)}
             />
           </View>
 
           {/* Questions Section */}
           {orderType === "one_time" && (
           <ResponsiveCard style={{ position: "relative" }}>
-            <View>
+            <View ref={questionsSectionRef}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {t("questionsForSpecialists")}
               </Text>
@@ -2106,6 +2040,8 @@ export default function CreateOrderScreen() {
                     newQuestions[index] = text;
                     setQuestions(newQuestions);
                   }}
+                  onFocus={() => setFocusedSection("questions")}
+                  onBlur={() => setFocusedSection(null)}
                   multiline
                 />
                 <TouchableOpacity
@@ -2139,8 +2075,8 @@ export default function CreateOrderScreen() {
                 styles.addQuestionButton,
                 {
                   position: "absolute",
-                  right: 16,
-                  top: 7,
+                  right: 11,
+                  top: 3,
                   borderColor: colors.border,
                   backgroundColor: colors.background,
                   opacity: canAddAnotherQuestion() ? 1 : 0.5,
@@ -2532,18 +2468,6 @@ const styles = StyleSheet.create({
   },
   singleButtonContainer: {
     justifyContent: "center",
-  },
-  applyButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 16,
-    borderRadius: 8,
-    minWidth: 120,
-    alignItems: "center",
-    flex: 1,
-  },
-  applyButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   loadingContainer: {
     flexDirection: "row",
