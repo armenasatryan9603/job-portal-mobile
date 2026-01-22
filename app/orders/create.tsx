@@ -32,11 +32,11 @@ import AnalyticsService from "@/categories/AnalyticsService";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
 import { Button } from "@/components/ui/button";
+import { CategorySelector } from "@/components/ServiceSelector";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { MediaUploader } from "@/components/MediaUploader";
-import { ServiceSelector } from "@/components/ServiceSelector";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useApi";
@@ -935,7 +935,7 @@ export default function CreateOrderScreen() {
     setOrderType(newType);
   };
 
-  const handleServiceSelect = (category: Category | null) => {
+  const handleCategorySelect = (category: Category | null) => {
     // Prevent service changes when order is in_progress
     if (orderStatus === "in_progress") {
       return;
@@ -1801,9 +1801,9 @@ export default function CreateOrderScreen() {
           {/* Service Selection */}
           <ResponsiveCard>
             <View ref={serviceSectionRef}>
-              <ServiceSelector
+              <CategorySelector
                 selectedService={selectedService}
-                onServiceSelect={handleServiceSelect}
+                onServiceSelect={handleCategorySelect}
                 error={errors.categoryId}
                 disabled={orderStatus === "in_progress"}
               />

@@ -1,35 +1,33 @@
-import React, { useState, useEffect, useMemo } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
   ActivityIndicator,
-  StyleSheet,
-  Platform,
-  LayoutAnimation,
-  UIManager,
   Image,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Category } from "@/categories/api";
-import { useCategories } from "@/hooks/useApi";
-import { useTranslation } from "@/hooks/useTranslation";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
-import { formatPriceDisplay } from "@/utils/currencyRateUnit";
+import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
+import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
+import React, { useMemo, useState } from "react";
 
-interface ServiceSelectorProps {
+import { Category } from "@/categories/api";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { formatPriceDisplay } from "@/utils/currencyRateUnit";
+import { useCategories } from "@/hooks/useApi";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
+
+interface CategorySelectorProps {
   selectedService: Category | null;
   onServiceSelect: (category: Category | null) => void;
   error?: string;
   disabled?: boolean;
 }
 
-export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
+export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
   selectedService,
   onServiceSelect,
   error,
@@ -60,98 +58,39 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Enable LayoutAnimation on Android
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      UIManager.setLayoutAnimationEnabledExperimental?.(true);
-    }
-  }, []);
-
-  // Organize categories by parent
-  const getCategoriesByParent = () => {
-    const parentCategories = categories.filter(
-      (category) => !category.parentId
-    );
-    const subCategories = categories.filter((category) => category.parentId);
-
+  // Filter categories based on search
+  const filteredCategories = useMemo(() => {
     if (!searchQuery.trim()) {
-      // No search - show all categories with all their sub-categories
-      return parentCategories.map((category) => ({
-        ...category,
-        subCategories: subCategories.filter(
-          (sub) => sub.parentId === category.id
-        ),
-      }));
+      return categories;
     }
-
-    // Search is active - filter both categories and sub-categories
     const searchLower = searchQuery.toLowerCase();
-
-    // Find matching sub-categories
-    const matchingSubCategories = subCategories.filter(
+    return categories.filter(
       (category) =>
         category.name.toLowerCase().includes(searchLower) ||
         category.Parent?.name.toLowerCase().includes(searchLower)
     );
+  }, [categories, searchQuery]);
 
-    // Find categories that match or have matching sub-categories
-    const matchingCategoryIds = new Set<number>();
-    matchingSubCategories.forEach((category) => {
-      if (category.parentId) {
-        matchingCategoryIds.add(category.parentId);
-      }
-    });
+  // Get child categories (subcategories) only for selection
+  const selectableCategories = useMemo(() => {
+    return filteredCategories.filter((category) => category.parentId);
+  }, [filteredCategories]);
 
-    // Get categories that match search or have matching sub-categories
-    const relevantCategories = parentCategories.filter(
-      (cat) =>
-        cat.name.toLowerCase().includes(searchLower) ||
-        matchingCategoryIds.has(cat.id)
-    );
+  const [isExpanded, setIsExpanded] = useState(false);
 
-    // Group matching sub-categories by their parent category
-    return relevantCategories
-      .map((category) => {
-        const categoryMatches = category.name
-          .toLowerCase()
-          .includes(searchLower);
-        const categorySubCategories = matchingSubCategories.filter(
-          (sub) => sub.parentId === category.id
-        );
+  // Chunk categories into rows of 4 for grid layout
+  const categoryRows = useMemo(() => {
+    const rows: Category[][] = [];
+    for (let i = 0; i < selectableCategories.length; i += 4) {
+      rows.push(selectableCategories.slice(i, i + 4));
+    }
+    return rows;
+  }, [selectableCategories]);
 
-        // If category name matches, show all sub-categories
-        // Otherwise, only show matching sub-categories
-        return {
-          ...category,
-          subCategories: categoryMatches
-            ? subCategories.filter((sub) => sub.parentId === category.id)
-            : categorySubCategories,
-        };
-      })
-      .filter((category) => category.subCategories.length > 0);
-  };
-
-  const handleCategorySelect = (category: Category) => {
-    onServiceSelect(category);
-  };
-
-  const categoriesByParent = getCategoriesByParent();
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(
-    () => new Set()
-  );
-
-  const toggleCategory = (categoryId: number) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
-  };
+  // Calculate heights: image (40px) + content (minHeight 42px) + marginBottom (Spacing.xs) = ~90px per row
+  const rowHeight = 40 + 42 + Spacing.xs;
+  const collapsedHeight = rowHeight * 2.5; // 2.5 rows
+  const expandedHeight = rowHeight * 7.5; // 7.5 rows
 
   return (
     <View>
@@ -194,72 +133,38 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
           )}
         </View>
       </View>
-
-      {/* Selected Service Display */}
-      {selectedService && (
-        <View
-          style={[
-            styles.selectedServiceCard,
-            {
-              backgroundColor: colors.primary + "15",
-              borderColor: colors.primary,
-            },
-          ]}
-        >
-          {selectedService.imageUrl && (
-            <Image
-              source={{ uri: selectedService.imageUrl }}
-              style={styles.selectedServiceImage}
-              resizeMode="cover"
-            />
-          )}
-          <View style={styles.selectedServiceInfo}>
-            <Text style={[styles.selectedServiceName, { color: colors.text }]}>
-              {selectedService.name}
-            </Text>
-            {selectedService.averagePrice && (
-              <Text
-                style={[styles.selectedServicePrice, { color: colors.primary }]}
-              >
-                {formatPriceDisplay(
-                  selectedService.averagePrice,
-                  selectedService.currency,
-                  selectedService.rateUnit,
-                  rateUnits,
-                  language
-                )}
-              </Text>
-            )}
-          </View>
-          {!disabled && (
-            <TouchableOpacity
-              onPress={() => onServiceSelect(null)}
-              style={styles.removeButton}
-            >
-              <IconSymbol
-                name="xmark.circle.fill"
-                size={18}
-                color={colors.tabIconDefault}
-              />
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Services Grid */}
+      {/* Categories Grid */}
       <View
         style={[
           styles.servicesContainer,
-          error
-            ? {
-                borderColor: "#ff4444",
-                borderWidth: 1,
-                borderRadius: 12,
-                padding: 8,
-              }
-            : {},
+          { 
+            backgroundColor: colors.background, 
+            padding: Spacing.sm, 
+            borderRadius: BorderRadius.md,
+            ...(error && {
+              borderColor: "#ff4444",
+              borderWidth: 1,
+            }),
+          },
         ]}
       >
+        {/* Expand/Collapse Toggle */}
+        {selectableCategories.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setIsExpanded(!isExpanded)}
+            style={styles.expandButton}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.expandButtonText, { color: colors.tint }]}>
+              {isExpanded ? (t("showLess") || "Show Less") : (t("showMore") || "Show More")}
+            </Text>
+            <IconSymbol
+              name={isExpanded ? "chevron.up" : "chevron.down"}
+              size={14}
+              color={colors.tint}
+            />
+          </TouchableOpacity>
+        )}
         {isLoadingServices ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
@@ -289,7 +194,7 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
               </Text>
             </TouchableOpacity>
           </View>
-        ) : categoriesByParent.length === 0 ? (
+        ) : selectableCategories.length === 0 ? (
           <View style={styles.emptyContainer}>
             <IconSymbol
               name="magnifyingglass"
@@ -302,145 +207,89 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({
           </View>
         ) : (
           <ScrollView
-            style={styles.categoriesScrollView}
-            contentContainerStyle={styles.categoriesContainer}
-            showsVerticalScrollIndicator={true}
+            style={{ maxHeight: isExpanded ? expandedHeight : collapsedHeight }}
             nestedScrollEnabled={true}
+            showsVerticalScrollIndicator={true}
           >
-            {categoriesByParent.map((category) => {
-              const isExpanded = expandedCategories.has(category.id);
-              return (
-                <View key={category.id} style={styles.categorySection}>
-                  <TouchableOpacity
-                    style={styles.categoryHeader}
-                    onPress={() => toggleCategory(category.id)}
-                    activeOpacity={0.8}
-                  >
-                    {category.imageUrl && (
-                      <Image
-                        source={{ uri: category.imageUrl }}
-                        style={styles.categoryHeaderImage}
-                        resizeMode="cover"
-                      />
-                    )}
-                    <Text
-                      style={[styles.categoryTitle, { color: colors.text }]}
-                    >
-                      {category.name}
-                    </Text>
-                    <Text
+            {categoryRows.map((row, rowIndex) => (
+              <View key={`row-${rowIndex}`} style={styles.gridRow}>
+                {row.map((category) => {
+                  const isSelected = selectedService?.id === category.id;
+                  return (
+                    <TouchableOpacity
+                      key={category.id}
+                      activeOpacity={0.7}
+                      onPress={() => !disabled && onServiceSelect(category)}
+                      disabled={disabled}
                       style={[
-                        styles.categoryCount,
-                        { color: colors.tabIconDefault },
+                        styles.gridCard,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.tint + "15"
+                            : colors.surface,
+                          borderColor: isSelected
+                            ? colors.tint
+                            : colors.border,
+                          opacity: disabled ? 0.5 : 1,
+                        },
                       ]}
                     >
-                      {category.subCategories.length}{" "}
-                      {category.subCategories.length === 1
-                        ? t("category")
-                        : t("categories")}
-                    </Text>
-                    <IconSymbol
-                      name={isExpanded ? "chevron.up" : "chevron.down"}
-                      size={16}
-                      color={colors.tabIconDefault}
-                    />
-                  </TouchableOpacity>
-                  {isExpanded && (
-                    <View style={styles.servicesList}>
-                      {category.subCategories.map((subCategory) => {
-                        const isSelected =
-                          selectedService?.id === subCategory.id;
-                        return (
-                          <TouchableOpacity
-                            key={subCategory.id}
+                      {category.imageUrl && (
+                        <Image
+                          source={{ uri: category.imageUrl }}
+                          style={styles.gridCardImage}
+                          resizeMode="contain"
+                        />
+                      )}
+                      <View style={styles.gridCardContent}>
+                        <Text
+                          style={[
+                            styles.gridCardName,
+                            {
+                              color: isSelected ? colors.success : colors.text,
+                            },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {category.name}
+                        </Text>
+                        {category.averagePrice && (
+                          <Text
                             style={[
-                              styles.serviceListItem,
-                              {
-                                backgroundColor: isSelected
-                                  ? colors.primary + "15"
-                                  : colors.background,
-                                borderLeftColor: isSelected
-                                  ? colors.primary
-                                  : "transparent",
-                                opacity: disabled ? 0.5 : 1,
-                              },
+                              styles.gridCardPrice,
+                              { color: colors.tabIconDefault },
                             ]}
-                            onPress={() =>
-                              !disabled && handleCategorySelect(subCategory)
-                            }
-                            activeOpacity={0.7}
-                            disabled={disabled}
+                            numberOfLines={1}
                           >
-                            {subCategory.imageUrl ? (
-                              <Image
-                                source={{ uri: subCategory.imageUrl }}
-                                style={styles.serviceListItemImage}
-                                resizeMode="cover"
-                              />
-                            ) : (
-                              <View
-                                style={[
-                                  styles.serviceListItemImagePlaceholder,
-                                  {
-                                    backgroundColor: colors.border + "40",
-                                  },
-                                ]}
-                              >
-                                <IconSymbol
-                                  name="gearshape.fill"
-                                  size={16}
-                                  color={colors.tabIconDefault}
-                                />
-                              </View>
+                            {formatPriceDisplay(
+                              category.averagePrice,
+                              category.currency,
+                              category.rateUnit,
+                              rateUnits,
+                              language
                             )}
-                            <View style={styles.serviceListItemContent}>
-                              <Text
-                                style={[
-                                  styles.serviceListItemName,
-                                  {
-                                    color: isSelected
-                                      ? colors.primary
-                                      : colors.text,
-                                  },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {subCategory.name}
-                              </Text>
-                              {subCategory.averagePrice && (
-                                <Text
-                                  style={[
-                                    styles.serviceListItemPrice,
-                                    {
-                                      color: colors.tabIconDefault,
-                                    },
-                                  ]}
-                                >
-                                  {formatPriceDisplay(
-                                    subCategory.averagePrice,
-                                    subCategory.currency,
-                                    subCategory.rateUnit,
-                                    rateUnits,
-                                    language
-                                  )}
-                                </Text>
-                              )}
-                            </View>
-                            {isSelected && (
-                              <IconSymbol
-                                name="checkmark.circle.fill"
-                                size={18}
-                                color={colors.primary}
-                              />
-                            )}
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            })}
+                          </Text>
+                        )}
+                        {isSelected && (
+                          <View style={styles.selectedIndicator}>
+                            <IconSymbol
+                              name="checkmark.circle.fill"
+                              size={14}
+                              color={colors.success}
+                            />
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {/* Add empty placeholders if row has less than 4 items */}
+                {row.length < 4 &&
+                  Array.from({ length: 4 - row.length }).map((_, i) => (
+                    <View key={`placeholder-${i}`} style={{ flex: 1 }} />
+                  ))}
+              </View>
+            ))}
           </ScrollView>
         )}
       </View>
@@ -484,103 +333,55 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   servicesContainer: {
-    gap: 16,
+    gap: 12,
   },
-  categoriesScrollView: {
-    maxHeight: 200,
-  },
-  categoriesContainer: {
-    gap: 16,
-  },
-  categorySection: {
-    gap: 8,
-  },
-  categoryHeader: {
+  expandButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  categoryHeaderImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 6,
-    backgroundColor: "#fff",
-  },
-  categoryTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    flex: 1,
-  },
-  categoryCount: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  servicesList: {
-    gap: 4,
-  },
-  serviceListItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-    borderRadius: 8,
-    borderLeftWidth: 3,
-    gap: 8,
-  },
-  serviceListItemImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
-    backgroundColor: "#fff",
-  },
-  serviceListItemImagePlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 6,
     justifyContent: "center",
-    alignItems: "center",
+    gap: 6,
+    paddingVertical: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
-  serviceListItemContent: {
-    flex: 1,
-    gap: 2,
-  },
-  serviceListItemName: {
-    fontSize: 13,
+  expandButtonText: {
+    fontSize: 12,
     fontWeight: "600",
-    lineHeight: 16,
   },
-  serviceListItemPrice: {
-    fontSize: 11,
+  gridRow: {
+    flexDirection: "row",
+    marginBottom: Spacing.xs,
+    gap: 6,
+  },
+  gridCard: {
+    flex: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  gridCardImage: {
+    width: "100%",
+    height: 40,
+    backgroundColor: "white",
+  },
+  gridCardContent: {
+    padding: 4,
+    position: "relative",
+    minHeight: 42,
+  },
+  gridCardName: {
+    fontSize: 9,
+    fontWeight: "700",
+    marginBottom: 1,
+    lineHeight: 11,
+  },
+  gridCardPrice: {
+    fontSize: 7,
     fontWeight: "500",
   },
-  selectedServiceCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 8,
-    borderRadius: 10,
-    borderWidth: 2,
-    marginBottom: 8,
-    gap: 8,
-  },
-  selectedServiceImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-  },
-  selectedServiceInfo: {
-    flex: 1,
-  },
-  selectedServiceName: {
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  selectedServicePrice: {
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  removeButton: {
-    padding: 4,
+  selectedIndicator: {
+    position: "absolute",
+    top: 4,
+    right: 4,
   },
   loadingContainer: {
     flexDirection: "row",
@@ -624,3 +425,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 });
+
+// Export with both names for compatibility
+export const CategorySelector = CategorySelectorComponent;
