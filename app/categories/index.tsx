@@ -406,7 +406,7 @@ const ServicesScreen = () => {
           </ResponsiveCard>
         </View>
 
-        <ResponsiveContainer padding={Spacing.xs}>
+        <ResponsiveContainer padding={Spacing.xs} scrollable={false}>
         {/* Show skeleton during initial load, otherwise show FlatList */}
         {isInitialLoading ? (
           <View

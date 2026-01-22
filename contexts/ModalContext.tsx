@@ -7,7 +7,6 @@ interface ModalContextType {
   showLoginModal: () => void;
   showSignupModal: () => void;
   hideModal: () => void;
-  switchToLogin: () => void;
   switchToSignup: () => void;
 }
 
@@ -32,10 +31,6 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     setCurrentModal(null);
   };
 
-  const switchToLogin = () => {
-    setCurrentModal("login");
-  };
-
   const switchToSignup = () => {
     setCurrentModal("signup");
   };
@@ -45,7 +40,6 @@ export const ModalProvider: React.FC<ModalProviderProps> = ({ children }) => {
     showLoginModal,
     showSignupModal,
     hideModal,
-    switchToLogin,
     switchToSignup,
   };
 

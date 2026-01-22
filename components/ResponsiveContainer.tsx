@@ -122,9 +122,9 @@ export const ResponsiveCard: React.FC<{
   style?: StyleProp<ViewStyle>;
 }> = ({
   children,
-  padding = Spacing.container,
+  padding = Spacing.md,
   marginBlock = Spacing.xs,
-  marginHorizontal = Spacing.lg,
+  marginHorizontal = Spacing.md,
   backgroundColor,
   borderRadius = BorderRadius.lg,
   shadow = true,

@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 8,
     borderTopWidth: 1,
-    paddingBottom: Platform.OS === "ios" ? 20 : 16,
+    paddingBottom: Platform.OS === "ios" ? 30 : 26,
   },
   footerButton: {
     flex: 1,

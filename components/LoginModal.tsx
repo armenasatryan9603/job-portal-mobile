@@ -10,10 +10,12 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { apiService } from "@/categories/api";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Alert,
+  Keyboard,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,25 +31,21 @@ import { Logo } from "./Logo";
 interface LoginModalProps {
   visible: boolean;
   onClose: () => void;
-  onSwitchToSignup: () => void;
   onSuccess?: () => void;
 }
 
 export function LoginModal({
   visible,
   onClose,
-  onSwitchToSignup,
   onSuccess,
 }: LoginModalProps) {
   const [step, setStep] = useState<"phone" | "otp" | "name">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [userName, setUserName] = useState("");
-  const [isNewUser, setIsNewUser] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const {
     login,
     sendOTP,
-    resetOTP,
     isLoading,
     user,
     hasIncompleteProfile,
@@ -59,13 +57,43 @@ export function LoginModal({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Handle keyboard visibility and scroll to bottom when keyboard appears
+  useEffect(() => {
+    const keyboardWillShow = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      () => {
+        setKeyboardVisible(true);
+        // Scroll to bottom after a short delay to ensure layout is updated
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, Platform.OS === "ios" ? 100 : 300);
+      }
+    );
+
+    const keyboardWillHide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShow.remove();
+      keyboardWillHide.remove();
+    };
+  }, []);
+
+  console.log("keyboardVisible", keyboardVisible);
+
   // Watch for user state changes after login
   useEffect(() => {
     if (user && step === "otp") {
       // User just logged in, check if they have a name
       if (!user.name || user.name.trim() === "") {
         // User has no name, show name input
-        setIsNewUser(true);
         setStep("name");
       } else {
         // User has a name, login is complete
@@ -81,7 +109,6 @@ export function LoginModal({
   useEffect(() => {
     if (visible && hasIncompleteProfile && user) {
       setStep("name");
-      setIsNewUser(true);
       setPhoneNumber(user.phone || "");
     }
   }, [visible, hasIncompleteProfile, user]);
@@ -235,27 +262,11 @@ export function LoginModal({
     }
   };
 
-  const handleResetOTP = async () => {
-    try {
-      const success = await resetOTP(phoneNumber);
-      if (!success) {
-        Alert.alert(t("error"), t("failedToResetOTP"));
-      }
-    } catch (error) {
-      Alert.alert(t("error"), t("somethingWentWrong"));
-    }
-  };
-
   const handleBackToPhone = () => {
     setStep("phone");
     setPhoneNumber("");
     setUserName("");
-    setIsNewUser(false);
     setOtpError(null); // Clear error when going back
-  };
-
-  const handleBackToOTP = () => {
-    setStep("otp");
   };
 
   const handleBackFromName = async () => {
@@ -271,7 +282,6 @@ export function LoginModal({
     setStep("phone");
     setPhoneNumber("");
     setUserName("");
-    setIsNewUser(false);
     setOtpError(null);
     setHasIncompleteProfile(false);
   };
@@ -285,7 +295,6 @@ export function LoginModal({
     setStep("phone");
     setPhoneNumber("");
     setUserName("");
-    setIsNewUser(false);
     setOtpError(null); // Clear error on close
     onClose();
   };
@@ -297,7 +306,7 @@ export function LoginModal({
       transparent={true}
       onRequestClose={step === "name" ? undefined : handleClose}
     >
-      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
+      <View style={[styles.modalOverlay, { backgroundColor: colors.overlay, marginTop: keyboardVisible ? -200 : 0 }]}>
         <View
           style={[
             styles.modalContainer,

@@ -74,23 +74,38 @@ export const Layout: React.FC<LayoutProps> = ({
     navigateToServices,
   } = useNavigation();
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
+  const sidebarOpacity = React.useState(new Animated.Value(0))[0];
   const [imageError, setImageError] = React.useState(false);
   const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
 
   // Handle sidebar animation when visibility changes
   React.useEffect(() => {
     if (sidebarVisible) {
-      Animated.timing(sidebarAnimation, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(sidebarAnimation, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sidebarOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      Animated.timing(sidebarAnimation, {
-        toValue: -280,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.parallel([
+        Animated.timing(sidebarAnimation, {
+          toValue: -280,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sidebarOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
   }, [sidebarVisible]);
 
@@ -147,13 +162,6 @@ export const Layout: React.FC<LayoutProps> = ({
     };
   }, []);
 
-  // Handle outside click when keyboard is visible - dismiss keyboard and prevent other actions
-  const handleOutsidePress = React.useCallback(() => {
-    if (isKeyboardVisible) {
-      Keyboard.dismiss();
-    }
-  }, [isKeyboardVisible]);
-
   const handleImageError = () => {
     setImageError(true);
   };
@@ -184,6 +192,8 @@ export const Layout: React.FC<LayoutProps> = ({
               backgroundColor: colors.background,
               borderRightColor: colors.border,
               transform: [{ translateX: sidebarAnimation }],
+              opacity: sidebarOpacity,
+              pointerEvents: sidebarVisible ? "auto" : "none",
             },
           ]}
         >

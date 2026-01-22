@@ -53,18 +53,21 @@ export const FooterTabs: React.FC = () => {
     },
   ];
 
-  const handleTabPress = (tab: TabItem) => {
-    if (Platform.OS === "ios") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    router.push(tab.route as any);
-  };
-
   const isActive = (tab: TabItem) => {
     if (tab.name === "index") {
       return pathname === "/" || pathname === "/index";
     }
     return pathname === tab.route;
+  };
+
+  const handleTabPress = (tab: TabItem) => {
+    // If user taps the already-active tab, do nothing.
+    if (isActive(tab)) return;
+
+    if (Platform.OS === "ios") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push(tab.route as any);
   };
 
   return (

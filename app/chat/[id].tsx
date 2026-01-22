@@ -1670,15 +1670,11 @@ export default function ChatDetailScreen() {
                 onPress={handleSendMessage}
                 disabled={!newMessage.trim() || sending}
               >
-                {sending ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <IconSymbol
-                    name="arrow.up"
-                    size={20}
-                    color={newMessage.trim() ? "white" : colors.tabIconDefault}
-                  />
-                )}
+                <IconSymbol
+                  name="arrow.up"
+                  size={20}
+                  color={newMessage.trim() && !sending ? "white" : colors.tabIconDefault}
+                />
               </TouchableOpacity>
             </View>
             {newMessage.length > 400 && (

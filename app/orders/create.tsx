@@ -853,24 +853,65 @@ export default function CreateOrderScreen() {
   };
 
   const handleOrderTypeChange = (newType: "one_time" | "permanent") => {
-    if (newType === "permanent") {
-      // Only check if user is a specialist (subscription checked at publish time)
-      // Check both isSpecialist state and user role for reliability
-      if (!isSpecialist && user?.role !== "specialist") {
-        setShowBecomeSpecialistModal(true);
+    // Show confirmation alert when switching order types
+    if (orderType !== newType) {
+      // Switching from permanent to one_time
+      if (orderType === "permanent" && newType === "one_time") {
+        Alert.alert(
+          t("changeToOneTimeOrder"),
+          t("changeToOneTimeOrderDesc"),
+          [
+            {
+              text: t("cancel"),
+              style: "cancel",
+            },
+            {
+              text: t("change"),
+              style: "destructive",
+              onPress: () => {
+                setOrderType(newType);
+                // Clear permanent-specific fields
+                setWorkDurationPerClient("");
+                setWeeklySchedule({});
+                setCheckinRequiresApproval(false);
+              },
+            },
+          ],
+          { cancelable: true }
+        );
+        return;
+      }
+
+      // Switching from one_time to permanent
+      if (orderType === "one_time" && newType === "permanent") {
+        // First check if user is a specialist
+        if (!isSpecialist && user?.role !== "specialist") {
+          setShowBecomeSpecialistModal(true);
+          return;
+        }
+
+        Alert.alert(
+          t("changeToBookableOrder"),
+          t("changeToBookableOrderDesc"),
+          [
+            {
+              text: t("cancel"),
+              style: "cancel",
+            },
+            {
+              text: t("change"),
+              onPress: () => {
+                setOrderType(newType);
+              },
+            },
+          ],
+          { cancelable: true }
+        );
         return;
       }
     }
 
     setOrderType(newType);
-  };
-
-  const handleBecomeSpecialistSuccess = () => {
-    setShowBecomeSpecialistModal(false);
-    // Refresh user status
-    setIsSpecialist(true);
-    // Optionally switch to permanent type
-    setOrderType("permanent");
   };
 
   const handleServiceSelect = (category: Category | null) => {
@@ -1887,7 +1928,7 @@ export default function CreateOrderScreen() {
                     }
                     placeholderTextColor={colors.tabIconDefault}
                     keyboardType="numeric"
-                    editable={!!selectedService && !isConvertingCurrency}
+                    editable={!isConvertingCurrency}
                   />
                   {isConvertingCurrency && (
                     <View style={styles.convertingIndicator}>
