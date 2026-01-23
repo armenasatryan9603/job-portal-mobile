@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
+import React, { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ThemeColors } from "@/constants/styles";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface AIPreviewModalProps {
   visible: boolean;
@@ -136,6 +137,32 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
       default:
         return "🇬🇧";
     }
+  };
+
+  const handleEnhancedChange = (
+    field: "title" | "description",
+    lang: "en" | "ru" | "hy",
+    value: string
+  ) => {
+    setCurrentEnhanced((prev) => {
+      const key =
+        field === "title"
+          ? lang === "ru"
+            ? "titleRu"
+            : lang === "hy"
+            ? "titleHy"
+            : "titleEn"
+          : lang === "ru"
+          ? "descriptionRu"
+          : lang === "hy"
+          ? "descriptionHy"
+          : "descriptionEn";
+
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
   };
 
   return (
@@ -326,12 +353,19 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                 </View>
               ) : (
                 <>
-                  <Text style={[styles.compactTitle, { color: colors.text }]}>
+                  <Text
+                    style={[
+                      styles.compactTitle,
+                      { color: colors.text },
+                    ]}
+                    selectable={false}
+                  >
                     {editedTitle}
                   </Text>
                   <Text
                     style={[styles.compactDescription, { color: colors.text }]}
                     numberOfLines={3}
+                    selectable={false}
                   >
                     {editedDescription}
                   </Text>
@@ -356,15 +390,41 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                   {t("aiEnhancedText")}
                 </Text>
               </View>
-              <Text style={[styles.compactTitle, { color: colors.text }]}>
-                {getTitle(selectedLanguage, currentEnhanced)}
-              </Text>
-              <Text
-                style={[styles.compactDescription, { color: colors.text }]}
-                numberOfLines={3}
-              >
-                {getDescription(selectedLanguage, currentEnhanced)}
-              </Text>
+              <View style={styles.editContainer}>
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    { color: colors.text, borderColor: colors.border },
+                  ]}
+                  value={getTitle(selectedLanguage, currentEnhanced)}
+                  onChangeText={(text) =>
+                    handleEnhancedChange("title", selectedLanguage, text)
+                  }
+                  placeholder={t("title")}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline={false}
+                  contextMenuHidden
+                  selectTextOnFocus={false}
+                />
+                <TextInput
+                  style={[
+                    styles.textInput,
+                    styles.textInputMultiline,
+                    { color: colors.text, borderColor: colors.border },
+                  ]}
+                  value={getDescription(selectedLanguage, currentEnhanced)}
+                  onChangeText={(text) =>
+                    handleEnhancedChange("description", selectedLanguage, text)
+                  }
+                  placeholder={t("description")}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  contextMenuHidden
+                  selectTextOnFocus={false}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -391,10 +451,9 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
             <Button
               variant="primary"
               title={t("acceptAndSave")}
-              onPress={() => onAccept(enhanced)}
+              onPress={() => onAccept(currentEnhanced)}
               disabled={loading}
               loading={loading}
-              textColor={colors.background}
               style={styles.acceptButton}
             />
           </View>

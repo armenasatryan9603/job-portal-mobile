@@ -294,18 +294,70 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       </View>
                     )}
                     {hasError && (
-                      <View
+                      <TouchableOpacity
                         style={[
                           styles.imageSkeleton,
                           { backgroundColor: colors.border },
                         ]}
+                        onPress={() => {
+                          // Only allow reselect for local files (file:// or content://)
+                          if (media.uri.startsWith("file://") || media.uri.startsWith("content://")) {
+                            Alert.alert(
+                              t("imageNotAvailable") || "Image Not Available",
+                              t("reselectImage") || "This image is no longer available. Would you like to select a new one?",
+                              [
+                                { text: t("cancel") || "Cancel", style: "cancel" },
+                                {
+                                  text: t("reselect") || "Reselect",
+                                  onPress: async () => {
+                                    const hasPermission = await requestPermissions();
+                                    if (!hasPermission) return;
+                                    const result = await ImagePicker.launchImageLibraryAsync({
+                                      mediaTypes: ["images"],
+                                      allowsEditing: true,
+                                      aspect: [4, 3],
+                                      quality: 0.8,
+                                    });
+                                    if (!result.canceled && result.assets[0]) {
+                                      const asset = result.assets[0];
+                                      const newMediaFile: MediaFile = {
+                                        uri: asset.uri,
+                                        type: "image",
+                                        fileName: asset.fileName || `media_${Date.now()}.jpg`,
+                                        mimeType: "image/jpeg",
+                                        fileSize: asset.fileSize || 0,
+                                      };
+                                      const validation = fileUploadService.validateFile(newMediaFile);
+                                      if (validation.valid) {
+                                        const updatedFiles = [...mediaFiles];
+                                        updatedFiles[index] = newMediaFile;
+                                        setMediaFiles(updatedFiles);
+                                        onMediaChange(updatedFiles);
+                                        setImageErrorStates((prev) => ({
+                                          ...prev,
+                                          [index]: false,
+                                        }));
+                                      }
+                                    }
+                                  },
+                                },
+                              ]
+                            );
+                          }
+                        }}
+                        activeOpacity={0.7}
                       >
                         <IconSymbol
                           name="photo"
                           size={20}
                           color={colors.tabIconDefault}
                         />
-                      </View>
+                        {(media.uri.startsWith("file://") || media.uri.startsWith("content://")) && (
+                          <Text style={[styles.reselectText, { color: colors.tint }]}>
+                            {t("tapToReselect") || "Tap to reselect"}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
                     )}
                   </TouchableOpacity>
                 ) : (
@@ -488,5 +540,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
     color: "black",
+  },
+  reselectText: {
+    fontSize: 10,
+    fontWeight: "600",
+    marginTop: 4,
+    textAlign: "center",
   },
 });

@@ -482,12 +482,8 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     return !exactMatch && !matchesSelected;
   };
 
-  const inputBorderColor = errors[errorKey]
-    ? "#ff4444"
-    : isInputFocused
-    ? colors.tint
-    : colors.border;
-
+  const inputBorderColor = errors[errorKey] ? "#ff4444" : colors.border;
+    
   const content = (
     <>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -507,7 +503,6 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
           {
             backgroundColor: colors.background,
             borderColor: inputBorderColor,
-            borderWidth: isInputFocused ? 2 : 1,
           },
           containerStyle,
         ]}
@@ -694,6 +689,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   inputContainer: {
+    borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -715,7 +711,7 @@ const styles = StyleSheet.create({
   badgesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    // gap: 8,
     flex: 1,
     alignItems: "center",
   },
@@ -725,7 +721,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    gap: 6,
+    // gap: 6,
     maxWidth: "100%",
   },
   itemBadgeText: {
@@ -748,7 +744,7 @@ const styles = StyleSheet.create({
   suggestionsContainer: {
     maxHeight: 240,
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 4,
     overflow: "hidden",
     borderWidth: 1,
     zIndex: 999,

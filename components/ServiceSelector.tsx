@@ -139,8 +139,6 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
           styles.servicesContainer,
           { 
             backgroundColor: colors.background, 
-            padding: Spacing.sm, 
-            borderRadius: BorderRadius.md,
             ...(error && {
               borderColor: "#ff4444",
               borderWidth: 1,
@@ -156,7 +154,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
             activeOpacity={0.7}
           >
             <Text style={[styles.expandButtonText, { color: colors.tint }]}>
-              {isExpanded ? (t("showLess") || "Show Less") : (t("showMore") || "Show More")}
+              {isExpanded ? (t("showLess")) : (t("showMore"))}
             </Text>
             <IconSymbol
               name={isExpanded ? "chevron.up" : "chevron.down"}
@@ -333,7 +331,9 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   servicesContainer: {
-    gap: 12,
+    gap: 2,
+    padding: Spacing.sm, 
+    borderRadius: BorderRadius.md,
   },
   expandButton: {
     flexDirection: "row",

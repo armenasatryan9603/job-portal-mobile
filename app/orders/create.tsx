@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { Category, apiService } from "@/categories/api";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
@@ -41,6 +41,7 @@ import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsFor
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useApi";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -143,6 +144,83 @@ export default function CreateOrderScreen() {
     useState(false);
   const canAddAnotherQuestion = () =>
     questions.length === 0 || questions[questions.length - 1].trim().length > 0;
+
+  // Form persistence - only for new orders (not editing)
+  // NOTE: We intentionally do NOT persist mediaFiles or banner selection.
+  const persistedFormData = useMemo(
+    () => ({
+      formData,
+      skillIds,
+      newSkillNames,
+      currency,
+      rateUnit,
+      selectedLocation,
+      categoryId: selectedService?.id || null,
+      selectedDates: selectedDates.map((d: Date) => d.toISOString()),
+      selectedDateTimes,
+      questions,
+      orderType,
+      workDurationPerClient,
+      weeklySchedule,
+      checkinRequiresApproval,
+      useAIEnhancement,
+    }),
+    [
+      formData,
+      skillIds,
+      newSkillNames,
+      currency,
+      rateUnit,
+      selectedLocation,
+      selectedService,
+      selectedDates,
+      selectedDateTimes,
+      questions,
+      orderType,
+      workDurationPerClient,
+      weeklySchedule,
+      checkinRequiresApproval,
+      useAIEnhancement,
+    ]
+  );
+
+  const { clearSavedData } = useFormPersistence({
+    storageKey: "create_order_draft",
+    formData: persistedFormData,
+    enabled: !orderId, // Only persist for new orders
+    alertTitle: t("continueForm"),
+    alertMessage: t("unsavedChangesContinue"),
+    continueText: t("continue"),
+    startFreshText: t("startFresh"),
+    onRestore: (data: typeof persistedFormData) => {
+      setFormData(data.formData);
+      setSkillIds(data.skillIds || []);
+      setNewSkillNames(data.newSkillNames || []);
+      setCurrency(data.currency || "AMD");
+      setRateUnit(data.rateUnit || "per project");
+      setSelectedLocation(data.selectedLocation);
+      if (data.categoryId && categoriesData?.categories) {
+        const category = categoriesData.categories.find(
+          (c) => c.id === data.categoryId
+        );
+        if (category) setSelectedService(category);
+      }
+      if (data.selectedDates) {
+        setSelectedDates(data.selectedDates.map((d) => new Date(d)));
+      }
+      setSelectedDateTimes(data.selectedDateTimes || {});
+      setQuestions(data.questions || []);
+      setOrderType(data.orderType || "one_time");
+      setWorkDurationPerClient(data.workDurationPerClient || "");
+      setWeeklySchedule(data.weeklySchedule || {});
+      setCheckinRequiresApproval(data.checkinRequiresApproval || false);
+      setUseAIEnhancement(data.useAIEnhancement || false);
+      // mediaFiles and banner index are intentionally not restored from draft
+    },
+    onClear: () => {
+      // Reset form when user chooses to start fresh
+    },
+  });
 
   const formatRateUnitLabel = (value: string) => {
     if (!value) {
@@ -1317,6 +1395,8 @@ export default function CreateOrderScreen() {
             },
           ]);
         } else {
+          // Clear saved form data on success
+          await clearSavedData();
           router.replace("/orders");
         }
       } else {
@@ -1390,6 +1470,9 @@ export default function CreateOrderScreen() {
 
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+          // Clear saved form data on success
+          await clearSavedData();
 
           // Show success message with pending approval info
           Alert.alert(t("success"), t("orderCreatedPendingApproval"), [
