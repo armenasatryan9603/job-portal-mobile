@@ -1,26 +1,27 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { router } from "expo-router";
-import React, { useState } from "react";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import {
+  Alert,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Linking,
-  Alert,
 } from "react-native";
+import React, { useState } from "react";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { ThemeColors, Typography } from "@/constants/styles";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ProfileHelpScreen() {
   useAnalytics("Help");
@@ -43,7 +44,7 @@ export default function ProfileHelpScreen() {
         Linking.openURL("tel:+37477754955");
         break;
       case "website":
-        Linking.openURL("https://job-portal-web-site-bay.vercel.app");
+        Linking.openURL("https://job-portal-web-gamma.vercel.app");
         break;
       default:
         Alert.alert(t("contactSupport"), t("chooseContactMethod"));
