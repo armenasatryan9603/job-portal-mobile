@@ -1,17 +1,18 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors } from "@/constants/styles";
-import { useNavigation } from "@/contexts/NavigationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router } from "expo-router";
-import React from "react";
 import {
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Platform,
 } from "react-native";
+import { Spacing, ThemeColors } from "@/constants/styles";
+
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Logo } from "./Logo";
+import React from "react";
+import { router } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useNavigation } from "@/contexts/NavigationContext";
 
 interface HeaderProps {
   title?: string;
@@ -57,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           {leftComponent ? (
             leftComponent
           ) : showBackButton ? (
-            <TouchableOpacity onPress={onBackPress}>
+            <TouchableOpacity style={{ backgroundColor: 'red' }} onPress={onBackPress}>
               <IconSymbol
                 name="chevron.left"
                 size={Platform.OS === "android" ? 34 : 20}
@@ -171,6 +172,7 @@ export const Header: React.FC<HeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: Spacing.container,
+    paddingBlock: Spacing.sm,
   },
   content: {
     flexDirection: "row",
