@@ -1,54 +1,56 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
+import * as ImagePicker from "expo-image-picker";
+
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import {
-  BorderRadius,
-  Spacing,
-  ThemeColors,
-  Typography,
-} from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
+  ActivityIndicator,
+  Alert,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Alert,
-  Modal,
 } from "react-native";
-import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
-import { apiService, UserProfile, Review } from "@/categories/api";
-import { fileUploadService } from "@/categories/fileUpload";
-import { chatService } from "@/categories/chatService";
-import { SkillsSection } from "@/components/SkillsSection";
-import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
-import { useSkills } from "@/hooks/useSkills";
-import { ContactInfo } from "@/components/ContactInfo";
+import {
+  BorderRadius,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { Review, UserProfile, apiService } from "@/categories/api";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+
 import { AccountInfo } from "@/components/AccountInfo";
-import { LanguagesSection } from "@/components/LanguagesSection";
-import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { calculateAccountCompletion } from "@/utils/accountCompletion";
-import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
+import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/CircularProgress";
+import { ContactInfo } from "@/components/ContactInfo";
+import { CountBadge } from "@/components/CountBadge";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { LanguagesSection } from "@/components/LanguagesSection";
+import { Layout } from "@/components/Layout";
 import { LocationPicker } from "@/components/LocationPicker";
 import { MapViewComponent } from "@/components/MapView";
-import { CountBadge } from "@/components/CountBadge";
 import { ProfileSkeleton } from "@/components/ProfileSkeleton";
+import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
+import { SkillsSection } from "@/components/SkillsSection";
+import { WorkSamplesSection } from "@/components/WorkSamplesSection";
+import { calculateAccountCompletion } from "@/utils/accountCompletion";
+import { chatService } from "@/categories/chatService";
+import { fileUploadService } from "@/categories/fileUpload";
+import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSkills } from "@/hooks/useSkills";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");

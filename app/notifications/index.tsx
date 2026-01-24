@@ -1,4 +1,3 @@
-import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import {
   FlatList,
   StyleSheet,
@@ -6,6 +5,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { router, useFocusEffect } from "expo-router";
 import {
   useClearAllNotifications,
@@ -144,58 +144,56 @@ export default function NotificationsScreen() {
         style={[
           styles.notificationItem,
           {
-            backgroundColor: colors.surface,
-            borderLeftColor: isUnread ? iconColor : "transparent",
-            shadowColor: "#000",
+            borderBottomColor: colors.border,
           },
         ]}
         onPress={() => handleNotificationPress(item)}
-        activeOpacity={0.6}
+        activeOpacity={0.7}
       >
         <View style={styles.notificationContent}>
-          <View
-            style={[
-              styles.notificationIconContainer,
-              {
-                backgroundColor: iconColor + (isUnread ? "20" : "10"),
-                borderWidth: isUnread ? 2 : 0,
-                borderColor: iconColor + "40",
-              },
-            ]}
-          >
-            <IconSymbol
-              name={getNotificationIcon(item.type) as any}
-              size={24}
-              color={iconColor}
-            />
+          <View style={styles.notificationIconContainer}>
+            <View
+              style={[
+                styles.iconWrapper,
+                {
+                  backgroundColor: iconColor + "15",
+                },
+              ]}
+            >
+              <IconSymbol
+                name={getNotificationIcon(item.type) as any}
+                size={22}
+                color={iconColor}
+              />
+            </View>
+            {isUnread && (
+              <View
+                style={[
+                  styles.unreadDot,
+                  {
+                    backgroundColor: iconColor,
+                    borderColor: isDark ? colors.background : "#FFFFFF",
+                  },
+                ]}
+              />
+            )}
           </View>
           <View style={styles.notificationTextContainer}>
             <View style={styles.notificationHeader}>
-              <View style={styles.titleContainer}>
-                <Text
-                  style={[
-                    styles.notificationTitle,
-                    { color: colors.text },
-                    isUnread && styles.unreadText,
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {item.title}
-                </Text>
-                {isUnread && (
-                  <View
-                    style={[styles.unreadBadge, { backgroundColor: iconColor }]}
-                  />
-                )}
-              </View>
               <Text
                 style={[
-                  styles.notificationTime,
-                  { color: colors.tabIconDefault },
+                  styles.notificationTitle,
+                  { color: colors.text },
+                  isUnread && styles.unreadText,
                 ]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
+              >
+                {item.title}
+              </Text>
+              <Text
+                style={[styles.notificationTime, { color: colors.textTertiary }]}
+                numberOfLines={1}
               >
                 {formatTimestamp(item.timestamp, t, { includeSpace: true })}
               </Text>
@@ -203,7 +201,10 @@ export default function NotificationsScreen() {
             <Text
               style={[
                 styles.notificationMessage,
-                { color: colors.textSecondary },
+                {
+                  color: isUnread ? colors.text : colors.textTertiary,
+                },
+                isUnread && styles.unreadMessage,
               ]}
               numberOfLines={2}
               ellipsizeMode="tail"
@@ -305,46 +306,48 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   listContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: 4,
     paddingBottom: 24,
   },
   notificationItem: {
-    marginBottom: 8,
-    borderRadius: BorderRadius.lg,
-    borderLeftWidth: 4,
-    overflow: "hidden",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    borderBottomWidth: 0.5,
+    paddingVertical: 0,
+    marginHorizontal: Spacing.md,
   },
   notificationContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: Spacing.md,
-    paddingLeft: Spacing.md,
+    alignItems: "center",
+    paddingVertical: 12,
   },
   notificationIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    position: "relative",
+    marginRight: 12,
+  },
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2.5,
+    borderColor: "transparent",
   },
   notificationTextContainer: {
     flex: 1,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   notificationHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
-    minHeight: 24,
+    alignItems: "center",
+    marginBottom: 4,
   },
   titleContainer: {
     flexDirection: "row",
@@ -353,42 +356,34 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   notificationTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "600",
     flex: 1,
-    marginRight: 8,
     letterSpacing: -0.2,
-    flexShrink: 1,
   },
   notificationMessage: {
-    fontSize: 15,
-    lineHeight: 22,
-    opacity: 0.75,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "400",
     letterSpacing: -0.1,
+    marginTop: 2,
   },
   notificationTime: {
-    fontSize: 12,
-    opacity: 0.6,
-    fontWeight: "500",
-    letterSpacing: 0.1,
-    textAlign: "right",
-    minWidth: 60,
+    fontSize: 13,
+    fontWeight: "400",
+    marginLeft: 8,
   },
   unreadText: {
     fontWeight: "700",
-    letterSpacing: -0.3,
+  },
+  unreadMessage: {
+    fontWeight: "500",
   },
   unreadBadge: {
     width: 8,
     height: 8,
     borderRadius: 4,
     minWidth: 8,
-  },
-  unreadDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginLeft: 8,
   },
   loadingContainer: {
     flex: 1,

@@ -70,43 +70,35 @@ export const ChatListSkeleton: React.FC<ChatListSkeletonProps> = ({
       style={[
         styles.conversationItem,
         {
-          backgroundColor: colors.surface,
-          shadowColor: "#000",
+          borderBottomColor: colors.border,
         },
       ]}
     >
       <View style={styles.conversationContent}>
         {/* Avatar */}
         <View style={styles.avatarContainer}>
-          <SkeletonBox width={52} height={52} borderRadius={26} />
+          <SkeletonBox width={60} height={60} borderRadius={30} />
         </View>
 
         {/* Conversation Info */}
         <View style={styles.conversationInfo}>
           {/* Header: Name and Timestamp */}
           <View style={styles.conversationHeader}>
-            <View style={styles.nameContainer}>
-              <SkeletonBox
-                height={17}
-                width="60%"
-                borderRadius={4}
-                style={{ marginRight: 8 }}
-              />
-              {/* Unread badge (sometimes) */}
-              {Math.random() > 0.5 && (
-                <SkeletonBox width={8} height={8} borderRadius={4} />
-              )}
-            </View>
-            <SkeletonBox height={12} width={60} borderRadius={4} />
+            <SkeletonBox
+              height={16}
+              width="50%"
+              borderRadius={4}
+            />
+            <SkeletonBox height={13} width={60} borderRadius={4} />
           </View>
 
           {/* Last Message */}
           <View style={styles.lastMessageContainer}>
             <SkeletonBox
-              height={15}
-              width="85%"
+              height={14}
+              width="75%"
               borderRadius={4}
-              style={{ marginTop: 8 }}
+              style={{ marginTop: 4 }}
             />
           </View>
         </View>
@@ -155,44 +147,31 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 24,
   },
   conversationItem: {
-    marginBottom: 16,
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: "transparent",
-    overflow: "hidden",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomWidth: 0.5,
+    paddingVertical: 0,
+    marginHorizontal: 16,
   },
   conversationContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 18,
-    paddingLeft: 16,
+    alignItems: "center",
+    paddingVertical: 12,
   },
   avatarContainer: {
     position: "relative",
-    marginRight: 14,
+    marginRight: 12,
   },
   conversationInfo: {
     flex: 1,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   conversationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-    minHeight: 24,
+    alignItems: "center",
+    marginBottom: 4,
   },
   nameContainer: {
     flexDirection: "row",
@@ -203,5 +182,6 @@ const styles = StyleSheet.create({
   lastMessageContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 2,
   },
 });

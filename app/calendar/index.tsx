@@ -987,7 +987,7 @@ export default function CalendarScreen() {
                             }}
                           >
                             <IconSymbol
-                              name="xmark.circle.fill"
+                              name="trash.fill"
                               size={16}
                               color={colors.errorVariant}
                             />
@@ -1047,7 +1047,7 @@ export default function CalendarScreen() {
                             }}
                           >
                             <IconSymbol
-                              name="xmark.circle"
+                              name="trash"
                               size={16}
                               color={colors.errorVariant}
                             />

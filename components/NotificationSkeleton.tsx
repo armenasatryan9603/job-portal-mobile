@@ -76,52 +76,45 @@ export const NotificationSkeleton: React.FC<NotificationSkeletonProps> = ({
       style={[
         styles.notificationItem,
         {
-          backgroundColor: colors.surface,
-          borderLeftColor: "transparent",
-          shadowColor: "#000",
+          borderBottomColor: colors.border,
         },
       ]}
     >
       <View style={styles.notificationContent}>
         {/* Icon Container */}
-        <View
-          style={[
-            styles.notificationIconContainer,
-            {
-              backgroundColor: colors.border + "20",
-            },
-          ]}
-        >
-          <SkeletonBox width={24} height={24} borderRadius={12} />
+        <View style={styles.notificationIconContainer}>
+          <View
+            style={[
+              styles.iconWrapper,
+              {
+                backgroundColor: colors.border + "20",
+              },
+            ]}
+          >
+            <SkeletonBox width={22} height={22} borderRadius={11} />
+          </View>
         </View>
 
         {/* Text Container */}
         <View style={styles.notificationTextContainer}>
           {/* Header: Title and Timestamp */}
           <View style={styles.notificationHeader}>
-            <View style={styles.titleContainer}>
-              <SkeletonBox
-                height={17}
-                width="70%"
-                borderRadius={4}
-                style={{ marginRight: 8 }}
-              />
-              {/* Show unread badge for some items */}
-              {showBadge && (
-                <SkeletonBox width={8} height={8} borderRadius={4} />
-              )}
-            </View>
-            <SkeletonBox height={12} width={60} borderRadius={4} />
+            <SkeletonBox
+              height={16}
+              width="55%"
+              borderRadius={4}
+            />
+            <SkeletonBox height={13} width={60} borderRadius={4} />
           </View>
 
           {/* Message */}
-          <View style={{ marginTop: 8 }}>
-            <SkeletonBox height={15} width="100%" borderRadius={4} />
+          <View style={{ marginTop: 4 }}>
+            <SkeletonBox height={14} width="90%" borderRadius={4} />
             <SkeletonBox
-              height={15}
-              width="85%"
+              height={14}
+              width="75%"
               borderRadius={4}
-              style={{ marginTop: 6 }}
+              style={{ marginTop: 4 }}
             />
           </View>
         </View>
@@ -147,47 +140,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
     paddingBottom: 24,
   },
   notificationItem: {
-    marginBottom: 16,
-    borderRadius: 16,
-    borderLeftWidth: 4,
-    overflow: "hidden",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    borderBottomWidth: 0.5,
+    paddingVertical: 0,
+    marginHorizontal: 16,
   },
   notificationContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 18,
-    paddingLeft: 16,
+    alignItems: "center",
+    paddingVertical: 12,
   },
   notificationIconContainer: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    position: "relative",
+    marginRight: 12,
+  },
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
   },
   notificationTextContainer: {
     flex: 1,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   notificationHeader: {
     flexDirection: "row",
-    alignItems: "flex-start",
     justifyContent: "space-between",
-    marginBottom: 8,
-    minHeight: 24,
+    alignItems: "center",
+    marginBottom: 4,
   },
   titleContainer: {
     flexDirection: "row",

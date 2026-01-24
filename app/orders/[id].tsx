@@ -1036,7 +1036,7 @@ export default function EditOrderScreen() {
             <Button
               onPress={handleCancelProposal}
               title={t("cancel")}
-              icon="xmark.circle"
+              icon="trash"
               iconSize={16}
               iconPosition="left"
               variant="outline"

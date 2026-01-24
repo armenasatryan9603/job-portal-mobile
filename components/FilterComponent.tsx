@@ -1,23 +1,24 @@
-import React, { useState, useRef, useEffect } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Modal,
+  PanResponder,
+  Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  Dimensions,
-  Animated,
-  PanResponder,
+  View,
 } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+
+import { CountBadge } from "@/components/CountBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { CountBadge } from "@/components/CountBadge";
 
 export interface FilterOption {
   key: string;
@@ -505,7 +506,7 @@ export const Filter: React.FC<FilterProps> = ({
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <IconSymbol
-                      name="xmark.circle.fill"
+                      name="trash.fill"
                       size={24}
                       color={colors.tabIconDefault}
                     />

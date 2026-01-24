@@ -1,14 +1,4 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
 import React, { useMemo } from "react";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   ScrollView,
   StyleSheet,
@@ -16,7 +6,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useNotifications, useMarkNotificationAsRead } from "@/hooks/useApi";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useMarkNotificationAsRead, useNotifications } from "@/hooks/useApi";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { NotificationDetailSkeleton } from "@/components/NotificationDetailSkeleton";
+import { ThemeColors } from "@/constants/styles";
+import { formatTimestamp } from "@/utils/dateFormatting";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface NotificationDetail {
   id: string;
@@ -179,25 +181,7 @@ export default function NotificationDetailScreen() {
 
   // Show loading state while fetching
   if (isLoadingNotification) {
-    return (
-      <Layout header={header}>
-        <View style={styles.errorContainer}>
-          <IconSymbol
-            name="hourglass"
-            size={32}
-            color={colors.tabIconDefault}
-          />
-          <Text
-            style={[
-              styles.errorText,
-              { color: colors.textSecondary, marginTop: 12 },
-            ]}
-          >
-            {t("loading") || "Loading..."}
-          </Text>
-        </View>
-      </Layout>
-    );
+    return <NotificationDetailSkeleton header={header} />;
   }
 
   // Only show "not found" after data has loaded
@@ -223,22 +207,24 @@ export default function NotificationDetailScreen() {
   return (
     <Layout header={header}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <ResponsiveCard>
+        <View style={styles.contentWrapper}>
           <View style={styles.notificationHeader}>
-            <View
-              style={[
-                styles.notificationIcon,
-                {
-                  backgroundColor:
-                    getNotificationColor(notification.type) + "20",
-                },
-              ]}
-            >
-              <IconSymbol
-                name={getNotificationIcon(notification.type) as any}
-                size={24}
-                color={getNotificationColor(notification.type)}
-              />
+            <View style={styles.notificationIconContainer}>
+              <View
+                style={[
+                  styles.iconWrapper,
+                  {
+                    backgroundColor:
+                      getNotificationColor(notification.type) + "15",
+                  },
+                ]}
+              >
+                <IconSymbol
+                  name={getNotificationIcon(notification.type) as any}
+                  size={22}
+                  color={getNotificationColor(notification.type)}
+                />
+              </View>
             </View>
             <View style={styles.notificationInfo}>
               <Text style={[styles.notificationTitle, { color: colors.text }]}>
@@ -247,68 +233,72 @@ export default function NotificationDetailScreen() {
               <Text
                 style={[
                   styles.notificationTime,
-                  { color: colors.tabIconDefault },
+                  { color: colors.textTertiary },
                 ]}
               >
-                {notification.timestamp}
+                {formatTimestamp(notification.timestamp, t, { includeSpace: true })}
               </Text>
             </View>
           </View>
 
           <View style={styles.contentSection}>
-            <Text style={[styles.contentTitle, { color: colors.text }]}>
-              {t("message")}
-            </Text>
-            <Text style={[styles.contentText, { color: colors.textSecondary }]}>
+            <Text style={[styles.contentText, { color: colors.text }]}>
               {notification.fullContent}
             </Text>
           </View>
 
-          {notification.relatedData && (
+          {notification.relatedData && Object.keys(notification.relatedData).length > 1 && (
             <View style={styles.relatedDataSection}>
-              <Text style={[styles.relatedDataTitle, { color: colors.text }]}>
-                {t("relatedInformation")}
-              </Text>
-              <View style={styles.relatedDataContent}>
-                {Object.entries(notification.relatedData).map(
-                  ([key, value]) => (
-                    <View key={key} style={styles.relatedDataItem}>
-                      <Text
-                        style={[
-                          styles.relatedDataKey,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {key
-                          .replace(/([A-Z])/g, " $1")
-                          .replace(/^./, (str) => str.toUpperCase())}
-                        :
-                      </Text>
-                      <Text
-                        style={[
-                          styles.relatedDataValue,
-                          { color: colors.text },
-                        ]}
-                      >
-                        {Array.isArray(value)
-                          ? value.join(", ")
-                          : String(value ?? "")}
-                      </Text>
-                    </View>
-                  )
-                )}
-              </View>
+              <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              {Object.entries(notification.relatedData)
+                .filter(([key]) => key !== "type")
+                .map(([key, value], index, array) => (
+                  <View
+                    key={key}
+                    style={[
+                      styles.relatedDataItem,
+                      {
+                        borderBottomColor: colors.border,
+                        borderBottomWidth: index < array.length - 1 ? 0.5 : 0,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.relatedDataKey,
+                        { color: colors.textTertiary },
+                      ]}
+                    >
+                      {key
+                        .replace(/([A-Z])/g, " $1")
+                        .replace(/^./, (str) => str.toUpperCase())}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.relatedDataValue,
+                        { color: colors.text },
+                      ]}
+                    >
+                      {Array.isArray(value)
+                        ? value.join(", ")
+                        : String(value ?? "")}
+                    </Text>
+                  </View>
+                ))}
             </View>
           )}
 
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-            onPress={handleAction}
-          >
-            <Text style={styles.actionButtonText}>{getActionButtonText()}</Text>
-            <IconSymbol name="arrow.right" size={16} color={colors.textInverse} />
-          </TouchableOpacity>
-        </ResponsiveCard>
+          <View style={styles.actionButtonContainer}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary }]}
+              onPress={handleAction}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionButtonText}>{getActionButtonText()}</Text>
+              <IconSymbol name="arrow.right" size={18} color={'#FFFFFF'} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </ScrollView>
     </Layout>
   );
@@ -317,6 +307,11 @@ export default function NotificationDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  contentWrapper: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 24,
   },
   errorContainer: {
     flex: 1,
@@ -331,70 +326,71 @@ const styles = StyleSheet.create({
   notificationHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 24,
   },
-  notificationIcon: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  notificationIconContainer: {
+    marginRight: 12,
+  },
+  iconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
   },
   notificationInfo: {
     flex: 1,
   },
   notificationTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    marginBottom: 4,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   notificationTime: {
     fontSize: 14,
+    fontWeight: "400",
   },
   contentSection: {
-    marginBottom: 24,
-  },
-  contentTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
+    marginBottom: 32,
   },
   contentText: {
     fontSize: 16,
     lineHeight: 24,
+    fontWeight: "400",
+    letterSpacing: -0.1,
+  },
+  divider: {
+    height: 0.5,
+    marginBottom: 20,
   },
   relatedDataSection: {
-    marginBottom: 24,
-  },
-  relatedDataTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  relatedDataContent: {
-    backgroundColor: "rgba(0,0,0,0.05)",
-    borderRadius: 12,
-    padding: 16,
+    marginBottom: 32,
   },
   relatedDataItem: {
     flexDirection: "row",
-    marginBottom: 8,
+    paddingBottom: 16,
+    marginBottom: 16,
   },
   relatedDataKey: {
     fontSize: 14,
     fontWeight: "500",
     width: 120,
+    marginRight: 12,
   },
   relatedDataValue: {
     fontSize: 14,
     flex: 1,
+    fontWeight: "400",
+  },
+  actionButtonContainer: {
+    marginTop: 8,
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,

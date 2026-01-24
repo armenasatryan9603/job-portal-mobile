@@ -8,9 +8,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { Conversation, chatService } from "@/categories/chatService";
 import React, { useEffect, useRef, useState } from "react";
+import { Spacing, ThemeColors } from "@/constants/styles";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import { ChatListSkeleton } from "@/components/ChatListSkeleton";
@@ -229,14 +229,12 @@ export default function ChatScreen() {
         style={[
           styles.conversationItem,
           {
-            backgroundColor: colors.surface,
-            borderLeftColor: hasUnread ? colors.primary : "transparent",
-            shadowColor: "#000",
+            borderBottomColor: colors.border,
           },
         ]}
         onPress={() => handleConversationPress(item)}
         onLongPress={() => handleDeleteConversation(item)}
-        activeOpacity={0.6}
+        activeOpacity={0.7}
       >
         <View style={styles.conversationContent}>
           <View style={styles.avatarContainer}>
@@ -245,8 +243,6 @@ export default function ChatScreen() {
                 styles.avatar,
                 {
                   backgroundColor: colors.primary,
-                  borderWidth: hasUnread ? 2 : 0,
-                  borderColor: colors.primary + "40",
                 },
               ]}
             >
@@ -256,43 +252,45 @@ export default function ChatScreen() {
                   : "?"}
               </Text>
             </View>
+            {hasUnread && (
+              <View
+                style={[
+                  styles.unreadDot,
+                  {
+                    backgroundColor: colors.primary,
+                    borderColor: isDark ? colors.background : "#FFFFFF",
+                  },
+                ]}
+              />
+            )}
           </View>
 
           <View style={styles.conversationInfo}>
             <View style={styles.conversationHeader}>
-              <View style={styles.nameContainer}>
-                <Text
-                  style={[
-                    styles.participantName,
-                    { color: colors.text },
-                    hasUnread && styles.unreadText,
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {participantName}
-                </Text>
-                {hasUnread && (
-                  <View
-                    style={[
-                      styles.unreadBadge,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  />
-                )}
-              </View>
               <Text
-                style={[styles.timestamp, { color: colors.tabIconDefault }]}
+                style={[
+                  styles.participantName,
+                  { color: colors.text },
+                  hasUnread && styles.unreadText,
+                ]}
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
-                {lastMessage ? formatTimestamp(lastMessage.createdAt, t) : ""}
+                {participantName}
               </Text>
+              {lastMessage && (
+                <Text
+                  style={[styles.timestamp, { color: colors.textTertiary }]}
+                  numberOfLines={1}
+                >
+                  {formatTimestamp(lastMessage.createdAt, t)}
+                </Text>
+              )}
             </View>
 
             <View style={styles.lastMessageContainer}>
-              <View style={styles.lastMessageContent}>
-                {lastMessage?.messageType !== "text" && (
+              {lastMessage?.messageType !== "text" &&
+                getLastMessageIcon(lastMessage?.messageType || "text") && (
                   <IconSymbol
                     name={
                       getLastMessageIcon(
@@ -300,22 +298,23 @@ export default function ChatScreen() {
                       ) as any
                     }
                     size={18}
-                    color={colors.tabIconDefault}
+                    color={hasUnread ? colors.text : colors.textTertiary}
                     style={styles.messageIcon}
                   />
                 )}
-                <Text
-                  style={[
-                    styles.lastMessage,
-                    { color: colors.textSecondary },
-                    hasUnread && styles.unreadMessage,
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {lastMessage?.content || t("noMessagesYet")}
-                </Text>
-              </View>
+              <Text
+                style={[
+                  styles.lastMessage,
+                  {
+                    color: hasUnread ? colors.text : colors.textTertiary,
+                  },
+                  hasUnread && styles.unreadMessage,
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {lastMessage?.content || t("noMessagesYet")}
+              </Text>
             </View>
           </View>
         </View>
@@ -427,43 +426,43 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   listContainer: {
-    paddingHorizontal: Spacing.md,
-    paddingTop: 4,
     paddingBottom: 24,
   },
   conversationItem: {
-    marginBottom: 8,
-    borderRadius: BorderRadius.lg,
-    borderLeftWidth: 4,
-    overflow: "hidden",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    borderBottomWidth: 0.5,
+    paddingVertical: 0,
+    marginHorizontal: Spacing.md,
   },
   conversationContent: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    padding: Spacing.md,
-    paddingLeft: Spacing.md,
+    alignItems: "center",
+    paddingVertical: 12,
   },
   avatarContainer: {
     position: "relative",
-    marginRight: 14,
+    marginRight: 12,
   },
   avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
   },
   avatarText: {
-    fontSize: 20,
-    fontWeight: "700",
-    letterSpacing: 0.5,
+    fontSize: 22,
+    fontWeight: "600",
+    letterSpacing: 0.3,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2.5,
+    borderColor: "transparent",
   },
   onlineIndicator: {
     position: "absolute",
@@ -478,14 +477,13 @@ const styles = StyleSheet.create({
   },
   conversationInfo: {
     flex: 1,
-    paddingRight: 4,
+    paddingRight: 8,
   },
   conversationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-    minHeight: 24,
+    alignItems: "center",
+    marginBottom: 4,
   },
   nameContainer: {
     flexDirection: "row",
@@ -494,24 +492,20 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   participantName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "600",
     flex: 1,
-    marginRight: 8,
     letterSpacing: -0.2,
-    flexShrink: 1,
   },
   timestamp: {
-    fontSize: 12,
-    opacity: 0.6,
-    fontWeight: "500",
-    letterSpacing: 0.1,
-    textAlign: "right",
-    minWidth: 60,
+    fontSize: 13,
+    fontWeight: "400",
+    marginLeft: 8,
   },
   lastMessageContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginTop: 2,
   },
   lastMessageContent: {
     flex: 1,
@@ -519,21 +513,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   messageIcon: {
-    marginRight: 6,
+    marginRight: 8,
+    marginTop: 1,
   },
   lastMessage: {
-    fontSize: 15,
+    fontSize: 14,
     flex: 1,
-    opacity: 0.75,
+    fontWeight: "400",
     letterSpacing: -0.1,
   },
   unreadText: {
     fontWeight: "700",
-    letterSpacing: -0.3,
   },
   unreadMessage: {
-    fontWeight: "600",
-    opacity: 0.9,
+    fontWeight: "500",
   },
   unreadBadge: {
     width: 8,

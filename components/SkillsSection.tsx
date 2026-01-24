@@ -1,30 +1,31 @@
-import React from "react";
 import {
-  View,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Image,
+  View,
 } from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { Service } from "@/categories/api";
 import { ThemeColors, Typography } from "@/constants/styles";
+
+import { Button } from "@/components/ui/button";
+import { Category } from "@/categories/api";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
 
 type ThemeColorsType = typeof ThemeColors;
 
 interface SkillsSectionProps {
-  userServices: Service[];
+  userServices: Category[];
   servicesLoading: boolean;
   servicesError: string | null;
   userId?: string;
   colors: ThemeColorsType["light"] | ThemeColorsType["dark"];
   onEditSkills: () => void;
-  onRemoveSkill: (service: Service) => void;
+    onRemoveSkill: (service: Category) => void;
   onRetry: () => void;
-  onToggleNotification?: (service: Service) => void;
+  onToggleNotification?: (service: Category) => void;
   serviceNotifications?: { [serviceId: number]: boolean };
 }
 
@@ -190,7 +191,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                     ]}
                     onPress={() => onRemoveSkill(service)}
                   >
-                    <IconSymbol name="xmark" size={14} color={colors.error} />
+                    <IconSymbol name="trash" size={14} color={colors.error} />
                   </TouchableOpacity>
                 )}
               </View>

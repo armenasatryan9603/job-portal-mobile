@@ -1,30 +1,31 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { apiService, UserProfile, UserLanguage } from "@/categories/api";
-import { useAuth } from "@/contexts/AuthContext";
-import React, { useState, useEffect } from "react";
-import {
-  Alert,
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import {
   AVAILABLE_LANGUAGES,
-  PROFICIENCY_LEVELS,
+  Language,
   LanguageProficiencyLevel,
+  PROFICIENCY_LEVELS,
   getLanguageByCode,
   getProficiencyLevelLabel,
-  Language,
 } from "@/constants/languages";
-import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import React, { useEffect, useState } from "react";
+import { ThemeColors, Typography } from "@/constants/styles";
+import { UserLanguage, UserProfile, apiService } from "@/categories/api";
+
+import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/CountBadge";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface LanguagesSectionProps {
   profile: UserProfile;
@@ -33,7 +34,7 @@ interface LanguagesSectionProps {
 }
 
 // Proficiency level colors for visual indicators
-const getProficiencyColor = (level: LanguageProficiencyLevel, colors: typeof ThemeColors.light): string => {
+const getProficiencyColor = (level: LanguageProficiencyLevel, colors: typeof ThemeColors.light | typeof ThemeColors.dark): string => {
   switch (level) {
     case LanguageProficiencyLevel.NATIVE:
       return colors.success;
@@ -486,7 +487,7 @@ export function LanguagesSection({
           <View style={styles.editActions}>
             <Button
               variant="outline"
-              icon="xmark"
+              icon="trash"
               iconSize={14}
               title={t("cancel")}
               iconPosition="left"
