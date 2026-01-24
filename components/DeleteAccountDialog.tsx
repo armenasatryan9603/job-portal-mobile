@@ -135,11 +135,18 @@ export default function DeleteAccountDialog({
                         size={20}
                         color={colors.orange}
                       />
-                      <Text
-                        style={[styles.warningText, { color: colors.text }]}
-                      >
-                        {t("accountDeletionWarning")}
-                      </Text>
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text
+                          style={[styles.warningText, { color: colors.text, marginBottom: 8 }]}
+                        >
+                          {t("accountDeletionWarning")}
+                        </Text>
+                        <Text
+                          style={[styles.warningText, { color: colors.text, fontSize: 13 }]}
+                        >
+                          {t("accountDeletionWithPermanentOrders")}
+                        </Text>
+                      </View>
                     </View>
 
                     {userEmail && (

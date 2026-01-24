@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           {leftComponent ? (
             leftComponent
           ) : showBackButton ? (
-            <TouchableOpacity style={{ padding: Spacing.sm }} onPress={onBackPress}>
+            <TouchableOpacity style={{ padding: Spacing.sm, marginLeft: -Spacing.sm }} onPress={onBackPress}>
               <IconSymbol
                 name="chevron.left"
                 size={Platform.OS === "android" ? 34 : 20}

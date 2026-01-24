@@ -1,6 +1,7 @@
 import {
   Alert,
   FlatList,
+  Image,
   RefreshControl,
   StyleSheet,
   Text,
@@ -206,10 +207,16 @@ export default function ChatScreen() {
   };
 
   const renderConversation = ({ item }: { item: Conversation }) => {
-    const otherParticipants = item.Participants.filter((p) => p.isActive);
+    // Filter out current user from participants
+    const otherParticipants = item.Participants.filter(
+      (p) => p.isActive && p.userId !== user?.id
+    );
     const participantName = otherParticipants
       .map((p) => p.User?.name || t("deletedUser"))
       .join(", ");
+    const participantCount = otherParticipants.length;
+    const showGroupAvatars = participantCount > 2;
+    const remainingCount = showGroupAvatars ? Math.max(0, participantCount - 4) : 0;
     const lastMessage = item.Messages[0];
     const currentUserParticipant = item.Participants.find(
       (p) => p.userId === user?.id && p.isActive
@@ -223,6 +230,90 @@ export default function ChatScreen() {
         ? new Date(lastMessage.createdAt) >
           new Date(currentUserParticipant.lastReadAt)
         : !currentUserParticipant?.lastReadAt);
+
+    const getInitials = (name: string) => {
+      return name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    };
+
+    const renderSingleAvatar = (participant: typeof otherParticipants[0]) => {
+      const avatarUrl = participant?.User?.avatarUrl;
+      const name = participant?.User?.name || t("deletedUser");
+      const initials = getInitials(name);
+
+      return (
+        <View
+          style={[
+            styles.avatar,
+            {
+              backgroundColor: colors.primary,
+            },
+          ]}
+        >
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={[styles.avatarText, { color: colors.textInverse }]}>
+              {initials || "?"}
+            </Text>
+          )}
+        </View>
+      );
+    };
+
+    const renderGroupAvatar = (
+      participant: typeof otherParticipants[0],
+      index: number
+    ) => {
+      const avatarUrl = participant?.User?.avatarUrl;
+      const name = participant?.User?.name || t("deletedUser");
+      const initials = getInitials(name);
+      const isLastInGrid = index === 3 && remainingCount > 0;
+      const isRightColumn = index % 2 === 1;
+      const isBottomRow = index >= 2;
+
+      return (
+        <View
+          key={participant?.id || index}
+          style={[
+            styles.groupAvatar,
+            {
+              backgroundColor: isLastInGrid
+                ? colors.primary
+                : avatarUrl
+                ? "transparent"
+                : colors.primary,
+              marginRight: isRightColumn ? 0 : 2,
+              marginBottom: isBottomRow ? 0 : 2,
+            },
+          ]}
+        >
+          {isLastInGrid ? (
+            <Text style={[styles.groupAvatarCount, { color: colors.textInverse }]}>
+              +{remainingCount}
+            </Text>
+          ) : avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.groupAvatarImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={[styles.groupAvatarText, { color: colors.textInverse }]}>
+              {initials || "?"}
+            </Text>
+          )}
+        </View>
+      );
+    };
 
     return (
       <TouchableOpacity
@@ -238,20 +329,15 @@ export default function ChatScreen() {
       >
         <View style={styles.conversationContent}>
           <View style={styles.avatarContainer}>
-            <View
-              style={[
-                styles.avatar,
-                {
-                  backgroundColor: colors.primary,
-                },
-              ]}
-            >
-              <Text style={[styles.avatarText, { color: colors.textInverse }]}>
-                {participantName && participantName.length > 0
-                  ? participantName.charAt(0).toUpperCase()
-                  : "?"}
-              </Text>
-            </View>
+            {showGroupAvatars ? (
+              <View style={styles.groupAvatarsContainer}>
+                {otherParticipants.slice(0, 4).map((participant, index) =>
+                  renderGroupAvatar(participant, index)
+                )}
+              </View>
+            ) : (
+              renderSingleAvatar(otherParticipants[0])
+            )}
             {hasUnread && (
               <View
                 style={[
@@ -449,10 +535,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
   avatarText: {
     fontSize: 22,
     fontWeight: "600",
     letterSpacing: 0.3,
+  },
+  groupAvatarsContainer: {
+    width: 60,
+    height: 60,
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  groupAvatar: {
+    width: 29,
+    height: 29,
+    borderRadius: 14.5,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  groupAvatarImage: {
+    width: 29,
+    height: 29,
+    borderRadius: 14.5,
+  },
+  groupAvatarText: {
+    fontSize: 10,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
+  groupAvatarCount: {
+    fontSize: 9,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
   unreadDot: {
     position: "absolute",

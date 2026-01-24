@@ -1,14 +1,8 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAuth } from "@/contexts/AuthContext";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Alert,
+  Animated,
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -16,22 +10,29 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Alert,
-  Keyboard,
-  Animated,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { chatService, Conversation, Message } from "@/categories/chatService";
-import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { Review } from "@/categories/api";
-import { pusherService } from "@/categories/pusherService";
-import { useChatReminder } from "@/contexts/ChatReminderContext";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { Conversation, Message, chatService } from "@/categories/chatService";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+
 import AnalyticsService from "@/categories/AnalyticsService";
 import { ChatSkeleton } from "@/components/ChatSkeleton";
-import { useConversations } from "@/contexts/ConversationsContext";
+import { EmojiPicker } from "@/components/EmojiPicker";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { Review } from "@/categories/api";
+import { ThemeColors } from "@/constants/styles";
 import { formatTimestamp } from "@/utils/dateFormatting";
+import { pusherService } from "@/categories/pusherService";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useChatReminder } from "@/contexts/ChatReminderContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useConversations } from "@/contexts/ConversationsContext";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -164,7 +165,6 @@ export default function ChatDetailScreen() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
@@ -174,6 +174,8 @@ export default function ChatDetailScreen() {
   >(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [hasExistingFeedback, setHasExistingFeedback] = useState(false);
+  const [feedbackCheckComplete, setFeedbackCheckComplete] = useState(false);
+  const [emojiPickerVisible, setEmojiPickerVisible] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<number>>(new Set());
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingSentRef = useRef(false);
@@ -542,9 +544,13 @@ export default function ChatDetailScreen() {
 
   // Check for existing feedback and show dialog when conversation loads
   useEffect(() => {
+    // Reset feedback check state when conversation changes
+    setFeedbackCheckComplete(false);
+    
     const checkAndShowDialog = async () => {
       // Only check if conversation is closed
       if (!conversation || !isConversationClosed()) {
+        setFeedbackCheckComplete(true); // Mark as complete if not closed
         return;
       }
 
@@ -576,10 +582,12 @@ export default function ChatDetailScreen() {
           setPendingAction(actionType);
           setFeedbackDialogVisible(true);
         }
+        setFeedbackCheckComplete(true);
       } catch (error) {
         console.error("Error checking for existing feedback:", error);
         // On error, don't show dialog to be safe
         setHasExistingFeedback(true);
+        setFeedbackCheckComplete(true);
       }
     };
 
@@ -866,7 +874,7 @@ export default function ChatDetailScreen() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !conversation || sending || !canSendMessages())
+    if (!newMessage.trim() || !conversation || !canSendMessages())
       return;
 
     // Stop typing indicator when sending message
@@ -894,8 +902,6 @@ export default function ChatDetailScreen() {
     }
 
     try {
-      setSending(true);
-
       const newMessageData = await chatService.sendMessage({
         conversationId: conversation.id,
         content: newMessage.trim(),
@@ -945,10 +951,6 @@ export default function ChatDetailScreen() {
 
       // Reload conversation after a short delay to ensure DB has the message
       // This ensures the message persists even if user navigates away and back
-      setTimeout(() => {
-        console.log("🔄 Reloading conversation to sync with DB...");
-        loadConversation(true); // Preserve local messages during merge
-      }, 500);
     } catch (err) {
       console.error("Failed to send message:", err);
       const errorMessage =
@@ -965,8 +967,6 @@ export default function ChatDetailScreen() {
       } else {
         Alert.alert(t("error"), errorMessage);
       }
-    } finally {
-      setSending(false);
     }
   };
 
@@ -1544,7 +1544,7 @@ export default function ChatDetailScreen() {
             contentContainerStyle={styles.messagesContent}
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => {
-              flatListRef.current?.scrollToEnd({ animated: true });
+              flatListRef.current?.scrollToEnd({ animated: false });
             }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
@@ -1602,7 +1602,10 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Review Button - Show for all participants when conversation is closed */}
-        {isConversationClosed() &&
+        {!loading &&
+          conversation &&
+          isConversationClosed() &&
+          feedbackCheckComplete &&
           !feedbackSubmitted &&
           !hasExistingFeedback && (
             <View
@@ -1643,6 +1646,15 @@ export default function ChatDetailScreen() {
                 { backgroundColor: colors.surface, borderColor: colors.border },
               ]}
             >
+              <TouchableOpacity
+                style={styles.emojiButton}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setEmojiPickerVisible(true);
+                }}
+              >
+                <Text style={styles.emojiIcon}>😊</Text>
+              </TouchableOpacity>
               <TextInput
                 style={[styles.textInput, { color: colors.text }]}
                 placeholder={t("typeMessage")}
@@ -1661,19 +1673,18 @@ export default function ChatDetailScreen() {
                 style={[
                   styles.sendButton,
                   {
-                    backgroundColor:
-                      newMessage.trim() && !sending
-                        ? colors.primary
-                        : colors.border,
+                    backgroundColor: newMessage.trim()
+                      ? colors.primary
+                      : colors.border,
                   },
                 ]}
                 onPress={handleSendMessage}
-                disabled={!newMessage.trim() || sending}
+                disabled={!newMessage.trim()}
               >
                 <IconSymbol
                   name="arrow.up"
                   size={20}
-                  color={newMessage.trim() && !sending ? colors.textInverse : colors.tabIconDefault}
+                  color={newMessage.trim() ? colors.textInverse : colors.tabIconDefault}
                 />
               </TouchableOpacity>
             </View>
@@ -1699,6 +1710,15 @@ export default function ChatDetailScreen() {
           title={t("reviewTitle")}
           subtitle={t("reviewSubtitle")}
           loading={feedbackLoading}
+        />
+
+        {/* Emoji Picker */}
+        <EmojiPicker
+          visible={emojiPickerVisible}
+          onClose={() => setEmojiPickerVisible(false)}
+          onEmojiSelect={(emoji) => {
+            setNewMessage((prev) => prev + emoji);
+          }}
         />
       </KeyboardAvoidingView>
     </Layout>
@@ -1933,11 +1953,21 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     borderWidth: 1,
     borderRadius: 20,
-    paddingLeft: 12,
+    paddingLeft: 8,
     paddingRight: 8,
     paddingVertical: 6,
     gap: 6,
     minHeight: 44,
+  },
+  emojiButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emojiIcon: {
+    fontSize: 24,
   },
   textInput: {
     flex: 1,
