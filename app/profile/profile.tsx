@@ -868,7 +868,7 @@ export default function ProfileScreen() {
                               backgroundColor={colors.border}
                               progressColor={
                                 completionPercentage === 100
-                                  ? "#4CAF50"
+                                  ? colors.success
                                   : colors.primary
                               }
                             />
@@ -907,7 +907,7 @@ export default function ProfileScreen() {
                             )}
                             {uploadingPicture && (
                               <View style={styles.uploadingOverlay}>
-                                <ActivityIndicator size="small" color="white" />
+                                <ActivityIndicator size="small" color={colors.textInverse} />
                               </View>
                             )}
                           </TouchableOpacity>
@@ -948,7 +948,7 @@ export default function ProfileScreen() {
                               {
                                 backgroundColor:
                                   completionPercentage === 100
-                                    ? "#4CAF50"
+                                    ? colors.success
                                     : colors.primary,
                               },
                             ]}
@@ -957,7 +957,7 @@ export default function ProfileScreen() {
                               style={[
                                 styles.completionBadgeText,
                                 {
-                                  color: "#FFFFFF",
+                                  color: colors.textInverse,
                                   fontSize:
                                     completionPercentage === 100 ? 9 : 11,
                                 },
@@ -998,7 +998,7 @@ export default function ProfileScreen() {
                       }
                       size={16}
                       color={
-                        profile.verified ? "#4CAF50" : colors.textSecondary
+                        profile.verified ? colors.success : colors.textSecondary
                       }
                     />
                     <Text style={[styles.rating, { color: colors.text }]}>
@@ -1076,7 +1076,7 @@ export default function ProfileScreen() {
                     style={[
                       styles.characterCount,
                       { color: colors.tabIconDefault },
-                      bioText.length > 480 && { color: "#FF6B6B" },
+                      bioText.length > 480 && { color: colors.danger },
                     ]}
                   >
                     {bioText.length}/500 {t("charactersRemaining")}
@@ -1101,7 +1101,7 @@ export default function ProfileScreen() {
                     title={t("save")}
                     iconPosition="left"
                     backgroundColor={colors.primary}
-                    textColor="white"
+                    textColor={colors.textInverse}
                     onPress={handleSaveBio}
                     disabled={savingBio}
                   />
@@ -1523,7 +1523,7 @@ export default function ProfileScreen() {
                       title={t("save")}
                       iconPosition="left"
                       backgroundColor={colors.primary}
-                      textColor="white"
+                      textColor={colors.textInverse}
                       onPress={handleSavePrices}
                       disabled={savingPrices}
                     />
@@ -1644,7 +1644,7 @@ export default function ProfileScreen() {
                       title={t("save")}
                       iconPosition="left"
                       backgroundColor={colors.primary}
-                      textColor="white"
+                      textColor={colors.textInverse}
                       onPress={handleSaveLocation}
                       disabled={savingLocation}
                     />
@@ -1807,7 +1807,7 @@ export default function ProfileScreen() {
                             name="star.fill"
                             size={14}
                             color={
-                              i < review.rating ? "#FFD700" : colors.border
+                              i < review.rating ? colors.rating : colors.border
                             }
                           />
                         ))}

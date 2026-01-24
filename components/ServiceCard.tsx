@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   gridServiceImage: {
     width: "100%",
     height: 80,
+    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
   },
   gridCardContent: {

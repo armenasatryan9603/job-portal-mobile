@@ -23,6 +23,7 @@ import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
 import { apiService } from "@/categories/api";
@@ -255,15 +256,15 @@ export default function MarketDetailScreen() {
   const getStatusColor = () => {
     switch (market.status) {
       case "active":
-        return "#4CAF50";
+        return colors.success;
       case "pending_review":
-        return "#FF9800";
+        return colors.warning;
       case "rejected":
-        return "#F44336";
+        return colors.error;
       case "closed":
-        return "#9E9E9E";
+        return colors.textTertiary;
       case "draft":
-        return "#2196F3";
+        return colors.info;
       default:
         return colors.tabIconDefault;
     }
@@ -364,7 +365,7 @@ export default function MarketDetailScreen() {
                         <IconSymbol
                           name="checkmark.seal.fill"
                           size={16}
-                          color="#4CAF50"
+                          color={colors.success}
                         />
                         <Text style={styles.verifiedText}>
                           {t("verified")}
@@ -373,17 +374,18 @@ export default function MarketDetailScreen() {
                     )}
 
                   {/* Status Badge */}
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor() + "20" }]}>
-                    <View style={[styles.statusDot, { backgroundColor: getStatusColor() }]} />
-                    <Text style={[styles.statusText, { color: getStatusColor() }]}>
-                      {getStatusLabel()}
-                    </Text>
-                  </View>
+                  <Badge
+                    text={getStatusLabel()}
+                    backgroundColor={getStatusColor() + "20"}
+                    textColor={getStatusColor()}
+                    size="md"
+                    style={{ marginTop: 8 }}
+                  />
 
                   <View style={styles.metaRow}>
                     {market.rating > 0 && (
                       <View style={styles.ratingContainer}>
-                        <IconSymbol name="star.fill" size={16} color="#FFD700" />
+                        <IconSymbol name="star.fill" size={16} color={colors.rating} />
                         <Text style={[styles.rating, { color: colors.text }]}>
                           {market.rating.toFixed(1)}
                         </Text>
@@ -509,16 +511,13 @@ export default function MarketDetailScreen() {
                     {market.Creator.name}
                   </Text>
                   {market.Creator.verified && (
-                    <View style={styles.creatorVerified}>
-                      <IconSymbol
-                        name="checkmark.seal.fill"
-                        size={12}
-                        color="#4CAF50"
-                      />
-                      <Text style={styles.creatorVerifiedText}>
-                        {t("verified")}
-                      </Text>
-                    </View>
+                    <Badge
+                      text={t("verified")}
+                      variant="verified"
+                      icon="checkmark.seal.fill"
+                      iconSize={12}
+                      size="sm"
+                    />
                   )}
                 </View>
                 <IconSymbol
@@ -829,7 +828,7 @@ export default function MarketDetailScreen() {
                   <View style={styles.reviewsHeaderRight}>
                     {market.rating > 0 && (
                       <View style={styles.ratingBadge}>
-                        <IconSymbol name="star.fill" size={14} color="#FFD700" />
+                        <IconSymbol name="star.fill" size={14} color={colors.rating} />
                         <Text style={[styles.ratingBadgeText, { color: colors.text }]}>
                           {market.rating.toFixed(1)}
                         </Text>
@@ -871,7 +870,7 @@ export default function MarketDetailScreen() {
                                 key={i}
                                 name="star.fill"
                                 size={12}
-                                color={i < review.rating ? "#FFD700" : colors.border}
+                                color={i < review.rating ? colors.rating : colors.border}
                               />
                             ))}
                           </View>
@@ -969,7 +968,7 @@ export default function MarketDetailScreen() {
                     <IconSymbol
                       name="star.fill"
                       size={32}
-                      color={i < reviewRating ? "#FFD700" : colors.border}
+                      color={i < reviewRating ? colors.rating : colors.border}
                     />
                   </TouchableOpacity>
                 ))}
@@ -1017,7 +1016,7 @@ export default function MarketDetailScreen() {
                 title={t("submit")}
                 onPress={handleSubmitReview}
                 backgroundColor={colors.primary}
-                textColor="white"
+                textColor={colors.textInverse}
                 disabled={reviewRating === 0}
               />
             </View>
@@ -1151,10 +1150,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    // Note: Using success color with opacity - consider using inline style for dynamic color
     backgroundColor: "#4CAF5020",
   },
   verifiedText: {
     fontSize: 12,
+    // Note: Should use colors.success dynamically - consider inline style
     color: "#4CAF50",
     fontWeight: "600",
   },
@@ -1370,25 +1371,6 @@ const styles = StyleSheet.create({
     gap: 12,
     justifyContent: "flex-end",
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-    marginTop: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
   creatorItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1410,21 +1392,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 4,
   },
-  creatorVerified: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  creatorVerifiedText: {
-    fontSize: 12,
-    color: "#4CAF50",
-    fontWeight: "500",
-  },
   rejectionContainer: {
     flexDirection: "row",
     gap: 12,
     padding: 12,
     borderRadius: 8,
+    // Note: Should use colors.error with opacity dynamically - consider inline style
     backgroundColor: "#F4433620",
   },
   rejectionInfo: {
@@ -1477,6 +1450,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    // Note: Should use colors.info with opacity dynamically - consider inline style
     backgroundColor: "#2196F320",
   },
   defaultBadgeText: {
@@ -1496,6 +1470,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    // Note: Using rating color with opacity - consider using inline style for dynamic color
     backgroundColor: "#FFD70020",
   },
   ratingBadgeText: {

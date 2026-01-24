@@ -114,14 +114,14 @@ export default function NotificationDetailScreen() {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "proposal":
-        return "#007AFF";
+        return colors.link;
       case "order":
       case "new_order":
-        return "#34C759";
+        return colors.openNow;
       case "message":
-        return "#FF9500";
+        return colors.orange;
       case "system":
-        return "#8E8E93";
+        return colors.iosGray;
       default:
         return colors.primary;
     }
@@ -306,7 +306,7 @@ export default function NotificationDetailScreen() {
             onPress={handleAction}
           >
             <Text style={styles.actionButtonText}>{getActionButtonText()}</Text>
-            <IconSymbol name="arrow.right" size={16} color="white" />
+            <IconSymbol name="arrow.right" size={16} color={colors.textInverse} />
           </TouchableOpacity>
         </ResponsiveCard>
       </ScrollView>
@@ -400,6 +400,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

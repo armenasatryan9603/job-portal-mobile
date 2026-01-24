@@ -303,7 +303,7 @@ export default function ProfileSettingsScreen() {
                 }}
                 thumbColor={
                   Platform.OS === "ios"
-                    ? "#FFFFFF"
+                    ? colors.textInverse
                     : isDark
                     ? colors.primary
                     : colors.textSecondary
@@ -462,7 +462,7 @@ export default function ProfileSettingsScreen() {
                   }}
                   thumbColor={
                     Platform.OS === "ios"
-                      ? "#FFFFFF"
+                      ? colors.textInverse
                       : pushNotificationsEnabled
                       ? colors.primary
                       : colors.textSecondary
@@ -510,7 +510,7 @@ export default function ProfileSettingsScreen() {
                   }}
                   thumbColor={
                     Platform.OS === "ios"
-                      ? "#FFFFFF"
+                      ? colors.textInverse
                       : emailNotificationsEnabled
                       ? colors.primary
                       : colors.textSecondary
@@ -604,9 +604,9 @@ export default function ProfileSettingsScreen() {
               {__DEV__ && (
                 <View style={styles.settingItem}>
                   <View style={styles.settingInfo}>
-                    <IconSymbol name="globe" size={20} color="#9C27B0" />
+                    <IconSymbol name="globe" size={20} color={colors.purple} />
                     <View style={styles.settingText}>
-                      <Text style={[styles.settingTitle, { color: "#9C27B0" }]}>
+                      <Text style={[styles.settingTitle, { color: colors.purple }]}>
                         🧪 Translation Test (Dev Only)
                       </Text>
                       <Text
@@ -645,9 +645,9 @@ export default function ProfileSettingsScreen() {
                 disabled={isDeletingAccount}
               >
                 <View style={styles.settingInfo}>
-                  <IconSymbol name="trash.fill" size={20} color="#FF3B30" />
+                  <IconSymbol name="trash.fill" size={20} color={colors.errorVariant} />
                   <View style={styles.settingText}>
-                    <Text style={[styles.settingTitle, { color: "#FF3B30" }]}>
+                    <Text style={[styles.settingTitle, { color: colors.errorVariant }]}>
                       {t("deleteAccount")}
                     </Text>
                     <Text
@@ -661,7 +661,7 @@ export default function ProfileSettingsScreen() {
                   </View>
                 </View>
                 {isDeletingAccount ? (
-                  <ActivityIndicator size="small" color="#FF3B30" />
+                  <ActivityIndicator size="small" color={colors.errorVariant} />
                 ) : (
                   <IconSymbol
                     name="chevron.right"

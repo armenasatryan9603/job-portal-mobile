@@ -21,7 +21,7 @@ export interface ButtonProps {
   iconPosition?: "left" | "right";
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
   backgroundColor?: string;
   textColor?: string;

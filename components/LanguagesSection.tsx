@@ -33,24 +33,24 @@ interface LanguagesSectionProps {
 }
 
 // Proficiency level colors for visual indicators
-const getProficiencyColor = (level: LanguageProficiencyLevel): string => {
+const getProficiencyColor = (level: LanguageProficiencyLevel, colors: typeof ThemeColors.light): string => {
   switch (level) {
     case LanguageProficiencyLevel.NATIVE:
-      return "#4CAF50";
+      return colors.success;
     case LanguageProficiencyLevel.FLUENT:
-      return "#2196F3";
+      return colors.info;
     case LanguageProficiencyLevel.ADVANCED:
-      return "#9C27B0";
+      return colors.purple;
     case LanguageProficiencyLevel.UPPER_INTERMEDIATE:
-      return "#FF9800";
+      return colors.warning;
     case LanguageProficiencyLevel.INTERMEDIATE:
-      return "#FFC107";
+      return colors.amber;
     case LanguageProficiencyLevel.ELEMENTARY:
-      return "#FF5722";
+      return colors.deepOrange;
     case LanguageProficiencyLevel.BEGINNER:
-      return "#9E9E9E";
+      return colors.textTertiary;
     default:
-      return "#9E9E9E";
+      return colors.textTertiary;
   }
 };
 
@@ -229,7 +229,8 @@ export function LanguagesSection({
                   language as "en" | "ru" | "hy"
                 );
                 const proficiencyColor = getProficiencyColor(
-                  userLang.level as LanguageProficiencyLevel
+                  userLang.level as LanguageProficiencyLevel,
+                  colors
                 );
                 const isExpanded = expandedIndex === index;
                 const availableLanguages = getAvailableLanguagesForIndex(index);
@@ -313,7 +314,7 @@ export function LanguagesSection({
                         <IconSymbol
                           name="trash.fill"
                           size={16}
-                          color={colors.error || "#F44336"}
+                          color={colors.error}
                         />
                       </TouchableOpacity>
                     </View>
@@ -362,7 +363,7 @@ export function LanguagesSection({
                                       styles.optionChipText,
                                       {
                                         color: isSelected
-                                          ? "white"
+                                          ? colors.textInverse
                                           : colors.text,
                                       },
                                     ]}
@@ -394,7 +395,8 @@ export function LanguagesSection({
                             {PROFICIENCY_LEVELS.map((level) => {
                               const isSelected = userLang.level === level.value;
                               const levelColor = getProficiencyColor(
-                                level.value
+                                level.value,
+                                colors
                               );
                               return (
                                 <TouchableOpacity
@@ -426,7 +428,7 @@ export function LanguagesSection({
                                       styles.optionChipText,
                                       {
                                         color: isSelected
-                                          ? "white"
+                                          ? colors.textInverse
                                           : colors.text,
                                       },
                                     ]}
@@ -517,7 +519,8 @@ export function LanguagesSection({
                   language as "en" | "ru" | "hy"
                 );
                 const proficiencyColor = getProficiencyColor(
-                  userLang.level as LanguageProficiencyLevel
+                  userLang.level as LanguageProficiencyLevel,
+                  colors
                 );
 
                 return (

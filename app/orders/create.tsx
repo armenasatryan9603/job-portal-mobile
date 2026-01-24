@@ -60,8 +60,6 @@ export default function CreateOrderScreen() {
   const { showLoginModal } = useModal();
   const queryClient = useQueryClient();
 
-  
-
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -1597,7 +1595,6 @@ export default function CreateOrderScreen() {
   const header = (
     <Header
       title={t("createOrder")}
-      subtitle={t("postNewJobOpportunity")}
       showBackButton={true}
       onBackPress={() => router.back()}
     />
@@ -1658,80 +1655,26 @@ export default function CreateOrderScreen() {
 
             {/* Compact Toggle Buttons */}
             <View style={styles.orderTypeToggleContainer}>
-              <TouchableOpacity
-                style={[
-                  styles.orderTypeToggle,
-                  {
-                    backgroundColor:
-                      orderType === "one_time"
-                        ? colors.primary
-                        : colors.background,
-                    borderColor: colors.border,
-                    opacity: orderId ? 0.6 : 1,
-                  },
-                ]}
+              <Button
+                variant={orderType === "one_time" ? "primary" : "outline"}
                 onPress={() => !orderId && handleOrderTypeChange("one_time")}
-                activeOpacity={orderId ? 1 : 0.7}
                 disabled={!!orderId}
-              >
-                <IconSymbol
-                  name="checkmark.circle.fill"
-                  size={16}
-                  color={
-                    orderType === "one_time" ? "#FFFFFF" : colors.tabIconDefault
-                  }
-                />
-                <Text
-                  style={[
-                    styles.orderTypeToggleText,
-                    {
-                      color: orderType === "one_time" ? "#FFFFFF" : colors.text,
-                      fontWeight: orderType === "one_time" ? "600" : "500",
-                    },
-                  ]}
-                >
-                  {t("oneTimeOrder")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.orderTypeToggle,
-                  {
-                    backgroundColor:
-                      orderType === "permanent"
-                        ? colors.primary
-                        : colors.background,
-                    borderColor: colors.border,
-                    opacity: orderId ? 0.6 : 1,
-                  },
-                ]}
+                icon="checkmark.circle.fill"
+                iconSize={16}
+                iconPosition="left"
+                title={t("oneTimeOrder")}
+                style={{ flex: 1 }}
+              />
+              <Button
+                variant={orderType === "permanent" ? "primary" : "outline"}
                 onPress={() => !orderId && handleOrderTypeChange("permanent")}
-                activeOpacity={orderId ? 1 : 0.7}
                 disabled={!!orderId}
-              >
-                <IconSymbol
-                  name="repeat.circle.fill"
-                  size={16}
-                  color={
-                    orderType === "permanent"
-                      ? "#FFFFFF"
-                      : colors.tabIconDefault
-                  }
-                />
-                <Text
-                  style={[
-                    styles.orderTypeToggleText,
-                    {
-                      color:
-                        orderType === "permanent" ? "#FFFFFF" : colors.text,
-                      fontWeight: orderType === "permanent" ? "600" : "500",
-                    },
-                  ]}
-                >
-                  {t("permanentOrder")}
-                </Text>
-              </TouchableOpacity>
+                icon="repeat.circle.fill"
+                iconSize={16}
+                iconPosition="left"
+                title={t("permanentOrder")}
+                style={{ flex: 1 }}
+              />
             </View>
 
             {/* Subtle description */}
@@ -1814,7 +1757,7 @@ export default function CreateOrderScreen() {
                     ]}
                   >
                     {checkinRequiresApproval && (
-                      <IconSymbol name="checkmark" size={14} color="white" />
+                      <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
                     )}
                   </View>
                   <View style={styles.checkboxLabelContainer}>
@@ -1921,15 +1864,15 @@ export default function CreateOrderScreen() {
                       styles.priceInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderColor: errors.budget ? colors.error : colors.border,
                         borderTopColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderBottomColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderLeftColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderRightColor: colors.border, // Keep inner border normal
                         color: colors.text,
@@ -1960,12 +1903,12 @@ export default function CreateOrderScreen() {
                       styles.selectorButton,
                       {
                         backgroundColor: colors.background,
-                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderColor: errors.budget ? colors.error : colors.border,
                         borderTopColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderBottomColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderLeftColor: colors.border, // Keep inner border normal
                         borderRightColor: colors.border, // Keep inner border normal
@@ -1997,15 +1940,15 @@ export default function CreateOrderScreen() {
                       styles.rateUnitSelectorButton,
                       {
                         backgroundColor: colors.background,
-                        borderColor: errors.budget ? "#ff4444" : colors.border,
+                        borderColor: errors.budget ? colors.error : colors.border,
                         borderTopColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderBottomColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderRightColor: errors.budget
-                          ? "#ff4444"
+                          ? colors.error
                           : colors.border,
                         borderLeftColor: colors.border, // Keep inner border normal
                       },
@@ -2029,7 +1972,7 @@ export default function CreateOrderScreen() {
                 </View>
               </View>
               {errors.budget ? (
-                <Text style={{ color: "#ff4444", marginBottom: 10 }}>
+                <Text style={{ color: colors.error, marginBottom: 10 }}>
                   {errors.budget}
                 </Text>
               ) : null}
@@ -2143,7 +2086,7 @@ export default function CreateOrderScreen() {
                     },
                   ]}
                 >
-                  <IconSymbol name="trash" size={18} color="#FF3B30" />
+                  <IconSymbol name="trash" size={18} color={colors.errorVariant} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -2194,7 +2137,7 @@ export default function CreateOrderScreen() {
                   ]}
                 >
                   {useAIEnhancement && (
-                    <IconSymbol name="checkmark" size={14} color="white" />
+                    <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
                   )}
                 </View>
                 <Text style={[styles.checkboxLabel, { color: colors.text }]}>
@@ -2233,8 +2176,9 @@ export default function CreateOrderScreen() {
                     iconSize={16}
                     iconPosition="left"
                     title={t("delete")}
-                    textColor="#FF3B30"
+                    textColor={colors.errorVariant}
                     onPress={handleDeleteOrder}
+                    style={{ flex: 1, maxWidth: '33%' }}
                   />
                   <Button
                     variant="outline"
@@ -2245,11 +2189,12 @@ export default function CreateOrderScreen() {
                     onPress={() => {
                       router.push(`/orders/${orderId}?preview=true`);
                     }}
+                    style={{ flex: 1, maxWidth: '33%' }}
                   />
                 </>
               )}
               <Button
-                style={{ minWidth: 80 }}
+                style={{ minWidth: 80, flex: 1, maxWidth: '33%' }}
                 onPress={handleApply}
                 title={orderId ? t("save") : t("apply")}
                 variant="primary"
@@ -2494,7 +2439,7 @@ export default function CreateOrderScreen() {
                       }}
                     >
                       <Text
-                        style={[styles.addCustomButtonText, { color: "#fff" }]}
+                        style={[styles.addCustomButtonText, { color: colors.textInverse }]}
                       >
                         {t("add")}
                       </Text>
@@ -2565,14 +2510,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#FF3B30",
+    // Note: borderColor should be set inline: { borderColor: colors.errorVariant }
     gap: 6,
     flex: 1,
   },
   deleteButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#FF3B30",
+    // Note: color should be set inline: { color: colors.errorVariant }
   },
   modalOverlay: {
     flex: 1,
@@ -2804,6 +2749,7 @@ const styles = StyleSheet.create({
   },
   orderTypeToggleContainer: {
     flexDirection: "row",
+    justifyContent: 'center',
     gap: 8,
     marginBottom: 8,
   },

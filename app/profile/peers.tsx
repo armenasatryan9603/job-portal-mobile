@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
@@ -292,8 +293,8 @@ export default function PeersScreen() {
           { marginTop: Spacing.lg },
           isPending && {
             borderLeftWidth: 4,
-            borderLeftColor: "#FF9500",
-            backgroundColor: isDark ? "#FF950010" : "#FF950008",
+            borderLeftColor: colors.orange,
+            backgroundColor: isDark ? colors.orange + "10" : colors.orange + "08",
           },
         ]}
         key={peer.id}
@@ -327,10 +328,21 @@ export default function PeersScreen() {
                 {peer.name}
               </Text>
               {isPending && (
-                <View style={styles.pendingBadge}>
-                  <IconSymbol name="clock.fill" size={12} color="#FF9500" />
-                  <Text style={styles.pendingBadgeText}>{t("pending")}</Text>
-                </View>
+                <Badge
+                  text={t("pending")}
+                  variant="pending"
+                  icon="clock.fill"
+                  iconSize={12}
+                  size="sm"
+                  style={{
+                    backgroundColor: isDark ? colors.orange + "20" : colors.orange + "10",
+                    borderWidth: 1,
+                    borderColor: colors.orange,
+                  }}
+                  textColor={colors.orange}
+                  iconColor={colors.orange}
+                  textStyle={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+                />
               )}
             </View>
             {peer.email && (
@@ -345,7 +357,7 @@ export default function PeersScreen() {
             onPress={() => handleRemovePeer(peer.id)}
             style={styles.removeButton}
           >
-            <IconSymbol name="trash" size={20} color="#FF3B30" />
+            <IconSymbol name="trash" size={20} color={colors.errorVariant} />
           </TouchableOpacity>
         </View>
       </ResponsiveCard>
@@ -762,24 +774,6 @@ const styles = StyleSheet.create({
   peerName: {
     fontSize: 16,
     fontWeight: "600",
-  },
-  pendingBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#FF950020",
-    borderWidth: 1,
-    borderColor: "#FF9500",
-  },
-  pendingBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#FF9500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   peerEmail: {
     fontSize: 14,

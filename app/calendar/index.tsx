@@ -1,37 +1,39 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { EmptyPage } from "@/components/EmptyPage";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import {
-  ThemeColors,
-  Shadows,
-  BorderRadius,
-  Spacing,
-} from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useProposalsByUser, useMyOrders } from "@/hooks/useApi";
-import { router } from "expo-router";
-import React, { useState, useMemo, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  FlatList,
   Alert,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import CalendarNotificationService from "@/categories/CalendarNotificationService";
-import { CountBadge } from "@/components/CountBadge";
-import { apiService, Booking } from "@/categories/api";
-import { EditBookingModal } from "@/components/EditBookingModal";
-import { pusherService } from "@/categories/pusherService";
-import CalendarSkeleton from "./Skeleton";
+import { Booking, apiService } from "@/categories/api";
+import {
+  BorderRadius,
+  Shadows,
+  Spacing,
+  ThemeColors,
+} from "@/constants/styles";
+import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMyOrders, useProposalsByUser } from "@/hooks/useApi";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import CalendarSkeleton from "./Skeleton";
+import { CountBadge } from "@/components/CountBadge";
+import { EditBookingModal } from "@/components/EditBookingModal";
+import { EmptyPage } from "@/components/EmptyPage";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { pusherService } from "@/categories/pusherService";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface Application {
   id: number;
@@ -394,14 +396,14 @@ export default function CalendarScreen() {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case "pending":
-        return "#FFA500"; // Orange
+        return colors.orangeSecondary; // Orange
       case "accepted":
-        return "#4CAF50"; // Green
+        return colors.success; // Green
       case "rejected":
-        return "#F44336"; // Red
+        return colors.error; // Red
       case "cancelled":
       case "specialist-canceled":
-        return "#9E9E9E"; // Gray
+        return colors.textTertiary; // Gray
       default:
         return colors.tabIconDefault;
     }
@@ -496,10 +498,10 @@ export default function CalendarScreen() {
           );
 
           // Use orange color for dates with pending bookings, purple for confirmed
-          const borderColor = hasPendingBookings ? "#FFA500" : "#9333EA";
+          const borderColor = hasPendingBookings ? colors.orangeSecondary : colors.accent;
           const backgroundColor = hasPendingBookings
-            ? "#FFA50015"
-            : "#9333EA15";
+            ? colors.orangeSecondary + "15"
+            : colors.accent + "15";
 
           marked[dateString] = {
             customStyles: {
@@ -598,8 +600,8 @@ export default function CalendarScreen() {
                   style={[
                     styles.legendDot,
                     {
-                      backgroundColor: "#9333EA",
-                      shadowColor: "#9333EA",
+                      backgroundColor: colors.accent,
+                      shadowColor: colors.accent,
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 0.3,
                       shadowRadius: 2,
@@ -819,7 +821,7 @@ export default function CalendarScreen() {
                   <View
                     style={[
                       styles.dateHeaderIndicator,
-                      { backgroundColor: "#9333EA" }, // Purple for bookings
+                      { backgroundColor: colors.accent }, // Purple for bookings
                     ]}
                   />
                   <Text style={[styles.dateHeaderText, { color: colors.text }]}>
@@ -836,7 +838,7 @@ export default function CalendarScreen() {
                   return (
                     <CountBadge
                       count={item.bookings.length}
-                      color={hasPending ? "#FFA500" : "#9333EA"}
+                      color={hasPending ? colors.orangeSecondary : colors.accent}
                     />
                   );
                 })()}
@@ -856,7 +858,7 @@ export default function CalendarScreen() {
                         backgroundColor:
                           (colors as any).surface || colors.background,
                         borderColor: isPending && isMyOrderBooking
-                          ? "#FFA500"
+                          ? colors.orangeSecondary
                           : colors.border,
                         borderWidth: isPending && isMyOrderBooking ? 2 : 1,
                         ...Shadows.md,
@@ -893,32 +895,34 @@ export default function CalendarScreen() {
                           styles.statusBadge,
                           {
                             backgroundColor: isPending
-                              ? "#FFA500" + "20"
-                              : "#9333EA" + "20",
+                              ? colors.orangeSecondary + "20"
+                              : colors.accent + "20",
                             borderWidth: 1,
                             borderColor: isPending
-                              ? "#FFA500" + "40"
-                              : "#9333EA" + "40",
+                              ? colors.orangeSecondary + "40"
+                              : colors.accent + "40",
                           },
                         ]}
                       >
-                        <View
-                          style={[
-                            styles.statusDot,
-                            {
-                              backgroundColor: isPending ? "#FFA500" : "#9333EA",
-                            },
-                          ]}
+                        <Badge
+                          text={isPending ? t("pending") : t("booked")}
+                          variant={isPending ? "pending" : "default"}
+                          backgroundColor={
+                            isPending
+                              ? colors.orangeSecondary + "20"
+                              : colors.accent + "20"
+                          }
+                          textColor={isPending ? colors.orangeSecondary : colors.accent}
+                          iconColor={isPending ? colors.orangeSecondary : colors.accent}
+                          size="sm"
+                          style={{
+                            borderWidth: 1,
+                            borderColor: isPending
+                              ? colors.orangeSecondary + "40"
+                              : colors.accent + "40",
+                          }}
                         />
-                        <Text
-                          style={[
-                            styles.statusText,
-                            { color: isPending ? "#FFA500" : "#9333EA" },
-                          ]}
-                        >
-                          {isPending ? t("pending") : t("booked")}
-                        </Text>
-                      </View>
+                    </View>
                     </View>
                     <View style={styles.applicationMetaContainer}>
                       <View style={styles.applicationMeta}>
@@ -946,8 +950,8 @@ export default function CalendarScreen() {
                             style={[
                               styles.bookingActionButton,
                               {
-                                backgroundColor: "#4CAF50" + "15",
-                                borderColor: "#4CAF50",
+                                backgroundColor: colors.success + "15",
+                                borderColor: colors.success,
                               },
                             ]}
                             onPress={(e) => {
@@ -958,12 +962,12 @@ export default function CalendarScreen() {
                             <IconSymbol
                               name="checkmark.circle.fill"
                               size={16}
-                              color="#4CAF50"
+                              color={colors.success}
                             />
                             <Text
                               style={[
                                 styles.bookingActionText,
-                                { color: "#4CAF50" },
+                                { color: colors.success },
                               ]}
                             >
                               {t("approve")}
@@ -973,8 +977,8 @@ export default function CalendarScreen() {
                             style={[
                               styles.bookingActionButton,
                               {
-                                backgroundColor: "#FF3B30" + "15",
-                                borderColor: "#FF3B30",
+                                backgroundColor: colors.errorVariant + "15",
+                                borderColor: colors.errorVariant,
                               },
                             ]}
                             onPress={(e) => {
@@ -985,12 +989,12 @@ export default function CalendarScreen() {
                             <IconSymbol
                               name="xmark.circle.fill"
                               size={16}
-                              color="#FF3B30"
+                              color={colors.errorVariant}
                             />
                             <Text
                               style={[
                                 styles.bookingActionText,
-                                { color: "#FF3B30" },
+                                { color: colors.errorVariant },
                               ]}
                             >
                               {t("reject")}
@@ -1033,8 +1037,8 @@ export default function CalendarScreen() {
                             style={[
                               styles.bookingActionButton,
                               {
-                                backgroundColor: "#FF3B30" + "15",
-                                borderColor: "#FF3B30",
+                                backgroundColor: colors.errorVariant + "15",
+                                borderColor: colors.errorVariant,
                               },
                             ]}
                             onPress={(e) => {
@@ -1045,12 +1049,12 @@ export default function CalendarScreen() {
                             <IconSymbol
                               name="xmark.circle"
                               size={16}
-                              color="#FF3B30"
+                              color={colors.errorVariant}
                             />
                             <Text
                               style={[
                                 styles.bookingActionText,
-                                { color: "#FF3B30" },
+                                { color: colors.errorVariant },
                               ]}
                             >
                               {t("remove")}
@@ -1158,31 +1162,17 @@ export default function CalendarScreen() {
                       {app.Order?.title || t("order") + " #" + app.orderId}
                     </Text>
                   </View>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      {
-                        backgroundColor: getStatusColor(app.status) + "20",
-                        borderWidth: 1,
-                        borderColor: getStatusColor(app.status) + "40",
-                      },
-                    ]}
-                  >
-                    <View
-                      style={[
-                        styles.statusDot,
-                        { backgroundColor: getStatusColor(app.status) },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.statusText,
-                        { color: getStatusColor(app.status) },
-                      ]}
-                    >
-                      {getStatusLabel(app.status)}
-                    </Text>
-                  </View>
+                  <Badge
+                    text={getStatusLabel(app.status)}
+                    backgroundColor={getStatusColor(app.status) + "20"}
+                    textColor={getStatusColor(app.status)}
+                    iconColor={getStatusColor(app.status)}
+                    size="sm"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: getStatusColor(app.status) + "40",
+                    }}
+                  />
                 </View>
                 <View style={styles.applicationMetaContainer}>
                   <View style={styles.applicationMeta}>

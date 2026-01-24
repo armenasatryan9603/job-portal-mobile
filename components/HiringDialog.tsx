@@ -272,13 +272,13 @@ export function HiringDialog({
                             : "checkmark.circle"
                         }
                         size={16}
-                        color={isAlreadyHired ? "#FF6B6B" : "#4CAF50"}
+                        color={isAlreadyHired ? colors.danger : colors.success}
                       />
                       <Text
                         style={[
                           styles.statusText,
                           {
-                            color: isAlreadyHired ? "#FF6B6B" : "#4CAF50",
+                            color: isAlreadyHired ? colors.danger : colors.success,
                           },
                         ]}
                       >

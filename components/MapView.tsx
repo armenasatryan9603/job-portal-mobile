@@ -372,6 +372,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

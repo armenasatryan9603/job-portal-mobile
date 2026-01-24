@@ -122,7 +122,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
 
       marked[day.date] = {
         marked: hasAvailableTime,
-        dotColor: hasAvailableTime ? colors.primary : "#FF3B30",
+        dotColor: hasAvailableTime ? colors.primary : colors.errorVariant,
         disabled: !hasAvailableTime,
       };
     });
@@ -313,7 +313,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                   </View>
                   <View style={styles.legendItem}>
                     <View
-                      style={[styles.legendDot, { backgroundColor: "#FF3B30" }]}
+                      style={[styles.legendDot, { backgroundColor: colors.errorVariant }]}
                     />
                     <Text style={[styles.legendText, { color: colors.text }]}>
                       {t("fullyBooked") || "Fully Booked"}
@@ -459,7 +459,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                         <IconSymbol
                           name="xmark.circle.fill"
                           size={22}
-                          color="#FF3B30"
+                          color={colors.errorVariant}
                         />
                       </TouchableOpacity>
                     </View>

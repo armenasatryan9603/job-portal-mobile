@@ -344,7 +344,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                           {
                             backgroundColor: colors.background,
                             borderColor: questionErrors[question.id]
-                              ? "#FF3B30"
+                              ? colors.errorVariant
                               : colors.border,
                             color: colors.text,
                           },
@@ -371,7 +371,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                         textAlignVertical="top"
                       />
                       {questionErrors[question.id] && (
-                        <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+                        <Text style={[styles.errorText, { color: colors.errorVariant }]}>
                           {questionErrors[question.id]}
                         </Text>
                       )}
@@ -389,7 +389,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                   styles.messageInput,
                   {
                     backgroundColor: colors.background,
-                    borderColor: messageError ? "#FF3B30" : colors.border,
+                    borderColor: messageError ? colors.errorVariant : colors.border,
                     color: colors.text,
                   },
                 ]}
@@ -402,7 +402,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 textAlignVertical="top"
               />
               {messageError && (
-                <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+                <Text style={[styles.errorText, { color: colors.errorVariant }]}>
                   {messageError}
                 </Text>
               )}
@@ -656,6 +656,7 @@ const styles = StyleSheet.create({
   submitButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    // Note: Should use colors.text dynamically - consider inline style
     color: "black",
   },
   questionsSection: {

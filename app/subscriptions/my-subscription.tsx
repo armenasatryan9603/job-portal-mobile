@@ -1,26 +1,28 @@
-import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { BorderRadius, ThemeColors } from "@/constants/styles";
+import React, { useEffect, useState } from "react";
+import { useCancelSubscription, useMySubscription } from "@/hooks/useApi";
+
+import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, BorderRadius } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { useMySubscription, useCancelSubscription } from "@/hooks/useApi";
+import { Layout } from "@/components/Layout";
 import type { UserSubscription } from "@/categories/api";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function MySubscriptionScreen() {
   useAnalytics("MySubscription");
@@ -194,18 +196,11 @@ export default function MySubscriptionScreen() {
         >
           <View style={styles.headerRow}>
             <View style={styles.planHeader}>
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: isActive ? "#4CAF50" : "#FF9800",
-                  },
-                ]}
-              >
-                <Text style={styles.statusBadgeText}>
-                  {isActive ? t("active") : subscription.status}
-                </Text>
-              </View>
+              <Badge
+                text={isActive ? t("active") : subscription.status}
+                variant={isActive ? "success" : "warning"}
+                size="md"
+              />
               <Text style={[styles.planName, { color: colors.text }]}>
                 {subscription.Plan?.name || ""}
               </Text>
@@ -407,12 +402,12 @@ export default function MySubscriptionScreen() {
                 disabled={cancelMutation.isPending}
               >
                 {cancelMutation.isPending ? (
-                  <ActivityIndicator color="#FF3B30" size="small" />
+                  <ActivityIndicator color={colors.errorVariant} size="small" />
                 ) : (
                   <>
-                    <IconSymbol name="xmark" size={14} color="#FF3B30" />
+                    <IconSymbol name="xmark" size={14} color={colors.errorVariant} />
                     <Text
-                      style={[styles.secondaryButtonText, { color: "#FF3B30" }]}
+                      style={[styles.secondaryButtonText, { color: colors.errorVariant }]}
                     >
                       {t("cancelSubscription") || "Cancel"}
                     </Text>
@@ -495,20 +490,6 @@ const styles = StyleSheet.create({
   },
   planHeader: {
     flex: 1,
-  },
-  statusBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    alignSelf: "flex-start",
-    marginBottom: 4,
-  },
-  statusBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
   },
   expiringBadge: {
     paddingHorizontal: 6,

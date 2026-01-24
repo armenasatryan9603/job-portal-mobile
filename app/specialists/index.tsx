@@ -467,7 +467,7 @@ export default function SpecialistsScreen() {
 
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <IconSymbol key={i} name="star.fill" size={14} color="#FFD700" />
+        <IconSymbol key={i} name="star.fill" size={14} color={colors.rating} />
       );
     }
 
@@ -477,7 +477,7 @@ export default function SpecialistsScreen() {
           key="half"
           name="star.leadinghalf.filled"
           size={14}
-          color="#FFD700"
+          color={colors.rating}
         />
       );
     }
@@ -801,8 +801,8 @@ export default function SpecialistsScreen() {
                     styles.availabilityDot,
                     {
                       backgroundColor: specialist.User?.verified
-                        ? "#4CAF50"
-                        : "#FFA500",
+                        ? colors.success
+                        : colors.orangeSecondary,
                     },
                   ]}
                 />
@@ -837,7 +837,7 @@ export default function SpecialistsScreen() {
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <IconSymbol name="star.fill" size={16} color="#FFD700" />
+                <IconSymbol name="star.fill" size={16} color={colors.rating} />
                 <Text style={[styles.detailText, { color: colors.text }]}>
                   {specialist.averageRating && specialist.averageRating > 0
                     ? `${specialist.averageRating.toFixed(1)} (${

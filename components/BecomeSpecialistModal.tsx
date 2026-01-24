@@ -115,7 +115,7 @@ export function BecomeSpecialistModal({
             ]}
           >
             <View style={styles.iconContainer}>
-              <IconSymbol name="person.2.fill" size={28} color="white" />
+              <IconSymbol name="person.2.fill" size={28} color={colors.textInverse} />
             </View>
             <Text style={styles.title}>{t("becomeASpecialist")}</Text>
           </View>
@@ -246,7 +246,7 @@ export function BecomeSpecialistModal({
                 ]}
               >
                 {dontShowAgain && (
-                  <IconSymbol name="checkmark" size={14} color="white" />
+                  <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
                 )}
               </View>
               <Text style={[styles.checkboxLabel, { color: colors.text }]}>
@@ -271,7 +271,7 @@ export function BecomeSpecialistModal({
               title={t("becomeSpecialist")}
               onPress={handleBecomeSpecialist}
               backgroundColor={colors.primary}
-              textColor="white"
+              textColor={colors.textInverse}
               disabled={isUpdating}
               style={styles.primaryActionButton}
             />
@@ -327,6 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   scrollView: {

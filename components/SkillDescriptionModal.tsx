@@ -130,9 +130,9 @@ export const SkillDescriptionModal: React.FC<SkillDescriptionModalProps> = ({
                 <IconSymbol
                   name="exclamationmark.triangle"
                   size={24}
-                  color="#FF3B30"
+                  color={colors.errorVariant}
                 />
-                <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+                <Text style={[styles.errorText, { color: colors.errorVariant }]}>
                   {error}
                 </Text>
               </View>

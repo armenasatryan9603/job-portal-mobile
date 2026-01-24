@@ -120,7 +120,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
 
       marked[day.date] = {
         marked: hasAvailableTime,
-        dotColor: hasAvailableTime ? colors.primary : "#FF3B30",
+        dotColor: hasAvailableTime ? colors.primary : colors.errorVariant,
         disabled: !hasAvailableTime,
       };
     });
@@ -336,7 +336,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
                   </View>
                   <View style={styles.legendItem}>
                     <View
-                      style={[styles.legendDot, { backgroundColor: "#FF3B30" }]}
+                      style={[styles.legendDot, { backgroundColor: colors.errorVariant }]}
                     />
                     <Text style={[styles.legendText, { color: colors.text }]}>
                       {t("fullyBooked") || "Fully Booked"}

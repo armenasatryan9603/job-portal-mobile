@@ -1,20 +1,22 @@
-import React, { useState, useMemo } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Image } from "expo-image";
-import { router } from "expo-router";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { DaySchedule, WeeklySchedule } from "./WeeklySchedulePicker";
+import React, { useMemo, useState } from "react";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+
+import { Badge } from "@/components/ui/badge";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { router } from "expo-router";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { WeeklySchedule, DaySchedule } from "./WeeklySchedulePicker";
 
 interface ServiceItemProps {
   service: {
@@ -145,10 +147,10 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
 
   // Status configuration
   const statusConfig = {
-    active: { color: "#4CAF50", icon: "checkmark.circle.fill" },
-    draft: { color: "#FF9800", icon: "clock.circle.fill" },
-    inactive: { color: "#9E9E9E", icon: "xmark.circle.fill" },
-    pending: { color: "#FF9800", icon: "clock.circle.fill" },
+    active: { color: colors.success, icon: "checkmark.circle.fill" },
+    draft: { color: colors.warning, icon: "clock.circle.fill" },
+    inactive: { color: colors.textTertiary, icon: "xmark.circle.fill" },
+    pending: { color: colors.warning, icon: "clock.circle.fill" },
   };
 
   const getStatusColor = (status?: string) =>
@@ -221,26 +223,21 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
                   <IconSymbol
                     name="checkmark.seal.fill"
                     size={12}
-                    color="#4CAF50"
+                    color={colors.success}
                   />
                 </View>
               )}
             </View>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(serviceStatus) },
-              ]}
-            >
-              <IconSymbol
-                name={getStatusIcon(serviceStatus) as any}
-                size={10}
-                color="white"
-              />
-              <Text style={styles.statusText}>
-                {t(serviceStatus) || serviceStatus}
-              </Text>
-            </View>
+            <Badge
+              text={t(serviceStatus) || serviceStatus}
+              icon={getStatusIcon(serviceStatus)}
+              iconSize={10}
+              backgroundColor={getStatusColor(serviceStatus)}
+              textColor={colors.textInverse}
+              iconColor={colors.textInverse}
+              size="sm"
+              style={{ marginLeft: 4 }}
+            />
           </View>
 
           {/* Description */}
@@ -253,84 +250,81 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
             </Text>
           )}
 
-          {/* Service Details */}
+          {/* Service Details - 2x2 Grid */}
           <View style={styles.serviceDetails}>
-            {/* Rating */}
-            {(service.rating ?? 0) > 0 && (
-              <View style={styles.detailItem}>
+            {/* Row 1 */}
+            <View style={styles.detailRow}>
+              {/* Cell 1: Rating */}
+              <View style={styles.detailCell}>
                 <IconSymbol
                   name="star.fill"
                   size={12}
-                  color="#FFD700"
+                  color={(service.rating ?? 0) > 0 ? colors.rating : colors.tabIconDefault}
                 />
                 <Text style={[styles.detailText, { color: colors.text }]}>
-                  {service.rating!.toFixed(1)}
+                  {(service.rating ?? 0) > 0 ? service.rating!.toFixed(1) : "N/A"}
                 </Text>
               </View>
-            )}
 
-            {/* Hours */}
-            {todaySchedule ? (
-              <View style={styles.detailItem}>
+              {/* Cell 2: Hours */}
+              <View style={styles.detailCell}>
                 <IconSymbol
                   name={isOpenNow ? "clock.fill" : "clock"}
                   size={12}
-                  color={isOpenNow ? "#34C759" : colors.tint}
+                  color={isOpenNow ? colors.openNow : colors.tint}
                 />
                 <Text
                   style={[
                     styles.detailText,
                     {
-                      color: isOpenNow ? "#34C759" : colors.text,
+                      color: isOpenNow ? colors.openNow : colors.text,
                       fontWeight: isOpenNow ? "600" : "500",
                     },
                   ]}
+                  numberOfLines={1}
                 >
                   {isOpenNow
                     ? (t("openNow") || "Open Now")
-                    : `${todaySchedule?.start || ""} - ${todaySchedule?.end || ""}`}
+                    : todaySchedule
+                    ? `${todaySchedule?.start || ""} - ${todaySchedule?.end || ""}`
+                    : (t("hoursNotSet") || "Hours not set")}
                 </Text>
               </View>
-            ) : (
-              <View style={styles.detailItem}>
-                <IconSymbol name="clock" size={12} color={colors.tint} />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {t("hoursNotSet") || "Hours not set"}
-                </Text>
-              </View>
-            )}
+            </View>
 
-            {/* Location */}
-            {service.location && service.location.trim() && (
-              <View style={styles.detailItem}>
+            {/* Row 2 */}
+            <View style={styles.detailRow}>
+              {/* Cell 3: Location */}
+              <View style={styles.detailCell}>
                 <IconSymbol
                   name="location.fill"
                   size={12}
-                  color={colors.tint}
+                  color={service.location && service.location.trim() ? colors.tint : colors.tabIconDefault}
                 />
                 <Text
                   style={[styles.detailText, { color: colors.text }]}
                   numberOfLines={1}
                 >
-                  {service.location}
+                  {service.location && service.location.trim()
+                    ? service.location
+                    : (t("noLocation") || "No location")}
                 </Text>
               </View>
-            )}
 
-            {/* Members */}
-            {memberCount > 0 && (
-              <View style={styles.detailItem}>
+              {/* Cell 4: Members */}
+              <View style={styles.detailCell}>
                 <IconSymbol
                   name="person.3.fill"
                   size={12}
-                  color={colors.tint}
+                  color={memberCount > 0 ? colors.tint : colors.tabIconDefault}
                 />
                 <Text style={[styles.detailText, { color: colors.text }]}>
-                  {memberCount} {memberCount === 1 ? (t("member") || "member") : (t("members") || "members")}
+                  {memberCount > 0
+                    ? `${memberCount} ${memberCount === 1 ? (t("member") || "member") : (t("members") || "members")}`
+                    : (t("noMembers") || "No members")}
                 </Text>
               </View>
-            )}
-
+            </View>
           </View>
         </View>
       </ResponsiveCard>
@@ -404,38 +398,25 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     padding: 2,
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 4,
-  },
-  statusText: {
-    fontSize: 9,
-    fontWeight: "700",
-    color: "white",
-    marginLeft: 4,
-  },
   serviceDescription: {
     fontSize: 11,
     lineHeight: 15,
     marginBottom: 8,
   },
   serviceDetails: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: "column",
     marginBottom: 0,
-    alignItems: "flex-start",
+    marginTop: 4,
   },
-  detailItem: {
+  detailRow: {
+    flexDirection: "row",
+    marginBottom: 6,
+    justifyContent: "space-between",
+  },
+  detailCell: {
     flexDirection: "row",
     alignItems: "center",
-    marginRight: 12,
-    marginBottom: 4,
-    flexShrink: 1,
-    maxWidth: "100%",
+    flex: 1,
     minWidth: 0,
   },
   detailText: {

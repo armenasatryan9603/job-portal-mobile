@@ -1,49 +1,51 @@
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Footer, FooterButton } from "@/components/Footer";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
+import { Order, OrderChangeHistory, apiService } from "@/categories/api";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { ApplyButton } from "@/components/ApplyButton";
+import { ApplyModal } from "@/components/ApplyModal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckInModal } from "@/components/CheckInModal";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { Layout } from "@/components/Layout";
+import { MapViewComponent } from "@/components/MapView";
+import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
+import { PriceCurrency } from "@/components/PriceCurrency";
+import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
+import { chatService } from "@/categories/chatService";
+import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useApplyToOrder } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { parseLocationCoordinates } from "@/utils/locationParsing";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-  Modal,
-  Share,
-  Platform,
-  TextInput,
-} from "react-native";
-import { Image } from "expo-image";
-import { apiService, Order, OrderChangeHistory } from "@/categories/api";
-import { chatService } from "@/categories/chatService";
-import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { ApplyModal } from "@/components/ApplyModal";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { MapViewComponent } from "@/components/MapView";
-import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
-import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
-import { useApplyToOrder } from "@/hooks/useApi";
-import { ApplyButton } from "@/components/ApplyButton";
-import { PriceCurrency } from "@/components/PriceCurrency";
-import { CheckInModal } from "@/components/CheckInModal";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Helper function to get localized service name
 const getLocalizedCategoryName = (
@@ -781,24 +783,24 @@ export default function EditOrderScreen() {
           const status = newValue.toLowerCase();
           switch (status) {
             case "open":
-              return "#007AFF"; // Blue
+              return colors.link; // Blue
             case "pending_review":
-              return "#FF9500"; // Orange/Yellow
+              return colors.orange; // Orange/Yellow
             case "in_progress":
-              return "#FF9500"; // Orange/Yellow
+              return colors.orange; // Orange/Yellow
             case "completed":
-              return "#34C759"; // Green
+              return colors.openNow; // Green
             case "cancelled":
             case "closed":
             case "rejected":
-              return "#FF3B30"; // Red
+              return colors.errorVariant; // Red
           }
         }
-        return "#007AFF"; // Default blue for status
+        return colors.link; // Default blue for status
       case "title":
-        return "#5856D6"; // Purple
+        return colors.accentSecondary; // Purple
       case "budget":
-        return "#FF9500"; // Orange
+        return colors.orange; // Orange
       default:
         return colors.tint;
     }
@@ -875,21 +877,13 @@ export default function EditOrderScreen() {
                 ]}
               >
                 <View style={styles.changeHistoryContent}>
-                  <View
-                    style={[
-                      styles.fieldBadge,
-                      {
-                        backgroundColor: getFieldColor(
-                          item.fieldChanged,
-                          item.newValue
-                        ),
-                      },
-                    ]}
-                  >
-                    <Text style={styles.fieldBadgeText}>
-                      {formatFieldName(item.fieldChanged)}
-                    </Text>
-                  </View>
+                  <Badge
+                    text={formatFieldName(item.fieldChanged)}
+                    backgroundColor={getFieldColor(item.fieldChanged, item.newValue)}
+                    textColor={colors.textInverse}
+                    size="sm"
+                    style={{ minWidth: 80 }}
+                  />
                   <View style={styles.changeHistoryDetails}>
                     <View style={styles.changeValueRow}>
                       <Text
@@ -976,30 +970,14 @@ export default function EditOrderScreen() {
           {order &&
             (order.status === "pending_review" ||
               order.status === "rejected") && (
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor:
-                      order.status === "pending_review" ? "#FF9500" : "#FF3B30",
-                  },
-                ]}
-              >
-                <IconSymbol
-                  name={
-                    order.status === "pending_review"
-                      ? "clock.fill"
-                      : "xmark.circle.fill"
-                  }
-                  size={14}
-                  color="white"
-                />
-                <Text style={styles.statusBadgeText}>
-                  {order.status === "pending_review"
-                    ? t("pendingReview")
-                    : t("rejected")}
-                </Text>
-              </View>
+              <Badge
+                text={order.status === "pending_review" ? t("pendingReview") : t("rejected")}
+                variant={order.status === "pending_review" ? "pending" : "error"}
+                icon={order.status === "pending_review" ? "clock.fill" : "xmark.circle.fill"}
+                iconSize={14}
+                size="md"
+                style={{ marginTop: 12, marginBottom: 8 }}
+              />
             )}
 
           {/* Rejection Reason */}
@@ -1062,7 +1040,7 @@ export default function EditOrderScreen() {
               iconSize={16}
               iconPosition="left"
               variant="outline"
-              textColor="#FF3B30"
+              textColor={colors.errorVariant}
             />
           )}
         </View>
@@ -1137,7 +1115,7 @@ export default function EditOrderScreen() {
                   <IconSymbol
                     name="xmark.circle.fill"
                     size={20}
-                    color="#FF3B30"
+                    color={colors.errorVariant}
                   />
                 </TouchableOpacity>
               )}
@@ -1388,7 +1366,7 @@ export default function EditOrderScreen() {
           <View style={styles.reviewsHeaderRight}>
             {avgRating > 0 && (
               <View style={styles.ratingBadge}>
-                <IconSymbol name="star.fill" size={14} color="#FFD700" />
+                <IconSymbol name="star.fill" size={14} color={colors.rating} />
                 <Text style={[styles.ratingBadgeText, { color: colors.text }]}>
                   {avgRating.toFixed(1)}
                 </Text>
@@ -1429,7 +1407,7 @@ export default function EditOrderScreen() {
                         key={i}
                         name="star.fill"
                         size={12}
-                        color={i < review.rating ? "#FFD700" : colors.border}
+                        color={i < review.rating ? colors.rating : colors.border}
                       />
                     ))}
                   </View>
@@ -1528,16 +1506,12 @@ export default function EditOrderScreen() {
                   <Text style={[styles.bookingClientName, { color: colors.text }]}>
                     {booking.Client?.name || t("client")}
                   </Text>
-                  <View
-                    style={[
-                      styles.bookingStatusBadge,
-                      { backgroundColor: "#FFA500" },
-                    ]}
-                  >
-                    <Text style={styles.bookingStatusText}>
-                      {t("pending")}
-                    </Text>
-                  </View>
+                  <Badge
+                    text={t("pending")}
+                    variant="pending"
+                    size="sm"
+                    backgroundColor={colors.orangeSecondary}
+                  />
                 </View>
                 <View style={styles.bookingDateTime}>
                   <IconSymbol
@@ -1587,7 +1561,7 @@ export default function EditOrderScreen() {
                   }
                   title={t("reject") || "Reject"}
                   variant="outline"
-                  textColor="#FF3B30"
+                  textColor={colors.errorVariant}
                   disabled={updatingBookingStatus === booking.id}
                   style={styles.rejectButton}
                 />
@@ -1648,9 +1622,9 @@ export default function EditOrderScreen() {
                     <IconSymbol
                       name="checkmark.seal.fill"
                       size={14}
-                      color="#4CAF50"
+                      color={colors.success}
                     />
-                    <Text style={[styles.verifiedText, { color: "#4CAF50" }]}>
+                    <Text style={[styles.verifiedText, { color: colors.success }]}>
                       {t("verified")}
                     </Text>
                   </View>
@@ -1688,7 +1662,6 @@ export default function EditOrderScreen() {
   const header = (
     <Header
       title={t("orderDetails")}
-      subtitle={order?.title}
       showBackButton={true}
       onBackPress={() => router.back()}
       rightComponent={
@@ -1907,7 +1880,7 @@ export default function EditOrderScreen() {
                       <IconSymbol
                         name="star.fill"
                         size={32}
-                        color={i < reviewRating ? "#FFD700" : colors.border}
+                        color={i < reviewRating ? colors.rating : colors.border}
                       />
                     </TouchableOpacity>
                   ))}
@@ -1955,7 +1928,7 @@ export default function EditOrderScreen() {
                   title={t("submit")}
                   onPress={handleSubmitReview}
                   backgroundColor={colors.primary}
-                  textColor="white"
+                  textColor={colors.textInverse}
                   disabled={reviewRating === 0}
                 />
               </View>
@@ -2004,6 +1977,7 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 12,
     fontWeight: "600",
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   sectionTitle: {
@@ -2042,6 +2016,7 @@ const styles = StyleSheet.create({
   appliedButtonText: {
     fontSize: 12,
     fontWeight: "600",
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   cancelButton: {
@@ -2161,6 +2136,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   clientAvatarContainer: {
+    // Note: Should use colors.border or colors.textTertiary dynamically - consider inline style
     backgroundColor: "gray",
     width: 50,
     height: 50,
@@ -2242,6 +2218,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -6,
     right: -6,
+    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
     borderRadius: 12,
     zIndex: 10,
@@ -2270,18 +2247,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 14,
-  },
-  fieldBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    minWidth: 80,
-    alignItems: "center",
-  },
-  fieldBadgeText: {
-    color: "white",
-    fontSize: 10,
-    fontWeight: "600",
   },
   changeHistoryDetails: {
     flex: 1,
@@ -2331,22 +2296,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     fontStyle: "italic",
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginTop: 12,
-    marginBottom: 8,
-    gap: 6,
-  },
-  statusBadgeText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "600",
-  },
   rejectionReasonContainer: {
     marginTop: 12,
     padding: 12,
@@ -2375,6 +2324,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
+    // Note: This should use colors.rating with opacity, but StyleSheet doesn't support dynamic colors
+    // Consider using inline style: backgroundColor: colors.rating + "20"
     backgroundColor: "#FFD70020",
   },
   ratingBadgeText: {
@@ -2501,16 +2452,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     flex: 1,
-  },
-  bookingStatusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  bookingStatusText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "white",
   },
   bookingDateTime: {
     flexDirection: "row",

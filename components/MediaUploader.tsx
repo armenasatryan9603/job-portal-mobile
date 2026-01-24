@@ -383,7 +383,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   ]}
                   onPress={() => removeMedia(index)}
                 >
-                  <IconSymbol name="xmark" size={12} color="white" />
+                  <IconSymbol name="xmark" size={12} color={colors.textInverse} />
                 </TouchableOpacity>
 
                 {/* Banner Badge - Show on selected banner image */}
@@ -394,7 +394,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                       { backgroundColor: colors.tint },
                     ]}
                   >
-                    <IconSymbol name="star.fill" size={14} color="black" />
+                    <IconSymbol name="star.fill" size={14} color={colors.text} />
                     <Text style={styles.bannerBadgeText}>{t("banner")}</Text>
                   </View>
                 )}
@@ -406,7 +406,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   <IconSymbol
                     name={media.type === "image" ? "photo" : "video"}
                     size={16}
-                    color="black"
+                    color={colors.text}
                   />
                 </View>
               </View>
@@ -523,6 +523,7 @@ const styles = StyleSheet.create({
   },
   bannerImage: {
     borderWidth: 3,
+    // Note: Should use colors.rating dynamically - consider inline style
     borderColor: "#FFD700",
   },
   bannerBadge: {
@@ -539,6 +540,7 @@ const styles = StyleSheet.create({
   bannerBadgeText: {
     fontSize: 12,
     fontWeight: "500",
+    // Note: Should use colors.text dynamically - consider inline style
     color: "black",
   },
   reselectText: {

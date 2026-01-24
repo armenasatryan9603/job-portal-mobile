@@ -120,7 +120,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
           <IconSymbol
             name={isFilled ? "star.fill" : "star"}
             size={32}
-            color={isFilled ? "#FFD700" : colors.border}
+            color={isFilled ? colors.rating : colors.border}
           />
         </TouchableOpacity>
       );
@@ -313,7 +313,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     onPress={handleSubmit}
                     disabled={loading}
                   >
-                    <Text style={[styles.buttonText, { color: "white" }]}>
+                    <Text style={[styles.buttonText, { color: colors.textInverse }]}>
                       {loading ? t("submitting") : t("submit")}
                     </Text>
                   </TouchableOpacity>

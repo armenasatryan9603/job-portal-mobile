@@ -1,9 +1,11 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, TextStyle } from "react-native";
-import { ThemeColors, Spacing } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 import * as Haptics from "expo-haptics";
+
+import { Spacing, ThemeColors } from "@/constants/styles";
+import { StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
+
 import { Platform } from "react-native";
+import React from "react";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface Tab {
   key: string;
@@ -40,15 +42,6 @@ export const TopTabs: React.FC<TopTabsProps> = ({
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        compact && styles.containerCompact,
-        {
-          borderBottomColor: colors.border,
-        },
-      ]}
-    >
       <View
         style={[
           styles.tabsContainer,
@@ -93,7 +86,6 @@ export const TopTabs: React.FC<TopTabsProps> = ({
           );
         })}
       </View>
-    </View>
   );
 };
 
@@ -114,13 +106,13 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    paddingBottom: Spacing.md,
+    paddingTop: Spacing.xs,
     alignItems: "center",
     justifyContent: "center",
     marginHorizontal: Spacing.xs,
   },
   tabCompact: {
-    paddingVertical: Spacing.sm,
     marginHorizontal: Spacing.xs / 2,
   },
   tabLabel: {

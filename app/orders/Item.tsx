@@ -1,30 +1,32 @@
-import React, { useState, useEffect } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Modal,
-  Alert,
+  View,
 } from "react-native";
-import { Image } from "expo-image";
-import { router } from "expo-router";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { Order, apiService } from "@/categories/api";
+import React, { useState } from "react";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+
+import { ApplyButton } from "@/components/ApplyButton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckInModal } from "@/components/CheckInModal";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { MapViewComponent } from "@/components/MapView";
+import { PriceCurrency } from "@/components/PriceCurrency";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
-import { MapViewComponent } from "@/components/MapView";
-import { ApplyButton } from "@/components/ApplyButton";
-import { PriceCurrency } from "@/components/PriceCurrency";
-import { CheckInModal } from "@/components/CheckInModal";
+import { router } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface OrderItemProps {
   order: Order;
@@ -138,21 +140,40 @@ const OrderItem = ({
   const displayServiceName = getLocalizedServiceName(order.Category);
   const locationCoordinates = parseLocationCoordinates(order.location);
 
-  // Status configuration
-  const statusConfig = {
-    open: { color: "#4CAF50", icon: "circle.fill" },
-    in_progress: { color: "#FF9800", icon: "clock.fill" },
-    completed: { color: "#2196F3", icon: "checkmark.circle.fill" },
-    cancelled: { color: "#F44336", icon: "xmark.circle.fill" },
-    pending: { color: "#9E9E9E", icon: "clock.circle.fill" },
+  // Status configuration for Badge component
+  const getStatusVariant = (status: string): "success" | "warning" | "info" | "error" | "pending" | "default" => {
+    switch (status) {
+      case "open":
+        return "success";
+      case "in_progress":
+        return "warning";
+      case "completed":
+        return "info";
+      case "cancelled":
+        return "error";
+      case "pending":
+        return "pending";
+      default:
+        return "default";
+    }
   };
 
-  const getStatusColor = (status: string) =>
-    statusConfig[status as keyof typeof statusConfig]?.color ||
-    colors.tabIconDefault;
-
-  const getStatusIcon = (status: string) =>
-    statusConfig[status as keyof typeof statusConfig]?.icon || "circle";
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "open":
+        return "circle.fill";
+      case "in_progress":
+        return "clock.fill";
+      case "completed":
+        return "checkmark.circle.fill";
+      case "cancelled":
+        return "xmark.circle.fill";
+      case "pending":
+        return "clock.circle.fill";
+      default:
+        return "circle";
+    }
+  };
 
   const formatRateUnit = (value?: string | null) => {
     if (!value) return t("perProject");
@@ -247,13 +268,6 @@ const OrderItem = ({
       Alert.alert(t("error"), error.message || t("checkInFailed"));
     } finally {
       setCheckInLoading(false);
-    }
-  };
-
-  const handleLocationPress = (e: any) => {
-    e.stopPropagation(); // Prevent triggering order press
-    if (locationCoordinates) {
-      setShowMapModal(true);
     }
   };
 
@@ -386,19 +400,13 @@ const OrderItem = ({
                 </TouchableOpacity>
               )}
             </View>
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(order.status) },
-              ]}
-            >
-              <IconSymbol
-                name={getStatusIcon(order.status) as any}
-                size={10}
-                color="white"
-              />
-              <Text style={styles.statusText}>{t(`${order.status}`)}</Text>
-            </View>
+            <Badge
+              text={t(`${order.status}`)}
+              variant={getStatusVariant(order.status)}
+              icon={getStatusIcon(order.status)}
+              iconSize={10}
+              size="sm"
+            />
           </View>
 
           {/* Price */}
@@ -481,7 +489,7 @@ const OrderItem = ({
                 iconSize={14}
                 iconPosition="left"
                 title={t("cancel")}
-                textColor="#FF3B30"
+                textColor={colors.errorVariant}
               />
             )}
 
@@ -493,7 +501,7 @@ const OrderItem = ({
                 iconSize={14}
                 iconPosition="left"
                 title={t("delete")}
-                textColor="#FF3B30"
+                textColor={colors.errorVariant}
                 onPress={() => handleDeleteOrder(order)}
               />
             )}
@@ -600,19 +608,6 @@ const styles = StyleSheet.create({
     padding: 2,
     marginLeft: Spacing.xs / 2,
   },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: Spacing.xs / 2,
-    borderRadius: 12,
-    gap: Spacing.xs / 2,
-  },
-  statusText: {
-    fontSize: 8,
-    fontWeight: "700",
-    color: "white",
-  },
   priceContainer: {
     marginBottom: Spacing.xs,
   },
@@ -644,6 +639,7 @@ const styles = StyleSheet.create({
     bottom: Spacing.xs / 2,
     left: Spacing.xs,
     zIndex: 1,
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },

@@ -253,8 +253,23 @@ export const ThemeColors = {
     warningLight: "#FFF3E0",
     error: "#F44336",
     errorLight: "#FFEBEE",
+    errorVariant: "#FF3B30", // iOS red variant
     info: "#2196F3",
     infoLight: "#E3F2FD",
+
+    // Semantic colors
+    rating: "#FFD700", // Gold for stars/ratings
+    openNow: "#34C759", // iOS green for "open now" status
+    danger: "#FF6B6B", // Red-pink for delete/danger actions
+    link: "#007AFF", // iOS blue for links
+    accent: "#9333EA", // Purple accent color
+    accentSecondary: "#5856D6", // iOS purple variant
+    orange: "#FF9500", // Orange color
+    orangeSecondary: "#FFA500", // Orange variant
+    iosGray: "#8E8E93", // iOS gray
+    purple: "#9C27B0", // Material Design purple
+    amber: "#FFC107", // Yellow/Amber
+    deepOrange: "#FF5722", // Deep orange
 
     // Shadow colors
     shadow: "rgba(0, 0, 0, 0.1)",
@@ -307,8 +322,23 @@ export const ThemeColors = {
     warningLight: "#E65100",
     error: "#F44336",
     errorLight: "#B71C1C",
+    errorVariant: "#FF3B30", // iOS red variant
     info: "#2196F3",
     infoLight: "#0D47A1",
+
+    // Semantic colors
+    rating: "#FFD700", // Gold for stars/ratings
+    openNow: "#34C759", // iOS green for "open now" status
+    danger: "#FF6B6B", // Red-pink for delete/danger actions
+    link: "#007AFF", // iOS blue for links
+    accent: "#9333EA", // Purple accent color
+    accentSecondary: "#5856D6", // iOS purple variant
+    orange: "#FF9500", // Orange color
+    orangeSecondary: "#FFA500", // Orange variant
+    iosGray: "#8E8E93", // iOS gray
+    purple: "#9C27B0", // Material Design purple
+    amber: "#FFC107", // Yellow/Amber
+    deepOrange: "#FF5722", // Deep orange
 
     // Shadow colors
     shadow: "rgba(0, 0, 0, 0.3)",

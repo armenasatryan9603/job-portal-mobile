@@ -1,22 +1,24 @@
-import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
+  Alert,
+  Clipboard,
   Modal,
-  View,
+  Platform,
+  Share,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Share,
-  Clipboard,
-  Platform,
+  View,
 } from "react-native";
-import { IconSymbol } from "./ui/icon-symbol";
+import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/hooks/useTranslation";
+
+import { Badge } from "./ui/badge";
+import { IconSymbol } from "./ui/icon-symbol";
 import { apiService } from "@/categories/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ReferralModalProps {
   visible: boolean;
@@ -180,7 +182,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                   ]}
                   onPress={handleCopyCode}
                 >
-                  <IconSymbol name="doc.on.doc" size={16} color="white" />
+                  <IconSymbol name="doc.on.doc" size={16} color={colors.textInverse} />
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
@@ -192,13 +194,13 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                 disabled={shareLoading}
               >
                 {shareLoading ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color={colors.textInverse} />
                 ) : (
                   <>
                     <IconSymbol
                       name="square.and.arrow.up"
                       size={20}
-                      color="white"
+                      color={colors.textInverse}
                     />
                     <Text style={styles.shareButtonText}>
                       {t("shareReferralLink")}
@@ -316,33 +318,22 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                       >
                         +{referral.rewardAmount} {t("credits")}
                       </Text>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor:
-                              referral.status === "completed"
-                                ? colors.primary + "20"
-                                : colors.border,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusText,
-                            {
-                              color:
-                                referral.status === "completed"
-                                  ? colors.primary
-                                  : colors.textSecondary,
-                            },
-                          ]}
-                        >
-                          {referral.status === "completed"
-                            ? t("completed")
-                            : t("pending")}
-                        </Text>
-                      </View>
+                      <Badge
+                        text={referral.status === "completed" ? t("completed") : t("pending")}
+                        variant={referral.status === "completed" ? "success" : "default"}
+                        backgroundColor={
+                          referral.status === "completed"
+                            ? colors.primary + "20"
+                            : colors.border
+                        }
+                        textColor={
+                          referral.status === "completed"
+                            ? colors.primary
+                            : colors.textSecondary
+                        }
+                        size="sm"
+                        style={{ marginTop: 4 }}
+                      />
                     </View>
                   </View>
                 ))}
@@ -427,6 +418,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shareButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",
@@ -462,6 +454,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   stepNumberText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 12,
     fontWeight: "600",
@@ -495,15 +488,5 @@ const styles = StyleSheet.create({
   rewardAmount: {
     fontSize: 16,
     fontWeight: "600",
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 });

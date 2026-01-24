@@ -73,14 +73,14 @@ export default function NotificationsScreen() {
   const getNotificationColor = (type: string) => {
     switch (type) {
       case "proposal":
-        return "#007AFF";
+        return colors.link;
       case "order":
       case "new_order":
-        return "#34C759";
+        return colors.openNow;
       case "message":
-        return "#FF9500";
+        return colors.orange;
       case "system":
-        return "#8E8E93";
+        return colors.iosGray;
       default:
         return colors.primary;
     }

@@ -1,62 +1,61 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { Filter, FilterSection } from "@/components/FilterComponent";
-import { EmptyPage } from "@/components/EmptyPage";
-import { ApplyModal } from "@/components/ApplyModal";
-import { CheckInModal } from "@/components/CheckInModal";
-import { FeedbackDialog } from "@/components/FeedbackDialog";
-import { FloatingSkeleton } from "@/components/FloatingSkeleton";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { TopTabs } from "@/components/TopTabs";
-import { Spacing, ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useModal } from "@/contexts/ModalContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { apiService, Order, OrderListResponse } from "@/categories/api";
-import { chatService } from "@/categories/chatService";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
-import { useInfinitePagination } from "@/hooks/useInfinitePagination";
-import { useQueryClient } from "@tanstack/react-query";
 import {
-  useMyOrders,
-  useMyJobs,
-  useAllOrders,
-  usePublicOrders,
-  useSearchOrders,
-  useSavedOrders,
-  useApplyToOrder,
-  useDeleteOrder,
-  useCategories,
-} from "@/hooks/useApi";
-import { getViewedOrders } from "@/utils/viewedOrdersStorage";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/utils/locationParsing";
-import {
+  ActivityIndicator,
+  Alert,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-  RefreshControl,
-  Alert,
-  ActivityIndicator,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import { Filter, FilterSection } from "@/components/FilterComponent";
+import { Order, OrderListResponse, apiService } from "@/categories/api";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import {
+  useAllOrders,
+  useApplyToOrder,
+  useCategories,
+  useDeleteOrder,
+  useMyJobs,
+  useMyOrders,
+  usePublicOrders,
+  useSavedOrders,
+  useSearchOrders,
+} from "@/hooks/useApi";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { ApplyModal } from "@/components/ApplyModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import OrderItem from "./Item";
+import { Button } from "@/components/ui/button";
+import { CheckInModal } from "@/components/CheckInModal";
+import { EmptyPage } from "@/components/EmptyPage";
+import { FeedbackDialog } from "@/components/FeedbackDialog";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
+import { Header } from "@/components/Header";
+import { Layout } from "@/components/Layout";
 import { LocationFilterModal } from "@/components/LocationFilterModal";
+import OrderItem from "./Item";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { TopTabs } from "@/components/TopTabs";
+import { chatService } from "@/categories/chatService";
+import { getViewedOrders } from "@/utils/viewedOrdersStorage";
+import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/utils/locationParsing";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModal } from "@/contexts/ModalContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function OrdersScreen() {
   const screenName =
@@ -76,7 +75,6 @@ export default function OrdersScreen() {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { user, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
-  const insets = useSafeAreaInsets();
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
   const isSavedOrders = saved === "true";
@@ -1804,17 +1802,8 @@ export default function OrdersScreen() {
           activeTab={activeOrderTab}
           onTabChange={handleTabChange}
         />
-        <View style={{ flex: 1 }}>
-          <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1,
-            }}
-          >
-            <ResponsiveCard>
+        <View style={{ flex: 1, marginBottom: Spacing.xxxl * 2.5 }}>
+            <ResponsiveCard marginHorizontal={Spacing.md} >
               <Filter
                 searchPlaceholder={t("searchOrdersSkills")}
                 initialSearchValue={searchQuery}
@@ -1826,12 +1815,11 @@ export default function OrdersScreen() {
                 hideModalForLocation={filterModalHiddenForLocation}
               />
             </ResponsiveCard>
-          </View>
 
           {/* Show skeleton loading during initial load */}
           {isInitialLoad ||
           (loading && !filterLoading && displayedOrders.length === 0) ? (
-            <View style={{ marginTop: 84, flex: 1 }}>
+            <View style={{ marginTop: -2, flex: 1 }}>
               <FloatingSkeleton
                 count={6}
                 variant="grid2"
@@ -1839,7 +1827,6 @@ export default function OrdersScreen() {
             </View>
           ) : (
             <FlatList
-              style={{ marginBlock: 84, width: '100%'}}
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem
@@ -1859,7 +1846,7 @@ export default function OrdersScreen() {
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
               numColumns={2}
-              columnWrapperStyle={{ justifyContent: "space-between", marginRight: -Spacing.sm }}
+              columnWrapperStyle={{ marginRight: -Spacing.sm }}
               ListEmptyComponent={renderEmptyComponent}
               {...(isMyOrders || isMyJobs || isSavedOrders
                 ? {}
@@ -1874,26 +1861,20 @@ export default function OrdersScreen() {
                 />
               }
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ marginHorizontal: Spacing.lg, paddingBottom: Spacing.lg }}
+              contentContainerStyle={{ marginHorizontal: Spacing.md, paddingBottom: Spacing.lg }}
             />
           )}
 
           {/* Floating Action Button - Only show for authenticated users and not on My Jobs */}
           {isAuthenticated && !isMyJobs && (
-            <TouchableOpacity
-              style={[
-                styles.fab,
-                {
-                  backgroundColor: colors.primary, // Use primary color which is consistent in both themes
-                  bottom: 70 + insets.bottom, // Account for footer tabs + safe area
-                },
-              ]}
+            <Button
+              style={styles.fab}
               onPress={handleCreateOrder}
-              activeOpacity={0.8}
-            >
-              <IconSymbol name="plus" size={24} color="#FFFFFF" />
-              <Text style={styles.fabText}>{t("createOrder")}</Text>
-            </TouchableOpacity>
+              icon="plus"
+              iconSize={24}
+              title={t("createOrder")}
+              variant="primary"
+            />
           )}
         </View>
       </Layout>
@@ -1972,28 +1953,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   fab: {
-    position: "absolute",
-    right: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 28,
-    gap: 8,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    zIndex: 10,
-  },
-  fabText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+    bottom: 20,
+    borderRadius: BorderRadius.round,
+    position: 'absolute',
+    right: Spacing.lg,
   },
 });

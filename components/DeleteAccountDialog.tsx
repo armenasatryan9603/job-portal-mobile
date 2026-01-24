@@ -108,13 +108,13 @@ export default function DeleteAccountDialog({
                     <View
                       style={[
                         styles.iconContainer,
-                        { backgroundColor: "#FF3B30" + "20" },
+                        { backgroundColor: colors.errorVariant + "20" },
                       ]}
                     >
                       <IconSymbol
                         name="exclamationmark.triangle.fill"
                         size={24}
-                        color="#FF3B30"
+                        color={colors.errorVariant}
                       />
                     </View>
                     <Text style={[styles.title, { color: colors.text }]}>
@@ -129,11 +129,11 @@ export default function DeleteAccountDialog({
 
                   {/* Warning Content */}
                   <View style={styles.content}>
-                    <View style={styles.warningBox}>
+                    <View style={[styles.warningBox, { backgroundColor: colors.orange + "15" }]}>
                       <IconSymbol
                         name="exclamationmark.triangle"
                         size={20}
-                        color="#FF9500"
+                        color={colors.orange}
                       />
                       <Text
                         style={[styles.warningText, { color: colors.text }]}
@@ -193,7 +193,7 @@ export default function DeleteAccountDialog({
                           {
                             backgroundColor: colors.backgroundSecondary,
                             borderColor: isConfirmationValid
-                              ? "#34C759"
+                              ? colors.openNow
                               : colors.border,
                             color: colors.text,
                           },
@@ -239,9 +239,9 @@ export default function DeleteAccountDialog({
                       icon="trash.fill"
                       iconSize={16}
                       backgroundColor={
-                        isConfirmationValid ? "#FF3B30" : colors.border
+                        isConfirmationValid ? colors.errorVariant : colors.border
                       }
-                      textColor="#FFFFFF"
+                      textColor={colors.textInverse}
                       onPress={handleConfirm}
                       style={styles.actionButton}
                     />
@@ -309,7 +309,6 @@ const styles = StyleSheet.create({
   warningBox: {
     flexDirection: "row",
     alignItems: "flex-start",
-    backgroundColor: "#FF9500" + "15",
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,

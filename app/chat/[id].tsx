@@ -1278,7 +1278,7 @@ export default function ChatDetailScreen() {
             style={[
               styles.messageText,
               {
-                color: isFromCurrentUser ? "white" : colors.text,
+                color: isFromCurrentUser ? colors.textInverse : colors.text,
               },
             ]}
           >
@@ -1433,17 +1433,17 @@ export default function ChatDetailScreen() {
                         style={[
                           styles.orderActionButton,
                           styles.orderRejectButton,
-                          { borderColor: "#FF6B6B" },
+                          { borderColor: colors.danger },
                           actionLoading && styles.disabledButton,
                         ]}
                         onPress={handleReject}
                         disabled={actionLoading}
                       >
-                        <IconSymbol name="xmark" size={14} color="#FF6B6B" />
+                        <IconSymbol name="xmark" size={14} color={colors.danger} />
                         <Text
                           style={[
                             styles.orderActionButtonText,
-                            { color: "#FF6B6B" },
+                            { color: colors.danger },
                           ]}
                         >
                           {t("reject")}
@@ -1460,11 +1460,11 @@ export default function ChatDetailScreen() {
                         onPress={handleChoose}
                         disabled={actionLoading}
                       >
-                        <IconSymbol name="checkmark" size={14} color="white" />
+                        <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
                         <Text
                           style={[
                             styles.orderActionButtonText,
-                            { color: "white" },
+                            { color: colors.textInverse },
                           ]}
                         >
                           {t("choose")}
@@ -1480,17 +1480,17 @@ export default function ChatDetailScreen() {
                         style={[
                           styles.orderActionButton,
                           styles.orderRejectButton,
-                          { borderColor: "#FF6B6B" },
+                          { borderColor: colors.danger },
                           actionLoading && styles.disabledButton,
                         ]}
                         onPress={handleCancel}
                         disabled={actionLoading}
                       >
-                        <IconSymbol name="xmark" size={14} color="#FF6B6B" />
+                        <IconSymbol name="xmark" size={14} color={colors.danger} />
                         <Text
                           style={[
                             styles.orderActionButtonText,
-                            { color: "#FF6B6B" },
+                            { color: colors.danger },
                           ]}
                         >
                           {t("cancel")}
@@ -1510,12 +1510,12 @@ export default function ChatDetailScreen() {
                         <IconSymbol
                           name="checkmark.circle"
                           size={14}
-                          color="white"
+                          color={colors.textInverse}
                         />
                         <Text
                           style={[
                             styles.orderActionButtonText,
-                            { color: "white" },
+                            { color: colors.textInverse },
                           ]}
                         >
                           {t("complete")}
@@ -1584,10 +1584,10 @@ export default function ChatDetailScreen() {
                 size={20}
                 color={
                   conversation?.status === "removed"
-                    ? "#FF6B6B"
+                    ? colors.danger
                     : conversation?.status === "completed"
                     ? colors.primary
-                    : "#FF6B6B"
+                    : colors.danger
                 }
               />
               <Text style={[styles.statusText, { color: colors.text }]}>
@@ -1628,7 +1628,7 @@ export default function ChatDetailScreen() {
                   setFeedbackDialogVisible(true);
                 }}
               >
-                <IconSymbol name="star.fill" size={20} color="white" />
+                <IconSymbol name="star.fill" size={20} color={colors.textInverse} />
                 <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
               </TouchableOpacity>
             </View>
@@ -1673,7 +1673,7 @@ export default function ChatDetailScreen() {
                 <IconSymbol
                   name="arrow.up"
                   size={20}
-                  color={newMessage.trim() && !sending ? "white" : colors.tabIconDefault}
+                  color={newMessage.trim() && !sending ? colors.textInverse : colors.tabIconDefault}
                 />
               </TouchableOpacity>
             </View>
@@ -1682,7 +1682,7 @@ export default function ChatDetailScreen() {
                 style={[
                   styles.characterCount,
                   { color: colors.tabIconDefault },
-                  newMessage.length > 480 && { color: "#FF6B6B" },
+                  newMessage.length > 480 && { color: colors.danger },
                 ]}
               >
                 {newMessage.length}/500 {t("charactersRemaining")}
@@ -1970,6 +1970,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",
@@ -2006,6 +2007,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   reviewButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 14,
     fontWeight: "600",

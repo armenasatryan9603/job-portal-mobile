@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
+    // Note: Should use colors.link dynamically - consider inline style
     backgroundColor: "#007AFF",
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -73,6 +74,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

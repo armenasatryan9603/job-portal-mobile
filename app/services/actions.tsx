@@ -50,7 +50,7 @@ export const ServiceActions: React.FC<ServiceActionsProps> = ({
               iconPosition="left"
               onPress={onPublish}
               backgroundColor={colors.primary}
-              textColor="white"
+              textColor={colors.textInverse}
               style={styles.primaryButton}
             />
           )}

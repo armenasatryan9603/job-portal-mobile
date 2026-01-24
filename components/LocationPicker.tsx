@@ -162,7 +162,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             <Text
               style={[
                 styles.confirmButtonText,
-                { color: location ? "white" : colors.textSecondary },
+                { color: location ? colors.textInverse : colors.textSecondary },
               ]}
             >
               {t("confirm")}
@@ -194,7 +194,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             onPress={handleManualAddressSearch}
             disabled={loading}
           >
-            <IconSymbol name="magnifyingglass" size={20} color="white" />
+            <IconSymbol name="magnifyingglass" size={20} color={colors.textInverse} />
           </TouchableOpacity>
         </View>
 

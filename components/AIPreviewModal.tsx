@@ -179,7 +179,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
             <View
               style={[styles.iconBadge, { backgroundColor: colors.primary }]}
             >
-              <IconSymbol name="sparkles" size={18} color="white" />
+              <IconSymbol name="sparkles" size={18} color={colors.textInverse} />
             </View>
             <Text style={[styles.headerTitle, { color: colors.text }]}>
               {t("aiPreview")}
@@ -218,7 +218,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                   style={[
                     styles.languageText,
                     {
-                      color: selectedLanguage === lang ? "white" : colors.text,
+                      color: selectedLanguage === lang ? colors.textInverse : colors.text,
                       fontWeight: selectedLanguage === lang ? "600" : "400",
                     },
                   ]}
@@ -335,13 +335,13 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                       }
                     >
                       {isRetrying ? (
-                        <ActivityIndicator size="small" color="white" />
+                        <ActivityIndicator size="small" color={colors.textInverse} />
                       ) : (
                         <>
                           <IconSymbol
                             name="arrow.clockwise"
                             size={14}
-                            color="white"
+                            color={colors.textInverse}
                           />
                           <Text style={styles.retryButtonText}>
                             {t("retryAI")}
@@ -643,6 +643,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 14,
     fontWeight: "600",

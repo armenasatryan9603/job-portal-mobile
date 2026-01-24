@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import { Alert } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UseFormPersistenceOptions<T> {
   storageKey: string;
@@ -13,6 +14,35 @@ interface UseFormPersistenceOptions<T> {
   continueText?: string;
   startFreshText?: string;
 }
+
+// Helper function to check if saved data has meaningful content
+const hasMeaningfulData = (data: any): boolean => {
+  if (data === null || data === undefined) return false;
+  
+  if (typeof data === "string") {
+    return data.trim().length > 0;
+  }
+  
+  if (typeof data === "number") {
+    return data !== 0;
+  }
+  
+  if (typeof data === "boolean") {
+    // Booleans are considered meaningful
+    return true;
+  }
+  
+  if (Array.isArray(data)) {
+    return data.length > 0 && data.some((item) => hasMeaningfulData(item));
+  }
+  
+  if (typeof data === "object") {
+    // Check if object has any meaningful properties
+    return Object.values(data).some((value) => hasMeaningfulData(value));
+  }
+  
+  return false;
+};
 
 export const useFormPersistence = <T extends Record<string, any>>({
   storageKey,
@@ -56,32 +86,40 @@ export const useFormPersistence = <T extends Record<string, any>>({
         const saved = await AsyncStorage.getItem(storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
-          Alert.alert(
-            alertTitle,
-            alertMessage,
-            [
-              {
-                text: startFreshText,
-                style: "cancel",
-                onPress: async () => {
-                  await AsyncStorage.removeItem(storageKey);
-                  onClear?.();
-                  hasRestored.current = true;
+          // Only show alert if there's meaningful data to restore
+          if (hasMeaningfulData(parsed)) {
+            Alert.alert(
+              alertTitle,
+              alertMessage,
+              [
+                {
+                  text: startFreshText,
+                  style: "cancel",
+                  onPress: async () => {
+                    await AsyncStorage.removeItem(storageKey);
+                    onClear?.();
+                    hasRestored.current = true;
+                  },
                 },
-              },
-              {
-                text: continueText,
-                onPress: () => {
-                  onRestore(parsed);
-                  hasRestored.current = true;
+                {
+                  text: continueText,
+                  onPress: () => {
+                    onRestore(parsed);
+                    hasRestored.current = true;
+                  },
                 },
-              },
-            ]
-          );
+              ]
+            );
+          } else {
+            // If no meaningful data, clear it silently
+            await AsyncStorage.removeItem(storageKey);
+            hasRestored.current = true;
+          }
+        } else {
+          hasRestored.current = true;
         }
       } catch (error) {
         console.error("Error loading saved form data:", error);
-      } finally {
         hasRestored.current = true;
       }
     };

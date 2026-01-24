@@ -65,7 +65,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
             onPress={onSave}
             style={[styles.saveButton, { backgroundColor: colors.primary }]}
           >
-            <Text style={[styles.saveButtonText, { color: "white" }]}>
+            <Text style={[styles.saveButtonText, { color: colors.textInverse }]}>
               Save
             </Text>
           </TouchableOpacity>
@@ -146,7 +146,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
                   ]}
                 >
                   {isSelected && (
-                    <IconSymbol name="checkmark" size={12} color="white" />
+                    <IconSymbol name="checkmark" size={12} color={colors.textInverse} />
                   )}
                 </View>
               </TouchableOpacity>

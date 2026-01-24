@@ -2,6 +2,7 @@ import React, { memo, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -106,8 +107,8 @@ export const TeamMemberItem = memo(
             { marginBottom: Spacing.lg },
             isPending && {
               borderLeftWidth: 4,
-              borderLeftColor: "#FF9500",
-              backgroundColor: isDark ? "#FF950010" : "#FF950008",
+              borderLeftColor: colors.orange,
+              backgroundColor: isDark ? colors.orange + "10" : colors.orange + "08",
             },
           ]}
         >
@@ -138,10 +139,21 @@ export const TeamMemberItem = memo(
                     </View>
                   )}
                   {isPending && (
-                    <View style={styles.pendingBadge}>
-                      <IconSymbol name="clock.fill" size={12} color="#FF9500" />
-                      <Text style={styles.pendingBadgeText}>{t("pending")}</Text>
-                    </View>
+                    <Badge
+                      text={t("pending")}
+                      variant="pending"
+                      icon="clock.fill"
+                      iconSize={12}
+                      size="sm"
+                      style={{
+                        backgroundColor: isDark ? colors.orange + "20" : colors.orange + "10",
+                        borderWidth: 1,
+                        borderColor: colors.orange,
+                      }}
+                      textColor={colors.orange}
+                      iconColor={colors.orange}
+                      textStyle={{ textTransform: "uppercase", letterSpacing: 0.5 }}
+                    />
                   )}
                 </View>
                 {canEditRole && (
@@ -167,7 +179,7 @@ export const TeamMemberItem = memo(
                 onPress={handleRemovePress}
                 style={styles.removeButton}
               >
-                <IconSymbol name="trash" size={20} color="#FF3B30" />
+                <IconSymbol name="trash" size={20} color={colors.errorVariant} />
               </TouchableOpacity>
             )}
           </View>
@@ -225,25 +237,6 @@ const styles = StyleSheet.create({
   leadBadgeText: {
     fontSize: 12,
     fontWeight: "600",
-  },
-  pendingBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: "#FF950020",
-    borderWidth: 1,
-    borderColor: "#FF9500",
-  },
-  pendingBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#FF9500",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   memberEmail: {
     fontSize: 14,

@@ -1,44 +1,45 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { MediaUploader } from "@/components/MediaUploader";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   Alert,
+  Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Image,
-  Modal,
 } from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { apiService } from "@/categories/api";
-import { fileUploadService, MediaFile } from "@/categories/fileUpload";
-import { useAuth } from "@/contexts/AuthContext";
-import { useQueryClient } from "@tanstack/react-query";
-import { useQuery } from "@tanstack/react-query";
+import { MediaFile, fileUploadService } from "@/categories/fileUpload";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  WeeklySchedulePicker,
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { ThemeColors, Typography } from "@/constants/styles";
+import {
   WeeklySchedule,
+  WeeklySchedulePicker,
 } from "@/components/WeeklySchedulePicker";
-import { TeamMemberItem } from "@/components/TeamMemberItem";
+import { router, useLocalSearchParams } from "expo-router";
+
 import { AddMarketMemberModal } from "@/components/AddMemberModal";
 import { AttachOrderModal } from "@/components/AttachOrderModal";
-import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
-import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
-import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { MediaUploader } from "@/components/MediaUploader";
 import { Order } from "@/categories/api";
+import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
+import { TeamMemberItem } from "@/components/TeamMemberItem";
+import { apiService } from "@/categories/api";
+import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function CreateMarketScreen() {
   const { id } = useLocalSearchParams();
@@ -842,11 +843,11 @@ export default function CreateMarketScreen() {
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
-                alignItems: "center",
+                alignItems: "flex-start",
                 marginBottom: 16,
               }}
             >
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              <Text style={[styles.sectionTitle, { color: colors.text, width: '60%' }]}>
                 {t("attachedOrders")} ({attachedOrders.length})
               </Text>
               <Button
@@ -947,10 +948,10 @@ export default function CreateMarketScreen() {
                               size={8}
                               color={
                                 marketOrder.Order.status === "open"
-                                  ? "#34C759"
+                                  ? colors.openNow
                                   : marketOrder.Order.status === "in_progress"
-                                  ? "#007AFF"
-                                  : "#8E8E93"
+                                  ? colors.link
+                                  : colors.iosGray
                               }
                             />
                             <Text
@@ -976,7 +977,7 @@ export default function CreateMarketScreen() {
                         <IconSymbol
                           name="xmark.circle.fill"
                           size={24}
-                          color="#FF3B30"
+                          color={colors.errorVariant}
                         />
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -1108,7 +1109,7 @@ export default function CreateMarketScreen() {
                     iconSize={16}
                     iconPosition="left"
                     title={t("delete")}
-                    textColor="#FF3B30"
+                    textColor={colors.errorVariant}
                     onPress={handleDeleteMarket}
                   />
                   <Button

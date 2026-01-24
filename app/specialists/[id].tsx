@@ -5,6 +5,7 @@ import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import { Badge } from "@/components/ui/badge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -225,7 +226,7 @@ export default function SpecialistDetailScreen() {
 
     for (let i = 0; i < fullStars; i++) {
       stars.push(
-        <IconSymbol key={i} name="star.fill" size={16} color="#FFD700" />
+        <IconSymbol key={i} name="star.fill" size={16} color={colors.rating} />
       );
     }
 
@@ -235,7 +236,7 @@ export default function SpecialistDetailScreen() {
           key="half"
           name="star.leadinghalf.filled"
           size={16}
-          color="#FFD700"
+          color={colors.rating}
         />
       );
     }
@@ -243,7 +244,7 @@ export default function SpecialistDetailScreen() {
     const emptyStars = 5 - Math.ceil(rating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(
-        <IconSymbol key={`empty-${i}`} name="star" size={16} color="#E0E0E0" />
+        <IconSymbol key={`empty-${i}`} name="star" size={16} color={colors.border} />
       );
     }
 
@@ -309,7 +310,7 @@ export default function SpecialistDetailScreen() {
                       <IconSymbol
                         name="checkmark.seal.fill"
                         size={24}
-                        color="#4CAF50"
+                        color={colors.success}
                       />
                     </View>
                   )}
@@ -365,46 +366,22 @@ export default function SpecialistDetailScreen() {
 
                   {/* Status badges */}
                   <View style={styles.badgesContainer}>
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: specialist.User?.verified
-                            ? "#4CAF50"
-                            : "#FFA500",
-                        },
-                      ]}
-                    >
-                      <IconSymbol
-                        name={
-                          specialist.User?.verified
-                            ? "checkmark.circle.fill"
-                            : "clock.fill"
-                        }
-                        size={14}
-                        color="white"
-                      />
-                      <Text style={styles.statusBadgeText}>
-                        {specialist.User.verified
-                          ? t("verified")
-                          : t("pending")}
-                      </Text>
-                    </View>
+                    <Badge
+                      text={specialist.User?.verified ? t("verified") : t("pending")}
+                      variant={specialist.User?.verified ? "verified" : "pending"}
+                      icon={specialist.User?.verified ? "checkmark.circle.fill" : "clock.fill"}
+                      iconSize={14}
+                      size="md"
+                    />
 
                     {specialist.experienceYears && (
-                      <View
-                        style={[
-                          styles.experienceBadge,
-                          { backgroundColor: colors.tint + "20" },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.experienceBadgeText,
-                            { color: colors.tint },
-                          ]}
-                        ></Text>
-                      </View>
+                      <Badge
+                        text={`${specialist.experienceYears} ${t("yearsExperience") || "years"}`}
+                        variant="default"
+                        backgroundColor={colors.tint + "20"}
+                        textColor={colors.tint}
+                        size="md"
+                      />
                     )}
                   </View>
                 </View>
@@ -448,7 +425,7 @@ export default function SpecialistDetailScreen() {
                       { backgroundColor: colors.background },
                     ]}
                   >
-                    <IconSymbol name="star.fill" size={16} color="#FFD700" />
+                    <IconSymbol name="star.fill" size={16} color={colors.rating} />
                     <Text style={[styles.statNumber, { color: colors.text }]}>
                       {(specialist.averageRating || 0).toFixed(1)}
                     </Text>
@@ -646,13 +623,13 @@ export default function SpecialistDetailScreen() {
                 <View
                   style={[
                     styles.detailIconContainer,
-                    { backgroundColor: "#4CAF50" + "15" },
+                    { backgroundColor: colors.success + "15" },
                   ]}
                 >
                   <IconSymbol
                     name="checkmark.circle.fill"
                     size={18}
-                    color="#4CAF50"
+                    color={colors.success}
                   />
                 </View>
                 <View style={styles.detailCardContent}>
@@ -1001,28 +978,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     flexWrap: "wrap",
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  statusBadgeText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  experienceBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  experienceBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
   },
   bio: {
     fontSize: 16,

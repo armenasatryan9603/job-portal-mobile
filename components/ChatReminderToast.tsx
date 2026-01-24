@@ -109,7 +109,7 @@ export const ChatReminderToast: React.FC = () => {
                   : "bell.fill"
               }
               size={18}
-              color="white"
+              color={colors.textInverse}
             />
           </View>
           <View style={styles.textWrapper}>

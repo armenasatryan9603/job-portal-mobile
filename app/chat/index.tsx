@@ -1,30 +1,31 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useFocusEffect } from "expo-router";
-import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
+  Alert,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  RefreshControl,
-  Alert,
 } from "react-native";
-import { chatService, Conversation } from "@/categories/chatService";
-import { pusherService } from "@/categories/pusherService";
-import { useAuth } from "@/contexts/AuthContext";
-import { useConversations } from "@/contexts/ConversationsContext";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import { Conversation, chatService } from "@/categories/chatService";
+import React, { useEffect, useRef, useState } from "react";
+
 import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { ChatListSkeleton } from "@/components/ChatListSkeleton";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { formatTimestamp } from "@/utils/dateFormatting";
+import { pusherService } from "@/categories/pusherService";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useConversations } from "@/contexts/ConversationsContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ChatScreen() {
   useAnalytics("ChatList");
@@ -225,8 +226,6 @@ export default function ChatScreen() {
           new Date(currentUserParticipant.lastReadAt)
         : !currentUserParticipant?.lastReadAt);
 
-    const isClosed = item.status === "closed" || item.status === "completed";
-
     return (
       <TouchableOpacity
         style={[
@@ -253,7 +252,7 @@ export default function ChatScreen() {
                 },
               ]}
             >
-              <Text style={[styles.avatarText, { color: "white" }]}>
+              <Text style={[styles.avatarText, { color: colors.textInverse }]}>
                 {participantName && participantName.length > 0
                   ? participantName.charAt(0).toUpperCase()
                   : "?"}
@@ -430,13 +429,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 4,
     paddingBottom: 24,
   },
   conversationItem: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 8,
+    borderRadius: BorderRadius.lg,
     borderLeftWidth: 4,
     overflow: "hidden",
     shadowOffset: {
@@ -445,12 +444,11 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
   },
   conversationContent: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 18,
+    padding: Spacing.md,
     paddingLeft: 16,
   },
   avatarContainer: {
@@ -477,6 +475,7 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
+    // Note: Should use colors.surface or colors.textInverse dynamically - consider inline style
     borderColor: "white",
   },
   conversationInfo: {
@@ -545,6 +544,7 @@ const styles = StyleSheet.create({
     minWidth: 8,
   },
   unreadBadgeText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 12,
     fontWeight: "600",
@@ -569,6 +569,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

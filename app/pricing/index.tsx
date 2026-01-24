@@ -109,7 +109,7 @@ export default function PriceInfoScreen() {
           <IconSymbol
             name="exclamationmark.triangle.fill"
             size={28}
-            color="#FF3B30"
+            color={colors.errorVariant}
           />
           <Text style={[styles.errorText, { color: colors.text }]}>
             {error}

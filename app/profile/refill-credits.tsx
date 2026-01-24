@@ -605,10 +605,10 @@ export default function RefillCreditsScreen() {
               activeOpacity={0.8}
             >
               {loading ? (
-                <ActivityIndicator color="black" size="small" />
+                <ActivityIndicator color={colors.text} size="small" />
               ) : (
                 <>
-                  <IconSymbol name="creditcard.fill" size={18} color="black" />
+                  <IconSymbol name="creditcard.fill" size={18} color={colors.text} />
                   <Text style={styles.refillButtonText}>
                     {t("refillCredits")}
                   </Text>
@@ -877,12 +877,14 @@ const styles = StyleSheet.create({
   refillButtonText: {
     fontSize: Typography.xl,
     fontWeight: "700",
+    // Note: Should use colors.text dynamically - consider inline style
     color: "black",
   },
   refillButtonBadge: {
     position: "absolute",
     top: -6,
     right: 12,
+    // Note: Should use colors.text dynamically - consider inline style
     backgroundColor: "black",
     borderRadius: BorderRadius.round,
     paddingHorizontal: Spacing.xs,
@@ -892,6 +894,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refillButtonBadgeText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 10,
     fontWeight: "700",

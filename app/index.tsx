@@ -95,8 +95,8 @@ export default function WelcomeScreen() {
       description: t("findSpecialists"),
       icon: "briefcase.fill",
       route: "/categories",
-      color: "#4CAF50",
-      gradient: ["#4CAF50", "#45A049"],
+      color: colors.success,
+      gradient: [colors.success, "#45A049"], // Note: Second gradient color could be added to design system
     },
     {
       title: t("findSpecialistsTitle"),
@@ -111,8 +111,8 @@ export default function WelcomeScreen() {
       description: t("servicesForMeDesc"),
       icon: "briefcase.fill",
       route: "/services",
-      color: "#FF9800",
-      gradient: ["#FF9800", "#F57C00"],
+      color: colors.warning,
+      gradient: [colors.warning, "#F57C00"], // Note: Second gradient color could be added to design system
     },
   ];
 
@@ -191,7 +191,7 @@ export default function WelcomeScreen() {
                       <IconSymbol
                         name="checkmark.seal.fill"
                         size={12}
-                        color="white"
+                        color={colors.textInverse}
                       />
                     </View>
                   )}
@@ -344,7 +344,7 @@ export default function WelcomeScreen() {
                     <IconSymbol
                       name={action.icon as any}
                       size={24}
-                      color="white"
+                      color={colors.textInverse}
                     />
                   </View>
                   <View style={styles.actionContent}>
@@ -529,6 +529,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
+    // Note: Should use colors.surface or colors.textInverse dynamically - consider inline style
     borderColor: "white",
   },
   userInfo: {
@@ -630,6 +631,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 14,
     fontWeight: "700",
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   signupButton: {

@@ -171,7 +171,7 @@ export const AttachOrderModal = memo(
                 variant="primary"
               >
                 {attachingOrders ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={colors.textInverse} />
                 ) : (
                   <Text style={styles.addSelectedButtonText}>{t("save")}</Text>
                 )}
@@ -275,10 +275,10 @@ export const AttachOrderModal = memo(
                           size={8}
                           color={
                             item.status === "open"
-                              ? "#34C759"
+                              ? colors.openNow
                               : item.status === "in_progress"
-                              ? "#007AFF"
-                              : "#8E8E93"
+                              ? colors.link
+                              : colors.iosGray
                           }
                         />
                         <Text
@@ -382,6 +382,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   addSelectedButtonText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "#fff",
     fontWeight: "600",
     fontSize: 14,

@@ -585,7 +585,7 @@ export default function TeamDetailScreen() {
                             : "xmark.circle.fill"
                         }
                         size={14}
-                        color={team.isActive ? "#4CAF50" : colors.textSecondary}
+                        color={team.isActive ? colors.success : colors.textSecondary}
                       />
                       <Text
                         style={[
@@ -695,7 +695,7 @@ export default function TeamDetailScreen() {
                     style={[
                       styles.characterCount,
                       { color: colors.tabIconDefault },
-                      descriptionText.length > 480 && { color: "#FF6B6B" },
+                      descriptionText.length > 480 && { color: colors.danger },
                     ]}
                   >
                     {descriptionText.length}/500 {t("charactersRemaining")}
@@ -720,7 +720,7 @@ export default function TeamDetailScreen() {
                     title={t("save")}
                     iconPosition="left"
                     backgroundColor={colors.primary}
-                    textColor="white"
+                    textColor={colors.textInverse}
                     onPress={handleSaveDescription}
                     disabled={savingDescription}
                   />

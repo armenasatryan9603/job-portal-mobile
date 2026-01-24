@@ -974,7 +974,7 @@ export const Filter: React.FC<FilterProps> = ({
                                         name={isSelected ? "star.fill" : "star"}
                                         size={32}
                                         color={
-                                          isSelected ? "#FFD700" : colors.border
+                                          isSelected ? colors.rating : colors.border
                                         }
                                       />
                                     </TouchableOpacity>
@@ -1152,12 +1152,12 @@ export const Filter: React.FC<FilterProps> = ({
                                 <IconSymbol
                                   name="map"
                                   size={16}
-                                  color="white"
+                                  color={colors.textInverse}
                                 />
                                 <Text
                                   style={[
                                     styles.openMapButtonText,
-                                    { color: "white" },
+                                    { color: colors.textInverse },
                                   ]}
                                 >
                                   {hasValue

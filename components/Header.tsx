@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           {leftComponent ? (
             leftComponent
           ) : showBackButton ? (
-            <TouchableOpacity style={{ backgroundColor: 'red' }} onPress={onBackPress}>
+            <TouchableOpacity style={{ padding: Spacing.sm }} onPress={onBackPress}>
               <IconSymbol
                 name="chevron.left"
                 size={Platform.OS === "android" ? 34 : 20}
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 10,
     fontWeight: "600",

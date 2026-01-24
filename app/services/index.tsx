@@ -1,32 +1,34 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
+  ActivityIndicator,
   FlatList,
   RefreshControl,
+  StyleSheet,
+  Text,
   TouchableOpacity,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Shadows, Spacing, ThemeColors } from "@/constants/styles";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { apiService } from "@/categories/api";
-import { useInfinitePagination } from "@/hooks/useInfinitePagination";
-import { useAuth } from "@/contexts/AuthContext";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ServiceItem } from "@/components/ServiceItem";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { FloatingSkeleton } from "@/components/FloatingSkeleton";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { BorderRadius, Shadows, Spacing, ThemeColors } from "@/constants/styles";
 import { Filter, FilterSection } from "@/components/FilterComponent";
-import { LocationFilterModal } from "@/components/LocationFilterModal";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Button } from "@/components/ui/button";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { LocationFilterModal } from "@/components/LocationFilterModal";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { ServiceItem } from "@/components/ServiceItem";
+import { apiService } from "@/categories/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useQuery } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function ServicesScreen() {
   const { t } = useTranslation();
@@ -354,143 +356,125 @@ export default function ServicesScreen() {
   return (
     <Layout header={header}>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1,
-            }}
-          >
-            <ResponsiveCard>
-              <Filter
-                searchPlaceholder={t("searchServices")}
-                initialSearchValue={searchQuery}
-                onSearchChange={handleSearchChange}
-                filterSections={filterSections}
-                selectedFilters={selectedFilters}
-                onFilterChange={handleFilterChange}
-                loading={filterLoading}
-                hideModalForLocation={filterModalHiddenForLocation}
-              />
-            </ResponsiveCard>
-          </View>
-        {isPaginationInitialLoading ? (
-            <View style={{ marginTop: 84, flex: 1 }}>
-              <FloatingSkeleton
-                count={6}
-                variant="grid2"
-              />
-            </View>
-        ) : sortedMarkets.length === 0 ? (
-          <View style={[styles.emptyContainer, { paddingTop: 100 }]}>
-            <IconSymbol
-              name="building.2"
-              size={64}
-              color={colors.tabIconDefault}
-            />
-            <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-              {t("noMarketsFound")}
-            </Text>
-            {!searchQuery.trim() && !selectedFilters.location && (
-              <TouchableOpacity
-                style={[styles.createButton, { backgroundColor: colors.tint }]}
-                onPress={() => router.push("/services/create")}
-              >
-                <Text style={[styles.createButtonText, { color: colors.background }]}>
-                  {t("createMarket")}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={sortedMarkets}
-            renderItem={renderMarketItem}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            numColumns={2}
-            contentContainerStyle={[
-              styles.listContainer,
-              { paddingBlock: 84 },
-            ]}
-            columnWrapperStyle={styles.row}
-            refreshControl={
-              <RefreshControl
-                refreshing={isLoading && currentPage === 1}
-                onRefresh={handlePaginationRefresh}
-                tintColor={colors.tint}
-              />
-            }
-            {...paginationFlatListProps}
-            ListFooterComponent={
-              isPaginationLoadingMore ? (
-                <View style={styles.footerLoader}>
-                  <ActivityIndicator size="small" color={colors.tint} />
-                </View>
-              ) : null
-            }
+        <ResponsiveCard>
+          <Filter
+            searchPlaceholder={t("searchServices")}
+            initialSearchValue={searchQuery}
+            onSearchChange={handleSearchChange}
+            filterSections={filterSections}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            loading={filterLoading}
+            hideModalForLocation={filterModalHiddenForLocation}
           />
-        )}
-
-        {/* Floating Action Button - Only show for authenticated users */}
-        {isAuthenticated && (
-          <TouchableOpacity
-            style={[
-              styles.fab,
-              {
-                backgroundColor: colors.primary || colors.tint,
-                bottom: 70 + insets.bottom, // Account for footer tabs + safe area
-              },
-            ]}
-            onPress={() => router.push("/services/create")}
-            activeOpacity={0.8}
-          >
-            <IconSymbol name="plus" size={24} color="#FFFFFF" />
-            <Text style={styles.fabText}>{t("createMarket")}</Text>
-          </TouchableOpacity>
-        )}
-
-        <LocationFilterModal
-          visible={locationFilterVisible}
-          onClose={() => {
-            setLocationFilterVisible(false);
-            // Show filter modal again when location modal closes
-            setFilterModalHiddenForLocation(false);
-          }}
-          onConfirm={(locationData) => {
-            setSelectedFilters((prev) => ({
-              ...prev,
-              location: locationData,
-            }));
-            setLocationFilterVisible(false);
-            // Show filter modal again when location is confirmed
-            setFilterModalHiddenForLocation(false);
-          }}
-          initialLocation={
-            selectedFilters.location &&
-            typeof selectedFilters.location === "object" &&
-            "latitude" in selectedFilters.location &&
-            "longitude" in selectedFilters.location &&
-            "address" in selectedFilters.location &&
-            "radius" in selectedFilters.location
-              ? (selectedFilters.location as {
-                  latitude: number;
-                  longitude: number;
-                  address: string;
-                  radius: number;
-                })
-              : undefined
+        </ResponsiveCard>
+      </View>
+      {isPaginationInitialLoading ? (
+          <View style={{ marginTop: 84, flex: 1 }}>
+            <FloatingSkeleton
+              count={6}
+              variant="grid2"
+            />
+          </View>
+      ) : sortedMarkets.length === 0 ? (
+        <View style={[styles.emptyContainer, { paddingTop: 100 }]}>
+          <IconSymbol
+            name="building.2"
+            size={64}
+            color={colors.tabIconDefault}
+          />
+          <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
+            {t("noMarketsFound")}
+          </Text>
+          {!searchQuery.trim() && !selectedFilters.location && (
+            <TouchableOpacity
+              style={[styles.createButton, { backgroundColor: colors.tint }]}
+              onPress={() => router.push("/services/create")}
+            >
+              <Text style={[styles.createButtonText, { color: colors.background }]}>
+                {t("createMarket")}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          style={{ top: -8 }}
+          data={sortedMarkets}
+          renderItem={renderMarketItem}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          numColumns={2}
+          contentContainerStyle={styles.listContainer}
+          columnWrapperStyle={styles.row}
+          refreshControl={
+            <RefreshControl
+              refreshing={isLoading && currentPage === 1}
+              onRefresh={handlePaginationRefresh}
+              tintColor={colors.tint}
+            />
+          }
+          {...paginationFlatListProps}
+          ListFooterComponent={
+            isPaginationLoadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={colors.tint} />
+              </View>
+            ) : null
           }
         />
-      </View>
+      )}
+
+      {/* Floating Action Button - Only show for authenticated users */}
+      {isAuthenticated && (
+        <Button
+          style={[styles.fab, { bottom: 70 + insets.bottom }]}
+          onPress={() => router.push("/services/create")}
+          icon="plus"
+          iconSize={24}
+          title={t("createMarket")}
+          variant="primary"
+        />  
+      )}
+
+      <LocationFilterModal
+        visible={locationFilterVisible}
+        onClose={() => {
+          setLocationFilterVisible(false);
+          // Show filter modal again when location modal closes
+          setFilterModalHiddenForLocation(false);
+        }}
+        onConfirm={(locationData) => {
+          setSelectedFilters((prev) => ({
+            ...prev,
+            location: locationData,
+          }));
+          setLocationFilterVisible(false);
+          // Show filter modal again when location is confirmed
+          setFilterModalHiddenForLocation(false);
+        }}
+        initialLocation={
+          selectedFilters.location &&
+          typeof selectedFilters.location === "object" &&
+          "latitude" in selectedFilters.location &&
+          "longitude" in selectedFilters.location &&
+          "address" in selectedFilters.location &&
+          "radius" in selectedFilters.location
+            ? (selectedFilters.location as {
+                latitude: number;
+                longitude: number;
+                address: string;
+                radius: number;
+              })
+            : undefined
+        }
+      />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // flex: 1
   },
   listContainer: {
     padding: Spacing.sm,
@@ -581,28 +565,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fab: {
-    position: "absolute",
-    right: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 28,
-    gap: 8,
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    zIndex: 10,
-  },
-  fabText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
+    bottom: 20,
+    borderRadius: BorderRadius.round,
+    position: 'absolute',
+    right: Spacing.md,
   },
 });

@@ -140,7 +140,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
           { 
             backgroundColor: colors.background, 
             ...(error && {
-              borderColor: "#ff4444",
+              borderColor: colors.error,
               borderWidth: 1,
             }),
           },
@@ -172,7 +172,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
           </View>
         ) : servicesError ? (
           <View style={styles.errorContainer}>
-            <Text style={[styles.errorText, { color: "#ff4444" }]}>
+            <Text style={[styles.errorText, { color: colors.error }]}>
               {servicesError}
             </Text>
             <TouchableOpacity
@@ -293,7 +293,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
       </View>
 
       {error ? (
-        <Text style={[styles.errorText, { color: "#ff4444", marginTop: 8 }]}>
+        <Text style={[styles.errorText, { color: colors.error, marginTop: 8 }]}>
           {error}
         </Text>
       ) : null}
@@ -305,24 +305,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: Typography.xxxl,
     fontWeight: Typography.bold,
-    marginBottom: 8,
+    marginBottom: Spacing.xs,
   },
   sectionSubtitle: {
     fontSize: 14,
-    marginBottom: 20,
+    marginBottom: Spacing.sm,
     lineHeight: 20,
     opacity: 0.7,
   },
   searchContainer: {
-    marginBottom: 20,
+    marginBottom: Spacing.xs,
   },
   searchInputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     gap: 12,
   },
   searchInput: {
@@ -361,6 +361,7 @@ const styles = StyleSheet.create({
   gridCardImage: {
     width: "100%",
     height: 40,
+    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
   },
   gridCardContent: {

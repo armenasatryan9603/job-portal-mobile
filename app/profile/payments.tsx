@@ -138,9 +138,9 @@ export default function PaymentsScreen() {
   );
 
   const statusColors: Record<PaymentHistoryStatus, string> = {
-    completed: "#4CAF50",
-    pending: "#FFA500",
-    failed: "#FF6B6B",
+    completed: colors.success,
+    pending: colors.orangeSecondary,
+    failed: colors.danger,
   };
 
   const statusLabel = (status: PaymentHistoryStatus) => {
@@ -610,7 +610,7 @@ export default function PaymentsScreen() {
                               item.type === "rejection_refund" ||
                               item.type === "selection_refund"
                                 ? colors.primary
-                                : "#FFA500"
+                                : colors.orangeSecondary
                             }
                           />
                           <Text
@@ -866,6 +866,7 @@ const styles = StyleSheet.create({
     height: 12,
     borderWidth: 2,
     borderRadius: 6,
+    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
   },
   timelineLine: {

@@ -158,7 +158,7 @@ export function AccountInfo({
                       style={[
                         styles.roleOptionText,
                         {
-                          color: isSelected ? "white" : colors.text,
+                          color: isSelected ? colors.textInverse : colors.text,
                         },
                       ]}
                     >
@@ -214,7 +214,7 @@ export function AccountInfo({
               title={t("save")}
               iconPosition="left"
               backgroundColor={colors.primary}
-              textColor="white"
+              textColor={colors.textInverse}
               onPress={handleSave}
               disabled={saving}
             />
@@ -226,7 +226,7 @@ export function AccountInfo({
             <IconSymbol
               name="person.badge.shield.checkmark.fill"
               size={16}
-              color={profile.verified ? "#4CAF50" : colors.textSecondary}
+              color={profile.verified ? colors.success : colors.textSecondary}
             />
             <Text style={[styles.accountText, { color: colors.text }]}>
               {t("verificationStatus")}{" "}

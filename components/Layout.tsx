@@ -422,9 +422,9 @@ export const Layout: React.FC<LayoutProps> = ({
                   <IconSymbol
                     name="rectangle.portrait.and.arrow.right"
                     size={20}
-                    color="#FF6B6B"
+                    color={colors.danger}
                   />
-                  <Text style={[styles.menuItemText, { color: "#FF6B6B" }]}>
+                  <Text style={[styles.menuItemText, { color: colors.danger }]}>
                     {t("logout")}
                   </Text>
                 </TouchableOpacity>

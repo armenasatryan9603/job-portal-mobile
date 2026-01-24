@@ -251,7 +251,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
                 {
                   color:
                     selectedLocation && !loading
-                      ? "white"
+                      ? colors.textInverse
                       : colors.textSecondary,
                 },
               ]}
@@ -351,7 +351,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
                   style={[
                     styles.presetButtonText,
                     {
-                      color: radius === preset ? "white" : colors.text,
+                      color: radius === preset ? colors.textInverse : colors.text,
                     },
                   ]}
                 >

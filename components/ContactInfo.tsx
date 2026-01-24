@@ -201,7 +201,7 @@ export function ContactInfo({
               title={t("save")}
               iconPosition="left"
               backgroundColor={colors.primary}
-              textColor="white"
+              textColor={colors.textInverse}
               onPress={handleSave}
               disabled={saving}
             />

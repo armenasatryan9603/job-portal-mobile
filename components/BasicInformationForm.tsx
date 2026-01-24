@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TextInput,
-  StyleSheet,
   TouchableOpacity,
+  View,
 } from "react-native";
 import { ThemeColors, Typography } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MapViewComponent } from "@/components/MapView";
 import { Modal } from "react-native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface BasicInformationFormProps {
@@ -86,7 +87,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
               styles.textInput,
               {
                 backgroundColor: colors.background,
-                borderColor: (errors.title || errors.name) ? "#ff4444" : colors.border,
+                borderColor: (errors.title || errors.name) ? colors.error : colors.border,
                 color: colors.text,
               },
             ]}
@@ -96,7 +97,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
             placeholderTextColor={colors.tabIconDefault}
           />
           {(errors.title || errors.name) ? (
-            <Text style={[styles.errorText, { color: "#ff4444" }]}>
+            <Text style={[styles.errorText, { color: colors.error }]}>
               {errors.title || errors.name}
             </Text>
           ) : null}
@@ -112,7 +113,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
             styles.textArea,
             {
               backgroundColor: colors.background,
-              borderColor: errors.description ? "#ff4444" : colors.border,
+              borderColor: errors.description ? colors.error : colors.border,
               color: colors.text,
             },
           ]}
@@ -164,7 +165,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
               ]}
               onPress={handleOpenMap}
             >
-              <IconSymbol name="map" size={16} color="white" />
+              <IconSymbol name="map" size={16} color={'#fff'} />
             </TouchableOpacity>
           </View>
         </View>

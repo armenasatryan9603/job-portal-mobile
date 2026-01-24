@@ -482,6 +482,7 @@ const styles = StyleSheet.create({
     height: 160,
     borderTopLeftRadius: 6,
     borderTopRightRadius: 6,
+    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
   },
   overviewSection: {},

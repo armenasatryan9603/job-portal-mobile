@@ -192,9 +192,9 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
             style={[styles.addButton, { backgroundColor: colors.primary }]}
           >
             {uploading ? (
-              <ActivityIndicator size={16} color="white" />
+              <ActivityIndicator size={16} color={colors.textInverse} />
             ) : (
-              <IconSymbol name="plus" size={16} color="white" />
+              <IconSymbol name="plus" size={16} color={colors.textInverse} />
             )}
           </TouchableOpacity>
         )}
@@ -241,16 +241,16 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
                     ]}
                     onPress={() => handleEditItem(item)}
                   >
-                    <IconSymbol name="pencil" size={14} color="white" />
+                    <IconSymbol name="pencil" size={14} color={colors.textInverse} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
                       styles.actionButton,
-                      { backgroundColor: "#FF6B6B" },
+                      { backgroundColor: colors.danger },
                     ]}
                     onPress={() => handleDeleteItem(item)}
                   >
-                    <IconSymbol name="trash" size={14} color="white" />
+                    <IconSymbol name="trash" size={14} color={colors.textInverse} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -379,7 +379,7 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
                 title={t("save")}
                 onPress={handleSaveEdit}
                 backgroundColor={colors.primary}
-                textColor="white"
+                textColor={colors.textInverse}
               />
             </View>
           </View>

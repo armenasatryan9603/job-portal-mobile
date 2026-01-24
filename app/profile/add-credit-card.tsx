@@ -196,7 +196,7 @@ export default function AddCreditCardScreen() {
             style={[styles.cardPreview, { backgroundColor: colors.primary }]}
           >
             <View style={styles.cardHeader}>
-              <IconSymbol name="creditcard.fill" size={32} color="white" />
+              <IconSymbol name="creditcard.fill" size={32} color={colors.textInverse} />
               <ThemedText style={styles.cardBrand}>
                 {getCardType().toUpperCase()}
               </ThemedText>
@@ -472,11 +472,13 @@ const styles = StyleSheet.create({
   cardBrand: {
     fontSize: Typography.sm,
     fontWeight: Typography.semibold,
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   cardNumber: {
     fontSize: Typography.xxxl,
     fontWeight: Typography.bold,
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     letterSpacing: 1,
     marginBottom: Spacing.lg,
@@ -493,6 +495,7 @@ const styles = StyleSheet.create({
   cardValue: {
     fontSize: Typography.md,
     fontWeight: Typography.semibold,
+    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   form: {
