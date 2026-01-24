@@ -39,12 +39,10 @@ export default function ChatScreen() {
     loading,
     error,
     refreshConversations,
-    updateConversation,
     removeConversation,
   } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const isRefreshingRef = useRef(false);
   const conversationsRef = useRef(conversations);
 
   // Keep ref in sync with conversations
@@ -449,7 +447,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     padding: Spacing.md,
-    paddingLeft: 16,
+    paddingLeft: Spacing.md,
   },
   avatarContainer: {
     position: "relative",

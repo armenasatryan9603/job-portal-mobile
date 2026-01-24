@@ -1,14 +1,4 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { NotificationSkeleton } from "@/components/NotificationSkeleton";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useFocusEffect } from "expo-router";
-import React from "react";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import {
   FlatList,
   StyleSheet,
@@ -16,14 +6,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import {
+  useClearAllNotifications,
+  useMarkAllNotificationsAsRead,
+  useMarkNotificationAsRead,
   useNotifications,
   useUnreadNotificationCount,
-  useMarkNotificationAsRead,
-  useMarkAllNotificationsAsRead,
-  useClearAllNotifications,
 } from "@/hooks/useApi";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { NotificationSkeleton } from "@/components/NotificationSkeleton";
+import React from "react";
 import { formatTimestamp } from "@/utils/dateFormatting";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -304,13 +305,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   listContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: Spacing.md,
+    paddingTop: 4,
     paddingBottom: 24,
   },
   notificationItem: {
-    marginBottom: 16,
-    borderRadius: 16,
+    marginBottom: 8,
+    borderRadius: BorderRadius.lg,
     borderLeftWidth: 4,
     overflow: "hidden",
     shadowOffset: {
@@ -319,13 +320,12 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 3,
   },
   notificationContent: {
     flexDirection: "row",
     alignItems: "flex-start",
-    padding: 18,
-    paddingLeft: 16,
+    padding: Spacing.md,
+    paddingLeft: Spacing.md,
   },
   notificationIconContainer: {
     width: 52,
