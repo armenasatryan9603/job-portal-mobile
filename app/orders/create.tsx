@@ -182,9 +182,40 @@ export default function CreateOrderScreen() {
     ]
   );
 
+  // Default form data (initial state) - used to exclude defaults from persistence
+  const defaultPersistedFormData = useMemo(
+    () => ({
+      formData: {
+        title: "",
+        description: "",
+        budget: "",
+        location: "",
+        skills: "",
+        availableDates: "",
+        categoryId: serviceId ? parseInt(serviceId as string) : null,
+      },
+      skillIds: [],
+      newSkillNames: [],
+      currency: "AMD",
+      rateUnit: "per project",
+      selectedLocation: null,
+      categoryId: serviceId ? parseInt(serviceId as string) : null,
+      selectedDates: [],
+      selectedDateTimes: {},
+      questions: [],
+      orderType: "one_time" as const,
+      workDurationPerClient: "",
+      weeklySchedule: {},
+      checkinRequiresApproval: false,
+      useAIEnhancement: false,
+    }),
+    [serviceId]
+  );
+
   const { clearSavedData } = useFormPersistence({
     storageKey: "create_order_draft",
     formData: persistedFormData,
+    defaultData: defaultPersistedFormData,
     enabled: !orderId, // Only persist for new orders
     alertTitle: t("continueForm"),
     alertMessage: t("unsavedChangesContinue"),
@@ -194,8 +225,6 @@ export default function CreateOrderScreen() {
       setFormData(data.formData);
       setSkillIds(data.skillIds || []);
       setNewSkillNames(data.newSkillNames || []);
-      setCurrency(data.currency || "AMD");
-      setRateUnit(data.rateUnit || "per project");
       setSelectedLocation(data.selectedLocation);
       if (data.categoryId && categoriesData?.categories) {
         const category = categoriesData.categories.find(
@@ -2114,7 +2143,6 @@ export default function CreateOrderScreen() {
           </ResponsiveCard>
           )}
 
-          {/* Action Buttons */}
           <ResponsiveCard>
             {/* AI Enhancement Option - Show for both new and existing orders */}
             <View style={styles.aiEnhancementContainer}>
@@ -2161,6 +2189,7 @@ export default function CreateOrderScreen() {
                 />
               </TouchableOpacity>
             </View>
+            {/* Action Buttons */}
             <View
               style={[
                 styles.actionButtons,

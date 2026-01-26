@@ -1,8 +1,9 @@
+import { Animated, StyleSheet, View } from "react-native";
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
-import { ThemeColors, Spacing } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Spacing, ThemeColors } from "@/constants/styles";
+
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface FloatingSkeletonProps {
   count?: number;
@@ -595,7 +596,7 @@ const styles = StyleSheet.create({
   },
   grid2Container: {
     flex: 1,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.sm,
   },
   grid2Row: {
     flexDirection: "row",

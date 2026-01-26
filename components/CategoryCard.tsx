@@ -1,11 +1,12 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet } from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import { Category } from "@/categories/api";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import React from "react";
 import { Spacing } from "@/constants/styles";
 
-interface ServiceCardProps {
-  service: Category;
+interface CategoryCardProps {
+  category: Category;
   onPress: (categoryId: number) => void;
   childCount?: number;
   colors: {
@@ -15,8 +16,8 @@ interface ServiceCardProps {
   };
 }
 
-export const ServiceCard: React.FC<ServiceCardProps> = ({
-  service,
+export const CategoryCard: React.FC<CategoryCardProps> = ({
+  category,
   onPress,
   childCount = 0,
   colors,
@@ -24,13 +25,13 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   return (
     <TouchableOpacity
       activeOpacity={0.7}
-      onPress={() => onPress(service.id)}
+      onPress={() => onPress(category.id)}
       style={{ flex: 1, marginHorizontal: Spacing.xs }}
     >
       <View style={[styles.gridCard, { backgroundColor: colors.surface }]}>
-        {service.imageUrl && (
+        {category.imageUrl && (
           <Image
-            source={{ uri: service.imageUrl }}
+            source={{ uri: category.imageUrl }}
             style={styles.gridServiceImage}
             resizeMode="contain"
           />
@@ -40,7 +41,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
             style={[styles.gridServiceName, { color: colors.text }]}
             numberOfLines={2}
           >
-            {service.name}
+            {category.name}
           </Text>
           <View style={styles.gridServiceStats}>
             <View style={styles.gridStatItem}>
@@ -51,7 +52,7 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
                   { color: colors.text, marginLeft: 4 },
                 ]}
               >
-                {service.specialistCount}
+                {category.specialistCount}
               </Text>
             </View>
             {childCount > 0 && (
@@ -82,6 +83,7 @@ const styles = StyleSheet.create({
   gridCard: {
     borderRadius: 12,
     overflow: "hidden",
+    height: 144
   },
   gridServiceImage: {
     width: "100%",

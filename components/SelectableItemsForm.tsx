@@ -1,9 +1,12 @@
 import {
+  Keyboard,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -156,9 +159,17 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   const onSelectionChangeRef = useRef(onSelectionChange);
   const getDisplayNameRef = useRef(getDisplayName);
   const lastSuggestionsKeyRef = useRef<string>("");
+  const lastSelectedItemIdRef = useRef<number | string | null>(null);
+  const isScrollingRef = useRef(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Sync badges when selectedItems changes externally
   useEffect(() => {
+    // Don't sync if we're in the middle of selecting - let selection complete first
+    if (isSelectingSuggestionRef.current) {
+      return;
+    }
+    
     try {
       const newBadges = getInitialBadges();
       const newKey = newBadges.map((b) => b.name.trim().toLowerCase()).sort().join(",");
@@ -313,41 +324,82 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
   // Handle selecting an item from suggestions
   const handleSelectSuggestion = useCallback((item: SelectableItem) => {
+    // Prevent double execution - if we just selected this item, ignore
+    if (lastSelectedItemIdRef.current === item.id && isSelectingSuggestionRef.current) {
+      return;
+    }
+    
+    // Mark that we're selecting this item
+    lastSelectedItemIdRef.current = item.id;
     isSelectingSuggestionRef.current = true;
+    
+    // Clear any pending blur timeouts immediately
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
       blurTimeoutRef.current = null;
     }
 
     const itemName = getDisplayName(item);
+    
+    // Process selection IMMEDIATELY - this is the critical part
+    if (multi) {
+      // Use functional update to ensure we have latest state
+      setItemBadges((prevBadges) => {
+        // Check if already exists or max items reached
+        if (isItemSelected(item, prevBadges) || (maxItems && prevBadges.length >= maxItems)) {
+          return prevBadges; // Don't add
+        }
+        // Add badge - THIS IS THE KEY ACTION
+        return [...prevBadges, createBadge(itemName, item.id)];
+      });
+    } else {
+      // Set badge - THIS IS THE KEY ACTION
+      setItemBadges([createBadge(itemName, item.id)]);
+    }
+    
+    // Clear input and close UI
     setCurrentInput("");
     setShowSuggestions(false);
     setIsInputFocused(false);
-
-    if (multi) {
-      // Check if already exists or max items reached
-      if (isItemSelected(item, itemBadges) || (maxItems && itemBadges.length >= maxItems)) {
-        setTimeout(() => { isSelectingSuggestionRef.current = false; }, 300);
-        inputRef.current?.blur();
-        return;
-      }
-      setItemBadges([...itemBadges, createBadge(itemName, item.id)]);
-    } else {
-      setItemBadges([createBadge(itemName, item.id)]);
-    }
-
-    setTimeout(() => { isSelectingSuggestionRef.current = false; }, 300);
-    inputRef.current?.blur();
-  }, [multi, itemBadges, maxItems, isItemSelected, createBadge, getDisplayName]);
+    
+    // Dismiss keyboard after a short delay
+    setTimeout(() => {
+      Keyboard.dismiss();
+      inputRef.current?.blur();
+      
+      // Reset flag
+      setTimeout(() => {
+        isSelectingSuggestionRef.current = false;
+        lastSelectedItemIdRef.current = null;
+      }, 200);
+    }, 50);
+  }, [multi, maxItems, isItemSelected, createBadge, getDisplayName]);
 
   // Handle creating a new item
   const handleCreateNewItem = useCallback(() => {
+    // Prevent blur from interfering
+    isSelectingSuggestionRef.current = true;
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
+
     const inputValue = currentInput?.trim() || "";
-    if (!inputValue || !allowCreate) return;
+    if (!inputValue || !allowCreate) {
+      isSelectingSuggestionRef.current = false;
+      return;
+    }
 
     // Check if already exists
     if (itemBadges.some((b) => b.name.toLowerCase() === inputValue.toLowerCase())) {
       setCurrentInput("");
+      setShowSuggestions(false);
+      setIsInputFocused(false);
+      Keyboard.dismiss();
+      inputRef.current?.blur();
+      setTimeout(() => {
+        isSelectingSuggestionRef.current = false;
+      }, 100);
       return;
     }
 
@@ -364,17 +416,32 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     // Check max items limit
     if (maxItems && itemBadges.length >= maxItems) {
       setCurrentInput("");
+      setShowSuggestions(false);
+      setIsInputFocused(false);
+      Keyboard.dismiss();
+      inputRef.current?.blur();
+      setTimeout(() => {
+        isSelectingSuggestionRef.current = false;
+      }, 100);
       return;
     }
 
-    // Create new item
+    // Create new item IMMEDIATELY
     const newBadge = createBadge(inputValue);
     setItemBadges(multi ? [...itemBadges, newBadge] : [newBadge]);
     setCurrentInput("");
+    
+    // Dismiss keyboard immediately
+    Keyboard.dismiss();
+    
+    // Close suggestions immediately
     setShowSuggestions(false);
     setIsInputFocused(false);
+    inputRef.current?.blur();
     
-    setTimeout(() => { isSelectingSuggestionRef.current = false; }, 300);
+    setTimeout(() => {
+      isSelectingSuggestionRef.current = false;
+    }, 100);
   }, [currentInput, allowCreate, itemBadges, items, maxItems, multi, createBadge, handleSelectSuggestion, getDisplayName]);
 
   // Handle input change
@@ -398,24 +465,47 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
   // Handle input blur
   const handleInputBlur = () => {
+    // If we're in the middle of selecting, don't do anything
+    // The selection handler will manage closing suggestions
+    if (isSelectingSuggestionRef.current) {
+      // Re-focus the input to prevent blur from closing suggestions
+      // This gives the selection time to complete
+      setTimeout(() => {
+        if (isSelectingSuggestionRef.current) {
+          inputRef.current?.focus();
+        }
+      }, 0);
+      return;
+    }
+    
     if (blurTimeoutRef.current) {
       clearTimeout(blurTimeoutRef.current);
     }
+    // Use a longer timeout to give selection time to complete
     blurTimeoutRef.current = setTimeout(() => {
-      if (!isSelectingSuggestionRef.current) {
+      // Triple check - if selection started during the timeout, don't close
+      if (!isSelectingSuggestionRef.current && !lastSelectedItemIdRef.current) {
         setIsInputFocused(false);
+        setShowSuggestions(false);
         onInputBlur?.();
       }
-    }, 200);
+    }, 500);
   };
 
   // Handle clicking outside to close suggestions
   const handleOutsidePress = () => {
-    if (showSuggestions) {
-      setShowSuggestions(false);
-      setIsInputFocused(false);
-      inputRef.current?.blur();
+    // Don't close if we're in the middle of selecting a suggestion
+    if (isSelectingSuggestionRef.current) {
+      return;
     }
+    // Add a small delay to ensure selection completes first
+    setTimeout(() => {
+      if (!isSelectingSuggestionRef.current && showSuggestions) {
+        setShowSuggestions(false);
+        setIsInputFocused(false);
+        inputRef.current?.blur();
+      }
+    }, 50);
   };
 
   // Handle submitting input
@@ -551,7 +641,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
               value={currentInput}
               onChangeText={handleInputChange}
               onFocus={handleInputFocus}
-              onBlur={handleInputBlur}
+              onBlur={showSuggestions ? undefined : handleInputBlur}
               onSubmitEditing={handleSubmitEditing}
               placeholder={placeholder || t("addItem") || "Add item..."}
               placeholderTextColor={colors.tabIconDefault}
@@ -561,6 +651,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="none"
+              blurOnSubmit={false}
             />
           )}
         </View>
@@ -568,16 +659,11 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
       {showSuggestions && (
         <>
-          <Pressable style={styles.backdrop} onPress={handleOutsidePress} />
-          <Pressable
-            onPressIn={() => {
-              isSelectingSuggestionRef.current = true;
-              if (blurTimeoutRef.current) {
-                clearTimeout(blurTimeoutRef.current);
-                blurTimeoutRef.current = null;
-              }
-            }}
-            onPress={(e) => e.stopPropagation()}
+          <Pressable 
+            style={styles.backdrop} 
+            onPress={handleOutsidePress}
+          />
+          <View
             style={[
               styles.suggestionsContainer,
               {
@@ -587,72 +673,82 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
               },
             ]}
           >
-            {suggestions.length > 0 ? (
-              suggestions.map((item) => (
-                <Pressable
-                  key={item.id.toString()}
-                  style={({ pressed }) => [
-                    styles.suggestionItem,
-                    pressed && {
-                      backgroundColor:
-                        colorScheme === "dark"
-                          ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(0, 0, 0, 0.05)",
-                    },
-                  ]}
-                  onPress={() => handleSelectSuggestion(item)}
-                  onPressIn={() => {
-                    isSelectingSuggestionRef.current = true;
-                    if (blurTimeoutRef.current) {
-                      clearTimeout(blurTimeoutRef.current);
-                      blurTimeoutRef.current = null;
+            <ScrollView
+              nestedScrollEnabled={true}
+              showsVerticalScrollIndicator={true}
+              onTouchStart={() => {
+                isScrollingRef.current = false;
+              }}
+              onScrollBeginDrag={() => {
+                isScrollingRef.current = true;
+              }}
+              onScrollEndDrag={() => {
+                setTimeout(() => {
+                  isScrollingRef.current = false;
+                }, 200);
+              }}
+              onMomentumScrollEnd={() => {
+                setTimeout(() => {
+                  isScrollingRef.current = false;
+                }, 200);
+              }}
+              style={{ maxHeight: 240 }}
+            >
+              {suggestions.length > 0 ? (
+                suggestions.map((item) => (
+                  <TouchableOpacity
+                    key={item.id.toString()}
+                    activeOpacity={0.7}
+                    style={styles.suggestionItem}
+                    onPress={() => {
+                      if (!isScrollingRef.current) {
+                        if (blurTimeoutRef.current) {
+                          clearTimeout(blurTimeoutRef.current);
+                          blurTimeoutRef.current = null;
+                        }
+                        handleSelectSuggestion(item);
+                      }
+                    }}
+                  >
+                    <IconSymbol
+                      name="checkmark.circle"
+                      size={18}
+                      color={colors.tint}
+                      style={styles.suggestionIcon}
+                    />
+                    <Text style={[styles.suggestionText, { color: colors.text }]}>
+                      {getDisplayName(item)}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              ) : shouldShowCreateButton() ? (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[styles.suggestionItem, styles.createSuggestionItem]}
+                  onPress={() => {
+                    if (!isScrollingRef.current) {
+                      isSelectingSuggestionRef.current = true;
+                      if (blurTimeoutRef.current) {
+                        clearTimeout(blurTimeoutRef.current);
+                        blurTimeoutRef.current = null;
+                      }
+                      handleCreateNewItem();
                     }
                   }}
                 >
                   <IconSymbol
-                    name="checkmark.circle"
+                    name="plus.circle.fill"
                     size={18}
                     color={colors.tint}
                     style={styles.suggestionIcon}
                   />
-                  <Text style={[styles.suggestionText, { color: colors.text }]}>
-                    {getDisplayName(item)}
+                  <Text style={[styles.suggestionText, { color: colors.tint, fontWeight: "600" }]}>
+                    {t("createItem") || "Create"} "{currentInput.trim()}"
                   </Text>
-                </Pressable>
-              ))
-            ) : shouldShowCreateButton() ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.suggestionItem,
-                  styles.createSuggestionItem,
-                  pressed && {
-                    backgroundColor:
-                      colorScheme === "dark"
-                        ? "rgba(0, 122, 255, 0.2)"
-                        : "rgba(0, 122, 255, 0.1)",
-                  },
-                ]}
-                onPress={handleCreateNewItem}
-                onPressIn={() => {
-                  isSelectingSuggestionRef.current = true;
-                  if (blurTimeoutRef.current) {
-                    clearTimeout(blurTimeoutRef.current);
-                    blurTimeoutRef.current = null;
-                  }
-                }}
-              >
-                <IconSymbol
-                  name="plus.circle.fill"
-                  size={18}
-                  color={colors.tint}
-                  style={styles.suggestionIcon}
-                />
-                <Text style={[styles.suggestionText, { color: colors.tint, fontWeight: "600" }]}>
-                  {t("createItem") || "Create"} "{currentInput.trim()}"
-                </Text>
-              </Pressable>
-            ) : null}
-          </Pressable>
+                </TouchableOpacity>
+              ) : null}
+            </ScrollView>
+          </View>
         </>
       )}
 
@@ -745,10 +841,11 @@ const styles = StyleSheet.create({
     maxHeight: 240,
     borderRadius: 12,
     marginTop: 4,
-    overflow: "hidden",
     borderWidth: 1,
     zIndex: 999,
     position: "relative",
+    // Ensure this container captures touch events before backdrop
+    elevation: 5,
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -757,9 +854,15 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 5,
       },
     }),
+  },
+  scrollView: {
+    // No special styles needed - container handles height
+  },
+  scrollViewContent: {
+    // Content will size naturally, no flexGrow needed
   },
   suggestionItem: {
     flexDirection: "row",
@@ -789,6 +892,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 998,
     backgroundColor: "transparent",
+    // Allow touches to pass through to children (suggestions container)
+    // but still capture touches outside
   },
   errorText: {
     fontSize: 13,

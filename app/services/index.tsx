@@ -355,7 +355,7 @@ export default function ServicesScreen() {
 
   return (
     <Layout header={header}>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={{ backgroundColor: colors.background }}>
         <ResponsiveCard>
           <Filter
             searchPlaceholder={t("searchServices")}
@@ -473,15 +473,11 @@ export default function ServicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    // flex: 1
-  },
   listContainer: {
     padding: Spacing.sm,
   },
   row: {
     justifyContent: "space-between",
-    paddingHorizontal: Spacing.xs,
   },
   marketCard: {
     marginBottom: 16,
@@ -543,7 +539,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 32,
+    padding: Spacing.lg,
   },
   emptyText: {
     fontSize: 16,

@@ -71,6 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
                 name="line.3.horizontal"
                 size={Platform.OS === "android" ? 32 : 28}
                 color={colors.text}
+                style={{ padding: Spacing.sm, paddingLeft: 0, marginLeft: -Spacing.xs }}
               />
             </TouchableOpacity>
           )}

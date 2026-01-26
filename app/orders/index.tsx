@@ -1266,12 +1266,6 @@ export default function OrdersScreen() {
     }, [])
   );
 
-  // Filter orders locally for additional filtering (if needed)
-  // const filteredOrders = orders.filter(() => {
-  //   // Additional local filtering can be added here if needed
-  //   return true;
-  // });
-
   const handleCreateOrder = () => {
     AnalyticsService.getInstance().logEvent("button_clicked", {
       button_name: "create_order",

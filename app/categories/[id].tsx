@@ -1,39 +1,40 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { ServiceCard } from "@/components/ServiceCard";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { CategoryDetailSkeleton } from "@/components/CategoryDetailSkeleton";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useModal } from "@/contexts/ModalContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
-import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
-import { router, useLocalSearchParams } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
+  Alert,
+  Image,
+  Keyboard,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Alert,
-  Image,
-  Keyboard,
 } from "react-native";
-import { apiService, Category } from "@/categories/api";
-import { Button } from "@/components/ui/button";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { Category, apiService } from "@/categories/api";
+import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { ThemeColors, Typography } from "@/constants/styles";
+import { router, useLocalSearchParams } from "expo-router";
+
 import AnalyticsService from "@/categories/AnalyticsService";
+import { Button } from "@/components/ui/button";
+import { CategoryCard } from "@/components/CategoryCard";
+import { CategoryDetailSkeleton } from "@/components/CategoryDetailSkeleton";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
 import { Spacing } from "@/constants/styles";
+import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModal } from "@/contexts/ModalContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function ServiceDetailScreen() {
   useAnalytics("ServiceDetail");
@@ -204,9 +205,9 @@ export default function ServiceDetailScreen() {
   const renderCategoryCard = (category: Category) => {
     const childCount = category.Children?.length || 0;
     return (
-      <ServiceCard
+      <CategoryCard
         key={category.id}
-        service={category}
+        category={category}
         onPress={handleSubCategoryPress}
         childCount={childCount}
         colors={{

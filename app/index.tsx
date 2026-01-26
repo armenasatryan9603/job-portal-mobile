@@ -1,4 +1,3 @@
-import { router } from "expo-router";
 import {
   Alert,
   ScrollView,
@@ -6,27 +5,28 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { usePlatformStats } from "@/hooks/useApi";
-
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { UserAvatar } from "@/components/UserAvatar";
 import {
   BorderRadius,
-  createThemeShadow,
   Spacing,
   ThemeColors,
   Typography,
+  createThemeShadow,
 } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useModal } from "@/contexts/ModalContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { useAnalytics, useAnalyticsService } from "@/hooks/useAnalytics";
+
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { ThemedText } from "@/components/themed-text";
+import { UserAvatar } from "@/components/UserAvatar";
+import { router } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { useModal } from "@/contexts/ModalContext";
+import { usePlatformStats } from "@/hooks/useApi";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function WelcomeScreen() {
   // Track screen view
@@ -498,7 +498,7 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   // Container
   container: {
-    padding: Spacing.lg,
+    padding: Spacing.md,
     gap: Spacing.xl,
   },
   // User Card

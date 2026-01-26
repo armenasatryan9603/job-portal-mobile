@@ -1,44 +1,40 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
-import { Filter, FilterSection } from "@/components/FilterComponent";
-import { EmptyPage } from "@/components/EmptyPage";
-import { FloatingSkeleton } from "@/components/FloatingSkeleton";
-import { ServiceCard } from "@/components/ServiceCard";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors, ViewStyles } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
-import { router } from "expo-router";
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
-import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import {
+  ActivityIndicator,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-  RefreshControl,
-  ActivityIndicator,
-  Image,
-  Dimensions,
 } from "react-native";
-import { Category } from "@/categories/api";
+import { Filter, FilterSection } from "@/components/FilterComponent";
+import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { useCategories, useRootCategories } from "@/hooks/useApi";
+
 import AnalyticsService from "@/categories/AnalyticsService";
+import { Category } from "@/categories/api";
+import { CategoryCard } from "@/components/CategoryCard";
+import { EmptyPage } from "@/components/EmptyPage";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
+import { Header } from "@/components/Header";
+import { Layout } from "@/components/Layout";
+import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { formatPriceDisplay } from "@/utils/currencyRateUnit";
-import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 const ServicesScreen = () => {
   useAnalytics("Services");
@@ -308,9 +304,9 @@ const ServicesScreen = () => {
   const renderCategoryCard = (category: Category) => {
     const childCategories = getChildCategories(category.id);
     return (
-      <ServiceCard
+      <CategoryCard
         key={category.id}
-        service={category}
+        category={category}
         onPress={wrappedHandleCategoryPress}
         childCount={childCategories.length}
         colors={{
@@ -416,10 +412,10 @@ const ServicesScreen = () => {
           </View>
         ) : (
           <FlatList
-            style={{ marginTop: 80 }}
+            style={{ marginTop: 76 }}
             data={parentCategoryRows}
             renderItem={renderCategoryRow}
-            keyExtractor={(item, index) => `row-${index}`}
+            keyExtractor={(_, index) => `row-${index}`}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmptyComponent}
             {...flatListProps}
@@ -433,7 +429,7 @@ const ServicesScreen = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingBottom: 6 * Spacing.lg,
-              paddingHorizontal: Spacing.sm,
+              paddingHorizontal: Spacing.xs,
             }}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"

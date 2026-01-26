@@ -1097,7 +1097,6 @@ export default function CreateMarketScreen() {
             <View
               style={[
                 styles.actionButtons,
-                // { borderTopColor: colors.border },
                 !marketId && styles.singleButtonContainer,
               ]}
             >
@@ -1111,6 +1110,7 @@ export default function CreateMarketScreen() {
                     title={t("delete")}
                     textColor={colors.errorVariant}
                     onPress={handleDeleteMarket}
+                    style={{ flex: 1, maxWidth: '33%' }}
                   />
                   <Button
                     variant="outline"
@@ -1121,11 +1121,12 @@ export default function CreateMarketScreen() {
                     onPress={() => {
                       router.push(`/services/${marketId}?preview=true`);
                     }}
+                    style={{ flex: 1, maxWidth: '33%' }}
                   />
                 </>
               )}
               <Button
-                style={{ minWidth: 80 }}
+                style={{ minWidth: 80, flex: 1, maxWidth: '33%' }}
                 onPress={handleSubmit}
                 title={marketId ? t("save") : t("createMarket")}
                 variant="primary"

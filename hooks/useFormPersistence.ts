@@ -6,6 +6,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 interface UseFormPersistenceOptions<T> {
   storageKey: string;
   formData: T;
+  defaultData?: T;
   onRestore: (data: T) => void;
   onClear?: () => void;
   enabled?: boolean;
@@ -15,7 +16,51 @@ interface UseFormPersistenceOptions<T> {
   startFreshText?: string;
 }
 
-// Helper function to check if saved data has meaningful content
+// Deep comparison function to check if two values are equal
+const deepEqual = (a: any, b: any): boolean => {
+  if (a === b) return true;
+  
+  if (a === null || b === null || a === undefined || b === undefined) {
+    return a === b;
+  }
+  
+  if (typeof a !== typeof b) return false;
+  
+  if (typeof a !== "object") {
+    // For primitives, do strict comparison
+    if (typeof a === "string") {
+      return a.trim() === (typeof b === "string" ? b.trim() : b);
+    }
+    return a === b;
+  }
+  
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  
+  if (Array.isArray(a)) {
+    if (a.length !== b.length) return false;
+    return a.every((item, index) => deepEqual(item, b[index]));
+  }
+  
+  // For objects, compare all keys
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+  
+  if (keysA.length !== keysB.length) return false;
+  
+  return keysA.every((key) => deepEqual(a[key], b[key]));
+};
+
+// Helper function to check if data differs from defaults
+const differsFromDefaults = <T>(data: T, defaultData?: T): boolean => {
+  if (!defaultData) {
+    // If no defaults provided, use the old hasMeaningfulData logic
+    return hasMeaningfulData(data);
+  }
+  
+  return !deepEqual(data, defaultData);
+};
+
+// Helper function to check if saved data has meaningful content (fallback)
 const hasMeaningfulData = (data: any): boolean => {
   if (data === null || data === undefined) return false;
   
@@ -47,6 +92,7 @@ const hasMeaningfulData = (data: any): boolean => {
 export const useFormPersistence = <T extends Record<string, any>>({
   storageKey,
   formData,
+  defaultData,
   onRestore,
   onClear,
   enabled = true,
@@ -58,10 +104,19 @@ export const useFormPersistence = <T extends Record<string, any>>({
   const isInitialMount = useRef(true);
   const hasRestored = useRef(false);
 
-  // Save form data to storage when it changes
+  // Save form data to storage when it changes (only if it differs from defaults)
   useEffect(() => {
     if (!enabled || isInitialMount.current) {
       isInitialMount.current = false;
+      return;
+    }
+
+    // Only save if data differs from defaults
+    if (!differsFromDefaults(formData, defaultData)) {
+      // If data matches defaults, remove any saved data
+      AsyncStorage.removeItem(storageKey).catch((error) => {
+        console.error("Error removing default form data:", error);
+      });
       return;
     }
 
@@ -75,7 +130,7 @@ export const useFormPersistence = <T extends Record<string, any>>({
 
     const timeoutId = setTimeout(saveData, 500); // Debounce saves
     return () => clearTimeout(timeoutId);
-  }, [formData, storageKey, enabled]);
+  }, [formData, defaultData, storageKey, enabled]);
 
   // Check for saved data on mount
   useEffect(() => {
@@ -86,8 +141,8 @@ export const useFormPersistence = <T extends Record<string, any>>({
         const saved = await AsyncStorage.getItem(storageKey);
         if (saved) {
           const parsed = JSON.parse(saved);
-          // Only show alert if there's meaningful data to restore
-          if (hasMeaningfulData(parsed)) {
+          // Only show alert if data differs from defaults
+          if (differsFromDefaults(parsed, defaultData)) {
             Alert.alert(
               alertTitle,
               alertMessage,
@@ -111,7 +166,7 @@ export const useFormPersistence = <T extends Record<string, any>>({
               ]
             );
           } else {
-            // If no meaningful data, clear it silently
+            // If data matches defaults, clear it silently
             await AsyncStorage.removeItem(storageKey);
             hasRestored.current = true;
           }
