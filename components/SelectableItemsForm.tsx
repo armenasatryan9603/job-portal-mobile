@@ -807,7 +807,7 @@ const styles = StyleSheet.create({
   badgesContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    // gap: 8,
+    gap: 4,
     flex: 1,
     alignItems: "center",
   },
@@ -817,7 +817,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    // gap: 6,
     maxWidth: "100%",
   },
   itemBadgeText: {
