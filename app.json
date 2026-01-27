@@ -11,8 +11,7 @@
       "enabled": true,
       "prefixes": [
         "jobportalmobile://",
-        "https://yourapp.com",
-        "https://*.yourapp.com"
+        "https://job-portal-backend-eight-sand.vercel.app"
       ]
     },
     "newArchEnabled": true,
@@ -24,7 +23,10 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "buildNumber": "1",
       "entitlements": {
-        "aps-environment": "development"
+        "aps-environment": "development",
+        "com.apple.developer.associated-domains": [
+          "applinks:job-portal-backend-eight-sand.vercel.app"
+        ]
       },
       "version": "1.0.0",
       "config": {

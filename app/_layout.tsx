@@ -207,12 +207,25 @@ function AppContent() {
   const handleDeepLink = (url: string) => {
     try {
       const parsed = Linking.parse(url);
+      const path = parsed.path || "";
+      
+      // Handle referral codes
       const refCode = parsed.queryParams?.ref as string;
-
       if (refCode) {
-        // Deep link detected with referral code
         storeReferralCode(refCode);
+        return;
       }
+      
+      // Handle order links: /orders/{id}
+      if (path.startsWith("/orders/")) {
+        const orderId = path.split("/orders/")[1];
+        if (orderId) {
+          router.push(`/orders/${orderId}`);
+        }
+        return;
+      }
+      
+      // Handle other routes as needed
     } catch (error) {
       console.error("Error parsing deep link:", error);
     }

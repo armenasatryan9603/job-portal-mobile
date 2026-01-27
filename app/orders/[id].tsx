@@ -38,6 +38,7 @@ import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { chatService } from "@/categories/chatService";
+import { getFrontendUrl } from "@/config/api";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useApplyToOrder } from "@/hooks/useApi";
@@ -681,14 +682,15 @@ export default function EditOrderScreen() {
     const orderId = order?.id;
     if (!orderId) return "";
 
-    // Use deep link for mobile app
-    const deepLink = `jobportalmobile://orders/${orderId}`;
-
-    // Fallback to web URL if available (you can customize this)
-    const webUrl = `https://yourapp.com/orders/${orderId}`;
-
-    // Return deep link for now, but you could also return webUrl or both
-    return deepLink;
+    // Get frontend URL from config (set via EXPO_PUBLIC_FRONTEND_URL env variable)
+    const frontendUrl = getFrontendUrl();
+    
+    // Generate web URL that works across devices
+    // This will open in browser or redirect to app if deep linking is configured
+    const webUrl = `${frontendUrl}/orders/${orderId}`;
+    
+    // Return web URL as primary (works on all devices)
+    return webUrl;
   };
 
   // Share order link
@@ -706,6 +708,7 @@ export default function EditOrderScreen() {
       const result = await Share.share({
         message: shareMessage,
         title: t("shareOrder"),
+        url: orderLink, // Add URL for better sharing support (iOS)
       });
 
       if (result.action === Share.sharedAction) {
@@ -767,6 +770,7 @@ export default function EditOrderScreen() {
       const result = await Share.share({
         message: shareMessage,
         title: t("shareOrder"),
+        url: orderLink, // Add URL for better sharing support (iOS)
       });
 
       if (result.action === Share.sharedAction) {
@@ -1558,7 +1562,7 @@ export default function EditOrderScreen() {
                     text={t("pending")}
                     variant="pending"
                     size="sm"
-                    backgroundColor={colors.orangeSecondary}
+                    backgroundColor={colors.warning} // fixed: use a valid property instead of colors.orangeSecondary
                   />
                 </View>
                 {order?.resourceBookingMode === "select" && booking.MarketMember?.User && (

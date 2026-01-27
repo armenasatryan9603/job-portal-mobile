@@ -13,6 +13,11 @@ export const API_CONFIG = {
   // Use environment variable if set, otherwise fallback to Frankfurter API
   FRANKFURTER_API_URL: process.env.EXPO_PUBLIC_FRANKFURTER_API_URL,
 
+  // Frontend URL for sharing links (web app URL or universal link)
+  // Set EXPO_PUBLIC_FRONTEND_URL in .env file
+  // This should match your backend domain for Universal Links/App Links
+  FRONTEND_URL: process.env.EXPO_PUBLIC_FRONTEND_URL || "https://job-portal-backend-eight-sand.vercel.app",
+
   // Request timeouts
   TIMEOUT: 10000, // 10 seconds
 
@@ -27,6 +32,11 @@ export const API_BASE_URL = API_CONFIG.BASE_URL;
 // Helper function to get the API base URL
 export const getApiBaseUrl = (): string => {
   return API_CONFIG.BASE_URL;
+};
+
+// Helper function to get the frontend URL for sharing
+export const getFrontendUrl = (): string => {
+  return API_CONFIG.FRONTEND_URL;
 };
 
 export default API_CONFIG;
