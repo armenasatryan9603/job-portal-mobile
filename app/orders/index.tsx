@@ -22,7 +22,6 @@ import {
   useAllOrders,
   useApplyToOrder,
   useCategories,
-  useDeleteOrder,
   useMyJobs,
   useMyOrders,
   usePublicOrders,
