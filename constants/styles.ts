@@ -192,20 +192,20 @@ export const createThemeShadow = (isDark: boolean, elevation: number = 2) => {
 // ============================================================================
 
 export const StatusColors = {
-  success: "#4CAF50",
-  warning: "#FF9800",
-  error: "#F44336",
+  success: "#16A34A",      // completed / payment success
+  warning: "#F59E0B",      // in progress / attention
+  error: "#EF4444",
   info: "#2196F3",
-  primary: "#0a7ea4",
-  secondary: "#6c757d",
+  primary: "#0A7EA4",
+  secondary: "#4B5563",
 
   // Status specific
-  open: "#4CAF50",
-  inProgress: "#FF9800",
-  completed: "#2196F3",
-  cancelled: "#F44336",
-  available: "#4CAF50",
-  unavailable: "#9E9E9E",
+  open: "#22C55E",
+  inProgress: "#F59E0B",
+  completed: "#2563EB",
+  cancelled: "#EF4444",
+  available: "#4ADE80",
+  unavailable: "#9CA3AF",
 } as const;
 
 // ============================================================================
@@ -215,137 +215,141 @@ export const StatusColors = {
 export const ThemeColors = {
   light: {
     // Background colors
-    background: "#F5F5F5",
-    backgroundSecondary: "#E8E8E8",
-    backgroundTertiary: "#E0E0E0",
+    background: "#F5F7FA",
+    backgroundSecondary: "#EEF1F5",
+    backgroundTertiary: "#E5E7EB",
     surface: "#FFFFFF",
-    surfaceSecondary: "#F8F9FA",
+    surfaceSecondary: "#F8FAFC",
 
     // Text colors
-    text: "#11181C",
-    textSecondary: "#687076",
-    textTertiary: "#9BA1A6",
+    text: "#0F172A",
+    textSecondary: "#475569",
+    textTertiary: "#94A3B8",
     textInverse: "#FFFFFF",
 
     // Border colors
-    border: "#dadbe0",
-    borderSecondary: "#6B7280",
-    borderTertiary: "#D1D5DB",
+    border: "#E2E8F0",
+    borderSecondary: "#CBD5E1",
+    borderTertiary: "#E5E7EB",
 
     // Interactive colors
-    primary: "#0a7ea4",
+    primary: "#0A7EA4",
     primaryHover: "#086A8A",
     primaryPressed: "#065A73",
-    secondary: "#6c757d",
-    secondaryHover: "#5A6268",
-    secondaryPressed: "#495057",
 
-    // Legacy colors for backward compatibility
-    tint: "#0a7ea4",
-    icon: "#687076",
-    tabIconDefault: "#687076",
-    tabIconSelected: "#0a7ea4",
+    secondary: "#4B5563",
+    secondaryHover: "#374151",
+    secondaryPressed: "#1F2937",
 
-    // Status colors (light mode)
-    success: "#4CAF50",
-    successLight: "#E8F5E8",
-    warning: "#FF9800",
-    warningLight: "#FFF3E0",
-    error: "#F44336",
-    errorLight: "#FFEBEE",
-    errorVariant: "#FF3B30", // iOS red variant
-    info: "#2196F3",
-    infoLight: "#E3F2FD",
+    // Legacy
+    tint: "#0A7EA4",
+    icon: "#64748B",
+    tabIconDefault: "#64748B",
+    tabIconSelected: "#0A7EA4",
+
+    // Status colors
+    success: "#16A34A",
+    successLight: "#DCFCE7",
+
+    warning: "#F59E0B",
+    warningLight: "#FEF3C7",
+
+    error: "#EF4444",
+    errorLight: "#FEE2E2",
+    errorVariant: "#FF3B30",
+
+    info: "#2563EB",
+    infoLight: "#DBEAFE",
 
     // Semantic colors
-    rating: "#FFD700", // Gold for stars/ratings
-    openNow: "#34C759", // iOS green for "open now" status
-    danger: "#FF6B6B", // Red-pink for delete/danger actions
-    link: "#007AFF", // iOS blue for links
-    accent: "#9333EA", // Purple accent color
-    accentSecondary: "#5856D6", // iOS purple variant
-    orange: "#FF9500", // Orange color
-    orangeSecondary: "#FFA500", // Orange variant
-    iosGray: "#8E8E93", // iOS gray
-    purple: "#9C27B0", // Material Design purple
-    amber: "#FFC107", // Yellow/Amber
-    deepOrange: "#FF5722", // Deep orange
+    rating: "#FACC15",
+    openNow: "#22C55E",
+    danger: "#EF4444",
+    link: "#2563EB",
 
-    // Shadow colors
-    shadow: "rgba(0, 0, 0, 0.1)",
-    shadowLight: "rgba(0, 0, 0, 0.05)",
-    shadowDark: "rgba(0, 0, 0, 0.2)",
+    accent: "#6366F1",          // analytics / highlights
+    accentSecondary: "#4F46E5", // controlled use
 
-    // Overlay colors
-    overlay: "rgba(0, 0, 0, 0.5)",
-    overlayLight: "rgba(0, 0, 0, 0.3)",
-    overlayDark: "rgba(0, 0, 0, 0.7)",
+    orange: "#F59E0B",
+    iosGray: "#8E8E93",
+
+    // Shadows
+    shadow: "rgba(15, 23, 42, 0.1)",
+    shadowLight: "rgba(15, 23, 42, 0.05)",
+    shadowDark: "rgba(15, 23, 42, 0.2)",
+
+    // Overlay
+    overlay: "rgba(15, 23, 42, 0.5)",
+    overlayLight: "rgba(15, 23, 42, 0.3)",
+    overlayDark: "rgba(15, 23, 42, 0.7)",
   },
 
   dark: {
     // Background colors
-    background: "#151718",
-    backgroundSecondary: "#1F2937",
-    backgroundTertiary: "#374151",
-    surface: "#1F2937",
-    surfaceSecondary: "#374151",
+    background: "#0F172A",
+    backgroundSecondary: "#1E293B",
+    backgroundTertiary: "#334155",
+    surface: "#1E293B",
+    surfaceSecondary: "#334155",
 
     // Text colors
-    text: "#ECEDEE",
-    textSecondary: "#9BA1A6",
-    textTertiary: "#6B7280",
-    textInverse: "#11181C",
+    text: "#E5E7EB",
+    textSecondary: "#CBD5E1",
+    textTertiary: "#94A3B8",
+    textInverse: "#0F172A",
 
     // Border colors
-    border: "#323236",
-    borderSecondary: "#374151",
-    borderTertiary: "#4B5563",
+    border: "#334155",
+    borderSecondary: "#475569",
+    borderTertiary: "#64748B",
 
     // Interactive colors
-    primary: "#0a7ea4",
+    primary: "#0A7EA4",
     primaryHover: "#0D8BB8",
     primaryPressed: "#0B7A9F",
-    secondary: "#6c757d",
-    secondaryHover: "#7A8288",
-    secondaryPressed: "#8B9399",
 
-    // Legacy colors for backward compatibility
-    tint: "#fff",
-    icon: "#9BA1A6",
-    tabIconDefault: "#9BA1A6",
-    tabIconSelected: "#fff",
+    secondary: "#4B5563",
+    secondaryHover: "#6B7280",
+    secondaryPressed: "#9CA3AF",
 
-    // Status colors (dark mode)
-    success: "#4CAF50",
-    successLight: "#1B5E20",
-    warning: "#FF9800",
-    warningLight: "#E65100",
-    error: "#F44336",
-    errorLight: "#B71C1C",
-    errorVariant: "#FF3B30", // iOS red variant
-    info: "#2196F3",
-    infoLight: "#0D47A1",
+    // Legacy
+    tint: "#FFFFFF",
+    icon: "#CBD5E1",
+    tabIconDefault: "#CBD5E1",
+    tabIconSelected: "#FFFFFF",
+
+    // Status colors
+    success: "#22C55E",
+    successLight: "#14532D",
+
+    warning: "#F59E0B",
+    warningLight: "#78350F",
+
+    error: "#EF4444",
+    errorLight: "#7F1D1D",
+    errorVariant: "#FF3B30",
+
+    info: "#3B82F6",
+    infoLight: "#1E3A8A",
 
     // Semantic colors
-    rating: "#FFD700", // Gold for stars/ratings
-    openNow: "#34C759", // iOS green for "open now" status
-    danger: "#FF6B6B", // Red-pink for delete/danger actions
-    link: "#007AFF", // iOS blue for links
-    accent: "#9333EA", // Purple accent color
-    accentSecondary: "#5856D6", // iOS purple variant
-    orange: "#FF9500", // Orange color
-    orangeSecondary: "#FFA500", // Orange variant
-    iosGray: "#8E8E93", // iOS gray
-    purple: "#9C27B0", // Material Design purple
-    amber: "#FFC107", // Yellow/Amber
-    deepOrange: "#FF5722", // Deep orange
+    rating: "#FACC15",
+    openNow: "#22C55E",
+    danger: "#EF4444",
+    link: "#3B82F6",
 
-    // Shadow colors
-    shadow: "rgba(0, 0, 0, 0.3)",
-    shadowLight: "rgba(0, 0, 0, 0.2)",
-    shadowDark: "rgba(0, 0, 0, 0.5)",
+    accent: "#6366F1",
+    accentSecondary: "#4F46E5",
 
-    // Overlay colors
+    orange: "#F59E0B",
+    iosGray: "#9CA3AF",
+
+    // Shadows
+    shadow: "rgba(0, 0, 0, 0.4)",
+    shadowLight: "rgba(0, 0, 0, 0.25)",
+    shadowDark: "rgba(0, 0, 0, 0.6)",
+
+    // Overlay
     overlay: "rgba(0, 0, 0, 0.7)",
     overlayLight: "rgba(0, 0, 0, 0.5)",
     overlayDark: "rgba(0, 0, 0, 0.9)",

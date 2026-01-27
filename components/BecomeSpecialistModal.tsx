@@ -1,21 +1,22 @@
-import React, { useState } from "react";
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   Alert,
+  Modal,
   ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { BorderRadius, Shadows, ThemeColors } from "@/constants/styles";
+import React, { useState } from "react";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Button } from "@/components/ui/button";
-import { ThemeColors, Shadows, BorderRadius } from "@/constants/styles";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { apiService } from "@/categories/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { apiService } from "@/categories/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface BecomeSpecialistModalProps {
   visible: boolean;
@@ -38,6 +39,14 @@ export function BecomeSpecialistModal({
 
   const handleBecomeSpecialist = async () => {
     if (!user) return;
+
+    // Require profile photo before becoming a specialist
+    if (!user.avatarUrl) {
+      Alert.alert(
+        t("pleaseUploadProfilePhoto", "Please upload a profile photo before becoming a specialist.")
+      );
+      return;
+    }
 
     try {
       setIsUpdating(true);

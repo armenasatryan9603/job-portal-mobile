@@ -450,7 +450,42 @@ export default function EditOrderScreen() {
     setCheckInLoading(true);
 
     try {
-      await apiService.checkInToOrder(order.id, selectedSlots);
+      const result = await apiService.checkInToOrder(order.id, selectedSlots);
+
+      // Handle partial success (some bookings succeeded, some failed)
+      if (result.errors && result.errors.length > 0) {
+        console.warn("Some bookings failed:", result.errors);
+        
+        // Check if any errors are market conflict errors
+        const marketConflictErrors = result.errors.filter((err: any) =>
+          err.error?.includes("another order from the same service") ||
+          err.error?.includes("same service")
+        );
+
+        if (marketConflictErrors.length > 0) {
+          // Show market conflict alert
+          const conflictMessage = marketConflictErrors.length === 1
+            ? marketConflictErrors[0].error
+            : `${marketConflictErrors.length} ${t("slotsSelected")} ${t("conflictWithMarketOrder")}`;
+          
+          Alert.alert(
+            t("bookingConflict"),
+            conflictMessage,
+            [{ text: t("ok") }]
+          );
+          setCheckInLoading(false);
+          return;
+        } else if (result.bookings && result.bookings.length > 0) {
+          // Some succeeded, some failed (non-market conflicts)
+          const errorMessages = result.errors.map((err: any) => err.error).join("\n");
+          Alert.alert(
+            t("partialSuccess"),
+            `${t("someBookingsSucceeded")}.\n${t("someBookingsFailed")}:\n${errorMessages}`
+          );
+          setCheckInLoading(false);
+          return;
+        }
+      }
 
       // Track successful check-in
       AnalyticsService.getInstance().logEvent("check_in_success", {
@@ -475,7 +510,20 @@ export default function EditOrderScreen() {
       ]);
     } catch (error: any) {
       console.error("Error checking in:", error);
-      Alert.alert(t("error"), error.message || t("failedToCheckIn"));
+      
+      // Check if error is a market conflict
+      const errorMessage = error?.message || error?.toString() || "";
+      if (
+        errorMessage.includes("another order from the same service") ||
+        errorMessage.includes("same service")
+      ) {
+        Alert.alert(
+          t("bookingConflict"),
+          errorMessage || t("marketBookingConflict")
+        );
+      } else {
+        Alert.alert(t("error"), error.message || t("failedToCheckIn"));
+      }
     } finally {
       setCheckInLoading(false);
     }
@@ -1513,6 +1561,23 @@ export default function EditOrderScreen() {
                     backgroundColor={colors.orangeSecondary}
                   />
                 </View>
+                {order?.resourceBookingMode === "select" && booking.MarketMember?.User && (
+                  <View style={styles.bookingDateTime}>
+                    <IconSymbol
+                      name="person.fill"
+                      size={16}
+                      color={colors.tabIconDefault}
+                    />
+                    <Text
+                      style={[
+                        styles.bookingDateText,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("specialist")}: {booking.MarketMember.User.name}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.bookingDateTime}>
                   <IconSymbol
                     name="calendar"

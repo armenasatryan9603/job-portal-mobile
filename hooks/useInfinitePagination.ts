@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseInfinitePaginationOptions<T extends { id: number | string }> {
   // Current page data from query
@@ -49,7 +49,7 @@ export function useInfinitePagination<T extends { id: number | string }>(
     isFetching,
     enableScrollGate = false,
     onRefreshCallback,
-    resetDeps,
+    // resetDeps,
   } = options;
 
   // State for accumulated items and current page

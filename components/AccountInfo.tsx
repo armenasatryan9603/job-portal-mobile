@@ -1,20 +1,21 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { apiService, UserProfile } from "@/categories/api";
-import { useAuth } from "@/contexts/AuthContext";
-import React, { useState, useEffect } from "react";
 import {
   Alert,
   StyleSheet,
   Text,
   TextInput,
-  View,
   TouchableOpacity,
+  View,
 } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ThemeColors, Typography } from "@/constants/styles";
+import { UserProfile, apiService } from "@/categories/api";
+
+import { Button } from "@/components/ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface AccountInfoProps {
   profile: UserProfile;
@@ -64,6 +65,21 @@ export function AccountInfo({
 
     try {
       setSaving(true);
+
+      // If user is trying to become a specialist, require profile photo first
+      const isBecomingSpecialist =
+        selectedRole === "specialist" && profile.role !== "specialist";
+      const hasAvatar = !!(profile.avatarUrl || user.avatarUrl);
+
+      if (isBecomingSpecialist && !hasAvatar) {
+        Alert.alert(
+          t(
+            "pleaseUploadProfilePhoto",
+            "Please upload a profile photo in your profile before becoming a specialist."
+          )
+        );
+        return;
+      }
 
       // Parse experienceYears
       const experienceYearsNum = experienceYears.trim()

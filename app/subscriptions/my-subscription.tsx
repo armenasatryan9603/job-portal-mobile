@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { BorderRadius, ThemeColors } from "@/constants/styles";
 import React, { useEffect, useState } from "react";
-import { useCancelSubscription, useMySubscription } from "@/hooks/useApi";
+import { useCancelSubscription, useMySubscription, useRenewSubscription } from "@/hooks/useApi";
 
 import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
@@ -38,6 +38,7 @@ export default function MySubscriptionScreen() {
     error: subscriptionError,
   } = useMySubscription();
   const cancelMutation = useCancelSubscription();
+  const renewMutation = useRenewSubscription();
 
   const subscription = subscriptionData as UserSubscription | null | undefined;
 
@@ -88,6 +89,74 @@ export default function MySubscriptionScreen() {
                 t("error"),
                 error.message || t("failedToCancelSubscription")
               );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRenew = async () => {
+    if (!subscription) return;
+
+    const endDate = new Date(subscription.endDate);
+    const daysRemaining = Math.ceil(
+      (endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+    let confirmMessage = "";
+    if (daysRemaining > 0) {
+      confirmMessage = `Renew your subscription now? It will be extended by ${subscription.Plan?.durationDays || 30} days from the current end date (${endDate.toLocaleDateString()}).`;
+    } else {
+      confirmMessage = `Renew your expired subscription? It will be activated for ${subscription.Plan?.durationDays || 30} days from today.`;
+    }
+
+    Alert.alert(
+      t("renewSubscription") || "Renew Subscription",
+      confirmMessage,
+      [
+        {
+          text: t("cancel") || "Cancel",
+          style: "cancel",
+        },
+        {
+          text: t("renew") || "Renew",
+          onPress: async () => {
+            try {
+              const result = await renewMutation.mutateAsync({
+                subscriptionId: subscription.id,
+              });
+              Alert.alert(
+                t("success") || "Success",
+                t("subscriptionRenewed") ||
+                  `Your subscription has been renewed! It will now expire on ${new Date(result.subscription?.endDate || subscription.endDate).toLocaleDateString()}.`,
+                [
+                  {
+                    text: t("ok") || "OK",
+                  },
+                ]
+              );
+            } catch (error: any) {
+              console.error("Error renewing subscription:", error);
+              let errorMessage = error.message || t("failedToRenewSubscription");
+              
+              // Handle insufficient credits error
+              if (error.code === "INSUFFICIENT_CREDITS" || errorMessage.includes("credits")) {
+                errorMessage = `${errorMessage}\n\nRequired: ${error.required || 0} credits\nAvailable: ${error.available || 0} credits`;
+                Alert.alert(
+                  t("insufficientCredits") || "Insufficient Credits",
+                  errorMessage,
+                  [
+                    { text: t("cancel"), style: "cancel" },
+                    {
+                      text: t("addCredits") || "Add Credits",
+                      onPress: () => router.push("/profile/add-credits" as any),
+                    },
+                  ]
+                );
+              } else {
+                Alert.alert(t("error"), errorMessage);
+              }
             }
           },
         },
@@ -370,26 +439,26 @@ export default function MySubscriptionScreen() {
 
         {/* Compact Actions */}
         <View style={styles.actionsContainer}>
-          {isActive && isExpiringSoon && (
+          {(isActive && isExpiringSoon) || (subscription && (subscription.status === "expired" || new Date(subscription.endDate) < new Date())) ? (
             <TouchableOpacity
               style={[
                 styles.primaryButton,
                 { backgroundColor: colors.primary },
               ]}
-              onPress={() => {
-                router.push({
-                  pathname: "/subscriptions/[id]",
-                  params: { id: subscription.planId.toString() },
-                });
-              }}
+              onPress={handleRenew}
+              disabled={renewMutation.isPending}
             >
-              <Text
-                style={[styles.primaryButtonText, { color: colors.background }]}
-              >
-                {t("renewNow") || "Renew Now"}
-              </Text>
+              {renewMutation.isPending ? (
+                <ActivityIndicator color={colors.background} size="small" />
+              ) : (
+                <Text
+                  style={[styles.primaryButtonText, { color: colors.background }]}
+                >
+                  {t("renewNow") || "Renew Now"}
+                </Text>
+              )}
             </TouchableOpacity>
-          )}
+          ) : null}
 
           <View style={styles.actionRow}>
             {isActive && (

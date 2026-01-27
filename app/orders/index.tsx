@@ -186,7 +186,6 @@ export default function OrdersScreen() {
 
   // Mutations
   const applyToOrderMutation = useApplyToOrder();
-  const deleteOrderMutation = useDeleteOrder();
 
   // Determine which query to use based on current view
   const activeQuery = useMemo(() => {
@@ -1274,41 +1273,6 @@ export default function OrdersScreen() {
     router.push("/orders/create");
   };
 
-  const handleDeleteOrder = (order: Order) => {
-    if (order.status === "pending") {
-      Alert.alert(t("cannotDeleteOrder"), t("cannotDeletePendingOrder"), [
-        { text: t("ok") },
-      ]);
-      return;
-    }
-
-    Alert.alert(t("deleteOrder"), t("areYouSureDeleteOrder"), [
-      {
-        text: t("cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("delete"),
-        style: "destructive",
-        onPress: async () => {
-          try {
-            // Track order deletion
-            AnalyticsService.getInstance().logEvent("order_deleted", {
-              order_id: order.id.toString(),
-              order_status: order.status,
-            });
-            // Use TanStack Query mutation
-            await deleteOrderMutation.mutateAsync(order.id);
-            // The mutation will automatically invalidate queries and refetch
-          } catch (err) {
-            console.error("Error deleting order:", err);
-            Alert.alert(t("error"), t("failedToDeleteOrder"));
-          }
-        },
-      },
-    ]);
-  };
-
   const handleFeedbackSubmit = async (
     rating: number,
     feedback: string,
@@ -1444,31 +1408,39 @@ export default function OrdersScreen() {
 
       // Confirm publishing
       Alert.alert(
-        t("publishPermanentOrder") || "Publish Permanent Order",
-        t("publishToMakeVisible") ||
-          "Publish this order to make it visible to clients",
+        t("publishPermanentOrder"),
+        t("publishToMakeVisible"),
         [
           { text: t("cancel"), style: "cancel" },
           {
-            text: t("publishOrder") || "Publish",
+            text: t("publishOrder"),
             onPress: async () => {
               setApplyLoading(true);
               try {
-                await apiService.publishPermanentOrder(order.id);
+                const publishedOrder = await apiService.publishPermanentOrder(order.id);
+                // Check if order was republished (already approved) or needs review
+                // If status is not "pending_review", it means it was republished and went directly live
+                const isRepublished = publishedOrder.status !== "pending_review";
                 Alert.alert(
-                  t("orderPublished") || "Success!",
-                  t("orderPublishedDesc") ||
-                    "Your permanent order has been submitted for review."
+                  t("orderPublished"),
+                  isRepublished ? t("orderRepublishedDesc") : t("orderPublishedDesc")
                 );
                 // Refresh orders list
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
               } catch (error: any) {
                 console.error("Error publishing order:", error);
                 Alert.alert(
-                  t("error"),
-                  error.message ||
-                    t("failedToPublishOrder") ||
-                    "Failed to publish order"
+                  "",
+                  t("subscriptionRequiredToPublishOrder"),
+                  [
+                    { text: t("cancel"), style: "cancel" },
+                    {
+                      text: t("viewSubscriptions"),
+                      onPress: () => {
+                        router.push("/subscriptions");
+                      },
+                    },
+                  ]
                 );
               } finally {
                 setApplyLoading(false);
@@ -1557,7 +1529,7 @@ export default function OrdersScreen() {
   };
 
   const handleCheckInSubmit = async (
-    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number }>
   ) => {
     if (!selectedOrder) return;
 
@@ -1593,10 +1565,49 @@ export default function OrdersScreen() {
 
       if (result.errors && result.errors.length > 0) {
         console.warn("Some bookings failed:", result.errors);
+        
+        // Check if any errors are market conflict errors
+        const marketConflictErrors = result.errors.filter((err: any) =>
+          err.error?.includes("another order from the same service") ||
+          err.error?.includes("same service")
+        );
+
+        if (marketConflictErrors.length > 0) {
+          // Show market conflict alert
+          const conflictMessage = marketConflictErrors.length === 1
+            ? marketConflictErrors[0].error
+            : `${marketConflictErrors.length} ${t("slotsSelected") || "slots"} ${t("conflictWithMarketOrder") || "conflict with another order from the same service"}`;
+          
+          Alert.alert(
+            t("bookingConflict") || "Booking Conflict",
+            conflictMessage,
+            [{ text: t("ok") }]
+          );
+        } else {
+          // Show generic error for other failures
+          const errorMessages = result.errors.map((err: any) => err.error).join("\n");
+          Alert.alert(
+            t("error"),
+            `${t("someBookingsFailed") || "Some bookings failed"}:\n${errorMessages}`
+          );
+        }
       }
     } catch (error: any) {
       console.error("Error checking in:", error);
-      Alert.alert(t("error"), t("failedToCheckIn"));
+      
+      // Check if error is a market conflict
+      const errorMessage = error?.message || error?.toString() || "";
+      if (
+        errorMessage.includes("another order from the same service") ||
+        errorMessage.includes("same service")
+      ) {
+        Alert.alert(
+          t("bookingConflict") || "Booking Conflict",
+          errorMessage || t("marketBookingConflict") || "You already have a booking for this time in another order from the same service. Please choose a different time."
+        );
+      } else {
+        Alert.alert(t("error"), t("failedToCheckIn"));
+      }
     } finally {
       setApplyLoading(false);
     }
@@ -1833,8 +1844,8 @@ export default function OrdersScreen() {
                   onOrderViewed={handleOrderViewed}
                   onApplyToOrder={handleApplyToOrder}
                   onCancelProposal={handleCancelProposal}
-                  onDeleteOrder={handleDeleteOrder}
                   onSaveToggle={handleSaveToggle}
+                  onPublishOrder={handlePublishOrder}
                 />
               )}
               keyExtractor={(item) => item.id.toString()}

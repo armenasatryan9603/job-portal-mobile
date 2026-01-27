@@ -694,9 +694,13 @@ export default function CalendarScreen() {
   };
 
   const handleApproveBooking = async (booking: Booking) => {
+    const specialistInfo = booking.Order?.resourceBookingMode === "select" && booking.MarketMember?.User
+      ? `\n${t("specialist")}: ${booking.MarketMember.User.name}`
+      : "";
+    
     Alert.alert(
       t("approveBooking") || "Approve Booking",
-      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}`,
+      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}`,
       [
         {
           text: t("cancel"),
@@ -723,9 +727,13 @@ export default function CalendarScreen() {
   };
 
   const handleRejectBooking = async (booking: Booking) => {
+    const specialistInfo = booking.Order?.resourceBookingMode === "select" && booking.MarketMember?.User
+      ? `\n${t("specialist")}: ${booking.MarketMember.User.name}`
+      : "";
+    
     Alert.alert(
       t("rejectBooking") || "Reject Booking",
-      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}`,
+      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}`,
       [
         {
           text: t("cancel"),
@@ -887,6 +895,16 @@ export default function CalendarScreen() {
                             ]}
                           >
                             {t("bookedBy")}: {booking.Client.name}
+                          </Text>
+                        )}
+                        {booking.Order?.resourceBookingMode === "select" && booking.MarketMember?.User && (
+                          <Text
+                            style={[
+                              styles.applicationMetaText,
+                              { color: colors.tabIconDefault, marginTop: 4 },
+                            ]}
+                          >
+                            {t("specialist")}: {booking.MarketMember.User.name}
                           </Text>
                         )}
                       </View>

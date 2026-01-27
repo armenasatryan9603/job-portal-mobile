@@ -278,6 +278,7 @@ export interface DaySchedule {
   enabled: boolean;
   workHours?: { start: string; end: string };
   slots?: string[];
+  breaks?: Array<{ start: string; end: string }>;
 }
 
 export interface WeeklySchedule {
@@ -288,6 +289,7 @@ export interface WeeklySchedule {
   friday?: DaySchedule;
   saturday?: DaySchedule;
   sunday?: DaySchedule;
+  subscribeAheadDays?: number;
 }
 
 export interface OrderClient {
@@ -332,6 +334,17 @@ export interface Booking {
   updatedAt: string;
   Order?: Order;
   Client?: OrderClient;
+  MarketMember?: {
+    id: number;
+    userId: number;
+    User?: {
+      id: number;
+      name: string;
+      email: string;
+      avatarUrl?: string;
+      verified?: boolean;
+    };
+  };
 }
 
 export interface AvailableDay {
@@ -385,6 +398,8 @@ export interface Order {
   workDurationPerClient?: number; // Duration in minutes
   weeklySchedule?: WeeklySchedule; // Recurring weekly schedule for permanent orders
   checkinRequiresApproval?: boolean; // If true, bookings require owner approval
+  resourceBookingMode?: "select" | "auto" | "multi"; // How clients book resources
+  requiredResourceCount?: number; // Number of resources required per booking session (for multi mode)
   Bookings?: Booking[];
   creditCost?: number; // Credit cost based on order budget
   refundPercentage?: number; // Refund percentage (0.0 to 1.0, e.g., 0.5 for 50%)
@@ -2132,11 +2147,13 @@ class ApiService {
 
   /**
    * Get available slots for a permanent order
+   * @param marketMemberId - Optional market member ID to filter slots by specialist (for select mode)
    */
   async getAvailableSlots(
     orderId: number,
     startDate?: Date,
-    endDate?: Date
+    endDate?: Date,
+    marketMemberId?: number
   ): Promise<AvailableSlotsResponse> {
     const params = new URLSearchParams();
     if (startDate) {
@@ -2144,6 +2161,9 @@ class ApiService {
     }
     if (endDate) {
       params.append("endDate", endDate.toISOString().split("T")[0]);
+    }
+    if (marketMemberId) {
+      params.append("marketMemberId", marketMemberId.toString());
     }
 
     const queryString = params.toString();

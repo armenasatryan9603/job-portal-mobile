@@ -21,6 +21,7 @@ interface TimeRangePickerProps {
     endTime: string;
     clientId?: number;
   }>;
+  breaks?: Array<{ start: string; end: string }>;
   onSelectRange: (startTime: string, endTime: string) => void;
   suggestedDuration?: number; // in minutes
   disabled?: boolean;
@@ -28,7 +29,7 @@ interface TimeRangePickerProps {
 }
 
 interface TimeBlock {
-  type: "available" | "booked";
+  type: "available" | "booked" | "break";
   startMinutes: number;
   endMinutes: number;
   startTime: string;
@@ -38,6 +39,7 @@ interface TimeBlock {
 export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
   workHours,
   existingBookings,
+  breaks = [],
   onSelectRange,
   suggestedDuration,
   disabled = false,
@@ -85,43 +87,53 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
   const workEndMinutes = timeToMinutes(workHours.end);
   const totalWorkMinutes = workEndMinutes - workStartMinutes;
 
-  // Build timeline blocks (available and booked)
+  // Build timeline blocks (available, booked, and breaks)
   const timelineBlocks = useMemo((): TimeBlock[] => {
     const blocks: TimeBlock[] = [];
 
-    // Sort bookings by start time
-    const sortedBookings = [...existingBookings]
-      .map((b) => ({
+    // Combine bookings and breaks, then sort by start time
+    const allTimeSlots: Array<{
+      start: number;
+      end: number;
+      type: "booked" | "break";
+    }> = [
+      ...existingBookings.map((b) => ({
         start: timeToMinutes(b.startTime),
         end: timeToMinutes(b.endTime),
-      }))
-      .sort((a, b) => a.start - b.start);
+        type: "booked" as const,
+      })),
+      ...breaks.map((b) => ({
+        start: timeToMinutes(b.start),
+        end: timeToMinutes(b.end),
+        type: "break" as const,
+      })),
+    ].sort((a, b) => a.start - b.start);
 
     let currentTime = workStartMinutes;
 
-    // Build alternating available/booked blocks
-    sortedBookings.forEach((booking) => {
-      // Add available block before this booking
-      if (currentTime < booking.start) {
+    // Build alternating available/booked/break blocks
+    allTimeSlots.forEach((slot) => {
+      // Add available block before this slot
+      if (currentTime < slot.start) {
         blocks.push({
           type: "available",
           startMinutes: currentTime,
-          endMinutes: booking.start,
+          endMinutes: slot.start,
           startTime: minutesToTime(currentTime),
-          endTime: minutesToTime(booking.start),
+          endTime: minutesToTime(slot.start),
         });
       }
 
-      // Add booked block
+      // Add booked or break block
       blocks.push({
-        type: "booked",
-        startMinutes: booking.start,
-        endMinutes: booking.end,
-        startTime: minutesToTime(booking.start),
-        endTime: minutesToTime(booking.end),
+        type: slot.type,
+        startMinutes: slot.start,
+        endMinutes: slot.end,
+        startTime: minutesToTime(slot.start),
+        endTime: minutesToTime(slot.end),
       });
 
-      currentTime = booking.end;
+      currentTime = slot.end;
     });
 
     // Add final available block if there's time left
@@ -136,7 +148,7 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     }
 
     return blocks;
-  }, [workHours, existingBookings, workStartMinutes, workEndMinutes]);
+  }, [workHours, existingBookings, breaks, workStartMinutes, workEndMinutes]);
 
   // Get available blocks only
   const availableBlocks = timelineBlocks.filter((b) => b.type === "available");
@@ -159,7 +171,11 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
     } else {
       // Select block and initialize slider
       setSelectedBlockIndex(index);
-      const initialDuration = Math.min(suggestedDuration || 60, blockDuration);
+      // Initialize with suggestedDuration if provided, otherwise 60 minutes, but not more than block duration
+      const initialDuration = Math.min(
+        suggestedDuration && suggestedDuration > 0 ? suggestedDuration : 60,
+        blockDuration
+      );
       setSliderValues([0, initialDuration]);
 
       // Animate expansion
@@ -286,6 +302,9 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               : -1;
             const isSelected = availableIndex === selectedBlockIndex;
 
+            const isBreak = block.type === "break";
+            const breakColor = "#FF9500"; // Orange color for breaks
+
             return (
               <TouchableOpacity
                 key={index}
@@ -294,7 +313,9 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                   {
                     width: getBlockWidth(block) as any,
                     left: getBlockPosition(block) as any,
-                    backgroundColor: isAvailable
+                    backgroundColor: isBreak
+                      ? breakColor + "80"
+                      : isAvailable
                       ? isSelected
                         ? colors.primary
                         : colors.primary + "60"
@@ -303,16 +324,24 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
                   isSelected && styles.timelineBlockSelected,
                 ]}
                 onPress={() => isAvailable && handleBlockSelect(availableIndex)}
-                disabled={!isAvailable || disabled}
-                activeOpacity={0.8}
+                disabled={!isAvailable || disabled || isBreak}
+                activeOpacity={isBreak ? 1 : 0.8}
               >
                 <Text
                   style={[
                     styles.blockLabel,
-                    { color: isSelected ? "#FFF" : colors.text },
+                    {
+                      color: isBreak
+                        ? "#FFF"
+                        : isSelected
+                        ? "#FFF"
+                        : colors.text,
+                    },
                   ]}
                 >
-                  {formatDuration(block.endMinutes - block.startMinutes)}
+                  {isBreak
+                    ? t("break") || "Break"
+                    : formatDuration(block.endMinutes - block.startMinutes)}
                 </Text>
               </TouchableOpacity>
             );
@@ -343,6 +372,19 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
               {t("booked")}
             </Text>
           </View>
+          {breaks.length > 0 && (
+            <View style={styles.legendItem}>
+              <View
+                style={[
+                  styles.legendDot,
+                  { backgroundColor: "#FF9500" + "80" },
+                ]}
+              />
+              <Text style={[styles.legendText, { color: colors.tabIconDefault }]}>
+                {t("break") || "Break"}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -404,9 +446,39 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
 
             <MultiSlider
               values={sliderValues}
-              onValuesChange={(values) =>
-                setSliderValues([values[0], values[1]])
-              }
+              onValuesChange={(values) => {
+                // Enforce minimum duration if suggestedDuration is provided
+                if (suggestedDuration && suggestedDuration > 0 && selectedBlock) {
+                  const maxEnd = selectedBlock.endMinutes - selectedBlock.startMinutes;
+                  let newStart = values[0];
+                  let newEnd = values[1];
+                  const duration = newEnd - newStart;
+                  
+                  // If duration is below minimum, adjust the appropriate handle
+                  if (duration < suggestedDuration) {
+                    // Determine which handle moved by comparing with current slider values
+                    const startDelta = Math.abs(values[0] - sliderValues[0]);
+                    const endDelta = Math.abs(values[1] - sliderValues[1]);
+                    const startMoved = startDelta > endDelta;
+                    
+                    if (startMoved) {
+                      // Start handle moved - constrain it so duration doesn't go below minimum
+                      newStart = Math.max(0, newEnd - suggestedDuration);
+                    } else {
+                      // End handle moved - constrain it so duration doesn't go below minimum
+                      newEnd = Math.min(maxEnd, newStart + suggestedDuration);
+                    }
+                  }
+                  
+                  // Ensure values stay within bounds
+                  newStart = Math.max(0, Math.min(newStart, maxEnd - suggestedDuration));
+                  newEnd = Math.max(newStart + suggestedDuration, Math.min(newEnd, maxEnd));
+                  
+                  values[0] = newStart;
+                  values[1] = newEnd;
+                }
+                setSliderValues([values[0], values[1]]);
+              }}
               min={0}
               max={selectedBlock.endMinutes - selectedBlock.startMinutes}
               step={5}

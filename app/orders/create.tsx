@@ -31,6 +31,7 @@ import { API_CONFIG } from "@/config/api";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
+import { BreakOverlapModal } from "@/components/BreakOverlapModal";
 import { Button } from "@/components/ui/button";
 import { CategorySelector } from "@/components/ServiceSelector";
 import { Header } from "@/components/Header";
@@ -140,6 +141,20 @@ export default function CreateOrderScreen() {
   const [isSpecialist, setIsSpecialist] = useState<boolean>(false);
   const [showBecomeSpecialistModal, setShowBecomeSpecialistModal] =
     useState(false);
+  const [resourceBookingMode, setResourceBookingMode] = useState<
+    "select" | "auto" | "multi" | null
+  >(null);
+  const [requiredResourceCount, setRequiredResourceCount] = useState<string>("");
+  const [orderMarkets, setOrderMarkets] = useState<Array<{
+    id: number;
+    name: string;
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+  }>>([]);
+  const [showBreakOverlapModal, setShowBreakOverlapModal] = useState(false);
+  const [overlappingBookings, setOverlappingBookings] = useState<any[]>([]);
+  const [pendingScheduleData, setPendingScheduleData] = useState<any>(null);
   const canAddAnotherQuestion = () =>
     questions.length === 0 || questions[questions.length - 1].trim().length > 0;
 
@@ -162,6 +177,8 @@ export default function CreateOrderScreen() {
       weeklySchedule,
       checkinRequiresApproval,
       useAIEnhancement,
+      resourceBookingMode,
+      requiredResourceCount,
     }),
     [
       formData,
@@ -179,6 +196,8 @@ export default function CreateOrderScreen() {
       weeklySchedule,
       checkinRequiresApproval,
       useAIEnhancement,
+      resourceBookingMode,
+      requiredResourceCount,
     ]
   );
 
@@ -208,6 +227,8 @@ export default function CreateOrderScreen() {
       weeklySchedule: {},
       checkinRequiresApproval: false,
       useAIEnhancement: false,
+      resourceBookingMode: null,
+      requiredResourceCount: "",
     }),
     [serviceId]
   );
@@ -242,6 +263,8 @@ export default function CreateOrderScreen() {
       setWeeklySchedule(data.weeklySchedule || {});
       setCheckinRequiresApproval(data.checkinRequiresApproval || false);
       setUseAIEnhancement(data.useAIEnhancement || false);
+      setResourceBookingMode(data.resourceBookingMode || null);
+      setRequiredResourceCount(data.requiredResourceCount || "");
       // mediaFiles and banner index are intentionally not restored from draft
     },
     onClear: () => {
@@ -287,6 +310,18 @@ export default function CreateOrderScreen() {
       default:
         return unit.labelEn;
     }
+  };
+
+  const getLocalizedMarketName = (market: {
+    name: string;
+    nameEn?: string;
+    nameRu?: string;
+    nameHy?: string;
+  }): string => {
+    if (language === "en" && market.nameEn) return market.nameEn;
+    if (language === "ru" && market.nameRu) return market.nameRu;
+    if (language === "hy" && market.nameHy) return market.nameHy;
+    return market.name;
   };
 
   // Refs for scrolling to error fields
@@ -703,8 +738,28 @@ export default function CreateOrderScreen() {
               orderData.workDurationPerClient.toString()
             );
           }
-          if ((orderData as any).checkinRequiresApproval !== undefined) {
+          if (orderData.checkinRequiresApproval !== undefined) {
             setCheckinRequiresApproval((orderData as any).checkinRequiresApproval);
+          }
+          // Load resource booking mode fields
+          if (orderData.resourceBookingMode) {
+            setResourceBookingMode(orderData.resourceBookingMode);
+          }
+          if (orderData.requiredResourceCount) {
+            setRequiredResourceCount(
+              orderData.requiredResourceCount.toString()
+            );
+          }
+          // Check if order belongs to a market
+          if ((orderData as any).Markets && (orderData as any).Markets.length > 0) {
+            const markets = (orderData as any).Markets.map((marketOrder: any) => ({
+              id: marketOrder.Market?.id,
+              name: marketOrder.Market?.name || "",
+              nameEn: marketOrder.Market?.nameEn,
+              nameRu: marketOrder.Market?.nameRu,
+              nameHy: marketOrder.Market?.nameHy,
+            })).filter((m: any) => m.id);
+            setOrderMarkets(markets);
           }
           if (orderData.weeklySchedule) {
             console.log(
@@ -743,6 +798,7 @@ export default function CreateOrderScreen() {
               },
               saturday: { enabled: false },
               sunday: { enabled: false },
+              subscribeAheadDays: 90,
             };
 
             // No need to generate slots - clients book custom time ranges
@@ -1264,6 +1320,111 @@ export default function CreateOrderScreen() {
     await saveOrder(baseOrderData, false);
   };
 
+  // Helper: Convert time string to minutes since midnight
+  const timeToMinutes = (time: string): number => {
+    const [hours, minutes] = time.split(":").map(Number);
+    return hours * 60 + minutes;
+  };
+
+  // Helper: Check if two time ranges overlap
+  const timeRangesOverlap = (
+    start1: string,
+    end1: string,
+    start2: string,
+    end2: string
+  ): boolean => {
+    const start1Minutes = timeToMinutes(start1);
+    const end1Minutes = timeToMinutes(end1);
+    const start2Minutes = timeToMinutes(start2);
+    const end2Minutes = timeToMinutes(end2);
+
+    return start1Minutes < end2Minutes && end1Minutes > start2Minutes;
+  };
+
+  // Helper: Get day name from date string (YYYY-MM-DD)
+  const getDayNameFromDate = (dateString: string): string => {
+    const date = new Date(dateString + "T00:00:00");
+    const dayOfWeek = date.getDay();
+    const dayNames = [
+      "sunday",
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+    ];
+    return dayNames[dayOfWeek];
+  };
+
+  // Check for break overlaps with existing bookings
+  const checkBreakOverlaps = async (
+    schedule: WeeklySchedule,
+    orderId: number
+  ): Promise<any[]> => {
+    try {
+      // Fetch existing bookings
+      const bookings = await apiService.getOrderBookings(orderId);
+
+      // Filter only confirmed/pending bookings
+      const activeBookings = bookings.filter(
+        (b: any) => b.status === "confirmed" || b.status === "pending"
+      );
+
+      const overlapping: any[] = [];
+
+      // Iterate through each day in the schedule
+      const dayKeys = [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday",
+      ];
+
+      for (const dayKey of dayKeys) {
+        const daySchedule = (schedule as any)[dayKey] as any;
+        if (!daySchedule?.enabled || !daySchedule?.breaks || daySchedule.breaks.length === 0) {
+          continue;
+        }
+
+        // Check each break against bookings on matching days
+        for (const breakItem of daySchedule.breaks) {
+          // Find bookings that fall on days matching this day of week
+          for (const booking of activeBookings) {
+            const bookingDayName = getDayNameFromDate(booking.scheduledDate);
+            if (bookingDayName === dayKey) {
+              // Check if break overlaps with booking
+              if (
+                timeRangesOverlap(
+                  breakItem.start,
+                  breakItem.end,
+                  booking.startTime,
+                  booking.endTime
+                )
+              ) {
+                overlapping.push(booking);
+              }
+            }
+          }
+        }
+      }
+
+      // Remove duplicates (same booking might overlap with multiple breaks)
+      const uniqueOverlapping = overlapping.filter(
+        (booking, index, self) =>
+          index === self.findIndex((b) => b.id === booking.id)
+      );
+
+      return uniqueOverlapping;
+    } catch (error) {
+      console.error("Error checking break overlaps:", error);
+      return [];
+    }
+  };
+
   // Helper function to save order (used by preview modal and direct save)
   const saveOrder = async (
     orderData: any,
@@ -1296,6 +1457,11 @@ export default function CreateOrderScreen() {
             : undefined,
         checkinRequiresApproval:
           orderType === "permanent" ? checkinRequiresApproval : false,
+        resourceBookingMode: resourceBookingMode || undefined,
+        requiredResourceCount:
+          resourceBookingMode === "multi" && requiredResourceCount
+            ? parseInt(requiredResourceCount)
+            : undefined,
       };
       if (useEnhanced && enhancedData) {
         finalOrderData.titleEn = enhancedData.titleEn;
@@ -1313,6 +1479,27 @@ export default function CreateOrderScreen() {
 
       // If editing an existing order
       if (currentOrderId) {
+        // Check for break overlaps if schedule has breaks
+        if (
+          orderType === "permanent" &&
+          finalOrderData.weeklySchedule &&
+          Object.keys(finalOrderData.weeklySchedule).length > 0
+        ) {
+          const overlaps = await checkBreakOverlaps(
+            finalOrderData.weeklySchedule,
+            currentOrderId
+          );
+
+          if (overlaps.length > 0) {
+            // Store the order data to save after user decides
+            setPendingScheduleData(finalOrderData);
+            setOverlappingBookings(overlaps);
+            setShowBreakOverlapModal(true);
+            setIsSubmitting(false);
+            return;
+          }
+        }
+
         // Separate new files (local URIs) from existing files (HTTP URLs)
         const newFiles = mediaFiles.filter(
           (file) =>
@@ -1409,23 +1596,6 @@ export default function CreateOrderScreen() {
 
         // Invalidate orders queries to refresh the list
         await queryClient.invalidateQueries({ queryKey: ["orders"] });
-
-        // Order updated successfully - show message if status changed to pending_review
-        const updatedOrder = await apiService.getOrderById(currentOrderId);
-        if (updatedOrder.status === "pending_review") {
-          Alert.alert(t("success"), t("orderUpdatedPendingApproval"), [
-            {
-              text: t("ok"),
-              onPress: () => {
-                router.replace("/orders?myOrders=true");
-              },
-            },
-          ]);
-        } else {
-          // Clear saved form data on success
-          await clearSavedData();
-          router.replace("/orders");
-        }
       } else {
         // Creating a new order
         let createdOrder;
@@ -1513,7 +1683,7 @@ export default function CreateOrderScreen() {
         }
       }
     } catch (error: any) {
-      console.error("Error creating order:", error);
+      console.error("Error saving order:", error);
 
       const errorMessage =
         error instanceof Error
@@ -1526,40 +1696,241 @@ export default function CreateOrderScreen() {
       if (
         (errorMessage.includes("Insufficient credit balance") ||
           errorMessage.includes("insufficient credit")) &&
-        useEnhanced
+        useAIEnhancement
       ) {
         // Directly navigate to credit refill page
         router.push("/profile/refill-credits");
         return;
       }
 
-      // Check if it's an authentication error
-      if (
-        errorMessage.includes("Authentication required") ||
-        errorMessage.includes("Unauthorized") ||
-        errorMessage.includes("Invalid token") ||
-        errorMessage.includes("expired") ||
-        error?.response?.status === 401
-      ) {
-        Alert.alert(t("error"), t("authenticationRequired"), [
-          {
-            text: t("ok"),
-            onPress: () => {
-              // Optionally redirect to login
-              router.replace("/");
-            },
-          },
-        ]);
-      } else {
-        Alert.alert(
-          t("error"),
-          t("failedToSubmitApplication") + ": " + errorMessage
-        );
-      }
+      Alert.alert(
+        t("error"),
+        errorMessage.includes("Insufficient credit balance") ||
+        errorMessage.includes("insufficient credit")
+          ? t("insufficientCredits") || "Insufficient credits"
+          : errorMessage.includes("Failed to submit application")
+          ? errorMessage
+          : t("failedToSubmitApplication") + ": " + errorMessage
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // Handle break overlap modal actions
+  const handleBreakOverlap = async () => {
+        if (!pendingScheduleData) return;
+
+        setShowBreakOverlapModal(false);
+        setIsSubmitting(true);
+
+        try {
+          const currentOrderId = orderId ? parseInt(orderId as string) : null;
+          if (!currentOrderId) return;
+
+          // Separate new files (local URIs) from existing files (HTTP URLs)
+          const newFiles = mediaFiles.filter(
+            (file) =>
+              file.uri.startsWith("file://") || file.uri.startsWith("content://")
+          );
+
+          // Upload new files with the actual orderId
+          if (newFiles.length > 0) {
+            await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
+          }
+
+          // Save with breaks as-is (overlapping)
+          await apiService.updateOrder(currentOrderId, pendingScheduleData);
+
+          // Handle banner image update (same logic as in saveOrder)
+          let bannerIndexToUse = selectedBannerIndex;
+          if (bannerIndexToUse === null && mediaFiles.length > 0) {
+            const firstImageIndex = mediaFiles.findIndex(
+              (file) => file.type === "image"
+            );
+            if (firstImageIndex !== -1) {
+              bannerIndexToUse = firstImageIndex;
+            }
+          }
+
+          if (bannerIndexToUse !== null) {
+            const updatedOrder = await apiService.getOrderById(currentOrderId);
+            if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
+              const bannerFile = mediaFiles[bannerIndexToUse];
+              let targetMediaFile = null;
+
+              if ((bannerFile as any).id) {
+                targetMediaFile = updatedOrder.MediaFiles.find(
+                  (mf: any) => mf.id === (bannerFile as any).id
+                );
+              } else {
+                targetMediaFile = updatedOrder.MediaFiles.find(
+                  (mf: any) =>
+                    mf.fileType === "image" && mf.fileName === bannerFile.fileName
+                );
+              }
+
+              if (targetMediaFile && targetMediaFile.fileType === "image") {
+                try {
+                  await apiService.setBannerImage(
+                    currentOrderId,
+                    targetMediaFile.id
+                  );
+                } catch (error) {
+                  console.error("Error setting banner image:", error);
+                }
+              }
+            }
+          }
+
+          await queryClient.invalidateQueries({ queryKey: ["orders"] });
+          Alert.alert(t("success"), t("orderUpdatedSuccessfully") || "Order updated successfully");
+          router.back();
+        } catch (error: any) {
+          console.error("Error saving order:", error);
+          Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
+        } finally {
+          setIsSubmitting(false);
+          setPendingScheduleData(null);
+          setOverlappingBookings([]);
+        }
+      };
+
+      const handleMakePriority = async () => {
+        if (!pendingScheduleData) return;
+
+        setShowBreakOverlapModal(false);
+        setIsSubmitting(true);
+
+        try {
+          const currentOrderId = orderId ? parseInt(orderId as string) : null;
+          if (!currentOrderId) return;
+
+          // Create modified schedule with breaks excluded on priority booking dates
+          const modifiedSchedule = { ...pendingScheduleData.weeklySchedule };
+          const breakExclusions: { [date: string]: Array<{ start: string; end: string }> } = {};
+
+          // For each overlapping booking, mark break exclusions on that date
+          for (const booking of overlappingBookings) {
+            const bookingDayName = getDayNameFromDate(booking.scheduledDate);
+            const daySchedule = (modifiedSchedule as any)[bookingDayName] as any;
+
+            if (daySchedule?.breaks) {
+              // Find breaks that overlap with this booking
+              const overlappingBreaks = daySchedule.breaks.filter((breakItem: any) =>
+                timeRangesOverlap(
+                  breakItem.start,
+                  breakItem.end,
+                  booking.startTime,
+                  booking.endTime
+                )
+              );
+
+              if (overlappingBreaks.length > 0) {
+                // Store exclusions for this date
+                if (!breakExclusions[booking.scheduledDate]) {
+                  breakExclusions[booking.scheduledDate] = [];
+                }
+                breakExclusions[booking.scheduledDate].push(...overlappingBreaks);
+
+                // Remove overlapping breaks from the schedule for this day
+                daySchedule.breaks = daySchedule.breaks.filter(
+                  (breakItem: any) =>
+                    !overlappingBreaks.some(
+                      (ob: any) =>
+                        ob.start === breakItem.start && ob.end === breakItem.end
+                    )
+                );
+              }
+            }
+          }
+
+          // Add breakExclusions to the schedule
+          (modifiedSchedule as any).breakExclusions = breakExclusions;
+
+          const finalOrderData = {
+            ...pendingScheduleData,
+            weeklySchedule: modifiedSchedule,
+          };
+
+          // Separate new files (local URIs) from existing files (HTTP URLs)
+          const newFiles = mediaFiles.filter(
+            (file) =>
+              file.uri.startsWith("file://") || file.uri.startsWith("content://")
+          );
+
+          // Upload new files with the actual orderId
+          if (newFiles.length > 0) {
+            await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
+          }
+
+          // Save with modified schedule (breaks excluded on priority dates)
+          await apiService.updateOrder(currentOrderId, finalOrderData);
+
+          // Handle banner image update (same logic as in saveOrder)
+          let bannerIndexToUse = selectedBannerIndex;
+          if (bannerIndexToUse === null && mediaFiles.length > 0) {
+            const firstImageIndex = mediaFiles.findIndex(
+              (file) => file.type === "image"
+            );
+            if (firstImageIndex !== -1) {
+              bannerIndexToUse = firstImageIndex;
+            }
+          }
+
+          if (bannerIndexToUse !== null) {
+            const updatedOrder = await apiService.getOrderById(currentOrderId);
+            if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
+              const bannerFile = mediaFiles[bannerIndexToUse];
+              let targetMediaFile = null;
+
+              if ((bannerFile as any).id) {
+                targetMediaFile = updatedOrder.MediaFiles.find(
+                  (mf: any) => mf.id === (bannerFile as any).id
+                );
+              } else {
+                targetMediaFile = updatedOrder.MediaFiles.find(
+                  (mf: any) =>
+                    mf.fileType === "image" && mf.fileName === bannerFile.fileName
+                );
+              }
+
+              if (targetMediaFile && targetMediaFile.fileType === "image") {
+                try {
+                  await apiService.setBannerImage(
+                    currentOrderId,
+                    targetMediaFile.id
+                  );
+                } catch (error) {
+                  console.error("Error setting banner image:", error);
+                }
+              }
+            }
+          }
+
+          await queryClient.invalidateQueries({ queryKey: ["orders"] });
+          Alert.alert(
+            t("success"),
+            t("orderUpdatedWithPriorityBreaks") ||
+              "Order updated successfully. Breaks excluded on priority booking dates."
+          );
+          router.back();
+        } catch (error: any) {
+          console.error("Error saving order:", error);
+          Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
+        } finally {
+          setIsSubmitting(false);
+          setPendingScheduleData(null);
+          setOverlappingBookings([]);
+        }
+      };
+
+      const handleCancelBreakOverlap = () => {
+        setShowBreakOverlapModal(false);
+        setPendingScheduleData(null);
+        setOverlappingBookings([]);
+        setIsSubmitting(false);
+      };
 
   // Preview modal handlers
   const handleAcceptAI = async (enhanced: any) => {
@@ -1808,6 +2179,239 @@ export default function CreateOrderScreen() {
               </View>
             )}
           </ResponsiveCard>
+
+          {/* Market Information and Resource Booking Mode */}
+          {orderMarkets.length > 0 && (
+            <ResponsiveCard>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("marketInformation") || "Market Information"}
+              </Text>
+              
+              {/* Market Reference */}
+              <View style={styles.marketReferenceContainer}>
+                <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                  {t("belongsToMarket") || "Belongs to Market"}
+                </Text>
+                {orderMarkets.map((market) => (
+                  <TouchableOpacity
+                    key={market.id}
+                    onPress={() => router.push(`/services/${market.id}`)}
+                    style={styles.marketLink}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.marketLinkText,
+                        { color: colors.primary },
+                      ]}
+                    >
+                      {getLocalizedMarketName(market)}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Resource Booking Mode (only for permanent orders) */}
+              {orderType === "permanent" && (
+                <View style={styles.resourceModeContainer}>
+                  <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                    {t("resourceBookingMode")}
+                  </Text>
+
+                  <View style={styles.resourceModeOptions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.resourceModeOption,
+                        {
+                          backgroundColor:
+                            resourceBookingMode === "select"
+                              ? colors.primary + "08"
+                              : "transparent",
+                          borderLeftWidth: resourceBookingMode === "select" ? 2 : 0,
+                          borderLeftColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => setResourceBookingMode("select")}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.resourceModeOptionContent}>
+                        <View
+                          style={[
+                            styles.radioButton,
+                            {
+                              borderColor:
+                                resourceBookingMode === "select"
+                                  ? colors.primary
+                                  : colors.border + "50",
+                              backgroundColor:
+                                resourceBookingMode === "select"
+                                  ? colors.primary
+                                  : "transparent",
+                            },
+                          ]}
+                        >
+                          {resourceBookingMode === "select" && (
+                            <View
+                              style={[
+                                styles.radioButtonDot,
+                                { backgroundColor: colors.textInverse },
+                              ]}
+                            />
+                          )}
+                        </View>
+                        <View style={styles.resourceModeOptionText}>
+                          <Text
+                            style={[
+                              styles.resourceModeOptionTitle,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {t("clientSelectsSpecialist")}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.resourceModeOption,
+                        {
+                          backgroundColor:
+                            resourceBookingMode === "auto"
+                              ? colors.primary + "08"
+                              : "transparent",
+                          borderLeftWidth: resourceBookingMode === "auto" ? 2 : 0,
+                          borderLeftColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => setResourceBookingMode("auto")}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.resourceModeOptionContent}>
+                        <View
+                          style={[
+                            styles.radioButton,
+                            {
+                              borderColor:
+                                resourceBookingMode === "auto"
+                                  ? colors.primary
+                                  : colors.border + "50",
+                              backgroundColor:
+                                resourceBookingMode === "auto"
+                                  ? colors.primary
+                                  : "transparent",
+                            },
+                          ]}
+                        >
+                          {resourceBookingMode === "auto" && (
+                            <View
+                              style={[
+                                styles.radioButtonDot,
+                                { backgroundColor: colors.textInverse },
+                              ]}
+                            />
+                          )}
+                        </View>
+                        <View style={styles.resourceModeOptionText}>
+                          <Text
+                            style={[
+                              styles.resourceModeOptionTitle,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {t("systemAssignsAutomatically")}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.resourceModeOption,
+                        {
+                          backgroundColor:
+                            resourceBookingMode === "multi"
+                              ? colors.primary + "08"
+                              : "transparent",
+                          borderLeftWidth: resourceBookingMode === "multi" ? 2 : 0,
+                          borderLeftColor: colors.primary,
+                        },
+                      ]}
+                      onPress={() => setResourceBookingMode("multi")}
+                      activeOpacity={0.6}
+                    >
+                      <View style={styles.resourceModeOptionContent}>
+                        <View
+                          style={[
+                            styles.radioButton,
+                            {
+                              borderColor:
+                                resourceBookingMode === "multi"
+                                  ? colors.primary
+                                  : colors.border + "50",
+                              backgroundColor:
+                                resourceBookingMode === "multi"
+                                  ? colors.primary
+                                  : "transparent",
+                            },
+                          ]}
+                        >
+                          {resourceBookingMode === "multi" && (
+                            <View
+                              style={[
+                                styles.radioButtonDot,
+                                { backgroundColor: colors.textInverse },
+                              ]}
+                            />
+                          )}
+                        </View>
+                        <View style={styles.resourceModeOptionText}>
+                          <Text
+                            style={[
+                              styles.resourceModeOptionTitle,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {t("requiresMultipleSpecialists")}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                  </View>
+
+                  {/* Multi-specialist configuration */}
+                  {resourceBookingMode === "multi" && (
+                    <View style={styles.multiSpecialistConfig}>
+                      <Text style={[styles.fieldLabel, { color: colors.text }]}>
+                        {t("requiredSpecialistsCount")}
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.durationInput,
+                          {
+                            backgroundColor: colors.background,
+                            borderColor: colors.border + "40",
+                            color: colors.text,
+                          },
+                        ]}
+                        value={requiredResourceCount}
+                        onChangeText={setRequiredResourceCount}
+                        placeholder="2"
+                        placeholderTextColor={colors.tabIconDefault}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  )}
+                </View>
+              )}
+            </ResponsiveCard>
+          )}
 
           {/* Weekly Schedule (only for permanent orders) */}
           {orderType === "permanent" &&
@@ -2273,6 +2877,14 @@ export default function CreateOrderScreen() {
       <BecomeSpecialistModal
         visible={showBecomeSpecialistModal}
         onClose={() => setShowBecomeSpecialistModal(false)}
+      />
+
+      <BreakOverlapModal
+        visible={showBreakOverlapModal}
+        overlappingBookings={overlappingBookings}
+        onOverlap={handleBreakOverlap}
+        onMakePriority={handleMakePriority}
+        onCancel={handleCancelBreakOverlap}
       />
 
       {/* Currency Selection Modal */}
@@ -2842,6 +3454,82 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   checkboxLabelContainer: {
+    flex: 1,
+  },
+  resourceModeContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  fieldDescription: {
+    fontSize: 13,
+    marginBottom: 16,
+    lineHeight: 18,
+    opacity: 0.7,
+  },
+  resourceModeOptions: {
+    gap: 6,
+    marginTop: 8,
+  },
+  resourceModeOption: {
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingLeft: 8,
+  },
+  resourceModeOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  radioButton: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioButtonDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  resourceModeOptionText: {
+    flex: 1,
+  },
+  resourceModeOptionTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  resourceModeOptionDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+    opacity: 0.65,
+  },
+  multiSpecialistConfig: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+  },
+  marketReferenceContainer: {
+    marginBottom: 16,
+  },
+  marketLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.02)",
+    marginTop: 8,
+  },
+  marketLinkText: {
+    fontSize: 16,
+    fontWeight: "500",
     flex: 1,
   },
 });

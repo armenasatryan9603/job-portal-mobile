@@ -38,9 +38,9 @@ interface OrderItemProps {
   onOrderViewed?: (orderId: number) => void;
   onApplyToOrder?: (order: Order) => void;
   onCancelProposal?: (order: Order) => void;
-  onDeleteOrder?: (order: Order) => void;
   onSaveToggle?: (orderId: number, isSaved: boolean) => void;
   onCheckIn?: (order: Order) => void;
+  onPublishOrder?: (order: Order) => void;
 }
 
 const OrderItem = ({
@@ -53,9 +53,9 @@ const OrderItem = ({
   onOrderViewed,
   onApplyToOrder,
   onCancelProposal,
-  onDeleteOrder,
   onSaveToggle,
   onCheckIn,
+  onPublishOrder,
 }: OrderItemProps) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
@@ -158,34 +158,6 @@ const OrderItem = ({
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "open":
-        return "circle.fill";
-      case "in_progress":
-        return "clock.fill";
-      case "completed":
-        return "checkmark.circle.fill";
-      case "cancelled":
-        return "xmark.circle.fill";
-      case "pending":
-        return "clock.circle.fill";
-      default:
-        return "circle";
-    }
-  };
-
-  const formatRateUnit = (value?: string | null) => {
-    if (!value) return t("perProject");
-
-    const normalized = value.replace(/_/g, " ").trim().toLowerCase();
-
-    if (normalized === "per hour") return t("perHour");
-    if (normalized === "per day") return t("perDay");
-    if (normalized === "per project") return t("perProject");
-    return normalized;
-  };
-
   const hasBudget = order.budget !== undefined && order.budget !== null;
 
   const handleSaveToggle = async (e: any) => {
@@ -241,12 +213,6 @@ const OrderItem = ({
     }
   };
 
-  const handleDeleteOrder = (order: Order) => {
-    if (onDeleteOrder) {
-      onDeleteOrder(order);
-    }
-  };
-
   const handleCheckIn = (order: Order) => {
     if (onCheckIn) {
       onCheckIn(order);
@@ -261,11 +227,61 @@ const OrderItem = ({
   ) => {
     setCheckInLoading(true);
     try {
-      await apiService.checkInToOrder(order.id, selectedSlots);
+      const result = await apiService.checkInToOrder(order.id, selectedSlots);
+
+      // Handle partial success (some bookings succeeded, some failed)
+      if (result.errors && result.errors.length > 0) {
+        console.warn("Some bookings failed:", result.errors);
+        
+        // Check if any errors are market conflict errors
+        const marketConflictErrors = result.errors.filter((err: any) =>
+          err.error?.includes("another order from the same service") ||
+          err.error?.includes("same service")
+        );
+
+        if (marketConflictErrors.length > 0) {
+          // Show market conflict alert
+          const conflictMessage = marketConflictErrors.length === 1
+            ? marketConflictErrors[0].error
+            : `${marketConflictErrors.length} ${t("slotsSelected")} ${t("conflictWithMarketOrder")}`;
+          
+          Alert.alert(
+            t("bookingConflict"),
+            conflictMessage,
+            [{ text: t("ok") }]
+          );
+          setCheckInLoading(false);
+          return;
+        } else if (result.bookings && result.bookings.length > 0) {
+          // Some succeeded, some failed (non-market conflicts)
+          const errorMessages = result.errors.map((err: any) => err.error).join("\n");
+          Alert.alert(
+            t("partialSuccess"),
+            `${t("someBookingsSucceeded")}.\n${t("someBookingsFailed")}:\n${errorMessages}`
+          );
+          setCheckInLoading(false);
+          return;
+        }
+      }
+
       Alert.alert(t("success"), t("checkInSuccess"));
       setShowCheckInModal(false);
     } catch (error: any) {
-      Alert.alert(t("error"), error.message || t("checkInFailed"));
+      console.error("Error checking in:", error);
+      
+      // Check if error is a market conflict
+      const errorMessage = error?.message || error?.toString() || "";
+      if (
+        errorMessage.includes("another order from the same service") ||
+        errorMessage.includes("same service")
+      ) {
+        Alert.alert(
+          t("bookingConflict"),
+          errorMessage || t("marketBookingConflict")
+        );
+      } else {
+        Alert.alert(t("error"), t("checkInFailed"));
+      }
     } finally {
       setCheckInLoading(false);
     }
@@ -403,7 +419,7 @@ const OrderItem = ({
             <Badge
               text={t(`${order.status}`)}
               variant={getStatusVariant(order.status)}
-              icon={getStatusIcon(order.status)}
+              // icon={getStatusIcon(order.status)}
               iconSize={10}
               size="sm"
             />
@@ -493,18 +509,21 @@ const OrderItem = ({
               />
             )}
 
-            {/* Delete Button - Only show for user's own orders */}
-            {isMyOrders && order.status !== "pending" && (
-              <Button
-                variant="outline"
-                icon="trash"
-                iconSize={14}
-                iconPosition="left"
-                title={t("delete")}
-                textColor={colors.errorVariant}
-                onPress={() => handleDeleteOrder(order)}
-              />
-            )}
+            {/* Publish Button - Only show for draft permanent orders in My Orders */}
+            {isMyOrders &&
+              user?.id === order.clientId &&
+              (order as any).orderType === "permanent" &&
+              (order as any).status === "draft" &&
+              onPublishOrder && (
+                <Button
+                  variant="primary"
+                  icon="paperplane.fill"
+                  iconSize={14}
+                  iconPosition="left"
+                  title={t("publish")}
+                  onPress={() => onPublishOrder(order)}
+                />
+              )}
           </View>
         </View>
         </ResponsiveCard>

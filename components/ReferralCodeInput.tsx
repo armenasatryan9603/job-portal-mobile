@@ -1,21 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
+  View,
 } from "react-native";
+import {
+  clearReferralCode,
+  getReferralCode,
+  storeReferralCode,
+} from "@/utils/referralStorage";
+
 import { IconSymbol } from "./ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
-import {
-  getReferralCode,
-  storeReferralCode,
-  clearReferralCode,
-} from "@/utils/referralStorage";
 
 interface ReferralCodeInputProps {
   onCodeChange?: (code: string | null) => void;

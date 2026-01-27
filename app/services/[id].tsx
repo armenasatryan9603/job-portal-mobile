@@ -1,42 +1,43 @@
-import React, { useState, useEffect, useCallback } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
-  TextInput,
-  Modal,
-  ImageBackground,
   FlatList,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { router, useLocalSearchParams, useFocusEffect } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, Spacing, BorderRadius, Typography } from "@/constants/styles";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
+import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { Badge } from "@/components/ui/badge";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/button";
-import { apiService } from "@/categories/api";
-import { useAuth } from "@/contexts/AuthContext";
-import { Image } from "expo-image";
 import { CountBadge } from "@/components/CountBadge";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Image } from "expo-image";
+import { Layout } from "@/components/Layout";
 import { MapViewComponent } from "@/components/MapView";
-import { parseLocationCoordinates } from "@/utils/locationParsing";
-import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
-import { UserAvatar } from "@/components/UserAvatar";
-import { TopTabs } from "@/components/TopTabs";
+import { MarketDetailSkeleton } from "@/components/MarketDetailSkeleton";
 import OrderItem from "@/app/orders/Item";
+import { TopTabs } from "@/components/TopTabs";
+import { UserAvatar } from "@/components/UserAvatar";
+import { apiService } from "@/categories/api";
+import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
+import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function MarketDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -64,6 +65,7 @@ export default function MarketDetailScreen() {
 
   // State for orders/reviews tab
   const [activeTab, setActiveTab] = useState<"orders" | "reviews">("orders");
+
 
   // Fetch market data
   const {
@@ -97,10 +99,6 @@ export default function MarketDetailScreen() {
       setBannerImage(market.BannerImage?.fileUrl || null);
     }
   }, [market]);
-
-  // Check permissions
-  const currentMember = market?.Members?.find((m: any) => m.userId === user?.id);
-  const isAdmin = currentMember?.role === "admin" || currentMember?.role === "owner";
 
   // Refresh data when screen is focused
   useFocusEffect(
@@ -201,12 +199,15 @@ export default function MarketDetailScreen() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <Header title={t("marketDetails")} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.tint} />
-        </View>
-      </Layout>
+      <MarketDetailSkeleton
+        header={
+          <Header
+            title={t("marketDetails")}
+            showBackButton={true}
+            onBackPress={() => router.back()}
+          />
+        }
+      />
     );
   }
 
@@ -305,16 +306,35 @@ export default function MarketDetailScreen() {
       >
         <ResponsiveContainer>
           {/* Banner Section */}
-          <ResponsiveCard padding={0} style={{ overflow: "hidden" }}>
-            <View style={{ paddingTop: bannerImage ? 0 : 140 }}>
+          <ResponsiveCard padding={0} style={{ overflow: "hidden", marginBottom: Spacing.md }}>
+            <View style={styles.bannerContainer}>
               {bannerImage ? (
-                <ImageBackground
-                  source={{ uri: bannerImage }}
-                  style={styles.bannerImage}
-                  imageStyle={styles.bannerImageStyle}
-                >
-                  <View style={styles.bannerOverlay} />
-                </ImageBackground>
+                <View style={styles.bannerImageWrapper}>
+                  <Image
+                    source={{ uri: bannerImage }}
+                    style={styles.bannerImage}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                  {isOwner && (
+                    <TouchableOpacity
+                      style={styles.bannerEditButton}
+                      onPress={handleBannerUpload}
+                      disabled={uploadingBanner}
+                      activeOpacity={0.8}
+                    >
+                      {uploadingBanner ? (
+                        <ActivityIndicator size="small" color={colors.background} />
+                      ) : (
+                        <IconSymbol
+                          name="camera.fill"
+                          size={18}
+                          color={colors.background}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  )}
+                </View>
               ) : (
                 <View
                   style={[
@@ -322,145 +342,152 @@ export default function MarketDetailScreen() {
                     { backgroundColor: colors.border },
                   ]}
                 >
-                  <IconSymbol
-                    name="photo"
-                    size={28}
-                    color={colors.tabIconDefault}
-                  />
-                  {isOwner && (
+                  {isOwner ? (
+                    <TouchableOpacity
+                      style={styles.bannerPlaceholderButton}
+                      onPress={handleBannerUpload}
+                      disabled={uploadingBanner}
+                      activeOpacity={0.8}
+                    >
+                      {uploadingBanner ? (
+                        <ActivityIndicator size="small" color={colors.tabIconDefault} />
+                      ) : (
+                        <>
+                          <IconSymbol
+                            name="camera.fill"
+                            size={32}
+                            color={colors.tabIconDefault}
+                          />
+                          <Text
+                            style={[
+                              styles.bannerPlaceholderText,
+                              { color: colors.tabIconDefault },
+                            ]}
+                          >
+                            {t("addBanner")}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  ) : (
+                    <IconSymbol
+                      name="photo"
+                      size={32}
+                      color={colors.tabIconDefault}
+                    />
+                  )}
+                </View>
+              )}
+            </View>
+          </ResponsiveCard>
+
+          {/* Market Header */}
+          <ResponsiveCard>
+            <View style={styles.marketHeader}>
+              <View style={styles.marketTitleRow}>
+                <Text style={[styles.marketName, { color: colors.text }]}>
+                  {getLocalizedName()}
+                </Text>
+                {market.verified && (
+                  <View style={[styles.verifiedBadge, { backgroundColor: colors.success + "20" }]}>
+                    <IconSymbol
+                      name="checkmark.seal.fill"
+                      size={16}
+                      color={colors.success}
+                    />
+                    <Text style={[styles.verifiedText, { color: colors.success }]}>
+                      {t("verified")}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Status Badge */}
+              <Badge
+                text={getStatusLabel()}
+                backgroundColor={getStatusColor() + "20"}
+                textColor={getStatusColor()}
+                size="md"
+                style={{ marginTop: 12, alignSelf: "flex-start" }}
+              />
+
+              <View style={styles.metaRow}>
+                {market.rating > 0 && (
+                  <View style={styles.ratingContainer}>
+                    <IconSymbol name="star.fill" size={16} color={colors.rating} />
+                    <Text style={[styles.rating, { color: colors.text }]}>
+                      {market.rating.toFixed(1)}
+                    </Text>
                     <Text
                       style={[
-                        styles.bannerPlaceholderText,
+                        styles.reviewCount,
                         { color: colors.tabIconDefault },
                       ]}
                     >
-                      {t("addBanner")}
+                      ({market._count?.Reviews || market.reviewCount || 0})
                     </Text>
-                  )}
-                </View>
-              )}
-              {isOwner && (
-                <TouchableOpacity
-                  style={styles.bannerTapArea}
-                  onPress={handleBannerUpload}
-                  disabled={uploadingBanner}
-                  activeOpacity={0.8}
-                >
-                  {uploadingBanner && (
-                    <View style={styles.bannerLoadingOverlay}>
-                      <ActivityIndicator size="small" color={colors.tint} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              )}
-
-              {/* Market Header */}
-              <View style={styles.marketHeader}>
-                <View style={styles.marketInfo}>
-                    <Text style={[styles.marketName, { color: colors.text }]}>
-                      {getLocalizedName()}
-                    </Text>
-                    {market.verified && (
-                      <View style={styles.verifiedBadge}>
-                        <IconSymbol
-                          name="checkmark.seal.fill"
-                          size={16}
-                          color={colors.success}
-                        />
-                        <Text style={styles.verifiedText}>
-                          {t("verified")}
-                        </Text>
-                      </View>
-                    )}
-
-                  {/* Status Badge */}
-                  <Badge
-                    text={getStatusLabel()}
-                    backgroundColor={getStatusColor() + "20"}
-                    textColor={getStatusColor()}
-                    size="md"
-                    style={{ marginTop: 8 }}
-                  />
-
-                  <View style={styles.metaRow}>
-                    {market.rating > 0 && (
-                      <View style={styles.ratingContainer}>
-                        <IconSymbol name="star.fill" size={16} color={colors.rating} />
-                        <Text style={[styles.rating, { color: colors.text }]}>
-                          {market.rating.toFixed(1)}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.reviewCount,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          ({market._count?.Reviews || market.reviewCount || 0})
-                        </Text>
-                      </View>
-                    )}
-                    {market.location && (
-                      <TouchableOpacity
-                        style={styles.locationContainer}
-                        onPress={() => {
-                          const locationCoordinates = parseLocationCoordinates(
-                            market.location
-                          );
-                          if (locationCoordinates) {
-                            setShowMapModal(true);
-                          }
-                        }}
-                        disabled={!parseLocationCoordinates(market.location)}
-                        activeOpacity={parseLocationCoordinates(market.location) ? 0.6 : 1}
-                      >
-                        <IconSymbol
-                          name="location.fill"
-                          size={14}
-                          color={
-                            parseLocationCoordinates(market.location)
-                              ? colors.tint
-                              : colors.textSecondary
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.location,
-                            {
-                              color: parseLocationCoordinates(market.location)
-                                ? colors.tint
-                                : colors.textSecondary,
-                              textDecorationLine: parseLocationCoordinates(
-                                market.location
-                              )
-                                ? "underline"
-                                : "none",
-                            },
-                          ]}
-                        >
-                          {parseLocationCoordinates(market.location)?.address ||
-                            market.location}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
                   </View>
-
-                  <View style={styles.joinDateContainer}>
+                )}
+                {market.location && (
+                  <TouchableOpacity
+                    style={styles.locationContainer}
+                    onPress={() => {
+                      const locationCoordinates = parseLocationCoordinates(
+                        market.location
+                      );
+                      if (locationCoordinates) {
+                        setShowMapModal(true);
+                      }
+                    }}
+                    disabled={!parseLocationCoordinates(market.location)}
+                    activeOpacity={parseLocationCoordinates(market.location) ? 0.6 : 1}
+                  >
                     <IconSymbol
-                      name="calendar"
+                      name="location.fill"
                       size={14}
-                      color={colors.textSecondary}
+                      color={
+                        parseLocationCoordinates(market.location)
+                          ? colors.tint
+                          : colors.textSecondary
+                      }
                     />
                     <Text
                       style={[
-                        styles.joinDate,
-                        { color: colors.textSecondary },
+                        styles.location,
+                        {
+                          color: parseLocationCoordinates(market.location)
+                            ? colors.tint
+                            : colors.textSecondary,
+                          textDecorationLine: parseLocationCoordinates(
+                            market.location
+                          )
+                            ? "underline"
+                            : "none",
+                        },
                       ]}
                     >
-                      {t("joined")}{" "}
-                      {new Date(market.joinDate).toLocaleDateString()}
+                      {parseLocationCoordinates(market.location)?.address ||
+                        market.location}
                     </Text>
-                  </View>
-                </View>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.joinDateContainer}>
+                <IconSymbol
+                  name="calendar"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.joinDate,
+                    { color: colors.textSecondary },
+                  ]}
+                >
+                  {t("joined")}{" "}
+                  {new Date(market.joinDate).toLocaleDateString()}
+                </Text>
               </View>
             </View>
           </ResponsiveCard>
@@ -700,12 +727,12 @@ export default function MarketDetailScreen() {
                 <CountBadge count={market.Members.length} />
               </View>
               {market.Members.filter((m: any) => m.status === "accepted").map(
-                (member: any) => (
+                (member: any, index: number) => (
                   <TouchableOpacity
                     key={member.id}
                     style={[
                       styles.memberItem,
-                      { borderBottomColor: colors.border },
+                      { borderBottomWidth: index < (market.Members.length - 2) ? 1 : 0, borderBottomColor: colors.border },
                     ]}
                     onPress={() => router.push(`/profile/profile?userId=${member.User?.id}`)}
                   >
@@ -1044,6 +1071,7 @@ export default function MarketDetailScreen() {
         </Modal>
       )}
 
+
     </Layout>
   );
 }
@@ -1052,11 +1080,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     marginBottom: 100,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   errorContainer: {
     flex: 1,
@@ -1078,31 +1101,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  bannerImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+  bannerContainer: {
     width: "100%",
-    height: '100%',
+    aspectRatio: 16 / 9,
+    overflow: "hidden",
   },
-  bannerImageStyle: {
-    resizeMode: "cover",
-    opacity: 0.5,
+  bannerImageWrapper: {
+    width: "100%",
+    height: "100%",
+    position: "relative",
   },
-  bannerOverlay: {
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerEditButton: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 12,
+    right: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
   },
   bannerPlaceholder: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 140,
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  bannerPlaceholderButton: {
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
@@ -1111,60 +1143,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-  bannerTapArea: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 140,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  bannerLoadingOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
   marketHeader: {
-    padding: Spacing.card,
-    flexDirection: "row",
-    alignItems: "flex-start",
+    gap: 12,
   },
-  marketInfo: {
-    flex: 1,
+  marketTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
   },
   marketName: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "700",
     flex: 1,
+    minWidth: "60%",
   },
   verifiedBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    // Note: Using success color with opacity - consider using inline style for dynamic color
-    backgroundColor: "#4CAF5020",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   verifiedText: {
     fontSize: 12,
-    // Note: Should use colors.success dynamically - consider inline style
-    color: "#4CAF50",
     fontWeight: "600",
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
-    marginBottom: 8,
     flexWrap: "wrap",
+    marginTop: 4,
   },
   ratingContainer: {
     flexDirection: "row",
@@ -1189,7 +1200,8 @@ const styles = StyleSheet.create({
   joinDateContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 6,
+    marginTop: 4,
   },
   joinDate: {
     fontSize: 14,
@@ -1203,13 +1215,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-  },
-  sectionDesc: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 4,
-    marginBottom: 16,
-    opacity: 0.7,
   },
   description: {
     fontSize: 16,
@@ -1230,7 +1235,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 12,
-    borderBottomWidth: 1,
     gap: 12,
   },
   memberInfo: {
@@ -1243,24 +1247,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   memberRole: {
-    fontSize: 14,
-  },
-  orderItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  orderInfo: {
-    flex: 1,
-  },
-  orderTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 4,
-  },
-  orderStatus: {
     fontSize: 14,
   },
   subscriptionInfo: {
