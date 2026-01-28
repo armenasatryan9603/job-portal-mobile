@@ -153,37 +153,14 @@ export function AccountInfo({
               {roleOptions.map((option) => {
                 const isSelected = selectedRole === option.value;
                 return (
-                  <TouchableOpacity
+                  <Button
                     key={option.value}
-                    style={[
-                      styles.roleOption,
-                      {
-                        backgroundColor: isSelected
-                          ? colors.primary
-                          : colors.background,
-                        borderColor: isSelected
-                          ? colors.primary
-                          : colors.border,
-                      },
-                    ]}
+                    style={styles.roleOption}
+                    variant={isSelected ? "primary" : "outline"}
+                    title={option.label}
                     onPress={() => setSelectedRole(option.value)}
                     disabled={saving}
-                    activeOpacity={0.6}
-                  >
-                    <Text
-                      style={[
-                        styles.roleOptionText,
-                        {
-                          color: isSelected ? colors.textInverse : colors.text,
-                        },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    {isSelected && (
-                      <IconSymbol name="checkmark" size={16} color="white" />
-                    )}
-                  </TouchableOpacity>
+                  />
                 );
               })}
             </View>
@@ -230,7 +207,6 @@ export function AccountInfo({
               title={t("save")}
               iconPosition="left"
               backgroundColor={colors.primary}
-              textColor={colors.textInverse}
               onPress={handleSave}
               disabled={saving}
             />

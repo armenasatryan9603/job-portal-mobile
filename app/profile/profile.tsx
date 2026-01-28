@@ -1103,7 +1103,6 @@ export default function ProfileScreen() {
                     title={t("save")}
                     iconPosition="left"
                     backgroundColor={colors.primary}
-                    textColor={colors.textInverse}
                     onPress={handleSaveBio}
                     disabled={savingBio}
                   />
@@ -1525,7 +1524,6 @@ export default function ProfileScreen() {
                       title={t("save")}
                       iconPosition="left"
                       backgroundColor={colors.primary}
-                      textColor={colors.textInverse}
                       onPress={handleSavePrices}
                       disabled={savingPrices}
                     />
@@ -1646,7 +1644,6 @@ export default function ProfileScreen() {
                       title={t("save")}
                       iconPosition="left"
                       backgroundColor={colors.primary}
-                      textColor={colors.textInverse}
                       onPress={handleSaveLocation}
                       disabled={savingLocation}
                     />

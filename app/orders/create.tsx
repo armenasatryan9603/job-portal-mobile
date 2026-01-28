@@ -1357,19 +1357,25 @@ export default function CreateOrderScreen() {
     return dayNames[dayOfWeek];
   };
 
-  // Check for break overlaps with existing bookings
+  // Check for break overlaps, disabled days, and work hours conflicts with existing bookings
   const checkBreakOverlaps = async (
     schedule: WeeklySchedule,
     orderId: number
   ): Promise<any[]> => {
     try {
-      // Fetch existing bookings
-      const bookings = await apiService.getOrderBookings(orderId);
+      // Fetch existing bookings and current order
+      const [bookings, currentOrder] = await Promise.all([
+        apiService.getOrderBookings(orderId),
+        apiService.getOrderById(orderId),
+      ]);
 
       // Filter only confirmed/pending bookings
       const activeBookings = bookings.filter(
         (b: any) => b.status === "confirmed" || b.status === "pending"
       );
+
+      // Get old schedule for comparison
+      const oldSchedule = (currentOrder as any)?.weeklySchedule || {};
 
       const overlapping: any[] = [];
 
@@ -1386,33 +1392,55 @@ export default function CreateOrderScreen() {
 
       for (const dayKey of dayKeys) {
         const daySchedule = (schedule as any)[dayKey] as any;
-        if (!daySchedule?.enabled || !daySchedule?.breaks || daySchedule.breaks.length === 0) {
-          continue;
-        }
+        const oldDaySchedule = (oldSchedule as any)[dayKey] as any;
+        const wasEnabled = oldDaySchedule?.enabled;
+        const isEnabled = daySchedule?.enabled;
 
-        // Check each break against bookings on matching days
-        for (const breakItem of daySchedule.breaks) {
-          // Find bookings that fall on days matching this day of week
-          for (const booking of activeBookings) {
-            const bookingDayName = getDayNameFromDate(booking.scheduledDate);
-            if (bookingDayName === dayKey) {
-              // Check if break overlaps with booking
-              if (
-                timeRangesOverlap(
-                  breakItem.start,
-                  breakItem.end,
-                  booking.startTime,
-                  booking.endTime
-                )
-              ) {
-                overlapping.push(booking);
+        // Check bookings for this day of week
+        for (const booking of activeBookings) {
+          const bookingDayName = getDayNameFromDate(booking.scheduledDate);
+          if (bookingDayName !== dayKey) continue;
+
+          // Case 1: Day was enabled but now disabled - booking conflicts
+          if (wasEnabled && !isEnabled) {
+            overlapping.push(booking);
+            continue;
+          }
+
+          // Case 2: Day is enabled - check work hours and breaks
+          if (isEnabled && daySchedule?.workHours) {
+            const workStart = timeToMinutes(daySchedule.workHours.start);
+            const workEnd = timeToMinutes(daySchedule.workHours.end);
+            const bookingStart = timeToMinutes(booking.startTime);
+            const bookingEnd = timeToMinutes(booking.endTime);
+
+            // Check if booking falls outside new work hours
+            if (bookingStart < workStart || bookingEnd > workEnd) {
+              overlapping.push(booking);
+              continue;
+            }
+
+            // Case 3: Check break overlaps (existing logic)
+            if (daySchedule?.breaks && daySchedule.breaks.length > 0) {
+              for (const breakItem of daySchedule.breaks) {
+                if (
+                  timeRangesOverlap(
+                    breakItem.start,
+                    breakItem.end,
+                    booking.startTime,
+                    booking.endTime
+                  )
+                ) {
+                  overlapping.push(booking);
+                  break; // Found overlap, no need to check other breaks
+                }
               }
             }
           }
         }
       }
 
-      // Remove duplicates (same booking might overlap with multiple breaks)
+      // Remove duplicates (same booking might overlap with multiple issues)
       const uniqueOverlapping = overlapping.filter(
         (booking, index, self) =>
           index === self.findIndex((b) => b.id === booking.id)
@@ -1420,7 +1448,7 @@ export default function CreateOrderScreen() {
 
       return uniqueOverlapping;
     } catch (error) {
-      console.error("Error checking break overlaps:", error);
+      console.error("Error checking schedule conflicts:", error);
       return [];
     }
   };

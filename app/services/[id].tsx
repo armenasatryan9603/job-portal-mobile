@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
+import { DaySchedule, WeeklySchedule } from "@/components/WeeklySchedulePicker";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ResponsiveCard,
@@ -289,6 +290,42 @@ export default function MarketDetailScreen() {
     }
   };
 
+  // Get day name translations
+  const getDayName = (dayKey: string) => {
+    const dayNames: Record<string, string> = {
+      monday: t("monday") || "Monday",
+      tuesday: t("tuesday") || "Tuesday",
+      wednesday: t("wednesday") || "Wednesday",
+      thursday: t("thursday") || "Thursday",
+      friday: t("friday") || "Friday",
+      saturday: t("saturday") || "Saturday",
+      sunday: t("sunday") || "Sunday",
+    };
+    return dayNames[dayKey] || dayKey;
+  };
+
+  // Format schedule display
+  const formatScheduleTime = (schedule: WeeklySchedule) => {
+    const days = [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+    ];
+    return days.map((dayKey) => {
+      const daySchedule = schedule[dayKey as keyof WeeklySchedule] as DaySchedule | undefined;
+      return {
+        day: dayKey,
+        dayName: getDayName(dayKey),
+        enabled: daySchedule?.enabled || false,
+        workHours: daySchedule?.workHours,
+      };
+    });
+  };
+
 
   const header = (
     <Header
@@ -504,6 +541,60 @@ export default function MarketDetailScreen() {
               {getLocalizedDescription() || t("noDescription")}
             </Text>
           </ResponsiveCard>
+
+          {/* Working Hours Schedule Section */}
+          {(market as any).weeklySchedule && Object.keys((market as any).weeklySchedule).length > 0 && (
+            <ResponsiveCard>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("workingHours") || "Working Hours"}
+                </Text>
+              </View>
+              <View style={styles.scheduleContainer}>
+                {formatScheduleTime((market as any).weeklySchedule).map((day, index) => (
+                  <View
+                    key={day.day}
+                    style={[
+                      styles.scheduleRow,
+                      { borderBottomColor: colors.border },
+                      index === formatScheduleTime((market as any).weeklySchedule).length - 1 && styles.scheduleRowLast,
+                    ]}
+                  >
+                    <View style={styles.scheduleDayContainer}>
+                      <Text style={[styles.scheduleDay, { color: colors.text }]}>
+                        {day.dayName}
+                      </Text>
+                    </View>
+                    <View style={styles.scheduleTimeContainer}>
+                      {day.enabled && day.workHours ? (
+                        <View style={styles.scheduleTimeRow}>
+                          <IconSymbol
+                            name="clock.fill"
+                            size={14}
+                            color={colors.success}
+                          />
+                          <Text style={[styles.scheduleTime, { color: colors.text }]}>
+                            {day.workHours.start} - {day.workHours.end}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.scheduleTimeRow}>
+                          <IconSymbol
+                            name="xmark.circle.fill"
+                            size={14}
+                            color={colors.textTertiary}
+                          />
+                          <Text style={[styles.scheduleTime, { color: colors.textTertiary }]}>
+                            {t("closed") || "Closed"}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </ResponsiveCard>
+          )}
 
           {/* Creator Information */}
           {market.Creator && (
@@ -1479,5 +1570,38 @@ const styles = StyleSheet.create({
   ordersList: {
     gap: 8,
     marginHorizontal: Spacing.lg,
+  },
+  scheduleContainer: {
+    gap: 0,
+  },
+  scheduleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  scheduleRowLast: {
+    borderBottomWidth: 0,
+  },
+  scheduleDayContainer: {
+    flex: 1,
+  },
+  scheduleDay: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  scheduleTimeContainer: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  scheduleTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  scheduleTime: {
+    fontSize: 14,
+    fontWeight: "500",
   },
 });

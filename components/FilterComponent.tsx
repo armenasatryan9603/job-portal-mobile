@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 
+import { Button } from "./ui/button";
 import { CountBadge } from "@/components/CountBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
@@ -506,7 +507,7 @@ export const Filter: React.FC<FilterProps> = ({
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <IconSymbol
-                      name="trash.fill"
+                      name="xmark"
                       size={24}
                       color={colors.tabIconDefault}
                     />
@@ -1120,52 +1121,15 @@ export const Filter: React.FC<FilterProps> = ({
                                   </Text>
                                 </View>
                               )}
-                              <TouchableOpacity
-                                style={[
-                                  styles.openMapButton,
-                                  {
-                                    backgroundColor: colors.primary,
-                                    borderColor: colors.primary,
-                                  },
-                                ]}
-                                onPress={() => {
-                                  console.log(
-                                    "Location button pressed, section.onLocationPress:",
-                                    !!section.onLocationPress
-                                  );
-                                  // Don't close the filter modal - keep it open behind the location modal
-                                  // Add a small delay to ensure the location modal renders properly on top
-                                  const onLocationPress =
-                                    section.onLocationPress;
-                                  if (onLocationPress) {
-                                    console.log(
-                                      "Calling onLocationPress callback"
-                                    );
-                                    // Call directly - the parent will hide the filter modal
-                                    onLocationPress();
-                                  } else {
-                                    console.warn(
-                                      "onLocationPress callback is not defined"
-                                    );
-                                  }
-                                }}
-                              >
-                                <IconSymbol
-                                  name="map"
-                                  size={16}
-                                  color={colors.textInverse}
-                                />
-                                <Text
-                                  style={[
-                                    styles.openMapButtonText,
-                                    { color: colors.textInverse },
-                                  ]}
-                                >
-                                  {hasValue
-                                    ? t("changeLocation")
-                                    : t("selectLocationOnMap")}
-                                </Text>
-                              </TouchableOpacity>
+                              <Button
+                                variant="primary"
+                                title={hasValue
+                                  ? t("changeLocation")
+                                  : t("selectLocationOnMap")}
+                                onPress={() => section.onLocationPress?.()}
+                                icon="map"
+                                iconPosition="left"
+                              />
                             </View>
                           )}
                         </View>

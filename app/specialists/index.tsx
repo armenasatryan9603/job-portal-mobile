@@ -1,62 +1,38 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { Filter, FilterSection } from "@/components/FilterComponent";
-import { EmptyPage } from "@/components/EmptyPage";
-import { FloatingSkeleton } from "@/components/FloatingSkeleton";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { TopTabs } from "@/components/TopTabs";
-import { ThemeColors, Spacing } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
-import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
-import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import {
-  Image,
+  ActivityIndicator,
+  Alert,
   FlatList,
+  RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-  Alert,
-  RefreshControl,
-  ActivityIndicator,
 } from "react-native";
-import { apiService, SpecialistProfile, User } from "@/categories/api";
-import { useSpecialists, useCategories, useMyOrders } from "@/hooks/useApi";
-import { HiringDialog } from "@/components/HiringDialog";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useModal } from "@/contexts/ModalContext";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { Filter, FilterSection } from "@/components/FilterComponent";
+import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Spacing, ThemeColors } from "@/constants/styles";
+import { SpecialistProfile, apiService } from "@/categories/api";
+import { Team, TeamItem } from "./item";
+import { router, useLocalSearchParams } from "expo-router";
+import { useCategories, useMyOrders, useSpecialists } from "@/hooks/useApi";
 
-interface Team {
-  id: number;
-  name: string;
-  createdBy: number;
-  createdAt: string;
-  isActive: boolean;
-  Creator?: {
-    id: number;
-    name: string;
-    email: string;
-    avatarUrl?: string;
-  };
-  Members?: Array<{
-    id: number;
-    userId: number;
-    role: string;
-    status?: string;
-    memberStatus?: string;
-    isActive: boolean;
-    User: User;
-  }>;
-}
+import AnalyticsService from "@/categories/AnalyticsService";
+import { EmptyPage } from "@/components/EmptyPage";
+import { FloatingSkeleton } from "@/components/FloatingSkeleton";
+import { Header } from "@/components/Header";
+import { HiringDialog } from "@/components/HiringDialog";
+import { Layout } from "@/components/Layout";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { SpecialistItem } from "./specialist-item";
+import { TopTabs } from "@/components/TopTabs";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModal } from "@/contexts/ModalContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function SpecialistsScreen() {
   useAnalytics("Specialists");
@@ -460,38 +436,6 @@ export default function SpecialistsScreen() {
     setImageErrors((prev) => new Set(prev).add(specialistId));
   };
 
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(
-        <IconSymbol key={i} name="star.fill" size={14} color={colors.rating} />
-      );
-    }
-
-    if (hasHalfStar) {
-      stars.push(
-        <IconSymbol
-          key="half"
-          name="star.leadinghalf.filled"
-          size={14}
-          color={colors.rating}
-        />
-      );
-    }
-
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(
-        <IconSymbol key={`empty-${i}`} name="star" size={14} color="#E0E0E0" />
-      );
-    }
-
-    return stars;
-  };
-
   const header = useMemo(
     () => (
       <Header
@@ -521,200 +465,17 @@ export default function SpecialistsScreen() {
     });
   }, []);
 
-  const getAcceptedMembers = (team: Team) => {
-    return (
-      team.Members?.filter(
-        (m) =>
-          m.status === "accepted" ||
-          (m.memberStatus !== "pending" && !m.status && m.isActive)
-      ) || []
-    );
-  };
-
   const renderTeamItem = useCallback(
-    ({ item: team }: { item: Team }) => {
-      const acceptedMembers = getAcceptedMembers(team);
-      const memberCount = acceptedMembers.length;
-
-      // Check if user is part of this team (creator or member)
-      const isUserPartOfTeam =
-        team.createdBy === user?.id ||
-        acceptedMembers.some((member) => member.userId === user?.id);
-
-      return (
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => handleTeamPress(team.id)}
-        >
-          <ResponsiveCard padding={0}>
-            <View style={styles.teamCard}>
-              <View style={styles.teamHeader}>
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: colors.tint + "20" },
-                  ]}
-                >
-                  <IconSymbol
-                    name="person.3.fill"
-                    size={32}
-                    color={colors.tint}
-                  />
-                </View>
-                <View style={styles.teamInfo}>
-                  <Text style={[styles.teamName, { color: colors.text }]}>
-                    {team.name}
-                  </Text>
-                  <View style={styles.teamMeta}>
-                    <View style={styles.metaItem}>
-                      <IconSymbol
-                        name="person.fill"
-                        size={14}
-                        color={colors.tabIconDefault}
-                      />
-                      <Text
-                        style={[
-                          styles.metaText,
-                          { color: colors.tabIconDefault },
-                        ]}
-                      >
-                        {memberCount} {t("members")}
-                      </Text>
-                    </View>
-                    {team.Creator && (
-                      <View style={styles.metaItem}>
-                        <IconSymbol
-                          name="person.circle.fill"
-                          size={14}
-                          color={colors.tabIconDefault}
-                        />
-                        <Text
-                          style={[
-                            styles.metaText,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          {team.Creator.name}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-                <IconSymbol
-                  name="chevron.right"
-                  size={20}
-                  color={colors.tabIconDefault}
-                />
-              </View>
-
-              {acceptedMembers.length > 0 && (
-                <View style={styles.membersContainer}>
-                  <Text
-                    style={[
-                      styles.membersTitle,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {t("teamMembers")}
-                  </Text>
-                  <View style={styles.membersList}>
-                    {acceptedMembers.slice(0, 5).map((member) => (
-                      <View
-                        key={member.id}
-                        style={[
-                          styles.memberAvatar,
-                          { backgroundColor: colors.border },
-                        ]}
-                      >
-                        {member.User?.avatarUrl &&
-                        !teamImageErrors.has(member.User?.id || 0) ? (
-                          <Image
-                            source={{ uri: member.User?.avatarUrl }}
-                            style={styles.avatar}
-                            onError={() =>
-                              handleTeamImageError(member.User?.id || 0)
-                            }
-                          />
-                        ) : (
-                          <View style={styles.defaultAvatar}>
-                            <Text
-                              style={[
-                                styles.avatarInitials,
-                                { color: colors.tabIconDefault },
-                              ]}
-                            >
-                              {(member.User?.name || t("deletedUser"))
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2)}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    ))}
-                    {memberCount > 5 && (
-                      <View
-                        style={[
-                          styles.memberAvatar,
-                          styles.moreMembers,
-                          { backgroundColor: colors.background },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.moreMembersText,
-                            { color: colors.tint },
-                          ]}
-                        >
-                          +{memberCount - 5}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.teamFooter}>
-                {!isUserPartOfTeam && (
-                  <TouchableOpacity
-                    style={[
-                      styles.hireButton,
-                      {
-                        backgroundColor: colors.tint,
-                      },
-                    ]}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      handleHireTeam(team);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.hireButtonText,
-                        { color: colors.background },
-                      ]}
-                    >
-                      {t("hire")}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </ResponsiveCard>
-        </TouchableOpacity>
-      );
-    },
-    [
-      colors,
-      t,
-      user,
-      handleTeamPress,
-      handleHireTeam,
-      handleTeamImageError,
-      teamImageErrors,
-    ]
+    ({ item: team }: { item: Team }) => (
+      <TeamItem
+        team={team}
+        onPress={handleTeamPress}
+        onHire={handleHireTeam}
+        onImageError={handleTeamImageError}
+        teamImageErrors={teamImageErrors}
+      />
+    ),
+    [handleTeamPress, handleHireTeam, handleTeamImageError, teamImageErrors]
   );
 
   const renderTeamsEmptyComponent = useCallback(() => {
@@ -735,221 +496,21 @@ export default function SpecialistsScreen() {
 
   const renderSpecialistItem = useCallback(
     ({ item: specialist }: { item: SpecialistProfile }) => (
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => handleSpecialistPress(specialist.id)}
-      >
-        <ResponsiveCard padding={0}>
-          <View style={styles.specialistCard}>
-            <View style={styles.specialistHeader}>
-              <View
-                style={[
-                  styles.avatarContainer,
-                  { backgroundColor: colors.border },
-                ]}
-              >
-                {specialist.User?.avatarUrl &&
-                !imageErrors.has(specialist.id) ? (
-                  <Image
-                    source={{ uri: specialist.User?.avatarUrl }}
-                    style={styles.avatar}
-                    onError={() => handleImageError(specialist.id)}
-                  />
-                ) : (
-                  <View style={styles.defaultAvatar}>
-                    <IconSymbol
-                      name="person.fill"
-                      size={30}
-                      color={colors.tabIconDefault}
-                    />
-                  </View>
-                )}
-              </View>
-              <View style={styles.specialistInfo}>
-                <Text style={[styles.specialistName, { color: colors.text }]}>
-                  {specialist.User?.name || t("deletedUser")}
-                </Text>
-                <Text style={[styles.specialistTitle, { color: colors.tint }]}>
-                  {specialist.Category?.name || t("specialist")}
-                </Text>
-                <View style={styles.ratingContainer}>
-                  {specialist.averageRating && specialist.averageRating > 0 ? (
-                    <>
-                      <View style={styles.stars}>
-                        {renderStars(specialist.averageRating)}
-                      </View>
-                      <Text style={[styles.ratingText, { color: colors.text }]}>
-                        {specialist.averageRating.toFixed(1)} (
-                        {specialist.reviewCount || 0})
-                      </Text>
-                    </>
-                  ) : (
-                    <Text
-                      style={[
-                        styles.ratingText,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      {t("notRatedYet")}
-                    </Text>
-                  )}
-                </View>
-              </View>
-              <View style={styles.availabilityBadge}>
-                <View
-                  style={[
-                    styles.availabilityDot,
-                    {
-                      backgroundColor: specialist.User?.verified
-                        ? colors.success
-                        : colors.orangeSecondary,
-                    },
-                  ]}
-                />
-                <Text style={[styles.availabilityText, { color: colors.text }]}>
-                  {specialist.User?.verified ? t("verified") : t("unverified")}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.bio, { color: colors.tabIconDefault }]}>
-              {specialist.User.bio || t("defaultSpecialistBio")}
-            </Text>
-
-            <View style={styles.specialistDetails}>
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="dollarsign.circle.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {specialist.priceMin && specialist.priceMax
-                    ? formatPriceRangeDisplay(
-                        specialist.priceMin,
-                        specialist.priceMax,
-                        specialist.currency,
-                        specialist.rateUnit,
-                        rateUnits,
-                        language
-                      )
-                    : t("priceNegotiable")}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <IconSymbol name="star.fill" size={16} color={colors.rating} />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {specialist.averageRating && specialist.averageRating > 0
-                    ? `${specialist.averageRating.toFixed(1)} (${
-                        specialist.reviewCount || 0
-                      })`
-                    : t("notRatedYet")}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="location.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {specialist.location || t("remote")}
-                </Text>
-              </View>
-              <View style={styles.detailItem}>
-                <IconSymbol
-                  name="briefcase.fill"
-                  size={16}
-                  color={colors.tint}
-                />
-                <Text style={[styles.detailText, { color: colors.text }]}>
-                  {specialist.experienceYears || 0} {t("yearsExp")}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.skillsContainer}>
-              {specialist.Category?.technologies
-                ?.slice(0, 5)
-                .map((skill, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.skillTag,
-                      {
-                        backgroundColor: colors.background,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.skillText, { color: colors.text }]}>
-                      {skill.name}
-                    </Text>
-                  </View>
-                )) || (
-                <Text
-                  style={[styles.skillText, { color: colors.tabIconDefault }]}
-                >
-                  {t("noSkillsListed")}
-                </Text>
-              )}
-              {(specialist.Category?.technologies?.length || 0) > 5 && (
-                <Text
-                  style={[
-                    styles.moreSkillsText,
-                    { color: colors.tabIconDefault },
-                  ]}
-                >
-                  +{(specialist.Category?.technologies?.length || 0) - 5}{" "}
-                  {t("more")}
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.specialistFooter}>
-              <View style={styles.statsContainer}>
-                <Text style={[styles.statText, { color: colors.text }]}>
-                  {specialist._count?.Proposals || 0} {t("proposalsSent")}
-                </Text>
-                <Text style={[styles.statText, { color: colors.text }]}>
-                  {specialist.experienceYears || 0} {t("yearsExperience")}
-                </Text>
-              </View>
-              {specialist.User?.id !== user?.id && (
-                <TouchableOpacity
-                  style={[
-                    styles.hireButton,
-                    {
-                      backgroundColor: colors.tint,
-                    },
-                  ]}
-                  onPress={(e) => {
-                    e.stopPropagation();
-                    handleHireSpecialist(specialist);
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.hireButtonText,
-                      { color: colors.background },
-                    ]}
-                  >
-                    {t("hire")}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </ResponsiveCard>
-      </TouchableOpacity>
+      <SpecialistItem
+        specialist={specialist}
+        onPress={handleSpecialistPress}
+        onHire={handleHireSpecialist}
+        onImageError={handleImageError}
+        imageErrors={imageErrors}
+        rateUnits={rateUnits}
+      />
     ),
     [
-      colors,
-      t,
       handleSpecialistPress,
       handleHireSpecialist,
       handleImageError,
       imageErrors,
+      rateUnits,
     ]
   );
 
@@ -1135,226 +696,5 @@ const styles = StyleSheet.create({
   loadingMoreText: {
     fontSize: 14,
     opacity: 0.7,
-  },
-  specialistCard: {
-    padding: 20,
-    borderRadius: 16,
-  },
-  specialistHeader: {
-    flexDirection: "row",
-    marginBottom: 16,
-  },
-  avatarContainer: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    marginRight: 16,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-  },
-  defaultAvatar: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
-  specialistInfo: {
-    flex: 1,
-  },
-  specialistName: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 4,
-    lineHeight: 26,
-  },
-  specialistTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 8,
-    opacity: 0.8,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  stars: {
-    flexDirection: "row",
-  },
-  ratingText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  availabilityBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  availabilityDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  availabilityText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  bio: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 16,
-    opacity: 0.8,
-  },
-  specialistDetails: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 16,
-    marginBottom: 16,
-  },
-  detailItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  detailText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  skillsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
-  },
-  skillTag: {
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-  },
-  skillText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  moreSkillsText: {
-    fontSize: 12,
-    fontStyle: "italic",
-    opacity: 0.7,
-  },
-  specialistFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
-  },
-  statsContainer: {
-    flex: 1,
-  },
-  statText: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginBottom: 2,
-  },
-  hireButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 10,
-    borderRadius: 10,
-    minWidth: 70,
-  },
-  hireButtonText: {
-    fontSize: 14,
-    textAlign: "center",
-    fontWeight: "600",
-  },
-  // Teams styles
-  teamCard: {
-    padding: 20,
-    borderRadius: 16,
-  },
-  teamHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  teamInfo: {
-    flex: 1,
-  },
-  teamName: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 8,
-    lineHeight: 26,
-  },
-  teamMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  membersContainer: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
-  },
-  membersTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  membersList: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarInitials: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  moreMembers: {
-    borderWidth: 1,
-    borderStyle: "dashed",
-  },
-  moreMembersText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  teamFooter: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
   },
 });

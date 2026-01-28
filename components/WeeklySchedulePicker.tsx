@@ -235,8 +235,8 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
     const defaultBreakDuration = 60; // 1 hour in minutes
     
     // Calculate next available break time
-    let defaultStartMinutes: number;
-    let defaultEndMinutes: number;
+    let defaultStartMinutes: number = 0;
+    let defaultEndMinutes: number = 0;
 
     if (existingBreaks.length === 0) {
       // No existing breaks, use default lunch time (12:00-13:00) if it fits, otherwise use work start

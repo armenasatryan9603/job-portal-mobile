@@ -1,13 +1,14 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { apiService, UserProfile } from "@/categories/api";
-import { useAuth } from "@/contexts/AuthContext";
-import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { ThemeColors, Typography } from "@/constants/styles";
+import { UserProfile, apiService } from "@/categories/api";
+
+import { Button } from "@/components/ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface ContactInfoProps {
   profile: UserProfile;
@@ -201,7 +202,6 @@ export function ContactInfo({
               title={t("save")}
               iconPosition="left"
               backgroundColor={colors.primary}
-              textColor={colors.textInverse}
               onPress={handleSave}
               disabled={saving}
             />

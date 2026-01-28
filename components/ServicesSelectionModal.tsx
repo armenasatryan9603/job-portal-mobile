@@ -1,16 +1,18 @@
-import React from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  TextInput,
-  StyleSheet,
   Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import { Button } from "./ui/button";
+import { Category } from "@/categories/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Service } from "@/categories/api";
+import React from "react";
 import { ThemeColors } from "@/constants/styles";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -18,14 +20,14 @@ type ThemeColorsType = typeof ThemeColors;
 
 interface ServicesSelectionModalProps {
   visible: boolean;
-  availableServices: Service[];
-  userServices: Service[];
+  availableServices: Category[];
+  userServices: Category[];
   searchQuery: string;
   colors: ThemeColorsType["light"] | ThemeColorsType["dark"];
   onClose: () => void;
   onSave: () => void;
   onSearchChange: (query: string) => void;
-  onToggleService: (service: Service) => void;
+  onToggleService: (category: Category) => void;
 }
 
 export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
@@ -59,16 +61,13 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
             <IconSymbol name="xmark" size={20} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text }]}>
-            Select Your Skills
+            {t("selectYourSkills")}
           </Text>
-          <TouchableOpacity
-            onPress={onSave}
-            style={[styles.saveButton, { backgroundColor: colors.primary }]}
-          >
-            <Text style={[styles.saveButtonText, { color: colors.textInverse }]}>
-              Save
-            </Text>
-          </TouchableOpacity>
+            <Button
+              variant="primary"
+              title={t("save")}
+              onPress={onSave}
+            />
         </View>
 
         <View
