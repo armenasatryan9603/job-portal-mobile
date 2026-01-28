@@ -370,7 +370,7 @@ export default function ServicesScreen() {
         </ResponsiveCard>
       </View>
       {isPaginationInitialLoading ? (
-          <View style={{ marginTop: 84, flex: 1 }}>
+          <View style={{ flex: 1 }}>
             <FloatingSkeleton
               count={6}
               variant="grid2"
