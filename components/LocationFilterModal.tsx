@@ -1,19 +1,22 @@
-import React, { useState, useEffect, useRef } from "react";
+import * as Location from "expo-location";
+
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
   Dimensions,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import MapView, { Circle, Marker, Region } from "react-native-maps";
+import React, { useEffect, useRef, useState } from "react";
+
+import { Button } from "./ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import * as Location from "expo-location";
 
 interface LocationFilterModalProps {
   visible: boolean;
@@ -234,31 +237,11 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             {t("selectLocationAndRadius")}
           </Text>
-          <TouchableOpacity
+          <Button
             onPress={handleConfirm}
             disabled={!selectedLocation || loading}
-            style={[
-              styles.confirmButton,
-              {
-                backgroundColor:
-                  selectedLocation && !loading ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.confirmButtonText,
-                {
-                  color:
-                    selectedLocation && !loading
-                      ? colors.textInverse
-                      : colors.textSecondary,
-                },
-              ]}
-            >
-              {t("apply")}
-            </Text>
-          </TouchableOpacity>
+            title={t("apply")}
+          />
         </View>
 
         {/* Map */}
@@ -335,8 +318,11 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
           {/* Preset buttons */}
           <View style={styles.presetButtons}>
             {[1, 5, 10, 25, 50, 75, 100, 150, 200].map((preset) => (
-              <TouchableOpacity
+              <Button
                 key={preset}
+                title={`${preset} km`}
+                variant={radius === preset ? "primary" : "outline"}
+                onPress={() => handleRadiusChange(preset)}
                 style={[
                   styles.presetButton,
                   {
@@ -345,19 +331,7 @@ export const LocationFilterModal: React.FC<LocationFilterModalProps> = ({
                     borderColor: colors.border,
                   },
                 ]}
-                onPress={() => handleRadiusChange(preset)}
-              >
-                <Text
-                  style={[
-                    styles.presetButtonText,
-                    {
-                      color: radius === preset ? colors.textInverse : colors.text,
-                    },
-                  ]}
-                >
-                  {preset} km
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
           {selectedLocation && (
@@ -396,15 +370,6 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
     marginHorizontal: 16,
-  },
-  confirmButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  confirmButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
   },
   mapContainer: {
     flex: 1,

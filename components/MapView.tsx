@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from "react-native";
-import MapView, { Marker, Region, LatLng } from "react-native-maps";
+import * as Location from "expo-location";
+
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import MapView, { LatLng, Marker, Region } from "react-native-maps";
+import React, { useEffect, useRef, useState } from "react";
+
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
-import * as Location from "expo-location";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface MapViewComponentProps {
