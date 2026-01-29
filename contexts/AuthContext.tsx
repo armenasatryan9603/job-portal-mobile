@@ -1,18 +1,20 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Device from "expo-device";
+
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useContext,
   useEffect,
   useState,
 } from "react";
-import * as Device from "expo-device";
-import { apiService, UserLanguage } from "@/categories/api";
-import { getAndClearReferralCode } from "@/utils/referralStorage";
-import PhoneVerificationService from "@/categories/PhoneVerificationService";
-import NotificationService from "@/categories/NotificationService";
-import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import { UserLanguage, apiService } from "@/categories/api";
+
 import AnalyticsService from "@/categories/AnalyticsService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import NotificationService from "@/categories/NotificationService";
+import PhoneVerificationService from "@/categories/PhoneVerificationService";
+import { getAndClearReferralCode } from "@/utils/referralStorage";
 
 interface User {
   id: number;
@@ -36,15 +38,15 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   updateUser: (userData: Partial<User>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
-  login: (phone: string, otp: string, name?: string) => Promise<boolean>;
+  login: (phone: string, countryCode: string, otp: string, name?: string) => Promise<boolean>;
   signup: (
     name: string,
     email: string,
     password: string,
     role: string
   ) => Promise<boolean>;
-  sendOTP: (phone: string) => Promise<boolean>;
-  resetOTP: (phone: string) => Promise<boolean>;
+  sendOTP: (phone: string, countryCode: string) => Promise<boolean>;
+  resetOTP: (phone: string, countryCode: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -115,15 +117,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (
     phone: string,
+    countryCode: string,
     otp: string,
     name?: string
   ): Promise<boolean> => {
     try {
       setIsLoading(true);
 
+      // Format phone with country code for verification check
+      const fullPhone = phone.startsWith("+") ? phone : `${countryCode}${phone}`;
+      
       // Check phone verification before login
       const phoneVerification = PhoneVerificationService.getInstance();
-      const phoneCheck = await phoneVerification.checkPhoneNumber(phone);
+      const phoneCheck = await phoneVerification.checkPhoneNumber(fullPhone);
 
       console.log("📱 Phone verification result:", phoneCheck);
 
@@ -149,12 +155,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const result = await apiService.post<{ access_token: string; user: any }>(
         "/auth/verify-otp",
-        { phone, otp, name, isSimulator, referralCode }
+        { phone, countryCode, otp, name, isSimulator, referralCode }
       );
 
       if (result.access_token && result.user) {
         // Track phone number for new account
-        await phoneVerification.trackNewAccount(phone);
+        await phoneVerification.trackNewAccount(fullPhone);
 
         // Store token and user data
         await apiService.setAuthToken(result.access_token);
@@ -286,7 +292,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const sendOTP = async (phone: string): Promise<boolean> => {
+  const sendOTP = async (phone: string, countryCode: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       // Check if running on simulator
@@ -295,7 +301,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         success: boolean;
         message: string;
         otp?: string;
-      }>("/auth/send-otp", { phone, isSimulator });
+      }>("/auth/send-otp", { phone, countryCode, isSimulator });
       if (response.success) {
         if (isSimulator && response.otp) {
           console.log(`🧪 [SIMULATOR] OTP for ${phone}: ${response.otp}`);
@@ -313,7 +319,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const resetOTP = async (phone: string): Promise<boolean> => {
+  const resetOTP = async (phone: string, countryCode: string): Promise<boolean> => {
     try {
       setIsLoading(true);
       // Check if running on simulator
@@ -322,7 +328,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         success: boolean;
         message: string;
         otp?: string;
-      }>("/auth/reset-otp", { phone, isSimulator });
+      }>("/auth/reset-otp", { phone, countryCode, isSimulator });
       if (response.success) {
         if (isSimulator && response.otp) {
           console.log(`🧪 [SIMULATOR] Reset OTP for ${phone}: ${response.otp}`);

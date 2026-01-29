@@ -1,16 +1,3 @@
-import { OTPVerification } from "@/components/OTPVerification";
-import {
-  BorderRadius,
-  ComponentSizes,
-  Shadows,
-  Spacing,
-  ThemeColors,
-  Typography,
-} from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { apiService } from "@/categories/api";
-import React, { useState, useEffect } from "react";
 import {
   Alert,
   Modal,
@@ -21,11 +8,26 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import {
+  BorderRadius,
+  ComponentSizes,
+  Shadows,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
+import React, { useEffect, useState } from "react";
+
+import { CountryCodePicker } from "./CountryCodePicker";
 import { IconSymbol } from "./ui/icon-symbol";
-import { useTranslation } from "@/hooks/useTranslation";
-import { ReferralCodeInput } from "./ReferralCodeInput";
 import { Logo } from "./Logo";
+import { OTPVerification } from "@/components/OTPVerification";
+import { ReferralCodeInput } from "./ReferralCodeInput";
+import { apiService } from "@/categories/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface LoginModalProps {
   visible: boolean;
@@ -40,8 +42,10 @@ export function LoginModal({
 }: LoginModalProps) {
   const [step, setStep] = useState<"phone" | "otp" | "name">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [countryCode, setCountryCode] = useState("+374");
   const [userName, setUserName] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
   const {
     login,
     sendOTP,
@@ -87,7 +91,7 @@ export function LoginModal({
     setOtpError(null); // Clear any previous errors
 
     try {
-      const success = await sendOTP(phone);
+      const success = await sendOTP(phone, countryCode);
       if (success) {
         setStep("otp");
       } else {
@@ -103,7 +107,7 @@ export function LoginModal({
 
     try {
       // Try to login with the OTP
-      const success = await login(phoneNumber, otp);
+      const success = await login(phoneNumber, countryCode, otp);
       if (success) {
         // The useEffect will handle checking if user has a name
         // and transitioning to the appropriate step
@@ -203,7 +207,7 @@ export function LoginModal({
         }
       } else {
         // Normal flow for new users
-        const success = await login(phoneNumber, "", name);
+        const success = await login(phoneNumber, countryCode, "", name);
         if (success) {
           onClose();
           if (onSuccess) {
@@ -222,7 +226,7 @@ export function LoginModal({
   const handleResendOTP = async () => {
     setOtpError(null); // Clear error when resending
     try {
-      const success = await sendOTP(phoneNumber);
+      const success = await sendOTP(phoneNumber, countryCode);
       if (!success) {
         Alert.alert(t("error"), t("failedToResendOTP"));
       }
@@ -234,6 +238,7 @@ export function LoginModal({
   const handleBackToPhone = () => {
     setStep("phone");
     setPhoneNumber("");
+    setCountryCode("+374");
     setUserName("");
     setOtpError(null); // Clear error when going back
   };
@@ -250,6 +255,7 @@ export function LoginModal({
 
     setStep("phone");
     setPhoneNumber("");
+    setCountryCode("+374");
     setUserName("");
     setOtpError(null);
     setHasIncompleteProfile(false);
@@ -263,6 +269,7 @@ export function LoginModal({
 
     setStep("phone");
     setPhoneNumber("");
+    setCountryCode("+374");
     setUserName("");
     setOtpError(null); // Clear error on close
     onClose();
@@ -334,15 +341,33 @@ export function LoginModal({
 
             {step === "phone" ? (
               <View>
-                {/* Phone Input Only */}
+                {/* Country Code and Phone Input - Unified */}
                 <View
                   style={[
-                    styles.inputContainer,
+                    styles.unifiedPhoneInput,
                     { borderColor: colors.border },
                   ]}
                 >
+                  {/* Country Code Picker Button */}
+                  <TouchableOpacity
+                    style={styles.countryCodeButton}
+                    onPress={() => setShowCountryPicker(true)}
+                    disabled={isLoading}
+                  >
+                    <Text style={[styles.countryCodeText, { color: colors.text }]}>
+                      {countryCode}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.down"
+                      size={16}
+                      color={colors.tabIconDefault}
+                    />
+                  </TouchableOpacity>
+                  {/* Divider */}
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  {/* Phone Number Input */}
                   <TextInput
-                    style={[styles.input, { color: colors.text }]}
+                    style={[styles.phoneInput, { color: colors.text }]}
                     placeholder={t("phoneNumber")}
                     placeholderTextColor={colors.tabIconDefault}
                     value={phoneNumber}
@@ -354,6 +379,13 @@ export function LoginModal({
                     autoFocus
                   />
                 </View>
+                {/* Country Code Picker Modal */}
+                <CountryCodePicker
+                  visible={showCountryPicker}
+                  selectedCode={countryCode}
+                  onSelect={(dialCode) => setCountryCode(dialCode)}
+                  onClose={() => setShowCountryPicker(false)}
+                />
                 <View style={styles.referralCodeWrapper}>
                   <ReferralCodeInput showStatus={true} />
                 </View>
@@ -549,5 +581,41 @@ const styles = StyleSheet.create({
   },
   referralCodeWrapper: {
     marginBottom: Spacing.lg,
+  },
+  unifiedPhoneInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderRadius: 16,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+    backgroundColor: "rgba(0, 0, 0, 0.02)",
+    minHeight: 56,
+  },
+  countryCodeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    gap: 6,
+    minWidth: 90,
+  },
+  countryCodeText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  divider: {
+    width: 1,
+    height: 32,
+    marginHorizontal: 4,
+  },
+  phoneInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    fontWeight: "500",
   },
 });
