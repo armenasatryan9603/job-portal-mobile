@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "HotWork",
+    "name": "TopWork",
     "slug": "job-portal-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,7 @@
     },
     "newArchEnabled": true,
     "ios": {
-      "name": "HotWork",
+      "name": "TopWork",
       "deploymentTarget": "17.0",
       "supportsTablet": true,
       "bundleIdentifier": "com.jobportalmobile.app",
