@@ -1,5 +1,5 @@
 import {
-  Keyboard,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
 import { IconSymbol } from "./ui/icon-symbol";
@@ -143,74 +143,37 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   }, [selectedItems, items, getDisplayName]);
 
   const [itemBadges, setItemBadges] = useState<ItemBadge[]>(getInitialBadges);
-  const [currentInput, setCurrentInput] = useState<string>("");
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [suggestions, setSuggestions] = useState<SelectableItem[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<number | string | null>(null);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
 
-  const inputRef = useRef<TextInput>(null);
-  const isSelectingSuggestionRef = useRef(false);
-  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastNotifiedBadgesRef = useRef<string>("");
-  const lastSyncedBadgesRef = useRef<string>("");
-  const onItemIdsChangeRef = useRef(onItemIdsChange);
-  const onSelectionChangeRef = useRef(onSelectionChange);
-  const getDisplayNameRef = useRef(getDisplayName);
-  const lastSuggestionsKeyRef = useRef<string>("");
-  const lastSelectedItemIdRef = useRef<number | string | null>(null);
-  const isScrollingRef = useRef(false);
-  const scrollViewRef = useRef<ScrollView>(null);
-
   // Sync badges when selectedItems changes externally
   useEffect(() => {
-    // Don't sync if we're in the middle of selecting - let selection complete first
-    if (isSelectingSuggestionRef.current) {
-      return;
-    }
-    
-    try {
-      const newBadges = getInitialBadges();
-      const newKey = newBadges.map((b) => b.name.trim().toLowerCase()).sort().join(",");
-      
-      // Only update if keys are different to prevent infinite loop
-      if (lastSyncedBadgesRef.current !== newKey) {
-        lastSyncedBadgesRef.current = newKey;
-        setItemBadges(newBadges);
-      }
-    } catch (error) {
-      console.warn("Error syncing badges:", error);
-      setItemBadges([]);
-      lastSyncedBadgesRef.current = "";
-    }
-    // getInitialBadges is stable (useCallback), so we don't need it in deps
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedItems, items, language]);
+    const newBadges = getInitialBadges();
+    setItemBadges(newBadges);
+  }, [selectedItems, items, language, getInitialBadges]);
 
-  // Keep refs updated
-  useEffect(() => {
-    onItemIdsChangeRef.current = onItemIdsChange;
-    onSelectionChangeRef.current = onSelectionChange;
-    getDisplayNameRef.current = getDisplayName;
-  }, [onItemIdsChange, onSelectionChange, getDisplayName]);
+  // Custom/created badges (no itemId) as synthetic SelectableItems for modal display
+  const getCreatedItemsAsSelectable = useCallback((): SelectableItem[] => {
+    const customBadges = itemBadges.filter((b) => b.itemId === undefined && b.name.trim().length > 0);
+    return customBadges.map((badge) => ({
+      id: badge.id ?? `custom-${badge.name}`,
+      name: badge.name,
+    }));
+  }, [itemBadges]);
 
-  // Filter items for suggestions
-  const filterSuggestions = useCallback((query: string, badges: ItemBadge[]): SelectableItem[] => {
+  // Filter items for modal display (predefined + created items, show selected state)
+  const getFilteredItems = useCallback((): SelectableItem[] => {
     let filtered: SelectableItem[];
     
-    if (query.length === 0) {
-      // Show all items, filtering out selected ones in multi mode
-      filtered = multi
-        ? items.filter((item) => !isItemSelected(item, badges))
-        : items;
+    if (searchQuery.trim().length === 0) {
+      filtered = items;
     } else {
-      // Filter based on query
       if (filterItems) {
-        filtered = filterItems(items, query);
+        filtered = filterItems(items, searchQuery);
       } else {
-        // Default filter: search in all name fields
-        const queryLower = query.toLowerCase();
+        const queryLower = searchQuery.toLowerCase();
         filtered = items.filter((item) => {
           const nameEn = (item.nameEn || item.name || "").toLowerCase();
           const nameRu = (item.nameRu || item.name || "").toLowerCase();
@@ -224,67 +187,48 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
           );
         });
       }
-      
-      // Filter out already selected items in multi mode
-      if (multi) {
-        filtered = filtered.filter((item) => !isItemSelected(item, badges));
-      }
     }
-    
-    return filtered.slice(0, 8);
-  }, [items, multi, filterItems, isItemSelected, getDisplayName]);
 
-  // Update suggestions when input or focus changes
+    // Add created/custom items (always selected); filter by search if needed
+    const createdItems = getCreatedItemsAsSelectable();
+    const createdFiltered =
+      searchQuery.trim().length === 0
+        ? createdItems
+        : createdItems.filter((item) =>
+            item.name.toLowerCase().includes(searchQuery.trim().toLowerCase())
+          );
+    // Dedupe: created item might match a predefined item by name; prefer predefined
+    const predefinedIds = new Set(filtered.map((i) => getDisplayName(i).toLowerCase()));
+    const createdOnly = createdFiltered.filter(
+      (item) => !predefinedIds.has(item.name.toLowerCase())
+    );
+    const combined = [...filtered, ...createdOnly];
+
+    // Sort: selected first, then unselected
+    return combined.sort((a, b) => {
+      const aSelected = isItemSelected(a, itemBadges);
+      const bSelected = isItemSelected(b, itemBadges);
+      if (aSelected && !bSelected) return -1;
+      if (!aSelected && bSelected) return 1;
+      return 0;
+    });
+  }, [items, filterItems, getDisplayName, searchQuery, isItemSelected, itemBadges, getCreatedItemsAsSelectable]);
+
+  // Notify parent when badges change (only when value actually differs from selectedItems to avoid update loops)
   useEffect(() => {
-    if (isInputFocused) {
-      const query = currentInput.trim().toLowerCase();
-      const filtered = filterSuggestions(query, itemBadges);
-      const suggestionsKey = filtered.map((item) => item.id).join(",");
-      
-      // Always update suggestions when focused, even if key is the same
-      // This ensures suggestions show up after clicking again
-      lastSuggestionsKeyRef.current = suggestionsKey;
-      setSuggestions(filtered);
-      // Always show suggestions when input is focused (if there are any)
-      setShowSuggestions(filtered.length > 0 || query.length > 0);
-    } else {
-      if (!currentInput || currentInput.trim().length === 0) {
-        setShowSuggestions(false);
-        setSuggestions([]);
-        return;
-      }
-      
-      const filtered = filterSuggestions(currentInput.trim().toLowerCase(), itemBadges);
-      const suggestionsKey = filtered.map((item) => item.id).join(",");
-      
-      if (suggestionsKey !== lastSuggestionsKeyRef.current) {
-        lastSuggestionsKeyRef.current = suggestionsKey;
-        setSuggestions(filtered);
-      }
-      setShowSuggestions(filtered.length > 0);
-    }
-  }, [currentInput, isInputFocused, itemBadges, filterSuggestions]);
-
-  // Notify parent when badges change
-  useEffect(() => {
-    const badgesKey = itemBadges.length === 0
-      ? "empty"
-      : itemBadges
-          .map((b) => `${b.itemId || "new"}:${b.name}`)
-          .sort()
-          .join("|");
-
-    if (badgesKey === lastNotifiedBadgesRef.current) return;
-    lastNotifiedBadgesRef.current = badgesKey;
-
     if (multi) {
       const itemNames = itemBadges
         .filter((b) => b.name.trim().length > 0)
         .map((b) => b.name.trim());
-      
-      onSelectionChangeRef.current(itemNames.join(", "));
+      const nextValue = itemNames.join(", ");
+      // Normalize current selectedItems string for comparison to avoid unnecessary parent updates
+      const currentStr = typeof selectedItems === "string" ? selectedItems : "";
+      const currentNormalized = currentStr.split(",").map((s) => s.trim()).filter(Boolean).join(", ");
+      if (nextValue === currentNormalized) return;
 
-      if (onItemIdsChangeRef.current) {
+      onSelectionChange(nextValue);
+
+      if (onItemIdsChange) {
         const itemIds = itemBadges
           .filter((b) => b.itemId !== undefined)
           .map((b) => b.itemId!);
@@ -292,26 +236,35 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
           .filter((b) => b.itemId === undefined && b.name.trim().length > 0)
           .map((b) => b.name.trim());
 
-        setTimeout(() => {
-          onItemIdsChangeRef.current?.(itemIds, newItemNames.length > 0 ? newItemNames : undefined);
-        }, 0);
+        onItemIdsChange(itemIds, newItemNames.length > 0 ? newItemNames : undefined);
       }
     } else {
       if (itemBadges.length === 0) {
-        onSelectionChangeRef.current("");
+        const currentEmpty = !selectedItems || selectedItems === "" || (Array.isArray(selectedItems) && selectedItems.length === 0);
+        if (currentEmpty) return;
+        onSelectionChange("");
       } else {
         const selectedBadge = itemBadges[0];
         const fullItem = items.find((item) => {
           if (selectedBadge.itemId !== undefined) {
             return item.id === selectedBadge.itemId;
           }
-          return getDisplayNameRef.current(item).toLowerCase().trim() === selectedBadge.name.toLowerCase().trim();
+          return getDisplayName(item).toLowerCase().trim() === selectedBadge.name.toLowerCase().trim();
         });
-        
-        onSelectionChangeRef.current(fullItem || selectedBadge.name);
+        const nextValue = fullItem || selectedBadge.name;
+        // Avoid notifying if parent already has this selection
+        const currentName =
+          typeof selectedItems === "object" && selectedItems !== null && !Array.isArray(selectedItems)
+            ? getDisplayName(selectedItems as SelectableItem)
+            : typeof selectedItems === "string"
+            ? selectedItems.trim()
+            : "";
+        const nextName = typeof nextValue === "string" ? nextValue : getDisplayName(nextValue as SelectableItem);
+        if (currentName && nextName.trim().toLowerCase() === currentName.trim().toLowerCase()) return;
+        onSelectionChange(nextValue);
       }
     }
-  }, [itemBadges, multi, items]);
+  }, [itemBadges, multi, items, selectedItems, onSelectionChange, onItemIdsChange, getDisplayName]);
 
   // Create a new badge
   const createBadge = useCallback((name: string, itemId?: number | string): ItemBadge => {
@@ -322,84 +275,42 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     };
   }, []);
 
-  // Handle selecting an item from suggestions
-  const handleSelectSuggestion = useCallback((item: SelectableItem) => {
-    // Prevent double execution - if we just selected this item, ignore
-    if (lastSelectedItemIdRef.current === item.id && isSelectingSuggestionRef.current) {
-      return;
-    }
-    
-    // Mark that we're selecting this item
-    lastSelectedItemIdRef.current = item.id;
-    isSelectingSuggestionRef.current = true;
-    
-    // Clear any pending blur timeouts immediately
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-
+  // Handle selecting/deselecting an item from modal
+  const handleSelectItem = useCallback((item: SelectableItem) => {
     const itemName = getDisplayName(item);
+    const isSelected = isItemSelected(item, itemBadges);
     
-    // Process selection IMMEDIATELY - this is the critical part
     if (multi) {
-      // Use functional update to ensure we have latest state
-      setItemBadges((prevBadges) => {
-        // Check if already exists or max items reached
-        if (isItemSelected(item, prevBadges) || (maxItems && prevBadges.length >= maxItems)) {
-          return prevBadges; // Don't add
+      if (isSelected) {
+        // Deselect: remove the badge (predefined by itemId, created by badge.id === item.id)
+        setItemBadges(itemBadges.filter((badge) => {
+          if (badge.itemId !== undefined) {
+            return badge.itemId !== item.id;
+          }
+          return badge.id !== item.id;
+        }));
+      } else {
+        // Select: check max items limit
+        if (maxItems && itemBadges.length >= maxItems) {
+          return; // Don't add if max reached
         }
-        // Add badge - THIS IS THE KEY ACTION
-        return [...prevBadges, createBadge(itemName, item.id)];
-      });
+        setItemBadges([...itemBadges, createBadge(itemName, item.id)]);
+      }
     } else {
-      // Set badge - THIS IS THE KEY ACTION
       setItemBadges([createBadge(itemName, item.id)]);
+      setShowModal(false);
     }
-    
-    // Clear input and close UI
-    setCurrentInput("");
-    setShowSuggestions(false);
-    setIsInputFocused(false);
-    
-    // Dismiss keyboard after a short delay
-    setTimeout(() => {
-      Keyboard.dismiss();
-      inputRef.current?.blur();
-      
-      // Reset flag
-      setTimeout(() => {
-        isSelectingSuggestionRef.current = false;
-        lastSelectedItemIdRef.current = null;
-      }, 200);
-    }, 50);
-  }, [multi, maxItems, isItemSelected, createBadge, getDisplayName]);
+  }, [multi, maxItems, isItemSelected, createBadge, getDisplayName, itemBadges]);
 
   // Handle creating a new item
   const handleCreateNewItem = useCallback(() => {
-    // Prevent blur from interfering
-    isSelectingSuggestionRef.current = true;
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-      blurTimeoutRef.current = null;
-    }
-
-    const inputValue = currentInput?.trim() || "";
+    const inputValue = searchQuery.trim();
     if (!inputValue || !allowCreate) {
-      isSelectingSuggestionRef.current = false;
       return;
     }
 
     // Check if already exists
     if (itemBadges.some((b) => b.name.toLowerCase() === inputValue.toLowerCase())) {
-      setCurrentInput("");
-      setShowSuggestions(false);
-      setIsInputFocused(false);
-      Keyboard.dismiss();
-      inputRef.current?.blur();
-      setTimeout(() => {
-        isSelectingSuggestionRef.current = false;
-      }, 100);
       return;
     }
 
@@ -409,122 +320,24 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     });
 
     if (exactMatch) {
-      handleSelectSuggestion(exactMatch);
+      handleSelectItem(exactMatch);
       return;
     }
 
     // Check max items limit
     if (maxItems && itemBadges.length >= maxItems) {
-      setCurrentInput("");
-      setShowSuggestions(false);
-      setIsInputFocused(false);
-      Keyboard.dismiss();
-      inputRef.current?.blur();
-      setTimeout(() => {
-        isSelectingSuggestionRef.current = false;
-      }, 100);
       return;
     }
 
-    // Create new item IMMEDIATELY
+    // Create new item
     const newBadge = createBadge(inputValue);
     setItemBadges(multi ? [...itemBadges, newBadge] : [newBadge]);
-    setCurrentInput("");
+    setSearchQuery("");
     
-    // Dismiss keyboard immediately
-    Keyboard.dismiss();
-    
-    // Close suggestions immediately
-    setShowSuggestions(false);
-    setIsInputFocused(false);
-    inputRef.current?.blur();
-    
-    setTimeout(() => {
-      isSelectingSuggestionRef.current = false;
-    }, 100);
-  }, [currentInput, allowCreate, itemBadges, items, maxItems, multi, createBadge, handleSelectSuggestion, getDisplayName]);
-
-  // Handle input change
-  const handleInputChange = (value: string) => {
-    setCurrentInput(value);
-  };
-
-  // Handle input focus
-  const handleInputFocus = () => {
-    setIsInputFocused(true);
-    onInputFocus?.();
-    setTimeout(() => {
-      const query = currentInput.trim().toLowerCase();
-      const filtered = filterSuggestions(query, itemBadges);
-      const suggestionsKey = filtered.map((item) => item.id).join(",");
-      lastSuggestionsKeyRef.current = suggestionsKey;
-      setSuggestions(filtered);
-      setShowSuggestions(filtered.length > 0);
-    }, 0);
-  };
-
-  // Handle input blur
-  const handleInputBlur = () => {
-    // If we're in the middle of selecting, don't do anything
-    // The selection handler will manage closing suggestions
-    if (isSelectingSuggestionRef.current) {
-      // Re-focus the input to prevent blur from closing suggestions
-      // This gives the selection time to complete
-      setTimeout(() => {
-        if (isSelectingSuggestionRef.current) {
-          inputRef.current?.focus();
-        }
-      }, 0);
-      return;
+    if (!multi) {
+      setShowModal(false);
     }
-    
-    if (blurTimeoutRef.current) {
-      clearTimeout(blurTimeoutRef.current);
-    }
-    // Use a longer timeout to give selection time to complete
-    blurTimeoutRef.current = setTimeout(() => {
-      // Triple check - if selection started during the timeout, don't close
-      if (!isSelectingSuggestionRef.current && !lastSelectedItemIdRef.current) {
-        setIsInputFocused(false);
-        setShowSuggestions(false);
-        onInputBlur?.();
-      }
-    }, 500);
-  };
-
-  // Handle clicking outside to close suggestions
-  const handleOutsidePress = () => {
-    // Don't close if we're in the middle of selecting a suggestion
-    if (isSelectingSuggestionRef.current) {
-      return;
-    }
-    // Add a small delay to ensure selection completes first
-    setTimeout(() => {
-      if (!isSelectingSuggestionRef.current && showSuggestions) {
-        setShowSuggestions(false);
-        setIsInputFocused(false);
-        inputRef.current?.blur();
-      }
-    }, 50);
-  };
-
-  // Handle submitting input
-  const handleSubmitEditing = () => {
-    const inputValue = currentInput?.trim() || "";
-    if (inputValue) {
-      const exactMatch = suggestions.find((item) => {
-        return getDisplayName(item).toLowerCase() === inputValue.toLowerCase();
-      });
-      
-      if (exactMatch) {
-        handleSelectSuggestion(exactMatch);
-      } else if (allowCreate) {
-        handleCreateNewItem();
-      }
-    } else if (suggestions.length > 0) {
-      handleSelectSuggestion(suggestions[0]);
-    }
-  };
+  }, [searchQuery, allowCreate, itemBadges, items, maxItems, multi, createBadge, handleSelectItem, getDisplayName]);
 
   // Handle deleting a badge
   const handleBadgeDelete = (index: number, e: any) => {
@@ -541,24 +354,17 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     }
   };
 
-  // Focus input when container is pressed
+  // Open modal when container is pressed
   const handleContainerPress = () => {
-    if (!multi || itemBadges.length === 0 || (!maxItems || itemBadges.length < maxItems)) {
-      // Focus the input - handleInputFocus will be called by the onFocus event
-      inputRef.current?.focus();
-      // Also explicitly show suggestions in case input is already focused
-      if (isInputFocused) {
-        const query = currentInput.trim().toLowerCase();
-        const filtered = filterSuggestions(query, itemBadges);
-        setSuggestions(filtered);
-        setShowSuggestions(filtered.length > 0);
-      }
+    if (!maxItems || itemBadges.length < maxItems) {
+      setShowModal(true);
+      onInputFocus?.();
     }
   };
 
   // Check if create button should be shown
   const shouldShowCreateButton = (): boolean => {
-    const inputValue = currentInput?.trim() || "";
+    const inputValue = searchQuery.trim();
     if (!inputValue || !allowCreate) return false;
     
     const inputLower = inputValue.toLowerCase();
@@ -572,6 +378,8 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     return !exactMatch && !matchesSelected;
   };
 
+  const filteredItems = getFilteredItems();
+
   const inputBorderColor = errors[errorKey] ? "#ff4444" : colors.border;
     
   const content = (
@@ -582,12 +390,6 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
       <Pressable
         onPress={handleContainerPress}
-        onPressIn={() => {
-          // Ensure input gets focus when container is pressed
-          if (!isInputFocused && (!maxItems || itemBadges.length < maxItems)) {
-            inputRef.current?.focus();
-          }
-        }}
         style={[
           styles.inputContainer,
           {
@@ -635,128 +437,136 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
           ))}
 
           {(!maxItems || itemBadges.length < maxItems) && (
-            <TextInput
-              ref={inputRef}
-              style={[styles.itemInput, { color: colors.text }]}
-              value={currentInput}
-              onChangeText={handleInputChange}
-              onFocus={handleInputFocus}
-              onBlur={showSuggestions ? undefined : handleInputBlur}
-              onSubmitEditing={handleSubmitEditing}
-              placeholder={placeholder || t("addItem") || "Add item..."}
-              placeholderTextColor={colors.tabIconDefault}
-              maxLength={50}
-              returnKeyType="done"
-              autoCorrect={false}
-              autoComplete="off"
-              spellCheck={false}
-              autoCapitalize="none"
-              blurOnSubmit={false}
-            />
+            <Text
+              style={[styles.placeholderText, { color: colors.tabIconDefault }]}
+            >
+              {placeholder || t("addItem") || "Add item..."}
+            </Text>
           )}
         </View>
+        <IconSymbol
+          name="chevron.down"
+          size={16}
+          color={colors.tabIconDefault}
+        />
       </Pressable>
-
-      {showSuggestions && (
-        <>
-          <Pressable 
-            style={styles.backdrop} 
-            onPress={handleOutsidePress}
-          />
-          <View
-            style={[
-              styles.suggestionsContainer,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                shadowColor: "#000",
-              },
-            ]}
-          >
-            <ScrollView
-              nestedScrollEnabled={true}
-              showsVerticalScrollIndicator={true}
-              onTouchStart={() => {
-                isScrollingRef.current = false;
-              }}
-              onScrollBeginDrag={() => {
-                isScrollingRef.current = true;
-              }}
-              onScrollEndDrag={() => {
-                setTimeout(() => {
-                  isScrollingRef.current = false;
-                }, 200);
-              }}
-              onMomentumScrollEnd={() => {
-                setTimeout(() => {
-                  isScrollingRef.current = false;
-                }, 200);
-              }}
-              style={{ maxHeight: 240 }}
-            >
-              {suggestions.length > 0 ? (
-                suggestions.map((item) => (
-                  <TouchableOpacity
-                    key={item.id.toString()}
-                    activeOpacity={0.7}
-                    style={styles.suggestionItem}
-                    onPress={() => {
-                      if (!isScrollingRef.current) {
-                        if (blurTimeoutRef.current) {
-                          clearTimeout(blurTimeoutRef.current);
-                          blurTimeoutRef.current = null;
-                        }
-                        handleSelectSuggestion(item);
-                      }
-                    }}
-                  >
-                    <IconSymbol
-                      name="checkmark.circle"
-                      size={18}
-                      color={colors.tint}
-                      style={styles.suggestionIcon}
-                    />
-                    <Text style={[styles.suggestionText, { color: colors.text }]}>
-                      {getDisplayName(item)}
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              ) : shouldShowCreateButton() ? (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  style={[styles.suggestionItem, styles.createSuggestionItem]}
-                  onPress={() => {
-                    if (!isScrollingRef.current) {
-                      isSelectingSuggestionRef.current = true;
-                      if (blurTimeoutRef.current) {
-                        clearTimeout(blurTimeoutRef.current);
-                        blurTimeoutRef.current = null;
-                      }
-                      handleCreateNewItem();
-                    }
-                  }}
-                >
-                  <IconSymbol
-                    name="plus.circle.fill"
-                    size={18}
-                    color={colors.tint}
-                    style={styles.suggestionIcon}
-                  />
-                  <Text style={[styles.suggestionText, { color: colors.tint, fontWeight: "600" }]}>
-                    {t("createItem") || "Create"} "{currentInput.trim()}"
-                  </Text>
-                </TouchableOpacity>
-              ) : null}
-            </ScrollView>
-          </View>
-        </>
-      )}
 
       {errors[errorKey] && (
         <Text style={[styles.errorText, { color: "#ff4444" }]}>
           {errors[errorKey]}
         </Text>
       )}
+
+      {/* Selection Modal */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => {
+          setShowModal(false);
+          setSearchQuery("");
+          onInputBlur?.();
+        }}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => {
+            setShowModal(false);
+            setSearchQuery("");
+            onInputBlur?.();
+          }}
+        >
+          <Pressable
+            style={[styles.modalContent, { backgroundColor: colors.background }]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                {title}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowModal(false);
+                  setSearchQuery("");
+                  onInputBlur?.();
+                }}
+                style={styles.closeButton}
+              >
+                <IconSymbol name="xmark" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.searchContainer, { borderBottomColor: colors.border }]}>
+              <IconSymbol
+                name="magnifyingglass"
+                size={16}
+                color={colors.textSecondary}
+              />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                placeholder={placeholder || t("search") || "Search..."}
+                placeholderTextColor={colors.textSecondary}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+            </View>
+
+            <ScrollView style={styles.modalScrollView}>
+              {filteredItems.map((item) => {
+                const isSelected = isItemSelected(item, itemBadges);
+                return (
+                  <TouchableOpacity
+                    key={item.id.toString()}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.modalItem,
+                      isSelected && {
+                        backgroundColor: colors.primary + "20",
+                      },
+                    ]}
+                    onPress={() => handleSelectItem(item)}
+                  >
+                    <IconSymbol
+                      name={isSelected ? "checkmark.circle.fill" : "circle"}
+                      size={18}
+                      color={isSelected ? colors.tint : colors.tabIconDefault}
+                      style={styles.modalItemIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.modalItemText,
+                        { color: colors.text },
+                        isSelected && { fontWeight: "600" },
+                      ]}
+                    >
+                      {getDisplayName(item)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              
+              {shouldShowCreateButton() && (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  style={[styles.modalItem, styles.createItem]}
+                  onPress={handleCreateNewItem}
+                >
+                  <IconSymbol
+                    name="plus.circle.fill"
+                    size={18}
+                    color={colors.tint}
+                    style={styles.modalItemIcon}
+                  />
+                  <Text style={[styles.modalItemText, { color: colors.tint, fontWeight: "600" }]}>
+                    {t("createItem") || "Create"} "{searchQuery.trim()}"
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {showDescription && (
         <SkillDescriptionModal
@@ -792,6 +602,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -828,27 +639,27 @@ const styles = StyleSheet.create({
     padding: 2,
     marginLeft: -2,
   },
-  itemInput: {
+  placeholderText: {
     fontSize: 15,
     fontWeight: "500",
     padding: 0,
     margin: 0,
-    minWidth: 100,
     flex: 1,
   },
-  suggestionsContainer: {
-    maxHeight: 240,
-    borderRadius: 12,
-    marginTop: 4,
-    borderWidth: 1,
-    zIndex: 999,
-    position: "relative",
-    // Ensure this container captures touch events before backdrop
-    elevation: 5,
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    paddingBottom: 28,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "80%",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
+        shadowOffset: { width: 0, height: -4 },
         shadowOpacity: 0.15,
         shadowRadius: 8,
       },
@@ -857,42 +668,58 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  scrollView: {
-    // No special styles needed - container handles height
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.1)",
   },
-  scrollViewContent: {
-    // Content will size naturally, no flexGrow needed
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    flex: 1,
   },
-  suggestionItem: {
+  closeButton: {
+    padding: 4,
+  },
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 4,
+  },
+  modalScrollView: {
+    maxHeight: 400,
+  },
+  modalItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(0,0,0,0.08)",
   },
-  suggestionIcon: {
+  modalItemIcon: {
     marginRight: 12,
   },
-  suggestionText: {
+  modalItemText: {
     fontSize: 15,
     fontWeight: "500",
     flex: 1,
   },
-  createSuggestionItem: {
+  createItem: {
     borderBottomWidth: 2,
     borderBottomColor: "rgba(0, 122, 255, 0.3)",
-  },
-  backdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 998,
-    backgroundColor: "transparent",
-    // Allow touches to pass through to children (suggestions container)
-    // but still capture touches outside
   },
   errorText: {
     fontSize: 13,
