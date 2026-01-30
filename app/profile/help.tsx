@@ -38,7 +38,7 @@ export default function ProfileHelpScreen() {
 
     switch (type) {
       case "email":
-        Linking.openURL("mailto:topwork.app@gmail.com?subject=Support Request");
+        Linking.openURL("mailto:hotwork.app@gmail.com?subject=Support Request");
         break;
       case "phone":
         Linking.openURL("tel:+37477754955");
