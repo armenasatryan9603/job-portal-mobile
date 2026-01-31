@@ -1,16 +1,17 @@
-import React, { useState, useMemo, useRef } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Animated,
   Alert,
+  Animated,
   LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import React, { useMemo, useRef, useState } from "react";
+
 import MultiSlider from "@ptomasroos/react-native-multi-slider";
-import { ThemeColors, Spacing, BorderRadius } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -439,82 +440,76 @@ export const TimeRangePicker: React.FC<TimeRangePickerProps> = ({
           )}
 
           {/* Two-handle range slider */}
-          <View style={styles.multiSliderContainer}>
-            <Text style={[styles.multiSliderLabel, { color: colors.text }]}>
-              {t("dragToAdjustRange")}
-            </Text>
-
-            <MultiSlider
-              values={sliderValues}
-              onValuesChange={(values) => {
-                // Enforce minimum duration if suggestedDuration is provided
-                if (suggestedDuration && suggestedDuration > 0 && selectedBlock) {
-                  const maxEnd = selectedBlock.endMinutes - selectedBlock.startMinutes;
-                  let newStart = values[0];
-                  let newEnd = values[1];
-                  const duration = newEnd - newStart;
+          <MultiSlider
+            values={sliderValues}
+            onValuesChange={(values) => {
+              // Enforce minimum duration if suggestedDuration is provided
+              if (suggestedDuration && suggestedDuration > 0 && selectedBlock) {
+                const maxEnd = selectedBlock.endMinutes - selectedBlock.startMinutes;
+                let newStart = values[0];
+                let newEnd = values[1];
+                const duration = newEnd - newStart;
+                
+                // If duration is below minimum, adjust the appropriate handle
+                if (duration < suggestedDuration) {
+                  // Determine which handle moved by comparing with current slider values
+                  const startDelta = Math.abs(values[0] - sliderValues[0]);
+                  const endDelta = Math.abs(values[1] - sliderValues[1]);
+                  const startMoved = startDelta > endDelta;
                   
-                  // If duration is below minimum, adjust the appropriate handle
-                  if (duration < suggestedDuration) {
-                    // Determine which handle moved by comparing with current slider values
-                    const startDelta = Math.abs(values[0] - sliderValues[0]);
-                    const endDelta = Math.abs(values[1] - sliderValues[1]);
-                    const startMoved = startDelta > endDelta;
-                    
-                    if (startMoved) {
-                      // Start handle moved - constrain it so duration doesn't go below minimum
-                      newStart = Math.max(0, newEnd - suggestedDuration);
-                    } else {
-                      // End handle moved - constrain it so duration doesn't go below minimum
-                      newEnd = Math.min(maxEnd, newStart + suggestedDuration);
-                    }
+                  if (startMoved) {
+                    // Start handle moved - constrain it so duration doesn't go below minimum
+                    newStart = Math.max(0, newEnd - suggestedDuration);
+                  } else {
+                    // End handle moved - constrain it so duration doesn't go below minimum
+                    newEnd = Math.min(maxEnd, newStart + suggestedDuration);
                   }
-                  
-                  // Ensure values stay within bounds
-                  newStart = Math.max(0, Math.min(newStart, maxEnd - suggestedDuration));
-                  newEnd = Math.max(newStart + suggestedDuration, Math.min(newEnd, maxEnd));
-                  
-                  values[0] = newStart;
-                  values[1] = newEnd;
                 }
-                setSliderValues([values[0], values[1]]);
-              }}
-              min={0}
-              max={selectedBlock.endMinutes - selectedBlock.startMinutes}
-              step={5}
-              sliderLength={timelineWidth > 0 ? timelineWidth - 60 : 280}
-              selectedStyle={{ backgroundColor: colors.primary }}
-              unselectedStyle={{ backgroundColor: colors.border }}
-              markerStyle={{
-                backgroundColor: colors.primary,
-                height: 30,
-                width: 30,
-                borderRadius: 15,
-                borderWidth: 2,
-                borderColor: "#FFF",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
-                shadowRadius: 4,
-                elevation: 5,
-              }}
-              pressedMarkerStyle={{
-                height: 35,
-                width: 35,
-                borderRadius: 17.5,
-              }}
-              containerStyle={styles.multiSlider}
-            />
+                
+                // Ensure values stay within bounds
+                newStart = Math.max(0, Math.min(newStart, maxEnd - suggestedDuration));
+                newEnd = Math.max(newStart + suggestedDuration, Math.min(newEnd, maxEnd));
+                
+                values[0] = newStart;
+                values[1] = newEnd;
+              }
+              setSliderValues([values[0], values[1]]);
+            }}
+            min={0}
+            max={selectedBlock.endMinutes - selectedBlock.startMinutes}
+            step={5}
+            sliderLength={timelineWidth > 0 ? timelineWidth - 60 : 280}
+            selectedStyle={{ backgroundColor: colors.primary }}
+            unselectedStyle={{ backgroundColor: colors.border }}
+            markerStyle={{
+              backgroundColor: colors.primary,
+              height: 30,
+              width: 30,
+              borderRadius: 15,
+              borderWidth: 2,
+              borderColor: "#FFF",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+              elevation: 5,
+            }}
+            pressedMarkerStyle={{
+              height: 35,
+              width: 35,
+              borderRadius: 17.5,
+            }}
+            containerStyle={styles.multiSlider}
+          />
 
-            {/* Time markers */}
-            <View style={styles.timeMarkers}>
-              <Text style={[styles.timeMarker, { color: colors.primary }]}>
-                {selectedTimes?.start}
-              </Text>
-              <Text style={[styles.timeMarker, { color: colors.primary }]}>
-                {selectedTimes?.end}
-              </Text>
-            </View>
+          {/* Time markers */}
+          <View style={styles.timeMarkers}>
+            <Text style={[styles.timeMarker, { color: colors.primary }]}>
+              {selectedTimes?.start}
+            </Text>
+            <Text style={[styles.timeMarker, { color: colors.primary }]}>
+              {selectedTimes?.end}
+            </Text>
           </View>
 
           {/* Confirm button */}
@@ -644,7 +639,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderRadius: BorderRadius.xl,
     padding: Spacing.xl,
-    marginTop: Spacing.lg,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
@@ -652,12 +646,12 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   sliderHeader: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   sliderTitle: {
     fontSize: 20,
     fontWeight: "700",
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
     letterSpacing: 0.3,
   },
   sliderSubtitle: {
@@ -666,10 +660,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   selectedTimeBox: {
-    padding: Spacing.lg,
+    padding: Spacing.md,
     borderRadius: BorderRadius.lg,
     alignItems: "center",
-    marginBottom: Spacing.xl,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -687,17 +680,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     opacity: 0.9,
   },
-  multiSliderContainer: {
-    marginBottom: Spacing.xl,
-    paddingVertical: Spacing.md,
-  },
-  multiSliderLabel: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: Spacing.lg,
-    textAlign: "center",
-    opacity: 0.8,
-  },
   multiSlider: {
     alignItems: "center",
     paddingVertical: Spacing.xl,
@@ -705,8 +687,7 @@ const styles = StyleSheet.create({
   timeMarkers: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: Spacing.md,
-    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.xs,
   },
   timeMarker: {
     fontSize: 17,

@@ -444,7 +444,7 @@ export default function EditOrderScreen() {
   };
 
   const handleSubmitCheckIn = async (
-    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number; message?: string }>
   ) => {
     if (!order) return;
 

@@ -1,11 +1,11 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Spacing, ThemeColors } from "@/constants/styles";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { RateUnit } from "@/hooks/useRateUnits";
 import React from "react";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { SpecialistProfile } from "@/categories/api";
-import { ThemeColors } from "@/constants/styles";
 import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -383,6 +383,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   specialistFooter: {
+    paddingTop: Spacing.sm,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",

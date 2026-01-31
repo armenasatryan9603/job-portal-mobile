@@ -1,4 +1,4 @@
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import CheckInModalSkeleton, {
@@ -10,6 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "react-native";
+import { ResponsiveCard } from "./ResponsiveContainer";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -27,6 +28,7 @@ interface SelectedBooking {
   endTime: string;
   dateLabel: string;
   resourceId?: number;
+  message?: string;
 }
 
 interface Resource {
@@ -51,7 +53,7 @@ interface CheckInModalProps {
   onClose: () => void;
   order: Order | null;
   onSubmit: (
-    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number; message?: string }>
   ) => Promise<void>;
   loading?: boolean;
 }
@@ -372,11 +374,18 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
       return;
     }
 
-    // Add booking (resourceId stores marketMemberId for select mode)
+    // Add booking (resourceId stores marketMemberId for select mode; message per slot)
     setSelectedBookings((prev) => [
       ...prev,
-      { date: dateString, startTime, endTime, dateLabel, resourceId: selectedResource || undefined },
+      { date: dateString, startTime, endTime, dateLabel, resourceId: selectedResource || undefined, message: "" },
     ]);
+  };
+
+  // Update message for a booking at index
+  const handleBookingMessageChange = (index: number, text: string) => {
+    setSelectedBookings((prev) =>
+      prev.map((b, i) => (i === index ? { ...b, message: text } : b))
+    );
   };
 
   // Remove a booking from the summary
@@ -392,7 +401,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
     }
 
     try {
-      // Format bookings for submission (include marketMemberId if in select mode)
+      // Format bookings for submission (include marketMemberId and message per slot)
       const formattedBookings = selectedBookings.map((b) => ({
         date: b.date,
         startTime: b.startTime,
@@ -400,6 +409,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
         ...((order as any).resourceBookingMode === "select" && b.resourceId
           ? { marketMemberId: b.resourceId }
           : {}),
+        ...(b.message?.trim() ? { message: b.message.trim() } : {}),
       }));
       await onSubmit(formattedBookings);
       setSelectedBookings([]);
@@ -537,8 +547,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                   >
                     {!specialistLoading && <Text style={[styles.sectionTitle, { color: colors.text }]}>
                       {t("selectSpecialist")}
-                    </Text>
-}
+                    </Text>}
                     
                     {specialistLoading ? (
                       <CheckInSpecialistsSkeleton />
@@ -653,7 +662,8 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                 <View
                   style={[
                     styles.section,
-                    { backgroundColor: colors.background },
+                    
+                    { paddingBottom: 0, backgroundColor: colors.background },
                   ]}
                 >
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -789,61 +799,73 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                     const specialist = (order as any).resourceBookingMode === "select" && booking.resourceId
                       ? availableResources.find((r) => r.id === booking.resourceId)
                       : null;
-                    
+
                     return (
-                      <View
+                      <ResponsiveCard
                         key={`${booking.date}-${booking.startTime}-${booking.endTime}-${index}`}
-                        style={[
-                          styles.bookingItem,
-                          {
-                            backgroundColor: colors.background,
-                            borderColor: colors.border,
-                          },
-                        ]}
+                        marginHorizontal={0}
                       >
-                        <View style={styles.bookingInfo}>
-                          <IconSymbol
-                            name="calendar"
-                            size={20}
-                            color={colors.primary}
-                          />
-                          <View style={styles.bookingText}>
-                            <Text
-                              style={[styles.bookingDate, { color: colors.text }]}
-                            >
-                              {booking.dateLabel}
-                            </Text>
-                            <Text
-                              style={[
-                                styles.bookingTime,
-                                { color: colors.tabIconDefault },
-                              ]}
-                            >
-                              {booking.startTime} - {booking.endTime}
-                            </Text>
-                            {(order as any).resourceBookingMode === "select" && specialist && (
+                        <View style={styles.bookingItemRow}>
+                          <View style={styles.bookingInfo}>
+                            <IconSymbol
+                              name="calendar"
+                              size={40}
+                              color={colors.primary}
+                            />
+                            <View style={styles.bookingText}>
+                              <Text
+                                style={[styles.bookingDate, { color: colors.text }]}
+                              >
+                                {booking.dateLabel}
+                              </Text>
                               <Text
                                 style={[
                                   styles.bookingTime,
-                                  { color: colors.tabIconDefault, marginTop: 2 },
+                                  { color: colors.tabIconDefault },
                                 ]}
                               >
-                                {t("specialist")}: {specialist.MarketMember?.User?.name || specialist.name}
+                                {booking.startTime} - {booking.endTime}
                               </Text>
-                            )}
+                              {(order as any).resourceBookingMode === "select" && specialist && (
+                                <Text
+                                  style={[
+                                    styles.bookingTime,
+                                    { color: colors.tabIconDefault, marginTop: 2 },
+                                  ]}
+                                >
+                                  {t("specialist")}: {specialist.User?.name}
+                                </Text>
+                              )}
+                            </View>
                           </View>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveBooking(index)}
+                            style={styles.removeButton}
+                          >
+                            <IconSymbol
+                              name="xmark.circle.fill"
+                              size={22}
+                              color={colors.errorVariant}
+                            />
+                          </TouchableOpacity>
                         </View>
-                        <TouchableOpacity
-                          onPress={() => handleRemoveBooking(index)}
-                          style={styles.removeButton}
-                        >
-                          <IconSymbol
-                            name="xmark.circle.fill"
-                            size={22}
-                            color={colors.errorVariant}
-                          />
-                        </TouchableOpacity>
-                      </View>
+                        <TextInput
+                          style={[
+                            styles.slotMessageInput,
+                            {
+                              color: colors.text,
+                              backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
+                              borderColor: colors.border,
+                            },
+                          ]}
+                          placeholder={t("bookingMessagePlaceholder")}
+                          placeholderTextColor={colors.tabIconDefault}
+                          value={booking.message ?? ""}
+                          onChangeText={(text) => handleBookingMessageChange(index, text)}
+                          multiline
+                          maxLength={500}
+                        />
+                      </ResponsiveCard>
                     );
                   })}
                 </View>
@@ -1010,23 +1032,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
   },
-  bookingItem: {
+  bookingItemRow: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1.5,
-    marginBottom: Spacing.md,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingBottom: Spacing.sm,
   },
   bookingInfo: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     flex: 1,
   },
   bookingText: {
@@ -1044,8 +1057,16 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   removeButton: {
-    padding: Spacing.sm,
     borderRadius: BorderRadius.sm,
+  },
+  slotMessageInput: {
+    fontSize: 14,
+    maxHeight: 64,
+    textAlignVertical: "top",
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
   },
   emptyContainer: {
     alignItems: "center",

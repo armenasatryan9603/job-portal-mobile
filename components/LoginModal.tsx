@@ -296,7 +296,7 @@ export function LoginModal({
                 onPress={handleClose}
                 style={styles.closeButton}
               >
-                <IconSymbol name="xmark" size={18} color={colors.text} />
+                <IconSymbol name="xmark" size={18} color={'#fff'} />
               </TouchableOpacity>
             )}
             {(step === "otp" || step === "name") && (
@@ -306,7 +306,7 @@ export function LoginModal({
                 }
                 style={styles.backButton}
               >
-                <IconSymbol name="chevron.left" size={18} color={colors.text} />
+                <IconSymbol name="chevron.left" size={18} color={'#fff'} />
               </TouchableOpacity>
             )}
             <View style={styles.headerContent}>

@@ -637,7 +637,6 @@ export default function OrdersScreen() {
     try {
       const viewed = await getViewedOrders();
       setViewedOrders(viewed);
-      console.log("Loaded viewed orders from storage:", Array.from(viewed));
     } catch (error) {
       console.error("Error loading viewed orders:", error);
     }
@@ -1528,7 +1527,7 @@ export default function OrdersScreen() {
   };
 
   const handleCheckInSubmit = async (
-    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number }>
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number; message?: string }>
   ) => {
     if (!selectedOrder) return;
 

@@ -12,7 +12,7 @@ import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { SpecialistProfile, apiService } from "@/categories/api";
-import { Team, TeamItem } from "./item";
+import { Team, TeamItem } from "./team-item";
 import { router, useLocalSearchParams } from "expo-router";
 import { useCategories, useMyOrders, useSpecialists } from "@/hooks/useApi";
 

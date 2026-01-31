@@ -330,6 +330,7 @@ export interface Booking {
   startTime: string;
   endTime: string;
   status: string;
+  clientMessage?: string;
   createdAt: string;
   updatedAt: string;
   Order?: Order;
@@ -2181,7 +2182,7 @@ class ApiService {
    */
   async checkInToOrder(
     orderId: number,
-    slots: Array<{ date: string; startTime: string; endTime: string }>
+    slots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number; message?: string }>
   ): Promise<{ bookings: Booking[]; errors: any[] }> {
     return this.request(
       `/bookings`,

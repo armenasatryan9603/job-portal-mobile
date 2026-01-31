@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
 import { IconSymbol } from "./ui/icon-symbol";
@@ -142,17 +142,69 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
     return [];
   }, [selectedItems, items, getDisplayName]);
 
-  const [itemBadges, setItemBadges] = useState<ItemBadge[]>(getInitialBadges);
+  // Normalize selectedItems to a stable string for comparison
+  const normalizeSelectedItems = useCallback((selected: string | SelectableItem | SelectableItem[]): string => {
+    if (!selected || selected === "") return "";
+    if (typeof selected === "string") {
+      return selected.split(",").map((s) => s.trim()).filter(Boolean).sort().join(", ");
+    }
+    if (Array.isArray(selected)) {
+      return selected.map(item => getDisplayName(item).trim()).sort().join(", ");
+    }
+    return getDisplayName(selected).trim();
+  }, [getDisplayName]);
+
+  // Memoize normalized selectedItems to detect actual changes
+  const normalizedSelectedItems = useMemo(() => {
+    return normalizeSelectedItems(selectedItems);
+  }, [selectedItems, normalizeSelectedItems]);
+
+  const initialBadges = getInitialBadges();
+  const [itemBadges, setItemBadges] = useState<ItemBadge[]>(initialBadges);
+  const itemBadgesRef = useRef<ItemBadge[]>(initialBadges);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<number | string | null>(null);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-
-  // Sync badges when selectedItems changes externally
+  const lastSyncedSelectedItemsRef = useRef<string>(normalizedSelectedItems);
+  const isSyncingFromPropsRef = useRef<boolean>(false);
+  
+  // Keep ref in sync with itemBadges
   useEffect(() => {
+    itemBadgesRef.current = itemBadges;
+  }, [itemBadges]);
+
+  // Sync badges when normalized selectedItems changes
+  useEffect(() => {
+    // Only sync if the normalized selectedItems value actually changed
+    if (lastSyncedSelectedItemsRef.current === normalizedSelectedItems) {
+      return;
+    }
+    
+    lastSyncedSelectedItemsRef.current = normalizedSelectedItems;
     const newBadges = getInitialBadges();
-    setItemBadges(newBadges);
-  }, [selectedItems, items, language, getInitialBadges]);
+    
+    // Normalize badges for comparison (sort by name for consistency, ignore generated IDs)
+    const newBadgesStr = JSON.stringify(
+      newBadges.map(b => ({ name: b.name.trim(), itemId: b.itemId }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+    const currentBadgesStr = JSON.stringify(
+      itemBadgesRef.current.map(b => ({ name: b.name.trim(), itemId: b.itemId }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
+    
+    // Only update if badges actually changed
+    if (currentBadgesStr !== newBadgesStr) {
+      isSyncingFromPropsRef.current = true;
+      setItemBadges(newBadges);
+      // Reset flag in next tick to allow notification effect to skip
+      Promise.resolve().then(() => {
+        isSyncingFromPropsRef.current = false;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [normalizedSelectedItems]);
 
   // Custom/created badges (no itemId) as synthetic SelectableItems for modal display
   const getCreatedItemsAsSelectable = useCallback((): SelectableItem[] => {
@@ -216,14 +268,19 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
 
   // Notify parent when badges change (only when value actually differs from selectedItems to avoid update loops)
   useEffect(() => {
+    // Skip notification if we're currently syncing from props to prevent circular updates
+    if (isSyncingFromPropsRef.current) {
+      return;
+    }
+    
     if (multi) {
       const itemNames = itemBadges
         .filter((b) => b.name.trim().length > 0)
-        .map((b) => b.name.trim());
+        .map((b) => b.name.trim())
+        .sort();
       const nextValue = itemNames.join(", ");
-      // Normalize current selectedItems string for comparison to avoid unnecessary parent updates
-      const currentStr = typeof selectedItems === "string" ? selectedItems : "";
-      const currentNormalized = currentStr.split(",").map((s) => s.trim()).filter(Boolean).join(", ");
+      // Normalize current selectedItems for comparison to avoid unnecessary parent updates
+      const currentNormalized = normalizeSelectedItems(selectedItems);
       if (nextValue === currentNormalized) return;
 
       onSelectionChange(nextValue);
@@ -264,7 +321,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
         onSelectionChange(nextValue);
       }
     }
-  }, [itemBadges, multi, items, selectedItems, onSelectionChange, onItemIdsChange, getDisplayName]);
+  }, [itemBadges, multi, items, selectedItems, onSelectionChange, onItemIdsChange, getDisplayName, normalizeSelectedItems]);
 
   // Create a new badge
   const createBadge = useCallback((name: string, itemId?: number | string): ItemBadge => {

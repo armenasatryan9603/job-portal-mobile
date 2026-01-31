@@ -223,7 +223,7 @@ const OrderItem = ({
   };
 
   const handleSubmitCheckIn = async (
-    selectedSlots: Array<{ date: string; startTime: string; endTime: string }>
+    selectedSlots: Array<{ date: string; startTime: string; endTime: string; marketMemberId?: number; message?: string }>
   ) => {
     setCheckInLoading(true);
     try {

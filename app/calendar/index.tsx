@@ -697,10 +697,13 @@ export default function CalendarScreen() {
     const specialistInfo = booking.Order?.resourceBookingMode === "select" && booking.MarketMember?.User
       ? `\n${t("specialist")}: ${booking.MarketMember.User.name}`
       : "";
-    
+    const messageInfo = booking.clientMessage?.trim()
+      ? `\n${t("message")}: ${booking.clientMessage.trim()}`
+      : "";
+
     Alert.alert(
       t("approveBooking") || "Approve Booking",
-      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}`,
+      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
       [
         {
           text: t("cancel"),
@@ -730,10 +733,13 @@ export default function CalendarScreen() {
     const specialistInfo = booking.Order?.resourceBookingMode === "select" && booking.MarketMember?.User
       ? `\n${t("specialist")}: ${booking.MarketMember.User.name}`
       : "";
-    
+    const messageInfo = booking.clientMessage?.trim()
+      ? `\n${t("message")}: ${booking.clientMessage.trim()}`
+      : "";
+
     Alert.alert(
       t("rejectBooking") || "Reject Booking",
-      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}`,
+      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
       [
         {
           text: t("cancel"),
@@ -959,6 +965,19 @@ export default function CalendarScreen() {
                         </Text>
                       </View>
                     </View>
+                    {booking.clientMessage?.trim() ? (
+                      <View style={styles.applicationMessageContainer}>
+                        <Text
+                          style={[
+                            styles.applicationMessageText,
+                            { color: colors.tabIconDefault },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {booking.clientMessage.trim()}
+                        </Text>
+                      </View>
+                    ) : null}
 
                     {/* Action buttons */}
                     <View style={styles.bookingActions}>
@@ -1615,6 +1634,17 @@ const styles = StyleSheet.create({
   applicationMetaText: {
     fontSize: 13,
     lineHeight: 18,
+  },
+  applicationMessageContainer: {
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.08)",
+  },
+  applicationMessageText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontStyle: "italic",
   },
   viewDetailsContainer: {
     marginTop: Spacing.md,
