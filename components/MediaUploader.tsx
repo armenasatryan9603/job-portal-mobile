@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from "react";
+import * as ImagePicker from "expo-image-picker";
+
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  Image,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  Dimensions,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { fileUploadService } from "@/categories/fileUpload";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface MediaFile {
@@ -32,7 +34,6 @@ interface MediaUploaderProps {
   value?: MediaFile[]; // Controlled component: accept initial/external mediaFiles
   selectedBannerIndex?: number; // Index of the selected banner image
   onBannerSelect?: (index: number | null) => void; // Callback when banner is selected
-  existingBannerId?: number; // ID of existing banner image (for editing)
 }
 
 const { width } = Dimensions.get("window");
@@ -44,7 +45,6 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   value,
   selectedBannerIndex,
   onBannerSelect,
-  existingBannerId,
 }) => {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -233,7 +233,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
           const isBanner = selectedBannerIndex === index;
           const showBannerBadge = isBanner;
           const isLoading = imageLoadingStates[index] ?? false;
-          const hasError = imageErrorStates[index] ?? false;
+          const hasError = imageErrorStates[index] ?? false;  
 
           return (
             <View key={index} style={styles.mediaItem}>
@@ -267,10 +267,12 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                         }));
                       }}
                       onLoad={() => {
-                        setImageLoadingStates((prev) => ({
-                          ...prev,
-                          [index]: false,
-                        }));
+                        setTimeout(() => {
+                          setImageLoadingStates((prev) => ({
+                            ...prev,
+                            [index]: false,
+                          }));
+                        }, 0);
                       }}
                       onError={() => {
                         setImageLoadingStates((prev) => ({

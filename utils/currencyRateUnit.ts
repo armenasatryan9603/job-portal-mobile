@@ -39,7 +39,7 @@ export const formatRateUnitLabel = (
 
   // Find the rate unit in our options
   const unit = rateUnits.find(
-    (u) => u.value.toLowerCase() === value.toLowerCase()
+    (u) => u.value?.toLowerCase() === value?.toLowerCase()
   );
 
   if (unit) {

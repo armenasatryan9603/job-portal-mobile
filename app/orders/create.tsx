@@ -286,7 +286,7 @@ export default function CreateOrderScreen() {
 
     // Find the rate unit in our options
     const unit = rateUnitOptions.find(
-      (u) => u.value.toLowerCase() === value.toLowerCase()
+      (u) => u.value?.toLowerCase() === value?.toLowerCase()
     );
 
     if (unit) {
@@ -2714,9 +2714,6 @@ export default function CreateOrderScreen() {
               value={mediaFiles}
               selectedBannerIndex={selectedBannerIndex ?? undefined}
               onBannerSelect={setSelectedBannerIndex}
-              existingBannerId={
-                existingBannerId !== null ? existingBannerId : undefined
-              }
             />
             {mediaFiles.length > 0 && (
               <Text

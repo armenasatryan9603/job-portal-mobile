@@ -897,9 +897,6 @@ export default function CreateMarketScreen() {
               value={mediaFiles}
               selectedBannerIndex={selectedBannerIndex ?? undefined}
               onBannerSelect={setSelectedBannerIndex}
-              existingBannerId={
-                existingBannerId !== null ? existingBannerId : undefined
-              }
             />
             {mediaFiles.length > 0 && (
               <Text
