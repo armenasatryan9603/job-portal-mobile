@@ -82,6 +82,11 @@ export default function ProfileScreen() {
   const [bannerImage, setBannerImage] = useState<string | null>(null);
   const [uploadingBanner, setUploadingBanner] = useState(false);
 
+  // Name editing state management
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameText, setNameText] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
   // Bio editing state management
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [bioText, setBioText] = useState("");
@@ -511,15 +516,51 @@ export default function ProfileScreen() {
     }
   }, [profile?.bio]);
 
-  // Sync price and location fields with profile when profile changes
+  // Sync price, location, and name fields with profile when profile changes
   useEffect(() => {
     if (profile) {
       const profileAny = profile as any;
+      setNameText(profile.name || "");
       setPriceMin(profileAny.priceMin?.toString() || "");
       setPriceMax(profileAny.priceMax?.toString() || "");
       setLocationText(profileAny.location || "");
     }
   }, [profile]);
+
+  const handleStartEditName = () => {
+    setNameText(profile?.name || "");
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setNameText(profile?.name || "");
+    setIsEditingName(false);
+  };
+
+  const handleSaveName = async () => {
+    if (!user || !profile) return;
+    const trimmed = nameText.trim();
+    if (!trimmed) {
+      Alert.alert(t("error"), t("pleaseEnterValidName"));
+      return;
+    }
+
+    try {
+      setSavingName(true);
+      const updatedProfile = await apiService.updateUserProfile({ name: trimmed });
+      AnalyticsService.getInstance().logEvent("profile_updated", {
+        update_type: "name",
+      });
+      setProfile({ ...profile, name: updatedProfile.name });
+      await updateUser({ name: updatedProfile.name });
+      setIsEditingName(false);
+    } catch (error) {
+      console.error("Error updating name:", error);
+      Alert.alert(t("error"), t("failedToUpdateProfile"));
+    } finally {
+      setSavingName(false);
+    }
+  };
 
   const handleStartEditBio = () => {
     setBioText(profile?.bio || "");
@@ -976,9 +1017,65 @@ export default function ProfileScreen() {
 
                 <View style={styles.profileInfo}>
                   <View style={styles.nameAndEditContainer}>
-                    <Text style={[styles.profileName, { color: colors.text }]}>
-                      {profile.name}
-                    </Text>
+                    {isEditingName ? (
+                      <View style={styles.nameEditRow}>
+                        <TextInput
+                          style={[
+                            styles.nameEditInput,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                              color: colors.text,
+                            },
+                          ]}
+                          value={nameText}
+                          onChangeText={setNameText}
+                          placeholder={t("name")}
+                          placeholderTextColor={colors.tabIconDefault}
+                          autoCapitalize="words"
+                        />
+                        <TouchableOpacity
+                          style={[
+                            styles.nameEditIconBtn,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                          onPress={handleCancelEditName}
+                          disabled={savingName}
+                        >
+                          <IconSymbol name="xmark" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.nameEditIconBtn,
+                            { backgroundColor: colors.primary },
+                          ]}
+                          onPress={handleSaveName}
+                          disabled={savingName}
+                        >
+                          <IconSymbol name="checkmark" size={16} color="#fff" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={[styles.profileName, { color: colors.text }]}>
+                          {profile.name}
+                        </Text>
+                        {!userId && (
+                          <TouchableOpacity
+                            style={[
+                              styles.nameEditIconBtn,
+                              { backgroundColor: colors.primary },
+                            ]}
+                            onPress={handleStartEditName}
+                          >
+                            <IconSymbol name="pencil" size={14} color="#fff" />
+                          </TouchableOpacity>
+                        )}
+                      </>
+                    )}
                   </View>
 
                   <Text
@@ -2033,6 +2130,27 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  nameEditRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flex: 1,
+  },
+  nameEditInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 14,
+  },
+  nameEditIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileName: {
     fontSize: 24,

@@ -534,11 +534,16 @@ export default function CreateOrderScreen() {
       if (category) {
         setSelectedService(category);
 
-        // Suggest budget based on category prices
-        if (category.averagePrice) {
+        // Suggest budget based on category prices (averagePrice, or min/midpoint when minPrice/maxPrice exist)
+        const defaultBudget =
+          category.averagePrice ??
+          (category.minPrice != null && category.maxPrice != null
+            ? Math.round((category.minPrice + category.maxPrice) / 2)
+            : category.minPrice);
+        if (defaultBudget != null) {
           setFormData((prev) => ({
             ...prev,
-            budget: category.averagePrice!.toString(),
+            budget: defaultBudget.toString(),
           }));
         }
       }
@@ -822,6 +827,7 @@ export default function CreateOrderScreen() {
     additionalData?: {
       selectedDates?: Date[];
       selectedDateTimes?: { [key: string]: string[] };
+      selectedService?: Category | null;
     }
   ) => {
     switch (field) {
@@ -851,7 +857,7 @@ export default function CreateOrderScreen() {
           return t("descriptionTooLong");
         }
         return "";
-      case "budget":
+      case "budget": {
         if (!value || value === "") {
           return t("pleaseEnterValidBudget");
         }
@@ -859,7 +865,6 @@ export default function CreateOrderScreen() {
         if (!budgetStr) {
           return t("pleaseEnterValidBudget");
         }
-        // Check if it's a valid number
         if (isNaN(parseFloat(budgetStr))) {
           return t("budgetMustBeNumber");
         }
@@ -867,13 +872,20 @@ export default function CreateOrderScreen() {
         if (budgetNum <= 0) {
           return t("budgetMustBePositive");
         }
-        if (budgetNum < 1) {
-          return t("budgetTooLow");
+        const categoryMin = additionalData?.selectedService?.minPrice;
+        const categoryMax = additionalData?.selectedService?.maxPrice;
+        if (categoryMin != null && budgetNum < categoryMin) {
+          return t("budgetBelowCategoryMin");
         }
-        if (budgetNum > 1000000) {
-          return t("budgetTooHigh");
+        if (categoryMax != null && budgetNum > categoryMax) {
+          return t("budgetAboveCategoryMax");
+        }
+        if (categoryMin == null && categoryMax == null) {
+          if (budgetNum < 1) return t("budgetTooLow");
+          if (budgetNum > 1000000) return t("budgetTooHigh");
         }
         return "";
+      }
       case "location":
         // Location is optional, but if provided, validate format
         if (value && typeof value === "string" && value.trim()) {
@@ -947,10 +959,11 @@ export default function CreateOrderScreen() {
   const updateField = (field: string, value: string | number) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Real-time validation with additional data for date validation
+    // Real-time validation with additional data for date validation and category budget range
     const error = validateField(field, value, {
       selectedDates,
       selectedDateTimes,
+      selectedService,
     });
     setErrors((prev) => ({ ...prev, [field]: error }));
   };
@@ -1112,11 +1125,16 @@ export default function CreateOrderScreen() {
     setSelectedService(category);
     setFormData((prev) => ({ ...prev, categoryId: category.id }));
 
-    // Suggest budget based on service prices
-    if (category.averagePrice) {
+    // Suggest budget based on category prices (averagePrice, or min/midpoint when minPrice/maxPrice exist)
+    const defaultBudget =
+      category.averagePrice ??
+      (category.minPrice != null && category.maxPrice != null
+        ? Math.round((category.minPrice + category.maxPrice) / 2)
+        : category.minPrice);
+    if (defaultBudget != null) {
       setFormData((prev) => ({
         ...prev,
-        budget: category.averagePrice!.toString(),
+        budget: defaultBudget.toString(),
       }));
     }
 
@@ -1194,30 +1212,37 @@ export default function CreateOrderScreen() {
       title: validateField("title", formData.title, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       description: validateField("description", formData.description, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       budget: validateField("budget", formData.budget, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       location: validateField("location", formData.location, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       skills: validateField("skills", formData.skills, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       availableDates: validateField("availableDates", formData.availableDates, {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
       categoryId: validateField("categoryId", formData.categoryId || "", {
         selectedDates,
         selectedDateTimes,
+        selectedService,
       }),
     };
 
@@ -1624,6 +1649,8 @@ export default function CreateOrderScreen() {
 
         // Invalidate orders queries to refresh the list
         await queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+        router.replace(`/orders/${orderId}?preview=true`);
       } else {
         // Creating a new order
         let createdOrder;
@@ -1670,6 +1697,9 @@ export default function CreateOrderScreen() {
 
           // Invalidate orders queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["orders"] });
+
+          // Clear saved form data on success
+          await clearSavedData();
 
           // Show success message with pending approval info
           Alert.alert(t("success"), t("orderCreatedPendingApproval"), [
@@ -2505,9 +2535,23 @@ export default function CreateOrderScreen() {
               </Text>
 
               {selectedService ? (
-                <Text style={[styles.priceHint, { color: colors.tint }]}>
-                  {t("budgetSuggestionNote")} {t("youCanChangeThis")}
-                </Text>
+                <>
+                  <Text style={[styles.priceHint, { color: colors.tint }]}>
+                    {t("budgetSuggestionNote")} {t("youCanChangeThis")}
+                  </Text>
+                  {selectedService.minPrice != null &&
+                    selectedService.maxPrice != null && (
+                      <Text
+                        style={[
+                          styles.priceHint,
+                          { color: colors.textSecondary, marginTop: 2 },
+                        ]}
+                      >
+                        {t("budgetRange")}: {selectedService.minPrice} –{" "}
+                        {selectedService.maxPrice}
+                      </Text>
+                    )}
+                </>
               ) : (
                 <Text
                   style={[styles.priceHint, { color: colors.tabIconDefault }]}
@@ -2543,7 +2587,10 @@ export default function CreateOrderScreen() {
                     onChangeText={(value) => updateField("budget", value)}
                     placeholder={
                       selectedService
-                        ? `${selectedService.averagePrice || 0}`
+                        ? selectedService.minPrice != null &&
+                          selectedService.maxPrice != null
+                          ? `${selectedService.minPrice} – ${selectedService.maxPrice}`
+                          : `${selectedService.averagePrice ?? selectedService.minPrice ?? 0}`
                         : t("budgetPlaceholder")
                     }
                     placeholderTextColor={colors.tabIconDefault}
@@ -2694,6 +2741,8 @@ export default function CreateOrderScreen() {
                 setSkillIds(ids);
                 setNewSkillNames(newNames || []);
               }}
+              skillIds={skillIds}
+              newSkillNames={newSkillNames}
               onInputFocus={() => setFocusedSection("skills")}
               onInputBlur={() => setFocusedSection(null)}
             />

@@ -81,6 +81,29 @@ export function AccountInfo({
         return;
       }
 
+      // If user is trying to switch from specialist to client, block if they have a permanent order (as client)
+      const isSwitchingToClient =
+        selectedRole === "client" && profile.role === "specialist";
+      if (isSwitchingToClient) {
+        const { pagination } = await apiService.getAllOrders(
+          1,
+          1,
+          undefined,
+          undefined,
+          undefined,
+          user.id,
+          "permanent"
+        );
+        if (pagination.total > 0) {
+          setSaving(false);
+          Alert.alert(
+            t(""),
+            t("cannotSwitchToClientPermanentOrder")
+          );
+          return;
+        }
+      }
+
       // Parse experienceYears
       const experienceYearsNum = experienceYears.trim()
         ? parseInt(experienceYears.trim(), 10)

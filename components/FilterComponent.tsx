@@ -487,7 +487,7 @@ export const Filter: React.FC<FilterProps> = ({
                 ]}
               >
                 <Text style={[styles.modalTitle, { color: colors.text }]}>
-                  Filters
+                  {t("filters") }
                 </Text>
                 <View style={styles.modalHeaderRight}>
                   {hasActiveFilters() && (
