@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -541,6 +542,41 @@ export default function MarketDetailScreen() {
               {getLocalizedDescription() || t("noDescription")}
             </Text>
           </ResponsiveCard>
+
+          {/* Contact Phone Numbers Section */}
+          {(market as any).phoneNumbers && Array.isArray((market as any).phoneNumbers) && (market as any).phoneNumbers.length > 0 && (
+            <ResponsiveCard>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("contact")}
+                </Text>
+              </View>
+              <View style={styles.phoneNumbersContainer}>
+                {(market as any).phoneNumbers.map((phone: string, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.phoneNumberRow, { borderBottomColor: colors.border }]}
+                    onPress={() => Linking.openURL(`tel:${phone.replace(/\s/g, "")}`)}
+                    activeOpacity={0.7}
+                  >
+                    <IconSymbol
+                      name="phone.fill"
+                      size={18}
+                      color={colors.tint}
+                    />
+                    <Text style={[styles.phoneNumberText, { color: colors.tint }]}>
+                      {phone}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={14}
+                      color={colors.tabIconDefault}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ResponsiveCard>
+          )}
 
           {/* Working Hours Schedule Section */}
           {(market as any).weeklySchedule && Object.keys((market as any).weeklySchedule).length > 0 && (
@@ -1570,6 +1606,21 @@ const styles = StyleSheet.create({
   ordersList: {
     gap: 8,
     marginHorizontal: Spacing.lg,
+  },
+  phoneNumbersContainer: {
+    gap: 0,
+  },
+  phoneNumberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  phoneNumberText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
   },
   scheduleContainer: {
     gap: 0,

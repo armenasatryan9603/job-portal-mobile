@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -72,6 +73,7 @@ export default function CreateMarketScreen() {
   );
   const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
   const [marketStatus, setMarketStatus] = useState<string | null>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
   const [marketMembers, setMarketMembers] = useState<Array<{
     id: number;
@@ -159,6 +161,13 @@ export default function CreateMarketScreen() {
 
       // Store market status
       setMarketStatus(market.status || null);
+
+      // Load phone numbers
+      if (Array.isArray((market as any).phoneNumbers) && (market as any).phoneNumbers.length > 0) {
+        setPhoneNumbers((market as any).phoneNumbers);
+      } else {
+        setPhoneNumbers([]);
+      }
 
       // Load weekly schedule
       if ((market as any).weeklySchedule) {
@@ -432,6 +441,7 @@ export default function CreateMarketScreen() {
         location: selectedLocation
           ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
           : formData.location.trim() || undefined,
+        phoneNumbers: phoneNumbers.filter((p) => p.trim() !== ""),
         weeklySchedule:
           Object.keys(weeklySchedule).length > 0
             ? weeklySchedule
@@ -797,6 +807,69 @@ export default function CreateMarketScreen() {
                 titlePlaceholder={t("marketNamePlaceholder")}
               />
             </View>
+          </ResponsiveCard>
+
+          {/* Contact Phone Numbers */}
+          <ResponsiveCard>
+            <View style={styles.phoneNumbersSectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("contact")} ({t("phoneNumber")})
+              </Text>
+              <Button
+                onPress={() => setPhoneNumbers([...phoneNumbers, ""])}
+                title={t("add")}
+                variant="outline"
+                icon="plus.circle"
+                iconSize={14}
+                backgroundColor={colors.background}
+                textColor={colors.text}
+              />
+            </View>
+            <Text
+              style={[styles.sectionDesc, { color: colors.tabIconDefault, marginBottom: 12 }]}
+            >
+              {t("enterPhoneNumber")}
+            </Text>
+            {phoneNumbers.length === 0 ? (
+              <Text style={[styles.phoneNumbersEmpty, { color: colors.tabIconDefault }]}>
+                {t("noPhoneNumbers")}
+              </Text>
+            ) : (
+              phoneNumbers.map((phone, index) => (
+                <View
+                  key={index}
+                  style={[styles.phoneNumberInputRow, { borderColor: colors.border }]}
+                >
+                  <TextInput
+                    style={[
+                      styles.phoneNumberInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={phone}
+                    onChangeText={(text) => {
+                      const next = [...phoneNumbers];
+                      next[index] = text;
+                      setPhoneNumbers(next);
+                    }}
+                    placeholder={t("phoneNumber")}
+                    placeholderTextColor={colors.tabIconDefault}
+                    keyboardType="phone-pad"
+                  />
+                  <TouchableOpacity
+                    onPress={() =>
+                      setPhoneNumbers(phoneNumbers.filter((_, i) => i !== index))
+                    }
+                    style={[styles.removePhoneButton, { backgroundColor: colors.error + "20" }]}
+                  >
+                    <IconSymbol name="xmark" size={18} color={colors.error} />
+                  </TouchableOpacity>
+                </View>
+              ))
+            )}
           </ResponsiveCard>
 
           {/* Weekly Schedule - Business Hours */}
@@ -1447,5 +1520,37 @@ const styles = StyleSheet.create({
   },
   removeOrderButton: {
     padding: 4,
+  },
+  phoneNumbersSectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  phoneNumbersEmpty: {
+    fontSize: 14,
+    fontStyle: "italic",
+    paddingVertical: 12,
+  },
+  phoneNumberInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+    borderWidth: 0,
+  },
+  phoneNumberInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  removePhoneButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

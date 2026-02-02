@@ -2345,6 +2345,7 @@ class ApiService {
     descriptionRu?: string;
     descriptionHy?: string;
     location?: string;
+    phoneNumbers?: string[];
     weeklySchedule?: any;
   }): Promise<any> {
     return this.request(
@@ -2417,6 +2418,7 @@ class ApiService {
       descriptionRu?: string;
       descriptionHy?: string;
       location?: string;
+      phoneNumbers?: string[];
       weeklySchedule?: any;
     }
   ): Promise<any> {
