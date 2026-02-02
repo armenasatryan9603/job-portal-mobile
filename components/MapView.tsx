@@ -1,6 +1,15 @@
 import * as Location from "expo-location";
 
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import MapView, { LatLng, Marker, Region } from "react-native-maps";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -54,6 +63,13 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
   );
 
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    Array<{ latitude: number; longitude: number; address: string }>
+  >([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialLocation) {
@@ -177,6 +193,90 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
     }
   };
 
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    setSearchResults([]);
+
+    if (!query.trim()) {
+      return;
+    }
+
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Debounce search
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const geocodeResponse = await Location.geocodeAsync(query);
+
+        if (geocodeResponse.length > 0) {
+          const results = await Promise.all(
+            geocodeResponse.map(async (result) => {
+              // Try to get formatted address via reverse geocoding
+              try {
+                const reverseGeocode = await Location.reverseGeocodeAsync({
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                });
+                const address = reverseGeocode[0]
+                  ? `${reverseGeocode[0].street || ""} ${
+                      reverseGeocode[0].city || ""
+                    } ${reverseGeocode[0].region || ""} ${
+                      reverseGeocode[0].country || ""
+                    }`.trim() || query
+                  : query;
+                return {
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                  address,
+                };
+              } catch {
+                return {
+                  latitude: result.latitude,
+                  longitude: result.longitude,
+                  address: query,
+                };
+              }
+            })
+          );
+          setSearchResults(results);
+        } else {
+          setSearchResults([]);
+        }
+      } catch (error) {
+        console.error("Error searching location:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+  };
+
+  const handleSelectSearchResult = (result: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  }) => {
+    setSearchQuery("");
+    setSearchResults([]);
+    const newRegion = {
+      latitude: result.latitude,
+      longitude: result.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    };
+    setRegion(newRegion);
+    setSelectedLocation({
+      latitude: result.latitude,
+      longitude: result.longitude,
+    });
+    mapRef.current?.animateToRegion(newRegion, 1000);
+    onLocationSelect(result);
+  };
+
   const handleConfirmLocation = async () => {
     if (selectedLocation) {
       try {
@@ -224,8 +324,141 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
     }
   };
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View
+          style={[
+            styles.searchInputContainer,
+            {
+              backgroundColor: isDark
+                ? "rgba(30, 30, 30, 0.95)"
+                : "rgba(255, 255, 255, 0.95)",
+              borderColor: isFocused ? colors.primary : "rgba(0, 0, 0, 0.1)",
+              shadowColor: isFocused ? colors.primary : "#000",
+            },
+          ]}
+        >
+          <View style={styles.searchIconContainer}>
+            <IconSymbol
+              name="magnifyingglass"
+              size={20}
+              color={isFocused ? colors.primary : colors.textSecondary}
+            />
+          </View>
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={t("searchLocation") || "Search location..."}
+            placeholderTextColor={colors.textSecondary}
+            value={searchQuery}
+            onChangeText={handleSearch}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          <View style={styles.searchActionsContainer}>
+            {isSearching ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : searchQuery.length > 0 ? (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => {
+                  setSearchQuery("");
+                  setSearchResults([]);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <IconSymbol
+                  name="xmark.circle.fill"
+                  size={20}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <View
+            style={[
+              styles.searchResultsContainer,
+              {
+                backgroundColor: isDark
+                  ? "rgba(30, 30, 30, 0.98)"
+                  : "rgba(255, 255, 255, 0.98)",
+                borderColor: isDark
+                  ? "rgba(255, 255, 255, 0.1)"
+                  : "rgba(0, 0, 0, 0.1)",
+              },
+            ]}
+          >
+            <ScrollView
+              style={styles.searchResultsList}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {searchResults.map((result, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.searchResultItem,
+                    {
+                      borderBottomColor:
+                        index < searchResults.length - 1
+                          ? isDark
+                            ? "rgba(255, 255, 255, 0.08)"
+                            : "rgba(0, 0, 0, 0.08)"
+                          : "transparent",
+                    },
+                  ]}
+                  onPress={() => handleSelectSearchResult(result)}
+                  activeOpacity={0.7}
+                >
+                  <View
+                    style={[
+                      styles.resultIconContainer,
+                      { backgroundColor: colors.primary + "15" },
+                    ]}
+                  >
+                    <IconSymbol
+                      name="mappin.circle.fill"
+                      size={18}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={styles.resultTextContainer}>
+                    <Text
+                      style={[styles.searchResultText, { color: colors.text }]}
+                      numberOfLines={2}
+                    >
+                      {result.address}
+                    </Text>
+                  </View>
+                  <IconSymbol
+                    name="chevron.right"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </View>
+
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -332,11 +565,91 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
+  searchContainer: {
+    position: "absolute",
+    top: 36,
+    left: 16,
+    right: 16,
+    zIndex: 1000,
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+    borderWidth: 2,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  searchIconContainer: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    padding: 0,
+    fontWeight: "500",
+  },
+  searchActionsContainer: {
+    marginLeft: 12,
+    minWidth: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchResultsContainer: {
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    maxHeight: 280,
+    overflow: "hidden",
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  searchResultsList: {
+    maxHeight: 280,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  resultIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  resultTextContainer: {
+    flex: 1,
+  },
+  searchResultText: {
+    fontSize: 15,
+    fontWeight: "500",
+    lineHeight: 20,
+  },
   controlsContainer: {
     position: "absolute",
-    top: 20,
-    right: 20,
-    gap: 10,
+    top: 100,
+    right: 16,
+    gap: 12,
   },
   controlButton: {
     width: 50,

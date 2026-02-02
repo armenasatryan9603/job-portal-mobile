@@ -1,18 +1,47 @@
 import { CreditCard, CreditCardSubmissionData } from "@/types/creditCard";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, {
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import type { ApiCard } from "@/categories/api";
+import { apiService } from "@/categories/api";
 
 interface CreditCardContextType {
   creditCards: CreditCard[];
   isLoading: boolean;
+  isLoadingCards: boolean;
   addCreditCard: (cardData: CreditCardSubmissionData) => Promise<boolean>;
   removeCreditCard: (cardId: string) => Promise<boolean>;
   setDefaultCard: (cardId: string) => Promise<boolean>;
   getDefaultCard: () => CreditCard | null;
+  refreshCards: () => Promise<void>;
 }
 
 const CreditCardContext = createContext<CreditCardContextType | undefined>(
   undefined
 );
+
+function apiCardToCreditCard(api: ApiCard): CreditCard {
+  return {
+    id: api.id,
+    cardNumber: api.cardNumber || `****${api.last4}`,
+    cardholderName: api.cardholderName || "",
+    expiryMonth: api.expiryMonth || String(api.expMonth).padStart(2, "0"),
+    expiryYear: api.expiryYear || String(api.expYear),
+    cardType:
+      (api.cardType as CreditCard["cardType"]) ||
+      (api.brand as CreditCard["cardType"]) ||
+      "unknown",
+    isDefault: api.isDefault,
+    createdAt: new Date(api.createdAt),
+    updatedAt: new Date(api.updatedAt),
+  };
+}
 
 interface CreditCardProviderProps {
   children: ReactNode;
@@ -23,63 +52,59 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
 }) => {
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCards, setIsLoadingCards] = useState(true);
 
-  // Utility function to detect card type
   const detectCardType = (
     cardNumber: string
   ): "visa" | "mastercard" | "amex" | "discover" | "unknown" => {
     const cleanNumber = cardNumber.replace(/\s/g, "");
-
     if (/^4/.test(cleanNumber)) return "visa";
     if (/^5[1-5]/.test(cleanNumber) || /^2[2-7]/.test(cleanNumber))
       return "mastercard";
     if (/^3[47]/.test(cleanNumber)) return "amex";
     if (/^6(?:011|5)/.test(cleanNumber)) return "discover";
-
     return "unknown";
   };
 
-  // Utility function to mask card number
-  const maskCardNumber = (cardNumber: string): string => {
-    const cleanNumber = cardNumber.replace(/\s/g, "");
-    return cleanNumber.slice(-4);
-  };
+  const refreshCards = useCallback(async () => {
+    setIsLoadingCards(true);
+    try {
+      const list = await apiService.getCards();
+      setCreditCards(list.map(apiCardToCreditCard));
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+      setCreditCards([]);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCards();
+  }, [refreshCards]);
 
   const addCreditCard = async (
     cardData: CreditCardSubmissionData
   ): Promise<boolean> => {
     setIsLoading(true);
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const newCard: CreditCard = {
-        id: Date.now().toString(),
-        cardNumber: maskCardNumber(cardData.cardNumber),
-        fullCardNumber: cardData.cardNumber, // In real app, this should be encrypted
-        cardholderName: cardData.cardholderName,
-        expiryMonth: cardData.expiryMonth,
-        expiryYear: cardData.expiryYear,
-        cardType: detectCardType(cardData.cardNumber),
-        isDefault: creditCards.length === 0, // First card becomes default
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      setCreditCards((prev) => [...prev, newCard]);
-
-      // In a real app, you would send this data to your server:
-      console.log("Credit Card Data for Server:", {
-        cardNumber: cardData.cardNumber,
-        cardholderName: cardData.cardholderName,
-        expiryMonth: cardData.expiryMonth,
-        expiryYear: cardData.expiryYear,
-        cvv: cardData.cvv, // Should be sent securely and not stored
-        cardType: detectCardType(cardData.cardNumber),
-        timestamp: new Date().toISOString(),
+      const cleanNumber = cardData.cardNumber.replace(/\s/g, "");
+      const last4 = cleanNumber.slice(-4);
+      const brand = detectCardType(cardData.cardNumber);
+      const expMonth = parseInt(cardData.expiryMonth, 10);
+      const expYear = parseInt(cardData.expiryYear, 10);
+      if (isNaN(expMonth) || isNaN(expYear)) {
+        return false;
+      }
+      const added = await apiService.addCard({
+        last4,
+        brand,
+        expMonth,
+        expYear,
+        holderName: cardData.cardholderName.trim() || undefined,
       });
-
+      const newCard = apiCardToCreditCard(added);
+      setCreditCards((prev) => [...prev, newCard]);
       return true;
     } catch (error) {
       console.error("Error adding credit card:", error);
@@ -91,25 +116,9 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
 
   const removeCreditCard = async (cardId: string): Promise<boolean> => {
     setIsLoading(true);
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setCreditCards((prev) => {
-        const filteredCards = prev.filter((card) => card.id !== cardId);
-
-        // If we removed the default card and there are other cards, make the first one default
-        if (filteredCards.length > 0) {
-          const removedCard = prev.find((card) => card.id === cardId);
-          if (removedCard?.isDefault) {
-            filteredCards[0].isDefault = true;
-          }
-        }
-
-        return filteredCards;
-      });
-
+      await apiService.removeCard(cardId);
+      await refreshCards();
       return true;
     } catch (error) {
       console.error("Error removing credit card:", error);
@@ -121,18 +130,9 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
 
   const setDefaultCard = async (cardId: string): Promise<boolean> => {
     setIsLoading(true);
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      setCreditCards((prev) =>
-        prev.map((card) => ({
-          ...card,
-          isDefault: card.id === cardId,
-        }))
-      );
-
+      await apiService.setDefaultCard(cardId);
+      await refreshCards();
       return true;
     } catch (error) {
       console.error("Error setting default card:", error);
@@ -149,10 +149,12 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   const value: CreditCardContextType = {
     creditCards,
     isLoading,
+    isLoadingCards,
     addCreditCard,
     removeCreditCard,
     setDefaultCard,
     getDefaultCard,
+    refreshCards,
   };
 
   return (

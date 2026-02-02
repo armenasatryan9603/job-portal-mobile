@@ -65,6 +65,7 @@ export default function OrdersScreen() {
       : useLocalSearchParams().saved === "true"
       ? "SavedOrders"
       : "Orders";
+
   useAnalytics(screenName);
   const { myOrders, myJobs, saved, categoryId, q } = useLocalSearchParams();
   const colorScheme = useColorScheme();
@@ -909,11 +910,13 @@ export default function OrdersScreen() {
       : [];
     const sortBy = (selectedFilters.sortBy as string) || "relevance";
 
+    // alert('yyyyyyyyyyyyyyyyyyyyy' + isMyOrders + ' -- ' + isMyJobs + ' -- ' + isSavedOrders);
+    
     if (isMyOrders || isMyJobs || isSavedOrders) {
       // Client-side pagination for My Orders/My Jobs/Saved Orders
       // Note: These queries don't support server-side service filtering yet
       let filteredOrders = allUserOrders;
-
+      
       // Apply search filter
       if (searchQuery.trim()) {
         filteredOrders = filterOrdersBySearch(filteredOrders, searchQuery);
@@ -990,8 +993,14 @@ export default function OrdersScreen() {
         return orderType === activeOrderTab;
       });
 
-      // Get paginated results
-      return getPaginatedOrders(filteredOrders, clientSidePage, limit);
+      console.log('fffffffffffffffffffffffff', filteredOrders.length);
+      // console.log('fffffffffffffffffffffffff', JSON.stringify(filteredOrders, null, 2));
+      
+      
+
+      // Get paginated results - return all items up to current page for infinite scroll
+      const endIndex = clientSidePage * limit;
+      return filteredOrders.slice(0, endIndex);
     }
 
     // For regular orders, apply price filter and sorting client-side

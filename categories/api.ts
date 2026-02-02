@@ -199,6 +199,23 @@ export interface UpdateUserProfileData {
   experienceYears?: number;
 }
 
+export interface ApiCard {
+  id: string;
+  paymentMethodId: string;
+  cardNumber: string;
+  last4: string;
+  brand: string;
+  expMonth: number;
+  expYear: number;
+  expiryMonth: string;
+  expiryYear: string;
+  cardholderName: string;
+  cardType: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Portfolio Types
 export interface PortfolioItem {
   id: number;
@@ -1705,6 +1722,31 @@ class ApiService {
     bonusAmount?: number;
   }> {
     return this.post("/referrals/apply-code", { referralCode, userId }, false);
+  }
+
+  // Cards API (saved payment methods)
+  async addCard(payload: {
+    last4: string;
+    brand: string;
+    expMonth: number;
+    expYear: number;
+    holderName?: string;
+  }): Promise<ApiCard> {
+    return this.post("/cards", payload, true);
+  }
+
+  async getCards(): Promise<ApiCard[]> {
+    return this.request<ApiCard[]>("/cards", {}, true);
+  }
+
+  async removeCard(cardId: string): Promise<{ success: boolean }> {
+    return this.request(`/cards/${cardId}`, { method: "DELETE" }, true);
+  }
+
+  async setDefaultCard(cardId: string): Promise<ApiCard> {
+    return this.request(`/cards/${cardId}/default`, {
+      method: "PATCH",
+    }, true);
   }
 
   // Credit Refill API

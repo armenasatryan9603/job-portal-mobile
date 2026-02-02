@@ -1,7 +1,12 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
 import {
   BorderRadius,
   ComponentSizes,
@@ -10,30 +15,25 @@ import {
   ThemeColors,
   Typography,
 } from "@/constants/styles";
-import { useCreditCard } from "@/contexts/CreditCardContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
 import { CreditCardErrors, CreditCardForm } from "@/types/creditCard";
+import React, { useState } from "react";
 import {
   formatCardNumber,
   validateCreditCardForm,
 } from "@/utils/creditCardValidation";
-import { router } from "expo-router";
-import React, { useState } from "react";
+
 import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { ThemedText } from "@/components/themed-text";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useCreditCard } from "@/contexts/CreditCardContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function AddCreditCardScreen() {
   useAnalytics("AddCreditCard");
