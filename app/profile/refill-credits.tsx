@@ -1,26 +1,9 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { PaymentWebView } from "@/components/PaymentWebView";
 import {
-  BorderRadius,
-  Spacing,
-  ThemeColors,
-  Typography,
-  Shadows,
-} from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { apiService } from "@/categories/api";
-import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { API_CONFIG } from "@/config/api";
-import {
+  ActivityIndicator,
   Alert,
+  Animated,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -28,20 +11,42 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
-  Animated,
-  Modal,
 } from "react-native";
+import {
+  BorderRadius,
+  Shadows,
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
+import React, { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+
+import { API_CONFIG } from "@/config/api";
+import AnalyticsService from "@/categories/AnalyticsService";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { PaymentWebView } from "@/components/PaymentWebView";
+import { apiService } from "@/categories/api";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useCreditCard } from "@/contexts/CreditCardContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const { creditCards, isLoadingCards, syncCardsFromBank, refreshCards } = useCreditCard();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>("");
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [saveCard, setSaveCard] = useState(false);
   const [loading, setLoading] = useState(false);
   const [baseBalance, setBaseBalance] = useState<number>(0); // Balance in USD (base currency)
   const [convertedBalance, setConvertedBalance] = useState<number>(0); // Balance in selected currency (for display)
@@ -84,6 +89,54 @@ export default function RefillCreditsScreen() {
     }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Refresh cards when screen comes into focus (e.g., after payment callback)
+  useFocusEffect(
+    useCallback(() => {
+      refreshCards();
+    }, [refreshCards])
+  );
+
+  // Check if app was opened via deep link after payment
+  useEffect(() => {
+    const checkPaymentCallback = async () => {
+      try {
+        // Check if we have a pending payment and the app was just opened
+        // This happens when payment succeeds and redirects back to app
+        if (showPaymentWebView && pendingAmount > 0) {
+          // Small delay to ensure deep link has been processed and backend has updated
+          setTimeout(async () => {
+            try {
+              // Get current balance before refresh
+              const previousBalance = baseBalance;
+              
+              // Fetch fresh balance from backend
+              const profile = await apiService.getUserProfile();
+              const newBalance = profile.creditBalance || 0;
+              
+              // Update state
+              setBaseBalance(newBalance);
+              
+              // If balance increased, payment was successful
+              if (newBalance > previousBalance) {
+                console.log("✅ Payment detected as successful via balance check");
+                handlePaymentSuccess();
+              } else {
+                console.log("⚠️ Balance unchanged, payment may still be processing");
+              }
+            } catch (error) {
+              console.error("Error checking payment status:", error);
+            }
+          }, 2000); // Give backend time to process payment
+        }
+      } catch (error) {
+        console.error("Error checking payment callback:", error);
+      }
+    };
+
+    checkPaymentCallback();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPaymentWebView]);
 
   const fetchCurrentBalance = async () => {
     try {
@@ -219,7 +272,67 @@ export default function RefillCreditsScreen() {
     setLoading(true);
 
     try {
-      const result = await apiService.initiateCreditRefill(amount, currency);
+      // If saved card is selected, use direct payment (no webview)
+      if (selectedCardId) {
+        // Verify the selected card has a bindingId
+        const selectedCard = creditCards.find((card) => card.id === selectedCardId);
+        if (!selectedCard || !selectedCard.bindingId) {
+          Alert.alert(
+            t("error"),
+            t("cardNotSaved") || "This card needs to be saved first. Please use 'New Card' option and check 'Save card for future payments'."
+          );
+          setLoading(false);
+          return;
+        }
+
+        const result = await apiService.refillWithSavedCard(
+          amount,
+          currency,
+          selectedCardId
+        );
+
+        if (result.success) {
+          // Track payment completed
+          AnalyticsService.getInstance().logPaymentCompleted(
+            result.orderId || `refill_${Date.now()}`,
+            amount,
+            currency
+          );
+
+          // Refresh balance
+          await fetchCurrentBalance();
+
+          // Build success message
+          let successMessage = `${t("paymentSuccessMessage")} ${amount.toFixed(2)} ${currency}`;
+          if (result.conversionInfo) {
+            successMessage += ` (${result.conversionInfo.convertedAmount.toFixed(2)} ${result.conversionInfo.baseCurrency} credits)`;
+          }
+          successMessage += ".";
+
+          Alert.alert(t("paymentSuccess"), successMessage, [
+            {
+              text: t("ok"),
+              onPress: () => {
+                // Reset form
+                setSelectedAmount(null);
+                setCustomAmount("");
+              },
+            },
+          ]);
+        } else {
+          Alert.alert(t("paymentFailed"), result.message || t("paymentFailedMessage"));
+        }
+        setLoading(false);
+        return;
+      }
+
+      // New card payment - use webview flow
+      const result = await apiService.initiateCreditRefill(
+        amount,
+        currency,
+        undefined,
+        saveCard
+      );
 
       // Log full response for debugging
       console.log("🔍 Full payment response:", JSON.stringify(result, null, 2));
@@ -291,6 +404,9 @@ export default function RefillCreditsScreen() {
 
     // Refresh balance after successful payment
     await fetchCurrentBalance();
+    
+    // Sync cards to get updated binding info if card was saved
+    await syncCardsFromBank();
 
     // Build success message with conversion info if available
     let successMessage = `${t("paymentSuccessMessage")} ${pendingAmount.toFixed(
@@ -332,7 +448,38 @@ export default function RefillCreditsScreen() {
     ]);
   };
 
-  const handlePaymentClose = () => {
+  const handlePaymentClose = async () => {
+    // Before closing, check if payment was successful by checking balance
+    if (pendingAmount > 0) {
+      try {
+        // Get current balance
+        const previousBalance = baseBalance;
+        
+        // Fetch fresh balance from backend
+        const profile = await apiService.getUserProfile();
+        const newBalance = profile.creditBalance || 0;
+        
+        // Update state
+        setBaseBalance(newBalance);
+        
+        // If balance increased, payment was successful
+        if (newBalance > previousBalance) {
+          console.log("✅ Payment detected as successful when closing webview");
+          // Show success instead of just closing
+          handlePaymentSuccess();
+          return; // Don't clear state here, handlePaymentSuccess will do it
+        } else {
+          console.log("⚠️ Balance unchanged when closing webview - payment may have failed or still processing");
+          // Don't show failure alert - just close silently
+          // User can check their balance manually or try again
+        }
+      } catch (error) {
+        console.error("Error checking payment status on close:", error);
+        // On error, don't assume failure - just close silently
+      }
+    }
+    
+    // Clear state
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingAmount(0);
@@ -425,6 +572,222 @@ export default function RefillCreditsScreen() {
                 </View>
               </View>
             </View>
+
+            {/* Card Selection Section */}
+            {!isLoadingCards && creditCards.length > 0 && (
+              <View style={styles.section}>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: colors.text, marginBottom: Spacing.sm },
+                  ]}
+                >
+                  {t("selectPaymentMethod")}
+                </Text>
+                <View
+                  style={[
+                    styles.cardSelectionContainer,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                  ]}
+                >
+                  {/* New Card Option */}
+                  <TouchableOpacity
+                    style={[
+                      styles.cardOption,
+                      {
+                        backgroundColor:
+                          selectedCardId === null
+                            ? colors.tint + "10"
+                            : "transparent",
+                        borderColor:
+                          selectedCardId === null ? colors.tint : colors.border,
+                      },
+                    ]}
+                    onPress={() => setSelectedCardId(null)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.cardOptionContent}>
+                      <IconSymbol
+                        name="plus.circle.fill"
+                        size={20}
+                        color={selectedCardId === null ? colors.tint : colors.tabIconDefault}
+                      />
+                      <Text
+                        style={[
+                          styles.cardOptionText,
+                          {
+                            color:
+                              selectedCardId === null
+                                ? colors.tint
+                                : colors.text,
+                            fontWeight:
+                              selectedCardId === null ? "600" : "400",
+                          },
+                        ]}
+                      >
+                        {t("newCard")}
+                      </Text>
+                    </View>
+                    {selectedCardId === null && (
+                      <IconSymbol
+                        name="checkmark.circle.fill"
+                        size={18}
+                        color={colors.tint}
+                      />
+                    )}
+                  </TouchableOpacity>
+
+                  {/* Saved Cards */}
+                  {creditCards.map((card) => {
+                    // Check if bindingId exists and is a non-empty string
+                    const hasBindingId = card.bindingId && typeof card.bindingId === 'string' && card.bindingId.trim().length > 0;
+                    const isSelected = selectedCardId === card.id;
+                    const isDisabled = !hasBindingId;
+                    
+                    // Debug logging
+                    if (__DEV__) {
+                      console.log(`Card ${card.id}: bindingId="${card.bindingId}", hasBindingId=${hasBindingId}, type=${typeof card.bindingId}`);
+                    }
+                    
+                    return (
+                      <TouchableOpacity
+                        key={card.id}
+                        style={[
+                          styles.cardOption,
+                          {
+                            backgroundColor:
+                              isSelected
+                                ? colors.tint + "10"
+                                : "transparent",
+                            borderColor:
+                              isSelected
+                                ? colors.tint
+                                : isDisabled
+                                ? colors.border + "60"
+                                : colors.border,
+                            opacity: isDisabled ? 0.6 : 1,
+                          },
+                        ]}
+                        onPress={() => {
+                          if (!isDisabled) {
+                            setSelectedCardId(card.id);
+                          }
+                        }}
+                        activeOpacity={isDisabled ? 1 : 0.7}
+                        disabled={isDisabled}
+                      >
+                        <View style={styles.cardOptionContent}>
+                          <IconSymbol
+                            name="creditcard.fill"
+                            size={20}
+                            color={
+                              isSelected
+                                ? colors.tint
+                                : isDisabled
+                                ? colors.tabIconDefault + "80"
+                                : colors.tabIconDefault
+                            }
+                          />
+                          <View style={styles.cardInfo}>
+                            <Text
+                              style={[
+                                styles.cardNumber,
+                                {
+                                  color:
+                                    isSelected
+                                      ? colors.tint
+                                      : isDisabled
+                                      ? colors.text + "80"
+                                      : colors.text,
+                                  fontWeight:
+                                    isSelected ? "600" : "400",
+                                },
+                              ]}
+                            >
+                              {card.cardType.toUpperCase()} {card.cardNumber.slice(-4)}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.cardExpiry,
+                                { color: colors.tabIconDefault + (isDisabled ? "80" : "") },
+                              ]}
+                            >
+                              {card.expiryMonth}/{card.expiryYear}
+                              {card.isDefault && " • " + (t("default") || "Default")}
+                              {!hasBindingId && " • " + (t("saveCardToUse") || "Save card to use")}
+                            </Text>
+                          </View>
+                        </View>
+                        {isSelected && (
+                          <IconSymbol
+                            name="checkmark.circle.fill"
+                            size={18}
+                            color={colors.tint}
+                          />
+                        )}
+                        {isDisabled && (
+                          <IconSymbol
+                            name="lock.fill"
+                            size={16}
+                            color={colors.tabIconDefault + "80"}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                {/* Save Card Checkbox (only show when new card selected) */}
+                {selectedCardId === null && (
+                  <TouchableOpacity
+                    style={styles.saveCardOption}
+                    onPress={() => setSaveCard(!saveCard)}
+                    activeOpacity={0.7}
+                  >
+                    <IconSymbol
+                      name={saveCard ? "checkmark.square.fill" : "square"}
+                      size={20}
+                      color={saveCard ? colors.tint : colors.tabIconDefault}
+                    />
+                    <Text
+                      style={[styles.saveCardText, { color: colors.text }]}
+                    >
+                      {t("saveCardForFuture") || "Save this card for future payments"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Save Card Checkbox - Show when user has no cards */}
+            {!isLoadingCards && creditCards.length === 0 && (
+              <View style={styles.section}>
+                <TouchableOpacity
+                  style={styles.saveCardOption}
+                  onPress={() => setSaveCard(!saveCard)}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name={saveCard ? "checkmark.square.fill" : "square"}
+                    size={20}
+                    color={saveCard ? colors.tint : colors.tabIconDefault}
+                  />
+                  <Text
+                    style={[styles.saveCardText, { color: colors.text }]}
+                  >
+                    {t("saveCardForFuture")}
+                  </Text>
+                </TouchableOpacity>
+                <Text
+                  style={[
+                    styles.saveCardHint,
+                    { color: colors.tabIconDefault },
+                  ]}
+                >
+                  {t("saveCardHint")}
+                </Text>
+              </View>
+            )}
 
             {/* Amount Selection Section */}
             <View style={styles.section}>
@@ -785,6 +1148,63 @@ const styles = StyleSheet.create({
   // Section
   section: {
     marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.md,
+    fontWeight: "600",
+    marginBottom: Spacing.xs,
+  },
+  // Card Selection
+  cardSelectionContainer: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    padding: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  cardOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1.5,
+    marginBottom: Spacing.xs,
+  },
+  cardOptionContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    flex: 1,
+  },
+  cardOptionText: {
+    fontSize: Typography.md,
+  },
+  cardInfo: {
+    flex: 1,
+    marginLeft: Spacing.xs,
+  },
+  cardNumber: {
+    fontSize: Typography.md,
+    marginBottom: 2,
+  },
+  cardExpiry: {
+    fontSize: Typography.xs,
+  },
+  saveCardOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.xs,
+  },
+  saveCardText: {
+    fontSize: Typography.sm,
+  },
+  saveCardHint: {
+    fontSize: Typography.xs,
+    marginTop: Spacing.xs,
+    marginLeft: Spacing.md + 4, // Align with checkbox text
+    lineHeight: 16,
   },
   // Custom Amount
   customAmountSection: {

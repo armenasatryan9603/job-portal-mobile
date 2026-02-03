@@ -1,16 +1,18 @@
-import React, { useState } from "react";
-import {
-  View,
-  StyleSheet,
-  Modal,
-  ActivityIndicator,
-  Text,
-} from "react-native";
 import * as WebBrowser from "expo-web-browser";
+
+import {
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { BorderRadius, Shadows, Spacing } from "@/constants/styles";
+import React, { useState } from "react";
+
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { Spacing, BorderRadius, Shadows } from "@/constants/styles";
 
 interface PaymentWebViewProps {
   visible: boolean;
@@ -68,33 +70,16 @@ export const PaymentWebView: React.FC<PaymentWebViewProps> = ({
 
       // Check result type
       if (result.type === "cancel") {
-        // User cancelled
-        onFailure?.(t("paymentCancelled"));
+        // User cancelled - but still check balance in case payment went through
+        // Don't show failure immediately - let onClose check balance first
         onClose();
       } else if (result.type === "dismiss") {
-        // Browser was dismissed
+        // Browser was dismissed (user closed it manually)
+        // Don't assume failure - check balance first in onClose handler
+        // The balance check will determine if payment succeeded
         onClose();
       } else {
-        // Check URL for success/failure indicators
-        const url = result.url?.toLowerCase() || "";
-        
-        if (
-          url.includes("success") ||
-          url.includes("approved") ||
-          url.includes("completed") ||
-          url.includes("payment-success")
-        ) {
-          onSuccess?.();
-        } else if (
-          url.includes("fail") ||
-          url.includes("error") ||
-          url.includes("declined") ||
-          url.includes("cancelled") ||
-          url.includes("payment-fail")
-        ) {
-          onFailure?.(t("paymentCancelledOrFailed"));
-        }
-        
+        // Other result types - check balance to verify payment status
         onClose();
       }
     } catch (error: any) {

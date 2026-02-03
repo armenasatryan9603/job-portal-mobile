@@ -1429,41 +1429,12 @@ export default function ProfileScreen() {
 
           {/* Payments entry point */}
           {!userId && (
-            <ResponsiveCard>
-              <View style={styles.paymentsPreview}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {t("paymentsOverview")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.paymentsPreviewSubtitle,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("paymentsOverviewDescription")}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                  onPress={() => router.push("/profile/payments")}
-                >
-                  <Text
-                    style={[styles.paymentsCtaText, { color: colors.text }]}
-                  >
-                    {t("managePaymentsCta")}
-                  </Text>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-                {/* Subscriptions */}
+            <>
+              <ResponsiveCard>
                 <View style={styles.paymentsPreview}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      {t("subscriptions")}
+                      {t("paymentsOverview")}
                     </Text>
                     <Text
                       style={[
@@ -1471,33 +1442,68 @@ export default function ProfileScreen() {
                         { color: colors.textSecondary },
                       ]}
                     >
-                      {t("subscriptionsDescription")}
+                      {t("paymentsOverviewDescription")}
                     </Text>
                   </View>
-                </View>
-                <TouchableOpacity
-                  style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                  onPress={() => {
-                    AnalyticsService.getInstance().logEvent("button_clicked", {
-                      button_name: "view_subscriptions",
-                      location: "payments_screen",
-                    });
-                    router.push("/subscriptions");
-                  }}
-                >
-                  <Text
-                    style={[styles.paymentsCtaText, { color: colors.text }]}
+                  <TouchableOpacity
+                    style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                    onPress={() => router.push("/profile/payments")}
                   >
-                    {t("viewSubscriptions")}
-                  </Text>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-              </View>
-            </ResponsiveCard>
+                    <Text
+                      style={[styles.paymentsCtaText, { color: colors.text }]}
+                    >
+                      {t("managePaymentsCta")}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </ResponsiveCard>
+              <ResponsiveCard>
+                <View style={styles.paymentsPreview}>
+                  <View style={styles.paymentsPreview}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        {t("subscriptions")}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.paymentsPreviewSubtitle,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {t("subscriptionsDescription")}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                    onPress={() => {
+                      AnalyticsService.getInstance().logEvent("button_clicked", {
+                        button_name: "view_subscriptions",
+                        location: "payments_screen",
+                      });
+                      router.push("/subscriptions");
+                    }}
+                  >
+                    <Text
+                      style={[styles.paymentsCtaText, { color: colors.text }]}
+                    >
+                      {t("viewSubscriptions")}
+                    </Text>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </ResponsiveCard>
+            
+            </>
           )}
 
           {/* Skills/Services Section */}

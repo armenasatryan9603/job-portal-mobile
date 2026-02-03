@@ -211,6 +211,7 @@ export interface ApiCard {
   expiryYear: string;
   cardholderName: string;
   cardType: string;
+  bindingId?: string; // AmeriaBank binding ID for saved card payments
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
@@ -1752,12 +1753,44 @@ class ApiService {
   // Credit Refill API
   async initiateCreditRefill(
     amount: number,
-    currency?: string
+    currency?: string,
+    cardId?: string,
+    saveCard?: boolean
   ): Promise<{
-    orderId: string;
-    paymentUrl: string | null;
+    orderId?: string;
+    paymentUrl?: string | null;
     paymentHtml?: string | null;
-    paymentData: any;
+    paymentData?: any;
+    conversionInfo?: {
+      currency: string;
+      originalAmount: number;
+      convertedAmount: number;
+      exchangeRate: number;
+      baseCurrency: string;
+    };
+    // For saved card payments (direct success)
+    success?: boolean;
+    message?: string;
+    amount?: number;
+  }> {
+    return this.post(
+      "/credit/refill/initiate",
+      { amount, currency, cardId, saveCard },
+      true
+    );
+  }
+
+  // Refill with saved card (direct payment, no webview)
+  async refillWithSavedCard(
+    amount: number,
+    currency: string,
+    cardId: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    orderId?: string;
+    paymentId?: string;
+    amount: number;
     conversionInfo?: {
       currency: string;
       originalAmount: number;
@@ -1766,7 +1799,11 @@ class ApiService {
       baseCurrency: string;
     };
   }> {
-    return this.post("/credit/refill/initiate", { amount, currency }, true);
+    return this.post(
+      "/credit/refill/initiate",
+      { amount, currency, cardId },
+      true
+    );
   }
 
   // Credit Transactions API

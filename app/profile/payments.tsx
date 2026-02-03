@@ -1,35 +1,36 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   BorderRadius,
   Spacing,
   ThemeColors,
   Typography,
 } from "@/constants/styles";
-import { useCreditCard } from "@/contexts/CreditCardContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useState, useEffect } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ActivityIndicator,
-} from "react-native";
-import { router } from "expo-router";
-import { apiService } from "@/categories/api";
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { useEffect, useState } from "react";
+
 import AnalyticsService from "@/categories/AnalyticsService";
-import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { apiService } from "@/categories/api";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCreditCard } from "@/contexts/CreditCardContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 type PaymentHistoryStatus = "completed" | "pending" | "failed";
 
@@ -139,7 +140,7 @@ export default function PaymentsScreen() {
 
   const statusColors: Record<PaymentHistoryStatus, string> = {
     completed: colors.success,
-    pending: colors.orangeSecondary,
+    pending: colors.borderSecondary,
     failed: colors.danger,
   };
 
@@ -293,21 +294,6 @@ export default function PaymentsScreen() {
                     location: "payments_screen",
                   });
                   router.push("/profile/refill-credits");
-                }}
-              />
-
-              <Button
-                title={t("addCreditCard")}
-                variant="outline"
-                icon="creditcard.fill"
-                iconSize={14}
-                backgroundColor={colors.surface}
-                onPress={() => {
-                  AnalyticsService.getInstance().logEvent("button_clicked", {
-                    button_name: "add_credit_card",
-                    location: "payments_screen",
-                  });
-                  router.push("/profile/add-credit-card");
                 }}
               />
             </View>
@@ -610,7 +596,7 @@ export default function PaymentsScreen() {
                               item.type === "rejection_refund" ||
                               item.type === "selection_refund"
                                 ? colors.primary
-                                : colors.orangeSecondary
+                                : colors.borderSecondary
                             }
                           />
                           <Text

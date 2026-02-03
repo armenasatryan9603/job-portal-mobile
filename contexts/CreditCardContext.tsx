@@ -20,6 +20,7 @@ interface CreditCardContextType {
   setDefaultCard: (cardId: string) => Promise<boolean>;
   getDefaultCard: () => CreditCard | null;
   refreshCards: () => Promise<void>;
+  syncCardsFromBank: () => Promise<void>;
 }
 
 const CreditCardContext = createContext<CreditCardContextType | undefined>(
@@ -37,6 +38,7 @@ function apiCardToCreditCard(api: ApiCard): CreditCard {
       (api.cardType as CreditCard["cardType"]) ||
       (api.brand as CreditCard["cardType"]) ||
       "unknown",
+    bindingId: api.bindingId,
     isDefault: api.isDefault,
     createdAt: new Date(api.createdAt),
     updatedAt: new Date(api.updatedAt),
@@ -146,6 +148,13 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
     return creditCards.find((card) => card.isDefault) || null;
   };
 
+  const syncCardsFromBank = useCallback(async () => {
+    // Refresh cards from backend (which should now include bindingId if available)
+    await refreshCards();
+    // Note: Full sync from AmeriaBank GetBindings would require a backend endpoint
+    // For now, we rely on cards being updated when bindings are saved during payment callbacks
+  }, [refreshCards]);
+
   const value: CreditCardContextType = {
     creditCards,
     isLoading,
@@ -155,6 +164,7 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
     setDefaultCard,
     getDefaultCard,
     refreshCards,
+    syncCardsFromBank,
   };
 
   return (

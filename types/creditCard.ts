@@ -7,6 +7,7 @@ export interface CreditCard {
   expiryYear: string;
   cvv?: string; // Should not be stored in real app
   cardType: "visa" | "mastercard" | "amex" | "discover" | "unknown";
+  bindingId?: string; // AmeriaBank binding ID for saved card payments
   isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;

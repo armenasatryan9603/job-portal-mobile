@@ -1,43 +1,45 @@
 // IMPORTANT: Background message handler must be imported FIRST
 // This registers the handler before the app starts
 import "./background-message-handler";
+import "react-native-reanimated";
 
-import React, { useEffect } from "react";
 import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
+
 import { AppState, AppStateStatus } from "react-native";
-import { storeReferralCode } from "@/utils/referralStorage";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
+import React, { useEffect } from "react";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+
+import AnalyticsService from "@/categories/AnalyticsService";
+import { AuthProvider } from "@/contexts/AuthContext";
+import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
+import { ChatReminderToast } from "@/components/ChatReminderToast";
+import { ConversationsProvider } from "@/contexts/ConversationsContext";
+import { CreditCardProvider } from "@/contexts/CreditCardContext";
+import { GlobalModals } from "@/components/GlobalModals";
+import { LanguageProvider } from "@/contexts/LanguageContext";
+import { ModalProvider } from "@/contexts/ModalContext";
+import { NavigationProvider } from "@/contexts/NavigationContext";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { TranslationProvider } from "@/contexts/TranslationContext";
+import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
+// Initialize TanStack Query
+import { queryClient } from "@/categories/queryClient";
+import { router } from "expo-router";
+import { storeReferralCode } from "@/utils/referralStorage";
 
 // Firebase Messaging is auto-initialized by NotificationService when needed
 // No explicit Firebase initialization needed here (FCM only, no other services)
 
-// Initialize TanStack Query
-import { queryClient } from "@/categories/queryClient";
 
-import { GlobalModals } from "@/components/GlobalModals";
-import { ChatReminderToast } from "@/components/ChatReminderToast";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { CreditCardProvider } from "@/contexts/CreditCardContext";
-import { LanguageProvider } from "@/contexts/LanguageContext";
-import { ModalProvider } from "@/contexts/ModalContext";
-import { NavigationProvider } from "@/contexts/NavigationContext";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
-import { TranslationProvider } from "@/contexts/TranslationContext";
-import { UnreadCountProvider } from "@/contexts/UnreadCountContext";
-import { ConversationsProvider } from "@/contexts/ConversationsContext";
-import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
-import AnalyticsService from "@/categories/AnalyticsService";
-import CalendarNotificationService from "@/categories/CalendarNotificationService";
-import * as Notifications from "expo-notifications";
-import { router } from "expo-router";
 
 // Firebase messaging import with fallback
 let messaging: any = null;
@@ -207,6 +209,9 @@ function AppContent() {
   const handleDeepLink = (url: string) => {
     try {
       const parsed = Linking.parse(url);
+      // Handle both HTTPS URLs and custom scheme URLs
+      // For custom scheme: jobportalmobile://profile/refill-credits
+      // For HTTPS: https://domain.com/profile/refill-credits
       const path = parsed.path || "";
       
       // Handle referral codes
@@ -222,6 +227,18 @@ function AppContent() {
         if (orderId) {
           router.push(`/orders/${orderId}`);
         }
+        return;
+      }
+      
+      // Handle payment callback redirect: /profile/refill-credits
+      // Check both path formats (with and without leading slash)
+      if (
+        path === "/profile/refill-credits" ||
+        path === "profile/refill-credits" ||
+        path.startsWith("/profile/refill-credits") ||
+        path.startsWith("profile/refill-credits")
+      ) {
+        router.push("/profile/refill-credits");
         return;
       }
       
