@@ -1447,7 +1447,7 @@ export default function ProfileScreen() {
                   </View>
                   <TouchableOpacity
                     style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                    onPress={() => router.push("/profile/payments")}
+                    onPress={() => router.push("/profile/payment/payments")}
                   >
                     <Text
                       style={[styles.paymentsCtaText, { color: colors.text }]}

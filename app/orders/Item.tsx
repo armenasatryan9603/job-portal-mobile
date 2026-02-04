@@ -192,13 +192,8 @@ const OrderItem = ({
       }
     }
 
-    if (isMyOrders) {
-      // For user's own orders, open in edit mode (create.tsx)
-      router.push(`/orders/create?orderId=${order.id}`);
-    } else {
-      // For other orders, open in view mode
-      router.push(`/orders/${order.id}`);
-    }
+    // For other orders, open in view mode
+    router.push(`/orders/${order.id}`);
   };
 
   const handleApplyToOrder = (order: Order) => {

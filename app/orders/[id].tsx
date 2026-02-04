@@ -22,6 +22,7 @@ import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ActionButtons } from "@/components/ActionButtons";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { ApplyButton } from "@/components/ApplyButton";
 import { ApplyModal } from "@/components/ApplyModal";
@@ -142,6 +143,9 @@ export default function EditOrderScreen() {
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(false);
 
+  // State for delete operation
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Bookings state (for permanent orders)
   const [bookings, setBookings] = useState<any[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
@@ -188,13 +192,6 @@ export default function EditOrderScreen() {
         // Get order data (works for both authenticated and non-authenticated users)
         const orderData = await apiService.getOrderById(parseInt(id as string));
         setOrder(orderData);
-
-        // Check if current user is the owner - if so, redirect to create.tsx for editing
-        // Unless preview mode is enabled (preview=true in URL params)
-        if (user?.id === orderData.clientId && preview !== "true") {
-          router.replace(`/orders/create?orderId=${id}`);
-          return;
-        }
 
         // Load change history if user is authenticated
         if (user?.id) {
@@ -671,6 +668,50 @@ export default function EditOrderScreen() {
           } catch (err) {
             console.error("Error canceling proposal:", err);
             Alert.alert(t("error"), t("failedToCancelProposal"));
+          }
+        },
+      },
+    ]);
+  };
+
+  // Delete order handler (for owners)
+  const handleDeleteOrder = () => {
+    if (!order?.id) return;
+
+    Alert.alert(t("deleteOrder"), t("areYouSureDeleteOrder"), [
+      {
+        text: t("cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setIsDeleting(true);
+            await apiService.deleteOrder(order.id);
+            Alert.alert(t("success"), t("orderDeletedSuccessfully"), [
+              {
+                text: t("ok"),
+                onPress: () => {
+                  router.replace("/orders");
+                },
+              },
+            ]);
+          } catch (error: any) {
+            console.error("Error deleting order:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : typeof error === "string"
+                ? error
+                : t("unknownError");
+            Alert.alert(
+              t("error"),
+              t("failedToDeleteOrder") + ": " + errorMessage
+            );
+          } finally {
+            setIsDeleting(false);
           }
         },
       },
@@ -1822,6 +1863,34 @@ export default function EditOrderScreen() {
 
           {/* Reviews Section (only for permanent orders) */}
           {isPermanentOrder && renderReviewsSection()}
+
+          {/* Owner Action Buttons */}
+          {order && user?.id === order.clientId && (
+            <ActionButtons
+              editButton={{
+                title: t("edit"),
+                onPress: () => {
+                  router.push(`/orders/create?orderId=${order.id}`);
+                },
+                backgroundColor: colors.background,
+                textColor: colors.text,
+              }}
+              deleteButton={{
+                title: t("delete"),
+                onPress: handleDeleteOrder,
+                textColor: colors.errorVariant,
+                disabled: isDeleting,
+                loading: isDeleting,
+              }}
+              saveButton={{
+                title: t("save"),
+                onPress: () => {
+                  router.push(`/orders/create?orderId=${order.id}`);
+                },
+                backgroundColor: colors.primary,
+              }}
+            />
+          )}
         </ResponsiveContainer>
       </ScrollView>
 

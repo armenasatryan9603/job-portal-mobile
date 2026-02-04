@@ -135,11 +135,7 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
     if (onPress) {
       onPress();
     } else {
-      if (isOwner) {
-        router.push(`/services/create?id=${service.id}`);
-      } else {
-        router.push(`/services/${service.id}`);
-      }
+      router.push(`/services/${service.id}`);
     }
   };
 

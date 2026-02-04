@@ -21,6 +21,7 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { ActionButtons } from "@/components/ActionButtons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CountBadge } from "@/components/CountBadge";
@@ -68,6 +69,8 @@ export default function MarketDetailScreen() {
   // State for orders/reviews tab
   const [activeTab, setActiveTab] = useState<"orders" | "reviews">("orders");
 
+  // State for delete operation
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch market data
   const {
@@ -238,6 +241,50 @@ export default function MarketDetailScreen() {
   const isOwner = market?.createdBy === user?.id;
   const userReview = reviews?.find((r: any) => r.reviewerId === user?.id);
   const hasReviewed = !!userReview;
+
+  // Delete market handler
+  const handleDeleteMarket = () => {
+    if (!marketId) return;
+
+    Alert.alert(t("deleteMarket"), t("areYouSureDeleteMarket"), [
+      {
+        text: t("cancel"),
+        style: "cancel",
+      },
+      {
+        text: t("delete"),
+        style: "destructive",
+        onPress: async () => {
+          try {
+            setIsDeleting(true);
+            await apiService.deleteMarket(marketId);
+            Alert.alert(t("success"), t("marketDeletedSuccessfully"), [
+              {
+                text: t("ok"),
+                onPress: () => {
+                  router.replace("/services");
+                },
+              },
+            ]);
+          } catch (error: any) {
+            console.error("Error deleting market:", error);
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : typeof error === "string"
+                ? error
+                : t("unknownError");
+            Alert.alert(
+              t("error"),
+              t("failedToDeleteMarket") + ": " + errorMessage
+            );
+          } finally {
+            setIsDeleting(false);
+          }
+        },
+      },
+    ]);
+  };
 
 
   // Get localized name and description based on current language
@@ -874,7 +921,7 @@ export default function MarketDetailScreen() {
                           { color: colors.tabIconDefault },
                         ]}
                       >
-                        {member.Role?.name || member.role || t("member")}
+                        {t(member.Role?.name) || t(member.role) || t("member")}
                       </Text>
                     </View>
                     <IconSymbol
@@ -1078,6 +1125,34 @@ export default function MarketDetailScreen() {
                 )}
               </ResponsiveCard>
             )}
+
+          {/* Owner Action Buttons */}
+          {isOwner && (
+            <ActionButtons
+              editButton={{
+                title: t("editMarket"),
+                onPress: () => {
+                  router.push(`/services/create?id=${marketId}`);
+                },
+                backgroundColor: colors.background,
+                textColor: colors.text,
+              }}
+              deleteButton={{
+                title: t("delete"),
+                onPress: handleDeleteMarket,
+                textColor: colors.errorVariant,
+                disabled: isDeleting,
+                loading: isDeleting,
+              }}
+              saveButton={{
+                title: t("save"),
+                onPress: () => {
+                  router.push(`/services/create?id=${marketId}`);
+                },
+                backgroundColor: colors.primary,
+              }}
+            />
+          )}
 
         </ResponsiveContainer>
       </ScrollView>

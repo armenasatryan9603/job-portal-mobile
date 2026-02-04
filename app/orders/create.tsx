@@ -28,6 +28,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { AIPreviewModal } from "@/components/AIPreviewModal";
 import { API_CONFIG } from "@/config/api";
+import { ActionButtons } from "@/components/ActionButtons";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
@@ -887,15 +888,16 @@ export default function CreateOrderScreen() {
         return "";
       }
       case "location":
-        // Location is optional, but if provided, validate format
-        if (value && typeof value === "string" && value.trim()) {
-          const locationStr = value.trim();
-          if (locationStr.length < 3) {
-            return t("locationTooShort");
-          }
-          if (locationStr.length > 200) {
-            return t("locationTooLong");
-          }
+        // Location is required
+        if (!value || (typeof value === "string" && !value.trim())) {
+          return t("pleaseEnterLocation");
+        }
+        const locationStr = typeof value === "string" ? value.trim() : value.toString().trim();
+        if (locationStr.length < 3) {
+          return t("locationTooShort");
+        }
+        if (locationStr.length > 200) {
+          return t("locationTooLong");
         }
         return "";
       case "skills":
@@ -1224,11 +1226,17 @@ export default function CreateOrderScreen() {
         selectedDateTimes,
         selectedService,
       }),
-      location: validateField("location", formData.location, {
-        selectedDates,
-        selectedDateTimes,
-        selectedService,
-      }),
+      location: validateField(
+        "location",
+        selectedLocation
+          ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
+          : formData.location,
+        {
+          selectedDates,
+          selectedDateTimes,
+          selectedService,
+        }
+      ),
       skills: validateField("skills", formData.skills, {
         selectedDates,
         selectedDateTimes,
@@ -1272,7 +1280,7 @@ export default function CreateOrderScreen() {
       categoryId: formData.categoryId!,
       location: selectedLocation
         ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
-        : formData.location.trim() || undefined,
+        : formData.location.trim(),
       availableDates:
         formatAllDatesWithTimes().length > 0
           ? formatAllDatesWithTimes()
@@ -1332,7 +1340,7 @@ export default function CreateOrderScreen() {
           useAIEnhancement
         ) {
           // Directly navigate to credit refill page
-          router.push("/profile/refill-credits");
+          router.push("/profile/payment/refill-credits");
           return;
         }
 
@@ -1757,7 +1765,7 @@ export default function CreateOrderScreen() {
         useAIEnhancement
       ) {
         // Directly navigate to credit refill page
-        router.push("/profile/refill-credits");
+        router.push("/profile/payment/refill-credits");
         return;
       }
 
@@ -2868,47 +2876,36 @@ export default function CreateOrderScreen() {
               </TouchableOpacity>
             </View>
             {/* Action Buttons */}
-            <View
-              style={[
-                styles.actionButtons,
-                { borderTopColor: colors.border },
-                !orderId && styles.singleButtonContainer,
-              ]}
-            >
-              {orderId && (
-                <>
-                  <Button
-                    variant="outline"
-                    icon="trash"
-                    iconSize={16}
-                    iconPosition="left"
-                    title={t("delete")}
-                    textColor={colors.errorVariant}
-                    onPress={handleDeleteOrder}
-                    style={{ flex: 1, maxWidth: '33%' }}
-                  />
-                  <Button
-                    variant="outline"
-                    icon="eye"
-                    iconSize={16}
-                    iconPosition="left"
-                    title={t("preview")}
-                    onPress={() => {
-                      router.push(`/orders/${orderId}?preview=true`);
-                    }}
-                    style={{ flex: 1, maxWidth: '33%' }}
-                  />
-                </>
-              )}
-              <Button
-                style={{ minWidth: 80, flex: 1, maxWidth: '33%' }}
-                onPress={handleApply}
-                title={orderId ? t("save") : t("apply")}
-                variant="primary"
-                disabled={isSubmitting}
-                loading={isSubmitting}
-              />
-            </View>
+            <ActionButtons
+              deleteButton={
+                orderId
+                  ? {
+                      title: t("delete"),
+                      onPress: handleDeleteOrder,
+                      textColor: colors.errorVariant,
+                    }
+                  : undefined
+              }
+              previewButton={
+                orderId
+                  ? {
+                      title: t("preview"),
+                      onPress: () => {
+                        router.push(`/orders/${orderId}?preview=true`);
+                      },
+                    }
+                  : undefined
+              }
+              saveButton={{
+                title: orderId ? t("save") : t("apply"),
+                onPress: handleApply,
+                disabled: isSubmitting,
+                loading: isSubmitting,
+              }}
+              showBorderTop={true}
+              singleButtonContainer={!orderId}
+              wrapInCard={false}
+            />
           </ResponsiveCard>
         </ResponsiveContainer>
       </ScrollView>
@@ -3199,18 +3196,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 8,
-  },
-  actionButtons: {
-    paddingTop: 20,
-    borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 10,
-    gap: 12,
-  },
-  singleButtonContainer: {
-    justifyContent: "center",
   },
   loadingContainer: {
     flexDirection: "row",

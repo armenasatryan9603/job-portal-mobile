@@ -24,6 +24,7 @@ import { router, useFocusEffect } from "expo-router";
 
 import { API_CONFIG } from "@/config/api";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
@@ -947,44 +948,34 @@ export default function RefillCreditsScreen() {
             )}
 
             {/* Refill Button - Enhanced */}
-            <TouchableOpacity
-              style={[
-                styles.refillButton,
-                {
-                  backgroundColor:
-                    finalAmount && finalAmount > 0
-                      ? colors.tint
-                      : colors.tabIconDefault,
-                },
-                (!finalAmount || finalAmount <= 0) &&
-                  styles.refillButtonDisabled,
-                finalAmount &&
-                  finalAmount > 0 &&
-                  !loading &&
-                  (styles.refillButtonActive as any),
-              ]}
-              onPress={handleRefill}
-              disabled={!finalAmount || finalAmount <= 0 || loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.text} size="small" />
-              ) : (
-                <>
-                  <IconSymbol name="creditcard.fill" size={18} color={colors.text} />
-                  <Text style={styles.refillButtonText}>
-                    {t("refillCredits")}
+            <View style={{ position: "relative", marginBottom: Spacing.md }}>
+              <Button
+                onPress={handleRefill}
+                title={t("refillCredits")}
+                icon="creditcard.fill"
+                loading={loading}
+                disabled={!finalAmount || finalAmount <= 0 || loading}
+                backgroundColor={
+                  finalAmount && finalAmount > 0
+                    ? colors.tint
+                    : colors.tabIconDefault
+                }
+                style={[
+                  finalAmount &&
+                    finalAmount > 0 &&
+                    !loading &&
+                    (styles.refillButtonActive as any),
+                ]}
+                textStyle={styles.refillButtonText}
+              />
+              {finalAmount && finalAmount > 0 && (
+                <View style={styles.refillButtonBadge}>
+                  <Text style={styles.refillButtonBadgeText}>
+                    {finalAmount.toFixed(0)}
                   </Text>
-                  {finalAmount && finalAmount > 0 && (
-                    <View style={styles.refillButtonBadge}>
-                      <Text style={styles.refillButtonBadgeText}>
-                        {finalAmount.toFixed(0)}
-                      </Text>
-                    </View>
-                  )}
-                </>
+                </View>
               )}
-            </TouchableOpacity>
+            </View>
 
             {/* Info Card */}
             <View
@@ -1277,17 +1268,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   // Refill Button
-  refillButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.xs,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-    minHeight: 44,
-    position: "relative",
-  },
   refillButtonActive: {
     ...Shadows.lg,
   },
@@ -1298,7 +1278,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xl,
     fontWeight: "700",
     // Note: Should use colors.text dynamically - consider inline style
-    color: "black",
+    color: "#fff",
   },
   refillButtonBadge: {
     position: "absolute",

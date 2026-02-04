@@ -12,6 +12,7 @@ import {
   ThemeColors,
   Typography,
 } from "@/constants/styles";
+import { CreditCardItem, PaymentHistoryCard } from "./card";
 import {
   ResponsiveCard,
   ResponsiveContainer,
@@ -243,42 +244,6 @@ export default function PaymentsScreen() {
                   </Text>
                 </View>
               </View>
-
-              <View
-                style={[
-                  styles.summaryMetric,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.metricIcon,
-                    { backgroundColor: colors.tint + "10" },
-                  ]}
-                >
-                  <IconSymbol
-                    name="wallet.pass"
-                    size={16}
-                    color={colors.tint}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[
-                      styles.metricLabel,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {t("paymentMethods")}
-                  </Text>
-                  <Text style={[styles.metricValue, { color: colors.text }]}>
-                    {creditCards.length}
-                  </Text>
-                </View>
-              </View>
             </View>
 
             <View style={styles.summaryActions}>
@@ -293,7 +258,7 @@ export default function PaymentsScreen() {
                     button_name: "refill_credits",
                     location: "payments_screen",
                   });
-                  router.push("/profile/refill-credits");
+                  router.push("/profile/payment/refill-credits");
                 }}
               />
             </View>
@@ -348,125 +313,13 @@ export default function PaymentsScreen() {
             ) : (
               <View style={styles.cardsList}>
                 {creditCards.map((card) => (
-                  <View
+                  <CreditCardItem
                     key={card.id}
-                    style={[
-                      styles.cardItem,
-                      {
-                        borderColor: colors.border,
-                        backgroundColor: colors.surface,
-                      },
-                    ]}
-                  >
-                    <View style={styles.cardInfo}>
-                      <View
-                        style={[
-                          styles.cardIcon,
-                          { backgroundColor: colors.primary + "20" },
-                        ]}
-                      >
-                        <IconSymbol
-                          name="creditcard.fill"
-                          size={20}
-                          color={colors.primary}
-                        />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[styles.cardNumber, { color: colors.text }]}
-                        >
-                          •••• •••• •••• {card.cardNumber}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.cardMeta,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {t("cardEndingIn")} {card.cardNumber}
-                        </Text>
-                        {card.isDefault && (
-                          <View
-                            style={[
-                              styles.defaultPill,
-                              { backgroundColor: colors.primary + "15" },
-                            ]}
-                          >
-                            <IconSymbol
-                              name="star.fill"
-                              size={12}
-                              color={colors.primary}
-                            />
-                            <Text
-                              style={[
-                                styles.defaultPillText,
-                                { color: colors.primary },
-                              ]}
-                            >
-                              {t("default")}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                    <View style={styles.cardActions}>
-                      {!card.isDefault && (
-                        <TouchableOpacity
-                          style={[
-                            styles.actionButton,
-                            { borderColor: colors.border },
-                          ]}
-                          onPress={async () => {
-                            AnalyticsService.getInstance().logEvent(
-                              "credit_card_action",
-                              {
-                                action: "set_default",
-                                card_id: card.id.toString(),
-                              }
-                            );
-                            await setDefaultCard(card.id);
-                          }}
-                          disabled={isLoading}
-                        >
-                          <Text
-                            style={[
-                              styles.actionButtonText,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {t("setDefault")}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        style={[
-                          styles.actionButton,
-                          styles.removeButton,
-                          { borderColor: colors.error },
-                        ]}
-                        onPress={async () => {
-                          AnalyticsService.getInstance().logEvent(
-                            "credit_card_action",
-                            {
-                              action: "remove",
-                              card_id: card.id.toString(),
-                            }
-                          );
-                          await removeCreditCard(card.id);
-                        }}
-                        disabled={isLoading}
-                      >
-                        <Text
-                          style={[
-                            styles.actionButtonText,
-                            { color: colors.error },
-                          ]}
-                        >
-                          {t("remove")}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
+                    card={card}
+                    isLoading={isLoading}
+                    onSetDefault={setDefaultCard}
+                    onRemove={removeCreditCard}
+                  />
                 ))}
               </View>
             )}
@@ -557,115 +410,16 @@ export default function PaymentsScreen() {
             ) : (
               <View style={styles.historyList}>
                 {paymentHistory.map((item, index) => (
-                  <View key={item.id} style={styles.historyRow}>
-                    <View style={styles.timelineColumn}>
-                      <View
-                        style={[
-                          styles.timelineDot,
-                          { borderColor: colors.primary },
-                        ]}
-                      />
-                      {index !== paymentHistory.length - 1 && (
-                        <View
-                          style={[
-                            styles.timelineLine,
-                            { backgroundColor: colors.border },
-                          ]}
-                        />
-                      )}
-                    </View>
-                    <View
-                      style={[
-                        styles.historyCard,
-                        { borderColor: colors.border },
-                      ]}
-                    >
-                      <View style={styles.historyCardHeader}>
-                        <View style={styles.historyLabel}>
-                          <IconSymbol
-                            name={
-                              item.type === "refill" ||
-                              item.type === "rejection_refund" ||
-                              item.type === "selection_refund"
-                                ? "arrow.down.circle"
-                                : "arrow.up.circle"
-                            }
-                            size={16}
-                            color={
-                              item.type === "refill" ||
-                              item.type === "rejection_refund" ||
-                              item.type === "selection_refund"
-                                ? colors.primary
-                                : colors.borderSecondary
-                            }
-                          />
-                          <Text
-                            style={[
-                              styles.historyTitle,
-                              { color: colors.text },
-                            ]}
-                          >
-                            {getTransactionTypeLabel(item.type)}
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.statusPill,
-                            {
-                              backgroundColor: statusColors[item.status] + "15",
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusPillText,
-                              { color: statusColors[item.status] },
-                            ]}
-                          >
-                            {statusLabel(item.status)}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text
-                        style={[styles.historyAmount, { color: colors.text }]}
-                      >
-                        {item.type === "refill" ||
-                        item.type === "rejection_refund" ||
-                        item.type === "selection_refund"
-                          ? "+"
-                          : "-"}
-                        {item.amount} {item.currency}
-                      </Text>
-                      {item.description && (
-                        <Text
-                          style={[
-                            styles.historySubtitle,
-                            { color: colors.textSecondary, marginTop: 4 },
-                          ]}
-                        >
-                          {item.description}
-                        </Text>
-                      )}
-                      <Text
-                        style={[
-                          styles.historySubtitle,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        {item.method} · {formatDate(item.createdAt)}
-                      </Text>
-                      {item.reference && (
-                        <Text
-                          style={[
-                            styles.historyReference,
-                            { color: colors.textSecondary },
-                          ]}
-                        >
-                          {t("paymentReference")}: {item.reference}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
+                  <PaymentHistoryCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    totalLength={paymentHistory.length}
+                    statusColors={statusColors}
+                    statusLabel={statusLabel}
+                    getTransactionTypeLabel={getTransactionTypeLabel}
+                    formatDate={formatDate}
+                  />
                 ))}
               </View>
             )}
@@ -725,20 +479,6 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     marginTop: Spacing.lg,
   },
-  summaryActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    flex: 1,
-  },
-  summaryActionText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
   cardHeaderRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -746,20 +486,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     alignItems: "center",
     flexWrap: "wrap",
-  },
-  addCardButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    alignSelf: "flex-start",
-    marginTop: Spacing.sm,
-  },
-  addCardButtonText: {
-    fontWeight: "600",
-    fontSize: 14,
   },
   emptyState: {
     alignItems: "center",
@@ -778,129 +504,11 @@ const styles = StyleSheet.create({
   cardsList: {
     gap: Spacing.md,
   },
-  cardItem: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
-  cardInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-  cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cardNumber: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  defaultPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.round,
-    marginTop: Spacing.sm,
-  },
-  defaultPillText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  cardMeta: {
-    fontSize: 13,
-  },
-  cardActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  actionButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    borderWidth: 1,
-  },
-  actionButtonText: {
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  removeButton: {
-    borderStyle: "dashed",
-  },
   historyHeader: {
     marginBottom: Spacing.md,
   },
   historyList: {
     gap: Spacing.lg,
-  },
-  historyRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-  },
-  timelineColumn: {
-    width: 18,
-    alignItems: "center",
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderWidth: 2,
-    borderRadius: 6,
-    // Note: Should use colors.surface dynamically - consider inline style
-    backgroundColor: "white",
-  },
-  timelineLine: {
-    flex: 1,
-    width: 2,
-    marginTop: 2,
-  },
-  historyCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
-  historyCardHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  historyLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-  },
-  historyTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  historySubtitle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  historyReference: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  historyAmount: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  statusPill: {
-    borderRadius: BorderRadius.round,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 4,
-  },
-  statusPillText: {
-    fontSize: 12,
-    fontWeight: "600",
   },
   retryButton: {
     paddingHorizontal: 16,
