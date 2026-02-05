@@ -991,8 +991,8 @@ export default function CreateOrderScreen() {
       { field: "serviceId", ref: serviceSectionRef },
       { field: "title", ref: basicInfoSectionRef },
       { field: "description", ref: basicInfoSectionRef },
-      { field: "budget", ref: priceSectionRef },
       { field: "location", ref: basicInfoSectionRef },
+      { field: "budget", ref: priceSectionRef },
       { field: "skills", ref: skillsSectionRef },
       { field: "availableDates", ref: skillsSectionRef },
     ];

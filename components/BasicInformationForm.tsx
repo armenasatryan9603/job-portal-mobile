@@ -132,9 +132,9 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
         ) : null}
       </View>
 
-      <View>
+      <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { color: colors.text }]}>
-          {t("location")}
+          {t("location")} *
         </Text>
 
         {/* Manual Location Input with Map Shortcut */}
@@ -145,7 +145,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: errors.location ? colors.error : colors.border,
                   color: colors.text,
                   paddingRight: 48,
                 },
@@ -168,6 +168,11 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
               <IconSymbol name="map" size={16} color={'#fff'} />
             </TouchableOpacity>
           </View>
+          {errors.location ? (
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {errors.location}
+            </Text>
+          ) : null}
         </View>
       </View>
 
