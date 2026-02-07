@@ -44,6 +44,12 @@ import OrderItem from "./Item";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { TopTabs } from "@/components/TopTabs";
 import { chatService } from "@/categories/chatService";
+import {
+  extractCountryFromLocation,
+  getCountryIsoCode,
+  getCountryIsoFromLocation,
+  getLocationDisplay,
+} from "@/utils/countryExtraction";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -146,6 +152,18 @@ export default function OrdersScreen() {
     return categories.map((id) => parseInt(id)).filter((id) => !isNaN(id));
   }, [filterCategoryId, selectedFilters.categories]);
 
+  // Extract country from user location for default filtering
+  // Only apply for general orders view (not My Orders, My Jobs, or Saved Orders)
+  // ISO from location: "address__ISO" or fallback parse from address text
+  const userCountryIso = useMemo(() => {
+    if (isMyOrders || isMyJobs || isSavedOrders) return undefined;
+    const fromSeparator = user?.location ? getCountryIsoFromLocation(user.location) : null;
+    if (fromSeparator) return fromSeparator;
+    if (!user?.location) return undefined;
+    const name = extractCountryFromLocation(getLocationDisplay(user.location));
+    return name ? getCountryIsoCode(name) ?? undefined : undefined;
+  }, [user?.location, isMyOrders, isMyJobs, isSavedOrders]);
+
   // TanStack Query hooks
   const myOrdersQuery = useMyOrders();
   const myJobsQuery = useMyJobs();
@@ -160,6 +178,7 @@ export default function OrdersScreen() {
     selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
     undefined, // clientId
     activeOrderTab, // Pass the active tab to filter by orderType
+    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
     tabLoaded // Only enable query after tab is loaded from storage
   );
 
@@ -171,6 +190,7 @@ export default function OrdersScreen() {
     selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
     undefined, // clientId
     activeOrderTab, // Pass the active tab to filter by orderType
+    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
     tabLoaded // Only enable query after tab is loaded from storage
   );
   const searchOrdersQuery = useSearchOrders(
@@ -179,6 +199,7 @@ export default function OrdersScreen() {
     limit,
     selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
     activeOrderTab, // Pass the active tab to filter by orderType
+    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
     tabLoaded // Only enable query after tab is loaded from storage
   );
 
@@ -758,8 +779,8 @@ export default function OrdersScreen() {
       return orders.filter((order) => {
         if (!order.location) return false;
 
-        // Parse coordinates from order location string
-        const orderCoords = parseLocationCoordinates(order.location);
+        // Parse coordinates from order location string (strip __ISO for parsing)
+        const orderCoords = parseLocationCoordinates(getLocationDisplay(order.location));
 
         if (!orderCoords) return false; // Skip orders without valid coordinates
 
@@ -1131,10 +1152,10 @@ export default function OrdersScreen() {
           radius: number;
         } | null;
         if (locationFilter) {
-          // Simple text matching for now
+          // Simple text matching for now (match against display part only)
           filtered = filtered.filter((order) => {
             if (!order.location) return false;
-            return order.location
+            return getLocationDisplay(order.location)
               .toLowerCase()
               .includes(locationFilter.address.toLowerCase());
           });

@@ -18,6 +18,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Order, apiService } from "@/categories/api";
+import { getLocationDisplay } from "@/utils/countryExtraction";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { PeerSelector } from "./PeerSelector";
 import { useAuth } from "@/contexts/AuthContext";
@@ -224,7 +225,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                     {order.currency}&nbsp;{order.budget.toLocaleString()}
                   </Text>
                 </View>
-                {order.location && (
+                {getLocationDisplay(order.location) && (
                   <View style={styles.detailRow}>
                     <IconSymbol
                       name="location.fill"
@@ -232,7 +233,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                       color={colors.tint}
                     />
                     <Text style={[styles.detailText, { color: colors.text }]}>
-                      {order.location}
+                      {getLocationDisplay(order.location)}
                     </Text>
                   </View>
                 )}

@@ -21,6 +21,7 @@ import { MapViewComponent } from "@/components/MapView";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
+import { getLocationDisplay } from "@/utils/countryExtraction";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -138,7 +139,8 @@ const OrderItem = ({
   };
 
   const displayServiceName = getLocalizedServiceName(order.Category);
-  const locationCoordinates = parseLocationCoordinates(order.location);
+  const locationDisplay = getLocationDisplay(order.location);
+  const locationCoordinates = parseLocationCoordinates(locationDisplay);
 
   // Status configuration for Badge component
   const getStatusVariant = (status: string): "success" | "warning" | "info" | "error" | "pending" | "default" => {
@@ -439,7 +441,7 @@ const OrderItem = ({
 
           {/* Details Row */}
           <View style={styles.orderDetails}>
-            {order.location && (
+            {locationDisplay && (
               <View style={styles.detailItem}>
                 <IconSymbol
                   name="location.fill"
@@ -450,9 +452,9 @@ const OrderItem = ({
                   style={[styles.detailText, { color: colors.tabIconDefault }]}
                   numberOfLines={1}
                 >
-                  {order.location.length > 20 
-                    ? order.location.substring(0, 20) + "..." 
-                    : order.location}
+                  {locationDisplay.length > 20
+                    ? locationDisplay.substring(0, 20) + "..."
+                    : locationDisplay}
                 </Text>
               </View>
             )}

@@ -138,6 +138,9 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
         longitude,
       });
 
+      console.log('44444444444444444444444', addressResponse);
+      
+
       const address = addressResponse[0]
         ? `${addressResponse[0].street || ""} ${
             addressResponse[0].city || ""

@@ -1063,7 +1063,8 @@ class ApiService {
     categoryId?: number,
     categoryIds?: number[],
     clientId?: number,
-    orderType?: "one_time" | "permanent"
+    orderType?: "one_time" | "permanent",
+    country?: string
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -1078,6 +1079,7 @@ class ApiService {
     }
     if (clientId) params.append("clientId", clientId.toString());
     if (orderType) params.append("orderType", orderType);
+    if (country) params.append("country", country);
 
     return this.request<OrderListResponse>(`/orders?${params}`, {}, true);
   }
@@ -1259,7 +1261,8 @@ class ApiService {
     categoryId?: number,
     categoryIds?: number[],
     clientId?: number,
-    orderType?: "one_time" | "permanent"
+    orderType?: "one_time" | "permanent",
+    country?: string
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -1274,6 +1277,7 @@ class ApiService {
     }
     if (clientId) params.append("clientId", clientId.toString());
     if (orderType) params.append("orderType", orderType);
+    if (country) params.append("country", country);
 
     return this.request<OrderListResponse>(`/orders?${params}`, {}, false);
   }
@@ -1283,7 +1287,8 @@ class ApiService {
     page: number = 1,
     limit: number = 10,
     categoryIds?: number[],
-    orderType?: "one_time" | "permanent"
+    orderType?: "one_time" | "permanent",
+    country?: string
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       q: query,
@@ -1295,6 +1300,7 @@ class ApiService {
       params.append("categoryIds", categoryIds.join(","));
     }
     if (orderType) params.append("orderType", orderType);
+    if (country) params.append("country", country);
 
     return this.request<OrderListResponse>(`/orders/search?${params}`);
   }

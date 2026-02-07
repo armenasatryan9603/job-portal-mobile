@@ -321,6 +321,7 @@ export const useAllOrders = (
   categoryIds?: number[],
   clientId?: number,
   orderType?: "one_time" | "permanent",
+  country?: string,
   enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
@@ -335,6 +336,7 @@ export const useAllOrders = (
       categoryIds,
       clientId,
       orderType,
+      country,
     ],
     queryFn: () =>
       apiService.getAllOrders(
@@ -344,7 +346,8 @@ export const useAllOrders = (
         categoryId,
         categoryIds,
         clientId,
-        orderType
+        orderType,
+        country
       ),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: enabled,
@@ -419,6 +422,7 @@ export const usePublicOrders = (
   categoryIds?: number[],
   clientId?: number,
   orderType?: "one_time" | "permanent",
+  country?: string,
   enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
@@ -433,6 +437,7 @@ export const usePublicOrders = (
       categoryIds,
       clientId,
       orderType,
+      country,
     ],
     queryFn: () =>
       apiService.getPublicOrders(
@@ -442,7 +447,8 @@ export const usePublicOrders = (
         categoryId,
         categoryIds,
         clientId,
-        orderType
+        orderType,
+        country
       ),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: enabled,
@@ -456,13 +462,14 @@ export const useSearchOrders = (
   limit: number = 10,
   categoryIds?: number[],
   orderType?: "one_time" | "permanent",
+  country?: string,
   enabled: boolean = true
 ) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["orders", "search", query, page, limit, categoryIds, orderType],
+    queryKey: ["orders", "search", query, page, limit, categoryIds, orderType, country],
     queryFn: () =>
-      apiService.searchOrders(query, page, limit, categoryIds, orderType),
+      apiService.searchOrders(query, page, limit, categoryIds, orderType, country),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: enabled && !!query,
     retry: isOnline,

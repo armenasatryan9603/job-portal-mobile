@@ -51,6 +51,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSkills } from "@/hooks/useSkills";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import {
+  getLocationDisplay,
+  getCountryIsoFromLocation,
+  LOCATION_COUNTRY_SEPARATOR,
+} from "@/utils/countryExtraction";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -506,7 +511,7 @@ export default function ProfileScreen() {
       setNameText(profile.name || "");
       setPriceMin(profileAny.priceMin?.toString() || "");
       setPriceMax(profileAny.priceMax?.toString() || "");
-      setLocationText(profileAny.location || "");
+      setLocationText(getLocationDisplay(profileAny.location));
     }
   }, [profile]);
 
@@ -661,13 +666,13 @@ export default function ProfileScreen() {
 
   const handleStartEditLocation = () => {
     const profileAny = profile as any;
-    setLocationText(profileAny.location || "");
+    setLocationText(getLocationDisplay(profileAny.location));
     setIsEditingLocation(true);
   };
 
   const handleCancelEditLocation = () => {
     const profileAny = profile as any;
-    setLocationText(profileAny.location || "");
+    setLocationText(getLocationDisplay(profileAny.location));
     setIsEditingLocation(false);
     setShowLocationPicker(false);
   };
@@ -676,8 +681,9 @@ export default function ProfileScreen() {
     latitude: number;
     longitude: number;
     address: string;
+    country?: string;
+    isoCountryCode?: string;
   }) => {
-    console.log("Location selected:", location);
     setLocationText(location.address);
     setShowLocationPicker(false);
     setShowMapView(false);
@@ -687,8 +693,9 @@ export default function ProfileScreen() {
     latitude: number;
     longitude: number;
     address: string;
+    country?: string;
+    isoCountryCode?: string;
   }) => {
-    console.log("Map location selected:", location);
     setLocationText(location.address);
     setShowMapView(false);
   };
@@ -716,9 +723,13 @@ export default function ProfileScreen() {
         profile.id
       );
 
-      // Update specialist profile on backend
+      // Keep country from login (__ISO); only update the address part
+      const existingIso = getCountryIsoFromLocation((profile as any)?.location);
+      const locationValue =
+        locationText.trim() +
+        (existingIso ? `${LOCATION_COUNTRY_SEPARATOR}${existingIso}` : "");
       const result = await apiService.updateSpecialistProfile(profile.id, {
-        location: locationText.trim(),
+        location: locationValue,
       });
 
       console.log("Location update result:", result);
@@ -1753,7 +1764,7 @@ export default function ProfileScreen() {
                               { color: colors.text },
                             ]}
                           >
-                            {location}
+                            {getLocationDisplay(location)}
                           </Text>
                         </View>
                       );

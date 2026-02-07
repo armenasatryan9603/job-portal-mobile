@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { CategorySelector } from "@/components/ServiceSelector";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { LOCATION_COUNTRY_SEPARATOR } from "@/utils/countryExtraction";
 import { Layout } from "@/components/Layout";
 import { MediaUploader } from "@/components/MediaUploader";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
@@ -99,6 +100,7 @@ export default function CreateOrderScreen() {
     latitude: number;
     longitude: number;
     address: string;
+    isoCountryCode?: string;
   } | null>(null);
 
   const [selectedService, setSelectedService] = useState<Category | null>(null);
@@ -1149,6 +1151,7 @@ export default function CreateOrderScreen() {
     latitude: number;
     longitude: number;
     address: string;
+    isoCountryCode?: string;
   }) => {
     setSelectedLocation(location);
   };
@@ -1279,9 +1282,14 @@ export default function CreateOrderScreen() {
       currency,
       rateUnit,
       categoryId: formData.categoryId!,
-      location: selectedLocation
-        ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
-        : formData.location.trim(),
+      location: (() => {
+        const base =
+          selectedLocation
+            ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
+            : formData.location.trim();
+        const iso = selectedLocation?.isoCountryCode;
+        return iso ? `${base}${LOCATION_COUNTRY_SEPARATOR}${iso}` : base;
+      })(),
       availableDates:
         formatAllDatesWithTimes().length > 0
           ? formatAllDatesWithTimes()

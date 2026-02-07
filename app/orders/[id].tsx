@@ -40,6 +40,7 @@ import { PriceCurrency } from "@/components/PriceCurrency";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
 import { chatService } from "@/categories/chatService";
 import { getFrontendUrl } from "@/config/api";
+import { getLocationDisplay } from "@/utils/countryExtraction";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useApplyToOrder } from "@/hooks/useApi";
@@ -803,7 +804,7 @@ export default function EditOrderScreen() {
       }
 
       if (order.location) {
-        shareMessage += `📍 ${t("location")}: ${order.location}\n`;
+        shareMessage += `📍 ${t("location")}: ${getLocationDisplay(order.location)}\n`;
       }
 
       shareMessage += `\n${orderLink}`;
@@ -1252,21 +1253,20 @@ export default function EditOrderScreen() {
           <TouchableOpacity
             style={styles.detailItem}
             onPress={() => {
-              const locationCoordinates = parseLocationCoordinates(
-                order?.location
-              );
+              const locationDisplay = getLocationDisplay(order?.location);
+              const locationCoordinates = parseLocationCoordinates(locationDisplay);
               if (locationCoordinates) {
                 setShowMapModal(true);
               }
             }}
-            disabled={!parseLocationCoordinates(order?.location)}
-            activeOpacity={parseLocationCoordinates(order?.location) ? 0.6 : 1}
+            disabled={!parseLocationCoordinates(getLocationDisplay(order?.location))}
+            activeOpacity={parseLocationCoordinates(getLocationDisplay(order?.location)) ? 0.6 : 1}
           >
             <IconSymbol
               name="location.fill"
               size={20}
               color={
-                parseLocationCoordinates(order?.location)
+                parseLocationCoordinates(getLocationDisplay(order?.location))
                   ? colors.tint
                   : colors.tabIconDefault
               }
@@ -1283,15 +1283,15 @@ export default function EditOrderScreen() {
                   {
                     color: colors.text,
                     textDecorationLine: parseLocationCoordinates(
-                      order?.location
+                      getLocationDisplay(order?.location)
                     )
                       ? "underline"
                       : "none",
                   },
                 ]}
               >
-                {parseLocationCoordinates(order?.location)?.address ||
-                  order?.location ||
+                {parseLocationCoordinates(getLocationDisplay(order?.location))?.address ||
+                  getLocationDisplay(order?.location) ||
                   t("remote")}
               </Text>
             </View>
@@ -1925,7 +1925,7 @@ export default function EditOrderScreen() {
       />
 
       {/* Map Modal */}
-      {parseLocationCoordinates(order?.location) && (
+      {parseLocationCoordinates(getLocationDisplay(order?.location)) && (
         <Modal
           visible={showMapModal}
           animationType="slide"
@@ -1934,7 +1934,7 @@ export default function EditOrderScreen() {
         >
           <View style={{ flex: 1, backgroundColor: colors.background }}>
             <MapViewComponent
-              initialLocation={parseLocationCoordinates(order?.location)!}
+              initialLocation={parseLocationCoordinates(getLocationDisplay(order?.location))!}
               onLocationSelect={() => {}}
               onClose={() => setShowMapModal(false)}
               showCurrentLocationButton={false}
