@@ -111,9 +111,8 @@ export default function CreateOrderScreen() {
   const [selectedBannerIndex, setSelectedBannerIndex] = useState<number | null>(
     null
   );
-  const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
   const [orderStatus, setOrderStatus] = useState<string | null>(null);
-  const [useAIEnhancement, setUseAIEnhancement] = useState<boolean>(false); // Unchecked by default (checked only for new orders)
+  const [useAIEnhancement, setUseAIEnhancement] = useState<boolean>(true);
   const [showAIPreview, setShowAIPreview] = useState(false);
   const [questions, setQuestions] = useState<string[]>([]);
   const [aiPreviewData, setAiPreviewData] = useState<{
@@ -674,7 +673,6 @@ export default function CreateOrderScreen() {
 
             // Set existing banner image if available
             if (orderData.bannerImageId) {
-              setExistingBannerId(orderData.bannerImageId);
               const bannerIndex = existingMediaFiles.findIndex(
                 (mf: any) => mf.id === orderData.bannerImageId
               );
