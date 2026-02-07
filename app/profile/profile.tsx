@@ -1792,7 +1792,7 @@ export default function ProfileScreen() {
 
           {/* Reviews Given */}
           <ResponsiveCard>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 16 }]}>
               {t("reviewsGiven")} ({reviews.length})
             </Text>
 

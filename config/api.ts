@@ -16,7 +16,7 @@ export const API_CONFIG = {
   // Frontend URL for sharing links (web app URL or universal link)
   // Set EXPO_PUBLIC_FRONTEND_URL in .env file
   // This should match your backend domain for Universal Links/App Links
-  FRONTEND_URL: process.env.EXPO_PUBLIC_FRONTEND_URL || "https://job-portal-backend-eight-sand.vercel.app",
+  FRONTEND_URL: process.env.EXPO_PUBLIC_FRONTEND_URL || "https://job-portal-backend-psi-ruddy.vercel.app/",
 
   // Request timeouts
   TIMEOUT: 10000, // 10 seconds
