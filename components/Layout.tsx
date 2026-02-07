@@ -1,12 +1,3 @@
-import { FooterTabs } from "@/components/FooterTabs";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-
-import { useNavigation } from "@/contexts/NavigationContext";
-import { useModal } from "@/contexts/ModalContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import React from "react";
 import {
   Alert,
   Animated,
@@ -17,13 +8,20 @@ import {
   Text,
   TouchableOpacity,
   View,
-  Keyboard,
-  Platform,
 } from "react-native";
+
+import { FooterTabs } from "@/components/FooterTabs";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Logo } from "./Logo";
+import React from "react";
+import { ThemeColors } from "@/constants/styles";
+import { router } from "expo-router";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useModal } from "@/contexts/ModalContext";
+import { useNavigation } from "@/contexts/NavigationContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Logo } from "./Logo";
-import { router } from "expo-router";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -56,11 +54,6 @@ export const Layout: React.FC<LayoutProps> = ({
   const { t } = useTranslation();
   const { showLoginModal } = useModal();
 
-  // Debug logging
-  React.useEffect(() => {
-    console.log("Layout - User:", user);
-    console.log("Layout - isAuthenticated:", isAuthenticated);
-  }, [user, isAuthenticated]);
   const {
     sidebarVisible,
     closeSidebar,
@@ -76,8 +69,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
   const sidebarOpacity = React.useState(new Animated.Value(0))[0];
   const [imageError, setImageError] = React.useState(false);
-  const [isKeyboardVisible, setIsKeyboardVisible] = React.useState(false);
-
+  
   // Handle sidebar animation when visibility changes
   React.useEffect(() => {
     if (sidebarVisible) {
@@ -139,28 +131,6 @@ export const Layout: React.FC<LayoutProps> = ({
   React.useEffect(() => {
     setImageError(false);
   }, [user?.avatarUrl]);
-
-  // Track keyboard visibility globally
-  React.useEffect(() => {
-    const keyboardWillShow = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
-      () => {
-        setIsKeyboardVisible(true);
-      }
-    );
-
-    const keyboardWillHide = Keyboard.addListener(
-      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
-      () => {
-        setIsKeyboardVisible(false);
-      }
-    );
-
-    return () => {
-      keyboardWillShow.remove();
-      keyboardWillHide.remove();
-    };
-  }, []);
 
   const handleImageError = () => {
     setImageError(true);

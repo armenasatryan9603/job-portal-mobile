@@ -105,9 +105,6 @@ export default function ProfileScreen() {
   const [showMapView, setShowMapView] = useState(false);
   const [savingLocation, setSavingLocation] = useState(false);
 
-  // Portfolio count state management
-  const [portfolioCount, setPortfolioCount] = useState(0);
-
   // Teams state management
   const [userTeams, setUserTeams] = useState<any[]>([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
@@ -179,6 +176,8 @@ export default function ProfileScreen() {
         // Authenticated user - get their own profile from backend
         console.log("Fetching authenticated user profile");
         profileData = await apiService.getUserProfile();
+        // Update AsyncStorage cache with full profile data including portfolio
+        await updateUser(profileData);
       } else {
         // Test mode - get real user data from backend by ID (no auth required)
         console.log(`Loading user profile for user ID ${targetUserId}`);
@@ -199,10 +198,7 @@ export default function ProfileScreen() {
 
       // Check chat relationship for contact info visibility
       checkChatRelationship(profileData.id);
-
-      // Fetch portfolio count for completion calculation
-      fetchPortfolioCount(profileData.id);
-
+      
       // Fetch teams for the profile being viewed
       fetchUserTeams(profileData.id);
     } catch (err) {
@@ -268,16 +264,6 @@ export default function ProfileScreen() {
     } catch (err) {
       console.error("Error checking chat relationship:", err);
       setHasActiveChat(false); // Default to no access if error
-    }
-  };
-
-  const fetchPortfolioCount = async (userId: number) => {
-    try {
-      const portfolioItems = await apiService.getPortfolio(userId);
-      setPortfolioCount(portfolioItems.length);
-    } catch (err) {
-      console.error("Error fetching portfolio count:", err);
-      setPortfolioCount(0); // Default to 0 if error
     }
   };
 
@@ -443,18 +429,15 @@ export default function ProfileScreen() {
 
       // Update local state
       setBannerImage(null);
+      
       if (profile) {
         setProfile({
           ...profile,
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore extend profile with bannerUrl
-          bannerUrl: null,
+          bannerUrl: undefined,
         } as UserProfile);
       }
       await updateUser({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore allow bannerUrl on user
-        bannerUrl: null,
+        bannerUrl: undefined,
       } as any);
     } catch (error) {
       console.error("Error removing banner:", error);
@@ -894,8 +877,7 @@ export default function ProfileScreen() {
                       !userId && profile
                         ? calculateAccountCompletion(
                             profile,
-                            skills.userServices.length,
-                            portfolioCount
+                            skills.userServices.length
                           )
                         : 100;
 
@@ -1803,6 +1785,7 @@ export default function ProfileScreen() {
                 userId={userId ? targetUserId : user?.id}
                 colors={colors}
                 isOwnProfile={!userId}
+                portfolio={profile.portfolio || []}
               />
             </ResponsiveCard>
           )}

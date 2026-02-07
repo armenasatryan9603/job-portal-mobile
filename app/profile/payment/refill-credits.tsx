@@ -35,6 +35,7 @@ import { useCreditCard } from "@/contexts/CreditCardContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
@@ -42,6 +43,7 @@ export default function RefillCreditsScreen() {
   const { t } = useTranslation();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { creditCards, isLoadingCards, syncCardsFromBank, refreshCards } = useCreditCard();
+  const { updateUser } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -115,6 +117,9 @@ export default function RefillCreditsScreen() {
               const profile = await apiService.getUserProfile();
               const newBalance = profile.creditBalance || 0;
               
+              // Update AsyncStorage cache with full profile data
+              await updateUser(profile);
+              
               // Update state
               setBaseBalance(newBalance);
               
@@ -145,6 +150,9 @@ export default function RefillCreditsScreen() {
       const balanceInUSD = profile.creditBalance || 0;
       setBaseBalance(balanceInUSD);
       setCurrency(profile.currency || "USD");
+      
+      // Update AsyncStorage cache with full profile data
+      await updateUser(profile);
       // Initial conversion will happen in useEffect when currency is set
     } catch (error) {
       console.error("Error fetching balance:", error);
@@ -459,6 +467,9 @@ export default function RefillCreditsScreen() {
         // Fetch fresh balance from backend
         const profile = await apiService.getUserProfile();
         const newBalance = profile.creditBalance || 0;
+        
+        // Update AsyncStorage cache with full profile data
+        await updateUser(profile);
         
         // Update state
         setBaseBalance(newBalance);

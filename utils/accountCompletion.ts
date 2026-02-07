@@ -9,9 +9,9 @@ import { UserProfile } from "@/categories/api";
  */
 export function calculateAccountCompletion(
   profile: UserProfile | null,
-  userServicesCount?: number,
-  portfolioCount?: number
+  userServicesCount?: number
 ): number {
+
   if (!profile) {
     return 0;
   }
@@ -75,7 +75,8 @@ export function calculateAccountCompletion(
     completedFields += 1;
 
   totalFields += 1; // portfolio
-  if (portfolioCount !== undefined && portfolioCount > 0) completedFields += 1;
+  if (profile.portfolio?.length && profile.portfolio?.length > 0)
+    completedFields += 1
 
   // Calculate percentage
   if (totalFields === 0) return 0;

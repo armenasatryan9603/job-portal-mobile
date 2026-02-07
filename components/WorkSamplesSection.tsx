@@ -28,6 +28,7 @@ interface WorkSamplesSectionProps {
   userId?: number;
   colors: ThemeColorsType["light"] | ThemeColorsType["dark"];
   isOwnProfile: boolean;
+  portfolio?: PortfolioItem[];
 }
 
 const { width, height } = Dimensions.get("window");
@@ -37,11 +38,12 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   userId,
   colors,
   isOwnProfile,
+  portfolio,
 }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolio || []);
+  const [loading, setLoading] = useState(!portfolio);
   const [uploading, setUploading] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -49,10 +51,15 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   const [selectedImage, setSelectedImage] = useState<PortfolioItem | null>(null);
 
   useEffect(() => {
-    if (userId) {
+    // If portfolio is provided as prop, use it directly
+    if (portfolio !== undefined) {
+      setPortfolioItems(portfolio);
+      setLoading(false);
+    } else if (userId) {
+      // Fallback: fetch portfolio if not provided
       loadPortfolio();
     }
-  }, [userId]);
+  }, [userId, portfolio]);
 
   const loadPortfolio = async () => {
     if (!userId) return;
@@ -112,7 +119,11 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
             undefined
           );
 
-          await loadPortfolio();
+          // Reload portfolio after upload
+          if (userId) {
+            const items = await apiService.getPortfolio(userId);
+            setPortfolioItems(items);
+          }
         } catch (error: any) {
           console.error("Error uploading portfolio item:", error);
           Alert.alert(t("error"), error.message || t("uploadFailed"));
@@ -137,7 +148,11 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
         onPress: async () => {
           try {
             await apiService.deletePortfolioItem(item.id);
-            await loadPortfolio();
+            // Reload portfolio after delete
+            if (userId) {
+              const items = await apiService.getPortfolio(userId);
+              setPortfolioItems(items);
+            }
           } catch (error: any) {
             console.error("Error deleting portfolio item:", error);
             Alert.alert(t("error"), error.message || t("deleteFailed"));
@@ -163,7 +178,11 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
         editDescription || undefined
       );
       setEditingItem(null);
-      await loadPortfolio();
+      // Reload portfolio after update
+      if (userId) {
+        const items = await apiService.getPortfolio(userId);
+        setPortfolioItems(items);
+      }
     } catch (error: any) {
       console.error("Error updating portfolio item:", error);
       Alert.alert(t("error"), error.message || t("updateFailed"));

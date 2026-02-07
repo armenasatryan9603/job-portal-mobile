@@ -58,7 +58,7 @@ export default function CreateOrderScreen() {
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, updateUser } = useAuth();
   const { showLoginModal } = useModal();
   const queryClient = useQueryClient();
 
@@ -372,6 +372,9 @@ export default function CreateOrderScreen() {
         const profile = await apiService.getUserProfile();
         const userCategories = (profile as any).UserCategories || [];
         setIsSpecialist(userCategories.length > 0);
+        
+        // Update AsyncStorage cache with full profile data
+        await updateUser(profile);
       } catch (error) {
         console.error("Error checking user status:", error);
         setIsSpecialist(false);

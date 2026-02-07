@@ -176,6 +176,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   avatarUrl?: string;
+  bannerUrl?: string;
   bio?: string;
   creditBalance: number;
   verified: boolean;
@@ -187,6 +188,7 @@ export interface UserProfile {
   location?: string;
   currency?: string;
   rateUnit?: string;
+  portfolio?: PortfolioItem[];
 }
 
 export interface UpdateUserProfileData {

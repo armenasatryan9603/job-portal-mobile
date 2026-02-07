@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { UserLanguage, apiService } from "@/categories/api";
+import { UserLanguage, UserProfile, apiService } from "@/categories/api";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -16,27 +16,14 @@ import NotificationService from "@/categories/NotificationService";
 import PhoneVerificationService from "@/categories/PhoneVerificationService";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string;
-  role: string;
-  avatarUrl?: string;
-  languages?: UserLanguage[];
-  bio?: string;
-  creditBalance: number;
-  verified: boolean;
-}
-
 interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   hasIncompleteProfile: boolean;
   justSignedUp: boolean;
-  setUser: (user: User | null) => void;
-  updateUser: (userData: Partial<User>) => Promise<void>;
+  setUser: (user: UserProfile | null) => void;
+  updateUser: (userData: Partial<UserProfile>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
   login: (phone: string, countryCode: string, otp: string, name?: string) => Promise<boolean>;
   signup: (
@@ -59,7 +46,7 @@ interface AuthProviderProps {
 // Authentication service using backend API
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasIncompleteProfile, setHasIncompleteProfile] = useState(false);
@@ -76,6 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser);
+        
         setUser(userData);
         setIsAuthenticated(true);
 
@@ -346,7 +334,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const updateUser = async (userData: Partial<User>): Promise<void> => {
+  const updateUser = async (userData: Partial<UserProfile>): Promise<void> => {
     if (!user) {
       console.warn("Cannot update user: no user is currently logged in");
       return;
@@ -354,12 +342,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       // Merge the new data with the existing user data
+      // This preserves all fields including portfolio, currency, rateUnit, etc.
       const updatedUser = {
         ...user,
         ...userData,
-      };
+      } as UserProfile;
 
-      // Update AsyncStorage
+      // Update AsyncStorage with full user data including all fields
       await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
 
       // Update the state

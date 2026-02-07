@@ -75,19 +75,6 @@ export const useLogout = () => {
   });
 };
 
-// ===== USER PROFILE HOOKS =====
-
-export const useProfile = () => {
-  const { isOnline } = useNetworkStatus();
-  return useQuery({
-    queryKey: ["profile"],
-    queryFn: () => apiService.getUserProfile(),
-    staleTime: CACHE_TTL.USER_DATA,
-    enabled: true,
-    retry: isOnline,
-  });
-};
-
 const PLATFORM_STATS_CACHE_KEY = "platform_stats_cache";
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
