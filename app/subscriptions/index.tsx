@@ -1,24 +1,25 @@
-import React, { useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
   Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, BorderRadius } from "@/constants/styles";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { useSubscriptionPlans, useMySubscription } from "@/hooks/useApi";
+import { BorderRadius, ThemeColors } from "@/constants/styles";
+import React, { useEffect } from "react";
 import type { SubscriptionPlan, UserSubscription } from "@/categories/api";
+import { useMySubscription, useSubscriptionPlans } from "@/hooks/useApi";
+
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
 import { SubscriptionPlanSkeleton } from "@/components/SubscriptionPlanSkeleton";
+import { router } from "expo-router";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function SubscriptionsScreen() {
   useAnalytics("Subscriptions");
@@ -96,9 +97,28 @@ export default function SubscriptionsScreen() {
             {item.name}
           </Text>
           <View style={styles.priceRow}>
-            <Text style={[styles.price, { color: colors.primary }]}>
-              {item.price.toLocaleString()} {item.currency}
-            </Text>
+            <View style={styles.priceContainer}>
+              {item.oldPrice ? (
+                <>
+                  <Text
+                    style={[
+                      styles.oldPrice,
+                      { color: colors.textSecondary },
+                      { textDecorationLine: "line-through" },
+                    ]}
+                  >
+                    {item.oldPrice.toLocaleString()} {item.currency}
+                  </Text>
+                  <Text style={[styles.price, { color: colors.primary }]}>
+                    {item.price.toLocaleString()} {item.currency}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.price, { color: colors.primary }]}>
+                  {item.price.toLocaleString()} {item.currency}
+                </Text>
+              )}
+            </View>
             <Text style={[styles.duration, { color: colors.textSecondary }]}>
               {isMonthly
                 ? t("perMonth")
@@ -425,9 +445,18 @@ const styles = StyleSheet.create({
     alignItems: "baseline",
     gap: 6,
   },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
   price: {
     fontSize: 18,
     fontWeight: "700",
+  },
+  oldPrice: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   duration: {
     fontSize: 12,

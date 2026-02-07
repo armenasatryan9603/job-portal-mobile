@@ -955,18 +955,6 @@ export default function RefillCreditsScreen() {
                 icon="creditcard.fill"
                 loading={loading}
                 disabled={!finalAmount || finalAmount <= 0 || loading}
-                backgroundColor={
-                  finalAmount && finalAmount > 0
-                    ? colors.tint
-                    : colors.tabIconDefault
-                }
-                style={[
-                  finalAmount &&
-                    finalAmount > 0 &&
-                    !loading &&
-                    (styles.refillButtonActive as any),
-                ]}
-                textStyle={styles.refillButtonText}
               />
               {finalAmount && finalAmount > 0 && (
                 <View style={styles.refillButtonBadge}>
@@ -1268,17 +1256,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   // Refill Button
-  refillButtonActive: {
-    ...Shadows.lg,
-  },
   refillButtonDisabled: {
     opacity: 0.5,
-  },
-  refillButtonText: {
-    fontSize: Typography.xl,
-    fontWeight: "700",
-    // Note: Should use colors.text dynamically - consider inline style
-    color: "#fff",
   },
   refillButtonBadge: {
     position: "absolute",

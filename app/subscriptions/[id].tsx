@@ -161,9 +161,28 @@ export default function SubscriptionDetailScreen() {
             {plan.name}
           </Text>
           <View style={styles.priceRow}>
-            <Text style={[styles.price, { color: colors.primary }]}>
-              {plan.price.toLocaleString()} {plan.currency}
-            </Text>
+            <View style={styles.priceContainer}>
+              {plan.oldPrice ? (
+                <>
+                  <Text
+                    style={[
+                      styles.oldPrice,
+                      { color: colors.textSecondary },
+                      { textDecorationLine: "line-through" },
+                    ]}
+                  >
+                    {plan.oldPrice.toLocaleString()} {plan.currency}
+                  </Text>
+                  <Text style={[styles.price, { color: colors.primary }]}>
+                    {plan.price.toLocaleString()} {plan.currency}
+                  </Text>
+                </>
+              ) : (
+                <Text style={[styles.price, { color: colors.primary }]}>
+                  {plan.price.toLocaleString()} {plan.currency}
+                </Text>
+              )}
+            </View>
             <Text style={[styles.duration, { color: colors.textSecondary }]}>
               {isMonthly
                 ? t("perMonth")
@@ -278,9 +297,18 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 8,
   },
+  priceContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+  },
   price: {
     fontSize: 22,
     fontWeight: "700",
+  },
+  oldPrice: {
+    fontSize: 16,
+    fontWeight: "500",
   },
   duration: {
     fontSize: 13,

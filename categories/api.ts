@@ -42,6 +42,7 @@ export interface SubscriptionPlan {
   name: string;
   description?: string | null;
   price: number;
+  oldPrice?: number | null;
   currency: string;
   durationDays: number;
   isRecurring: boolean;
