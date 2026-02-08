@@ -106,7 +106,14 @@
           "cameraPermission": "This app needs access to camera to take photos and videos for your orders."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "not_added_yet",
+          "iosAppId": "ca-app-pub-7411351649298687~3183168006"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

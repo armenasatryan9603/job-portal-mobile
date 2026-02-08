@@ -14,6 +14,7 @@ import {
 } from "@/constants/styles";
 import { useAnalytics, useAnalyticsService } from "@/hooks/useAnalytics";
 
+import { AdBanner } from "@/components/AdBanner";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
@@ -371,7 +372,10 @@ export default function WelcomeScreen() {
               ))}
             </View>
           </View>
-
+            <View style={styles.adSlotPlaceholder}>
+              <AdBanner />
+            </View>
+          
           {/* Features */}
           <View style={styles.sectionContainer}>
             <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
@@ -496,10 +500,12 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Container
   container: {
     padding: Spacing.md,
     gap: Spacing.xl,
+  },
+  adSlotPlaceholder: {
+    alignItems: "center",
   },
   // User Card
   userCardWrapper: {
