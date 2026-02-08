@@ -312,6 +312,10 @@ export default function WelcomeScreen() {
             )}
           </ResponsiveCard>
 
+          <View style={styles.adSlotPlaceholder}>
+            <AdBanner />
+          </View>
+
           {/* Quick Actions */}
           <View style={styles.sectionContainer}>
             <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
@@ -372,9 +376,6 @@ export default function WelcomeScreen() {
               ))}
             </View>
           </View>
-            <View style={styles.adSlotPlaceholder}>
-              <AdBanner />
-            </View>
           
           {/* Features */}
           <View style={styles.sectionContainer}>
@@ -511,7 +512,6 @@ const styles = StyleSheet.create({
   userCardWrapper: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
-    marginBottom: Spacing.md,
     borderWidth: 1,
   },
   userCardContent: {
