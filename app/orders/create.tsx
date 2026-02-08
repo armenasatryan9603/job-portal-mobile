@@ -43,6 +43,7 @@ import { MediaUploader } from "@/components/MediaUploader";
 import { SkillsAndRequirementsForm } from "@/components/SkillsAndRequirementsForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useApi";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
@@ -54,6 +55,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 // Note: Slot generation removed - clients now book custom time ranges within work hours
 
 export default function CreateOrderScreen() {
+  useAnalytics("CreateOrder");
   const { serviceId, orderId } = useLocalSearchParams();
   const { t } = useTranslation();
   const { language } = useLanguage();

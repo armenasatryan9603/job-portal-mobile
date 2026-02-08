@@ -13,11 +13,12 @@ import {
   View,
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { Spacing, ThemeColors } from "@/constants/styles";
 
 import { Button } from "./ui/button";
 import { CountBadge } from "@/components/CountBadge";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
+import { ResponsiveCard } from "./ResponsiveContainer";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -375,7 +376,7 @@ export const Filter: React.FC<FilterProps> = ({
   );
 
   return (
-    <View style={styles.container}>
+    <ResponsiveCard marginHorizontal={Spacing.md} padding={Spacing.sm} >  
       {/* Compact Search Bar with Filter Button */}
       <View style={styles.searchRow}>
         <View
@@ -1403,7 +1404,7 @@ export const Filter: React.FC<FilterProps> = ({
           </Animated.View>
         </Pressable>
       </Modal>
-    </View>
+    </ResponsiveCard>
   );
 };
 

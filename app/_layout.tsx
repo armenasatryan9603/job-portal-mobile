@@ -238,7 +238,7 @@ function AppContent() {
         path.startsWith("/profile/refill-credits") ||
         path.startsWith("profile/refill-credits")
       ) {
-        router.push("/profile/refill-credits");
+        router.push("/profile/payment/refill-credits");
         return;
       }
       

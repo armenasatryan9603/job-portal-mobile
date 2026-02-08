@@ -568,19 +568,17 @@ export default function SpecialistsScreen() {
         onTabChange={handleTabChange}
       />
       <View style={styles.container}>
-        <ResponsiveCard padding={Spacing.md}>
-          <Filter
-            searchPlaceholder={
-              activeTab === "teams"
-                ? t("searchTeams")
-                : t("searchSpecialistsSkills")
-            }
-            onSearchChange={handleSearchChange}
-            filterSections={filterSections}
-            selectedFilters={selectedFilters}
-            onFilterChange={handleFilterChange}
-          />
-        </ResponsiveCard>
+        <Filter
+          searchPlaceholder={
+            activeTab === "teams"
+              ? t("searchTeams")
+              : t("searchSpecialistsSkills")
+          }
+          onSearchChange={handleSearchChange}
+          filterSections={filterSections}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+        />
 
         {/* Show content based on active tab */}
         {activeTab === "individuals" ? (

@@ -13,6 +13,7 @@ import {
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
+import AnalyticsService from "@/categories/AnalyticsService";
 import { Badge } from "./ui/badge";
 import { IconSymbol } from "./ui/icon-symbol";
 import { apiService } from "@/categories/api";
@@ -107,6 +108,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
         url: shareLink,
         title: t("referralInvitation"),
       });
+      AnalyticsService.getInstance().logEvent("referral_shared");
     } catch (error) {
       console.error("Error sharing:", error);
       Alert.alert(t("error"), "Failed to get share link. Please try again.");
@@ -123,6 +125,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
       }
 
       await Clipboard.setString(stats.referralCode);
+      AnalyticsService.getInstance().logEvent("referral_code_copied");
       Alert.alert(t("success"), t("referralCodeCopied"));
     } catch (error) {
       console.error("Error copying code:", error);

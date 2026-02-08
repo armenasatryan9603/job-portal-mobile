@@ -99,9 +99,15 @@ const ServicesScreen = () => {
     debouncedSearchQuery
   );
 
-  const { data: rootCategories } = useRootCategories(language);
+  const {
+    data: rootCategories,
+    isLoading: rootCategoriesLoading,
+    isFetching: rootCategoriesFetching,
+  } = useRootCategories(language);
 
   const mainCategories = rootCategories || [];
+  const isRootCategoriesLoading =
+    rootCategoriesLoading || (rootCategoriesFetching && !rootCategories);
   const pagination = activeData?.pagination || {
     page: 1,
     limit: 20,
@@ -216,14 +222,6 @@ const ServicesScreen = () => {
 
   // Wrap the handler to dismiss keyboard first if visible
   const wrappedHandleCategoryPress = wrapPressHandler(handleCategoryPress);
-
-  const handleCreateOrder = () => {
-    AnalyticsService.getInstance().logEvent("button_clicked", {
-      button_name: "create_order",
-      location: "services_screen",
-    });
-    router.push("/orders/create");
-  };
 
   // Filter configuration
   const filterSections: FilterSection[] = useMemo(
@@ -361,6 +359,7 @@ const ServicesScreen = () => {
   };
 
   const renderEmptyComponent = () => {
+    if (isRootCategoriesLoading) return null;
     if (parentCategories.length === 0) {
       return (
         <EmptyPage
@@ -390,21 +389,19 @@ const ServicesScreen = () => {
             backgroundColor: colors.background,
           }}
         >
-          <ResponsiveCard padding={Spacing.md}>
-            <Filter
-              searchPlaceholder={t("searchCategories")}
-              onSearchChange={handleSearchChange}
-              filterSections={filterSections}
-              selectedFilters={selectedFilters}
-              onFilterChange={handleFilterChange}
-              loading={!!debouncedSearchQuery.trim() && activeIsLoading}
-            />
-          </ResponsiveCard>
+          <Filter
+            searchPlaceholder={t("searchCategories")}
+            onSearchChange={handleSearchChange}
+            filterSections={filterSections}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            loading={!!debouncedSearchQuery.trim() && activeIsLoading}
+          />
         </View>
 
         <ResponsiveContainer padding={Spacing.xs} scrollable={false}>
-        {/* Show skeleton during initial load, otherwise show FlatList */}
-        {isInitialLoading ? (
+        {/* Show skeleton during initial load or until root categories are ready */}
+        {isInitialLoading || isRootCategoriesLoading ? (
           <View
             style={{ flex: 1, marginTop: 80, paddingHorizontal: Spacing.sm }}
           >
@@ -412,7 +409,7 @@ const ServicesScreen = () => {
           </View>
         ) : (
           <FlatList
-            style={{ marginTop: 76 }}
+            style={{ marginTop: 68 }}
             data={parentCategoryRows}
             renderItem={renderCategoryRow}
             keyExtractor={(_, index) => `row-${index}`}

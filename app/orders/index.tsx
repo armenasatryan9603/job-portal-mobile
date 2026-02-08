@@ -17,6 +17,12 @@ import React, {
   useRef,
   useState,
 } from "react";
+import {
+  extractCountryFromLocation,
+  getCountryIsoCode,
+  getCountryIsoFromLocation,
+  getLocationDisplay,
+} from "@/utils/countryExtraction";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
   useAllOrders,
@@ -44,12 +50,6 @@ import OrderItem from "./Item";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { TopTabs } from "@/components/TopTabs";
 import { chatService } from "@/categories/chatService";
-import {
-  extractCountryFromLocation,
-  getCountryIsoCode,
-  getCountryIsoFromLocation,
-  getLocationDisplay,
-} from "@/utils/countryExtraction";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
 import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -1835,19 +1835,17 @@ export default function OrdersScreen() {
           activeTab={activeOrderTab}
           onTabChange={handleTabChange}
         />
-        <View style={{ flex: 1, marginBottom: Spacing.xxxl * 2.5 }}>
-            <ResponsiveCard marginHorizontal={Spacing.md} >
-              <Filter
-                searchPlaceholder={t("searchOrdersSkills")}
-                initialSearchValue={searchQuery}
-                onSearchChange={handleSearchChange}
-                filterSections={filterSections}
-                selectedFilters={selectedFilters}
-                onFilterChange={handleFilterChange}
-                loading={filterLoading}
-                hideModalForLocation={filterModalHiddenForLocation}
-              />
-            </ResponsiveCard>
+        <View style={{ flex: 1, marginBottom: Spacing.xxxl * 2.5 }}>    
+          <Filter
+            searchPlaceholder={t("searchOrdersSkills")}
+            initialSearchValue={searchQuery}
+            onSearchChange={handleSearchChange}
+            filterSections={filterSections}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            loading={filterLoading}
+            hideModalForLocation={filterModalHiddenForLocation}
+          />
 
           {/* Show skeleton loading during initial load */}
           {isInitialLoad ||

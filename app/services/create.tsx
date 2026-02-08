@@ -35,7 +35,9 @@ import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { apiService } from "@/categories/api";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,6 +45,7 @@ import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function CreateMarketScreen() {
+  useAnalytics("CreateService");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -575,6 +578,9 @@ export default function CreateMarketScreen() {
         await queryClient.invalidateQueries({ queryKey: ["market", marketId] });
 
         // Market updated successfully
+        AnalyticsService.getInstance().logEvent("service_updated", {
+          service_id: marketId!.toString(),
+        });
         Alert.alert(t("success"), t("marketUpdated"), [
           {
             text: t("ok"),
@@ -656,6 +662,9 @@ export default function CreateMarketScreen() {
           // Invalidate markets queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["markets"] });
 
+          AnalyticsService.getInstance().logEvent("service_created", {
+            service_id: createdMarket.id.toString(),
+          });
           // Show success message
           Alert.alert(t("success"), t("marketCreated") , [
             {
@@ -684,6 +693,9 @@ export default function CreateMarketScreen() {
           // Invalidate markets queries to refresh the list
           await queryClient.invalidateQueries({ queryKey: ["markets"] });
 
+          AnalyticsService.getInstance().logEvent("service_created", {
+            service_id: createdMarket.id.toString(),
+          });
           // Show success message
           Alert.alert(t("success"), t("marketCreated") , [
             {

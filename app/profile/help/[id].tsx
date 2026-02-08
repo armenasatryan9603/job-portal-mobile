@@ -10,8 +10,10 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export default function HelpDetailScreen() {
+  useAnalytics("HelpDetail");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];

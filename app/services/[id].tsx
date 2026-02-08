@@ -38,11 +38,13 @@ import { apiService } from "@/categories/api";
 import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
 
 export default function MarketDetailScreen() {
+  useAnalytics("MyServiceDetail");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
   const { language } = useLanguage();

@@ -1,39 +1,40 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useModal } from "@/contexts/ModalContext";
-import { apiService } from "@/categories/api";
-import DeleteAccountDialog from "@/components/DeleteAccountDialog";
-import TranslationExample from "@/components/TranslationExample";
-import { ReferralModal } from "@/components/ReferralModal";
-import { router } from "expo-router";
-import React, { useState, useEffect } from "react";
-import {
+  ActivityIndicator,
+  Alert,
+  LayoutAnimation,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
-  View,
-  Alert,
-  ActivityIndicator,
-  Platform,
-  LayoutAnimation,
   UIManager,
+  View,
 } from "react-native";
-import { useLanguage } from "@/contexts/LanguageContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+
 import AnalyticsService from "@/categories/AnalyticsService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DeleteAccountDialog from "@/components/DeleteAccountDialog";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { ReferralModal } from "@/components/ReferralModal";
+import TranslationExample from "@/components/TranslationExample";
+import { apiService } from "@/categories/api";
+import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useModal } from "@/contexts/ModalContext";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 // Enable LayoutAnimation on Android
 if (
@@ -206,6 +207,10 @@ export default function ProfileSettingsScreen() {
       return;
     }
 
+    AnalyticsService.getInstance().logEvent("delete_account_confirmed", {
+      user_id: user.id.toString(),
+    });
+
     console.log("🗑️ User attempting to delete account:", {
       userId: user.id,
       userEmail: user.email,
@@ -359,7 +364,10 @@ export default function ProfileSettingsScreen() {
 
             <TouchableOpacity
               style={styles.settingItem}
-              onPress={() => setShowReferralModal(true)}
+              onPress={() => {
+              AnalyticsService.getInstance().logEvent("referral_modal_opened");
+              setShowReferralModal(true);
+            }}
             >
               <View style={styles.settingInfo}>
                 <IconSymbol name="gift.fill" size={20} color={colors.primary} />
@@ -604,9 +612,9 @@ export default function ProfileSettingsScreen() {
               {__DEV__ && (
                 <View style={styles.settingItem}>
                   <View style={styles.settingInfo}>
-                    <IconSymbol name="globe" size={20} color={colors.purple} />
+                    <IconSymbol name="globe" size={20} color={colors.accent} />
                     <View style={styles.settingText}>
-                      <Text style={[styles.settingTitle, { color: colors.purple }]}>
+                      <Text style={[styles.settingTitle, { color: colors.accent }]}>
                         🧪 Translation Test (Dev Only)
                       </Text>
                       <Text
@@ -641,7 +649,12 @@ export default function ProfileSettingsScreen() {
             >
               <TouchableOpacity
                 style={[styles.settingItem, { borderBottomWidth: 0 }]}
-                onPress={() => setShowDeleteAccountDialog(true)}
+                onPress={() => {
+                AnalyticsService.getInstance().logEvent(
+                  "delete_account_dialog_opened"
+                );
+                setShowDeleteAccountDialog(true);
+              }}
                 disabled={isDeletingAccount}
               >
                 <View style={styles.settingInfo}>

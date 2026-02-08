@@ -3,7 +3,7 @@ import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import * as Haptics from "expo-haptics";
-import { router, usePathname } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import React from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -18,6 +18,10 @@ export const FooterTabs: React.FC = () => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const pathname = usePathname();
+  const { myOrders, myJobs } = useLocalSearchParams<{
+    myOrders?: string;
+    myJobs?: string;
+  }>();
   const { t } = useTranslation();
 
   const tabs: TabItem[] = [
@@ -56,6 +60,12 @@ export const FooterTabs: React.FC = () => {
   const isActive = (tab: TabItem) => {
     if (tab.name === "index") {
       return pathname === "/" || pathname === "/index";
+    }
+    if (tab.name === "orders") {
+      // Orders tab is not active when viewing My Orders or My Jobs
+      if (pathname !== "/orders") return false;
+      if (myOrders === "true" || myJobs === "true") return false;
+      return true;
     }
     return pathname === tab.route;
   };

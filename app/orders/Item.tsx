@@ -20,8 +20,8 @@ import { Image } from "expo-image";
 import { MapViewComponent } from "@/components/MapView";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { getLocationDisplay } from "@/utils/countryExtraction";
+import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -430,7 +430,7 @@ const OrderItem = ({
                 currency={order.currency}
                 rateUnit={order.rateUnit}
                 showOriginal={false}
-                style={{ ...styles.priceText, color: colors.text }}
+                style={{ ...styles.priceText, color: colors.tabIconDefault }}
               />
             ) : (
               <Text style={[styles.priceText, { color: colors.tabIconDefault }]}>
@@ -628,7 +628,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   priceText: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: "700",
   },
   orderDetails: {

@@ -2,9 +2,11 @@ import { useEffect } from "react";
 import { router, usePathname } from "expo-router";
 import { View, ActivityIndicator } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { ThemeColors } from "@/constants/styles";
 
 export default function TeamsScreen() {
+  useAnalytics("Teams");
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const pathname = usePathname();

@@ -22,6 +22,7 @@ import { LocationFilterModal } from "@/components/LocationFilterModal";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ServiceItem } from "@/components/ServiceItem";
 import { apiService } from "@/categories/api";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
@@ -31,6 +32,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function ServicesScreen() {
+  useAnalytics("MyServices");
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
@@ -356,18 +358,16 @@ export default function ServicesScreen() {
   return (
     <Layout header={header}>
       <View style={{ backgroundColor: colors.background }}>
-        <ResponsiveCard>
-          <Filter
-            searchPlaceholder={t("searchServices")}
-            initialSearchValue={searchQuery}
-            onSearchChange={handleSearchChange}
-            filterSections={filterSections}
-            selectedFilters={selectedFilters}
-            onFilterChange={handleFilterChange}
-            loading={filterLoading}
-            hideModalForLocation={filterModalHiddenForLocation}
-          />
-        </ResponsiveCard>
+        <Filter
+          searchPlaceholder={t("searchServices")}
+          initialSearchValue={searchQuery}
+          onSearchChange={handleSearchChange}
+          filterSections={filterSections}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+          loading={filterLoading}
+          hideModalForLocation={filterModalHiddenForLocation}
+        />
       </View>
       {isPaginationInitialLoading ? (
           <View style={{ flex: 1 }}>

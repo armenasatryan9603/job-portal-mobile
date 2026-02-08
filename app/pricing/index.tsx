@@ -11,6 +11,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 import { OrderPricing, apiService } from "@/categories/api";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -44,6 +45,7 @@ const formatRange = (min: number, max?: number | null) =>
     : `${formatCurrency(min)}+`;
 
 export default function PriceInfoScreen() {
+  useAnalytics("Pricing");
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
