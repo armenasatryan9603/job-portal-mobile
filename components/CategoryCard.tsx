@@ -29,13 +29,11 @@ export const CategoryCard: React.FC<CategoryCardProps> = ({
       style={{ flex: 1, marginHorizontal: Spacing.xs }}
     >
       <View style={[styles.gridCard, { backgroundColor: colors.surface }]}>
-        {category.imageUrl && (
           <Image
             source={{ uri: category.imageUrl }}
             style={styles.gridServiceImage}
             resizeMode="contain"
           />
-        )}
         <View style={styles.gridCardContent}>
           <Text
             style={[styles.gridServiceName, { color: colors.text }]}
@@ -88,8 +86,7 @@ const styles = StyleSheet.create({
   gridServiceImage: {
     width: "100%",
     height: 80,
-    // Note: Should use colors.surface dynamically - consider inline style
-    backgroundColor: "white",
+    backgroundColor: "#fff",
   },
   gridCardContent: {
     padding: Spacing.sm,

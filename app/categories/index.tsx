@@ -15,9 +15,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { Spacing, ThemeColors } from "@/constants/styles";
-import { useCategories, useRootCategories } from "@/hooks/useApi";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import { Category } from "@/categories/api";
@@ -26,11 +24,12 @@ import { EmptyPage } from "@/components/EmptyPage";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCategoriesList } from "@/hooks/useCategoriesList";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -59,24 +58,16 @@ const ServicesScreen = () => {
   >({});
   const { data: rateUnitsData } = useRateUnits();
   const rateUnits = (rateUnitsData || []) as RateUnit[];
-  // Use TanStack Query for data fetching
-  const [tempCurrentPage, setTempCurrentPage] = useState(1);
-  // Use keyboard-aware press handler
   const { wrapPressHandler } = useKeyboardAwarePress();
 
   // Debounce search query to avoid API calls on every keystroke
   useEffect(() => {
-    // Clear any existing timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-
-    // Set new timeout for debounced search
     searchTimeoutRef.current = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
     }, 300);
-
-    // Cleanup function
     return () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
@@ -84,66 +75,20 @@ const ServicesScreen = () => {
     };
   }, [searchQuery]);
 
-  // Use unified hook that handles both search and regular listing
   const {
-    data: activeData,
-    isLoading: activeIsLoading,
-    isFetching: activeIsFetching,
-    error: activeError,
-    refetch: activeRefetch,
-  } = useCategories(
-    tempCurrentPage,
-    20,
-    undefined,
-    language,
-    debouncedSearchQuery
-  );
-
-  const {
-    data: rootCategories,
-    isLoading: rootCategoriesLoading,
-    isFetching: rootCategoriesFetching,
-  } = useRootCategories(language);
-
-  const mainCategories = rootCategories || [];
-  const isRootCategoriesLoading =
-    rootCategoriesLoading || (rootCategoriesFetching && !rootCategories);
-  const pagination = activeData?.pagination || {
-    page: 1,
-    limit: 20,
-    total: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  };
-
-  // Use infinite pagination hook
-  const {
-    allItems: categories,
-    currentPage,
-    setCurrentPage,
-    loadMore: loadMoreCategories,
-    onRefresh,
+    items,
+    rootsForFilter,
     isInitialLoading,
     isLoadingMore,
-    flatListProps,
-  } = useInfinitePagination({
-    items: activeData?.categories || [],
-    pagination,
-    isLoading: activeIsLoading,
-    isFetching: activeIsFetching,
-    resetDeps: [debouncedSearchQuery],
-    enableScrollGate: true,
-  });
+    loadMore,
+    onRefresh,
+    error: listError,
+    refetch,
+  } = useCategoriesList(language, debouncedSearchQuery);
 
-  // Sync tempCurrentPage with currentPage from hook
-  useEffect(() => {
-    setTempCurrentPage(currentPage);
-  }, [currentPage]);
-
-  // Filter categories based on category and categories (search is handled by backend)
+  // Filter categories by selected filters (Categories + categories)
   const filteredCategories = useMemo(() => {
-    return categories.filter((category) => {
+    return items.filter((category) => {
       const selectedCategories = selectedFilters["Categories"];
       const matchesCategory =
         !selectedCategories ||
@@ -167,19 +112,19 @@ const ServicesScreen = () => {
 
       return matchesCategory && matchesCategoryFilter;
     });
-  }, [categories, selectedFilters]);
+  }, [items, selectedFilters]);
 
   const isSearchMode = !!debouncedSearchQuery.trim();
 
   // Grid rows: roots when no search, search results (chunked by 3) when searching
   const parentCategoryRows = useMemo(() => {
-    const source = isSearchMode ? filteredCategories : mainCategories;
+    const source = isSearchMode ? filteredCategories : rootsForFilter;
     const rows: Category[][] = [];
     for (let i = 0; i < source.length; i += 3) {
       rows.push(source.slice(i, i + 3));
     }
     return rows;
-  }, [mainCategories, isSearchMode, filteredCategories]);
+  }, [rootsForFilter, isSearchMode, filteredCategories]);
 
   // Get child categories for a specific parent
   const getChildCategories = useCallback(
@@ -213,14 +158,14 @@ const ServicesScreen = () => {
         multiSelect: true,
         options: [
           { key: "all", label: t("allCategories") },
-          ...mainCategories.map((category) => ({
+          ...rootsForFilter.map((category) => ({
             key: category.id.toString(),
             label: category.name,
           })),
         ],
       },
     ],
-    [t, mainCategories, categories]
+    [t, rootsForFilter]
   );
 
   const handleSearchChange = useCallback((text: string) => {
@@ -266,14 +211,14 @@ const ServicesScreen = () => {
   );
 
   // Show error state
-  if (activeError) {
+  if (listError) {
     return (
       <Layout header={header}>
         <EmptyPage
           type="error"
-          title={activeError.message || t("failedToLoadServices")}
+          title={listError.message || t("failedToLoadServices")}
           buttonText={t("retry")}
-          onRetry={() => activeRefetch()}
+          onRetry={() => refetch()}
         />
       </Layout>
     );
@@ -340,7 +285,8 @@ const ServicesScreen = () => {
   };
 
   const renderEmptyComponent = () => {
-    if (isRootCategoriesLoading && !isSearchMode) return null;
+    // Don't show empty while loading (neither for initial list nor during search)
+    if (isInitialLoading) return null;
     if (parentCategoryRows.length === 0) {
       return (
         <EmptyPage
@@ -376,14 +322,13 @@ const ServicesScreen = () => {
             filterSections={filterSections}
             selectedFilters={selectedFilters}
             onFilterChange={handleFilterChange}
-            loading={!!debouncedSearchQuery.trim() && activeIsLoading}
+            loading={!!debouncedSearchQuery.trim() && isInitialLoading}
           />
         </View>
 
         <ResponsiveContainer padding={Spacing.xs} scrollable={false}>
         {/* Show skeleton only on first load (no search); never on search typing */}
-        {!isSearchMode &&
-        (isInitialLoading || isRootCategoriesLoading) ? (
+        {!isSearchMode && isInitialLoading ? (
           <View
             style={{ flex: 1, marginTop: 80, paddingHorizontal: Spacing.sm }}
           >
@@ -397,10 +342,11 @@ const ServicesScreen = () => {
             keyExtractor={(_, index) => `row-${index}`}
             ListFooterComponent={isSearchMode ? null : renderFooter}
             ListEmptyComponent={renderEmptyComponent}
-            {...flatListProps}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.5}
             refreshControl={
               <RefreshControl
-                refreshing={activeIsLoading && !isSearchMode}
+                refreshing={isInitialLoading && !isSearchMode}
                 onRefresh={onRefresh}
                 tintColor={colors.tint}
               />
