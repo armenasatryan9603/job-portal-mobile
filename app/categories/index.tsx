@@ -169,42 +169,23 @@ const ServicesScreen = () => {
     });
   }, [categories, selectedFilters]);
 
-  // Get parent categories only (for main grid)
-  const parentCategories = useMemo(() => {
-    return mainCategories.filter((category) => {
-      if (debouncedSearchQuery.trim()) {
-        return category.name
-          .toLowerCase()
-          .includes(debouncedSearchQuery.toLowerCase());
-      }
-      return true;
-    });
-  }, [mainCategories, debouncedSearchQuery]);
+  const isSearchMode = !!debouncedSearchQuery.trim();
 
-  // Chunk parent categories into rows of 3 for grid layout
+  // Grid rows: roots when no search, search results (chunked by 3) when searching
   const parentCategoryRows = useMemo(() => {
+    const source = isSearchMode ? filteredCategories : mainCategories;
     const rows: Category[][] = [];
-    for (let i = 0; i < parentCategories.length; i += 3) {
-      rows.push(parentCategories.slice(i, i + 3));
+    for (let i = 0; i < source.length; i += 3) {
+      rows.push(source.slice(i, i + 3));
     }
     return rows;
-  }, [parentCategories]);
+  }, [mainCategories, isSearchMode, filteredCategories]);
 
   // Get child categories for a specific parent
   const getChildCategories = useCallback(
     (parentId: number) => {
       return filteredCategories.filter(
         (category) => category.parentId === parentId
-      );
-    },
-    [filteredCategories]
-  );
-
-  // Get child categories for a specific child category (grandchildren)
-  const getGrandchildCategories = useCallback(
-    (childId: number) => {
-      return filteredCategories.filter(
-        (category) => category.parentId === childId
       );
     },
     [filteredCategories]
@@ -359,15 +340,15 @@ const ServicesScreen = () => {
   };
 
   const renderEmptyComponent = () => {
-    if (isRootCategoriesLoading) return null;
-    if (parentCategories.length === 0) {
+    if (isRootCategoriesLoading && !isSearchMode) return null;
+    if (parentCategoryRows.length === 0) {
       return (
         <EmptyPage
           type="empty"
           icon="wrench.and.screwdriver"
           title={t("noCategories")}
           subtitle={
-            searchQuery ? t("tryAdjustingSearchTerms") : t("noCategories")
+            isSearchMode ? t("tryAdjustingSearchTerms") : t("noCategories")
           }
         />
       );
@@ -400,25 +381,26 @@ const ServicesScreen = () => {
         </View>
 
         <ResponsiveContainer padding={Spacing.xs} scrollable={false}>
-        {/* Show skeleton during initial load or until root categories are ready */}
-        {isInitialLoading || isRootCategoriesLoading ? (
+        {/* Show skeleton only on first load (no search); never on search typing */}
+        {!isSearchMode &&
+        (isInitialLoading || isRootCategoriesLoading) ? (
           <View
             style={{ flex: 1, marginTop: 80, paddingHorizontal: Spacing.sm }}
           >
             <FloatingSkeleton count={9} variant="grid" />
           </View>
         ) : (
-          <FlatList
+          <FlatList<Category[]>
             style={{ marginTop: 68 }}
             data={parentCategoryRows}
             renderItem={renderCategoryRow}
             keyExtractor={(_, index) => `row-${index}`}
-            ListFooterComponent={renderFooter}
+            ListFooterComponent={isSearchMode ? null : renderFooter}
             ListEmptyComponent={renderEmptyComponent}
             {...flatListProps}
             refreshControl={
               <RefreshControl
-                refreshing={activeIsLoading}
+                refreshing={activeIsLoading && !isSearchMode}
                 onRefresh={onRefresh}
                 tintColor={colors.tint}
               />

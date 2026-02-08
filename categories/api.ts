@@ -14,6 +14,7 @@ export interface Category {
   descriptionEn?: string;
   descriptionRu?: string;
   descriptionHy?: string;
+  searchTag?: string;
   imageUrl?: string;
   parentId?: number;
   averagePrice?: number;
@@ -752,13 +753,18 @@ class ApiService {
     language: string = "en"
   ): Promise<CategoryListResponse> {
     const params = new URLSearchParams({
-      q: query,
+      q: query.trim(),
       page: page.toString(),
       limit: limit.toString(),
       language: language,
     });
 
-    return this.request<CategoryListResponse>(`/categories/search?${params}`);
+    // Use GET /categories?q=... (same as list endpoint with search) so backend search is reliable
+    return this.request<CategoryListResponse>(
+      `/categories?${params}`,
+      {},
+      false
+    );
   }
 
   // Specialist Profiles API methods
