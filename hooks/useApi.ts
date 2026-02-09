@@ -355,12 +355,12 @@ export const useAllOrders = (
   });
 };
 
-export const useMyOrders = () => {
+export const useMyOrders = (startDate?: string, endDate?: string) => {
   const { isOnline } = useNetworkStatus();
   const { isAuthenticated } = useAuth();
   return useQuery({
-    queryKey: ["orders", "my"],
-    queryFn: () => apiService.getMyOrders(),
+    queryKey: ["orders", "my", startDate, endDate],
+    queryFn: () => apiService.getMyOrders(startDate, endDate),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: isAuthenticated,
     retry: isOnline,
@@ -608,10 +608,14 @@ export const useProposalsByOrder = (orderId: number) => {
   });
 };
 
-export const useProposalsByUser = (userId: number) => {
+export const useProposalsByUser = (
+  userId: number,
+  startDate?: string,
+  endDate?: string
+) => {
   return useQuery({
-    queryKey: ["proposals", "user", userId],
-    queryFn: () => apiService.getProposalsByUser(userId),
+    queryKey: ["proposals", "user", userId, startDate, endDate],
+    queryFn: () => apiService.getProposalsByUser(userId, startDate, endDate),
     staleTime: CACHE_TTL.USER_DATA,
     enabled: !!userId,
   });

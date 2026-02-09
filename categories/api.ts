@@ -1006,8 +1006,12 @@ class ApiService {
     return this.request(`/order-proposals/order/${orderId}`);
   }
 
-  async getProposalsByUser(userId: number): Promise<any> {
-    return this.request(`/order-proposals/user/${userId}`);
+  async getProposalsByUser(userId: number, startDate?: string, endDate?: string): Promise<any> {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const queryString = params.toString();
+    return this.request(`/order-proposals/user/${userId}${queryString ? `?${queryString}` : ""}`);
   }
 
   // Orders API methods
@@ -1212,9 +1216,13 @@ class ApiService {
     ); // Auth required
   }
 
-  async getMyOrders(): Promise<any> {
+  async getMyOrders(startDate?: string, endDate?: string): Promise<any> {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const queryString = params.toString();
     return this.request(
-      `/orders/my-orders`,
+      `/orders/my-orders${queryString ? `?${queryString}` : ""}`,
       {
         method: "GET",
       },
@@ -2294,9 +2302,13 @@ class ApiService {
   /**
    * Get user's bookings
    */
-  async getMyBookings(): Promise<Booking[]> {
+  async getMyBookings(startDate?: string, endDate?: string): Promise<Booking[]> {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const queryString = params.toString();
     return this.request(
-      `/bookings/my`,
+      `/bookings/my${queryString ? `?${queryString}` : ""}`,
       {
         method: "GET",
       },

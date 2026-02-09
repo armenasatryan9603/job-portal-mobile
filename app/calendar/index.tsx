@@ -1,6 +1,7 @@
 import {
   Alert,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,7 @@ import {
   ThemeColors,
 } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMyOrders, useProposalsByUser } from "@/hooks/useApi";
 
 import { Badge } from "@/components/ui/badge";
@@ -73,6 +74,42 @@ const getDateKey = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+// Get date range for visible month (previous month to next month)
+const getDateRangeForMonth = (month: Date): { startDate: string; endDate: string } => {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  
+  // Previous month (first day)
+  const prevMonth = new Date(year, monthIndex - 1, 1);
+  const startDate = getDateKey(prevMonth);
+  
+  // Next month (last day)
+  const nextMonth = new Date(year, monthIndex + 2, 0); // Day 0 = last day of previous month
+  const endDate = getDateKey(nextMonth);
+  
+  return { startDate, endDate };
+};
+
+// Helper function to expand date range by N months before/after
+const getExpandedDateRange = (
+  month: Date,
+  monthsBefore: number,
+  monthsAfter: number
+): { startDate: string; endDate: string } => {
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  
+  // Start date: N months before
+  const startMonth = new Date(year, monthIndex - monthsBefore, 1);
+  const startDate = getDateKey(startMonth);
+  
+  // End date: N months after (last day)
+  const endMonth = new Date(year, monthIndex + monthsAfter + 1, 0);
+  const endDate = getDateKey(endMonth);
+  
+  return { startDate, endDate };
+};
+
 export default function CalendarScreen() {
   useAnalytics("Calendar");
   const { user } = useAuth();
@@ -89,22 +126,96 @@ export default function CalendarScreen() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showEditBookingModal, setShowEditBookingModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState(false);
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+  // Calculate date range for current month (previous month to next month)
+  const dateRange = useMemo(() => getDateRangeForMonth(currentMonth), [currentMonth]);
+
+  // Infinite scroll state for list view
+  const [listViewMonthsBefore, setListViewMonthsBefore] = useState(1);
+  const [listViewMonthsAfter, setListViewMonthsAfter] = useState(1);
+  const [isLoadingPreviousMonth, setIsLoadingPreviousMonth] = useState(false);
+  const [isLoadingNextMonth, setIsLoadingNextMonth] = useState(false);
+
+  // Calculate expanded date range for list view
+  const listViewDateRange = useMemo(
+    () => getExpandedDateRange(currentMonth, listViewMonthsBefore, listViewMonthsAfter),
+    [currentMonth, listViewMonthsBefore, listViewMonthsAfter]
+  );
+
+  // Functions to load previous/next months
+  const loadPreviousMonth = useCallback(async () => {
+    if (isLoadingPreviousMonth) return;
+    setIsLoadingPreviousMonth(true);
+    try {
+      setListViewMonthsBefore((prev) => prev + 1);
+      // Data will be refetched automatically via React Query when listViewDateRange changes
+    } finally {
+      setIsLoadingPreviousMonth(false);
+    }
+  }, [isLoadingPreviousMonth]);
+
+  const loadNextMonth = useCallback(async () => {
+    if (isLoadingNextMonth) return;
+    setIsLoadingNextMonth(true);
+    try {
+      setListViewMonthsAfter((prev) => prev + 1);
+      // Data will be refetched automatically via React Query when listViewDateRange changes
+    } finally {
+      setIsLoadingNextMonth(false);
+    }
+  }, [isLoadingNextMonth]);
+
+  // Reset expanded range when currentMonth changes
+  useEffect(() => {
+    setListViewMonthsBefore(1);
+    setListViewMonthsAfter(1);
+  }, [currentMonth]);
+
+  // Scroll handlers for infinite scroll
+  const handleScroll = useCallback(
+    (event: any) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      const scrollY = contentOffset.y;
+      const contentHeight = contentSize.height;
+      const scrollViewHeight = layoutMeasurement.height;
+
+      // Load previous month when scrolling near top (within 200px)
+      if (scrollY < 200 && !isLoadingPreviousMonth) {
+        loadPreviousMonth();
+      }
+
+      // Load next month when scrolling near bottom (within 200px)
+      if (
+        scrollY + scrollViewHeight > contentHeight - 200 &&
+        !isLoadingNextMonth
+      ) {
+        loadNextMonth();
+      }
+    },
+    [isLoadingPreviousMonth, isLoadingNextMonth, loadPreviousMonth, loadNextMonth]
+  );
+
+  // Determine which date range to use based on view mode
+  const activeDateRange = viewMode === "list" ? listViewDateRange : dateRange;
 
   // Fetch proposals the user submitted
   const {
     data: userProposalsData,
     isLoading: isLoadingUserProposals,
+    isFetching: isFetchingUserProposals,
     error: userProposalsError,
     refetch: refetchUserProposals,
-  } = useProposalsByUser(user?.id || 0);
+  } = useProposalsByUser(user?.id || 0, activeDateRange.startDate, activeDateRange.endDate);
 
   // Fetch orders the user created (to get proposals received on those orders)
   const {
     data: myOrdersData,
     isLoading: isLoadingMyOrders,
+    isFetching: isFetchingMyOrders,
     error: myOrdersError,
     refetch: refetchMyOrders,
-  } = useMyOrders();
+  } = useMyOrders(activeDateRange.startDate, activeDateRange.endDate);
 
   // Fetch bookings
   const fetchBookings = async () => {
@@ -112,7 +223,7 @@ export default function CalendarScreen() {
 
     setIsLoadingBookings(true);
     try {
-      const data = await apiService.getMyBookings();
+      const data = await apiService.getMyBookings(activeDateRange.startDate, activeDateRange.endDate);
       setBookings(data);
     } catch (error) {
       console.error("Error fetching bookings:", error);
@@ -121,12 +232,12 @@ export default function CalendarScreen() {
     }
   };
 
-  // Fetch bookings when component mounts (always fetch, not just when switching to checkIns)
+  // Fetch bookings when component mounts or date range changes
   useEffect(() => {
     if (user) {
       fetchBookings();
     }
-  }, [user]);
+  }, [user, activeDateRange.startDate, activeDateRange.endDate]);
 
   // Subscribe to Pusher events for real-time booking updates
   useEffect(() => {
@@ -146,8 +257,17 @@ export default function CalendarScreen() {
     return unsubscribe;
   }, [user]);
 
-  // Combine loading and error states (only show loading on initial load, not when switching tabs)
-  const isLoading = isLoadingUserProposals || isLoadingMyOrders;
+  // Track if initial load has completed (once we have data, never show skeleton again)
+  useEffect(() => {
+    if ((userProposalsData || myOrdersData) && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [userProposalsData, myOrdersData, hasInitiallyLoaded]);
+
+  // Combine loading and error states
+  // Only show skeleton on initial load (before we've ever loaded data), not when refetching (changing months)
+  const isInitialLoading = !hasInitiallyLoaded && (isLoadingUserProposals || isLoadingMyOrders);
+  const isRefetching = (isFetchingUserProposals || isFetchingMyOrders || isLoadingBookings) && hasInitiallyLoaded;
   const error = userProposalsError || myOrdersError;
   const refetch = () => {
     refetchUserProposals();
@@ -310,7 +430,7 @@ export default function CalendarScreen() {
   // Schedule notifications for accepted jobs when data changes
   useEffect(() => {
     const scheduleNotifications = async () => {
-      if (!user || isLoading || error) {
+      if (!user || isInitialLoading || error) {
         return;
       }
 
@@ -385,7 +505,7 @@ export default function CalendarScreen() {
     };
 
     scheduleNotifications();
-  }, [userProposalsData, myOrdersData, user, isLoading, error]);
+  }, [userProposalsData, myOrdersData, user, isInitialLoading, error]);
 
   const normalizeDate = (date: Date): Date => {
     const normalized = new Date(date);
@@ -396,7 +516,7 @@ export default function CalendarScreen() {
   const getStatusColor = (status: string): string => {
     switch (status) {
       case "pending":
-        return colors.orangeSecondary; // Orange
+        return colors.orange; // Orange
       case "accepted":
         return colors.success; // Green
       case "rejected":
@@ -498,9 +618,9 @@ export default function CalendarScreen() {
           );
 
           // Use orange color for dates with pending bookings, purple for confirmed
-          const borderColor = hasPendingBookings ? colors.orangeSecondary : colors.accent;
+          const borderColor = hasPendingBookings ? colors.orange : colors.accent;
           const backgroundColor = hasPendingBookings
-            ? colors.orangeSecondary + "15"
+            ? colors.orange + "15"
             : colors.accent + "15";
 
           marked[dateString] = {
@@ -565,6 +685,7 @@ export default function CalendarScreen() {
           onMonthChange={(month) => {
             const newMonth = new Date(month.year, month.month - 1, 1);
             setCurrentMonth(newMonth);
+            // Data will be refetched automatically via useEffect when dateRange changes
           }}
         />
 
@@ -702,8 +823,8 @@ export default function CalendarScreen() {
       : "";
 
     Alert.alert(
-      t("approveBooking") || "Approve Booking",
-      `${t("approveBookingConfirm") || "Approve this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
+      t("approveBooking"),
+      `${t("approveBookingConfirm")}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
       [
         {
           text: t("cancel"),
@@ -714,13 +835,13 @@ export default function CalendarScreen() {
           onPress: async () => {
             try {
               await apiService.updateBookingStatus(booking.id, "confirmed");
-              Alert.alert(t("success"), t("bookingApproved") || "Booking approved successfully");
+              Alert.alert(t("success"), t("bookingApproved"));
               fetchBookings(); // Refresh bookings list
             } catch (error: any) {
               console.error("Error approving booking:", error);
               Alert.alert(
                 t("error"),
-                error?.message || t("failedToUpdateBooking") || "Failed to approve booking"
+                error?.message || t("failedToUpdateBooking")
               );
             }
           },
@@ -738,8 +859,8 @@ export default function CalendarScreen() {
       : "";
 
     Alert.alert(
-      t("rejectBooking") || "Reject Booking",
-      `${t("rejectBookingConfirm") || "Reject this booking request?"}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
+      t("rejectBooking"),
+      `${t("rejectBookingConfirm")}\n\n${t("scheduledDate")}: ${booking.scheduledDate}\n${booking.startTime} - ${booking.endTime}\n${t("client")}: ${booking.Client?.name || t("client")}${specialistInfo}${messageInfo}`,
       [
         {
           text: t("cancel"),
@@ -751,13 +872,13 @@ export default function CalendarScreen() {
           onPress: async () => {
             try {
               await apiService.updateBookingStatus(booking.id, "cancelled");
-              Alert.alert(t("success"), t("bookingRejected") || "Booking rejected");
+              Alert.alert(t("success"), t("bookingRejected"));
               fetchBookings(); // Refresh bookings list
             } catch (error: any) {
               console.error("Error rejecting booking:", error);
               Alert.alert(
                 t("error"),
-                error?.message || t("failedToUpdateBooking") || "Failed to reject booking"
+                error?.message || t("failedToUpdateBooking")
               );
             }
           },
@@ -799,7 +920,8 @@ export default function CalendarScreen() {
         ? groupedBookings.filter((g) => g.date === getDateKey(selectedDate))
         : groupedBookings;
 
-      if (displayData.length === 0) {
+      // Don't show empty state while refreshing - keep showing existing data
+      if (displayData.length === 0 && !isRefetching) {
         return (
           <EmptyPage
             type="empty"
@@ -818,6 +940,13 @@ export default function CalendarScreen() {
           ]}
           data={displayData}
           keyExtractor={(item) => item.date}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={colors.tint}
+            />
+          }
           renderItem={({ item }) => (
             <View style={styles.dateGroup}>
               <View
@@ -852,7 +981,7 @@ export default function CalendarScreen() {
                   return (
                     <CountBadge
                       count={item.bookings.length}
-                      color={hasPending ? colors.orangeSecondary : colors.accent}
+                      color={hasPending ? colors.orange : colors.accent}
                     />
                   );
                 })()}
@@ -872,7 +1001,7 @@ export default function CalendarScreen() {
                         backgroundColor:
                           (colors as any).surface || colors.background,
                         borderColor: isPending && isMyOrderBooking
-                          ? colors.orangeSecondary
+                          ? colors.orange
                           : colors.border,
                         borderWidth: isPending && isMyOrderBooking ? 2 : 1,
                         ...Shadows.md,
@@ -914,39 +1043,24 @@ export default function CalendarScreen() {
                           </Text>
                         )}
                       </View>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: isPending
-                              ? colors.orangeSecondary + "20"
-                              : colors.accent + "20",
-                            borderWidth: 1,
-                            borderColor: isPending
-                              ? colors.orangeSecondary + "40"
-                              : colors.accent + "40",
-                          },
-                        ]}
-                      >
-                        <Badge
-                          text={isPending ? t("pending") : t("booked")}
-                          variant={isPending ? "pending" : "default"}
-                          backgroundColor={
-                            isPending
-                              ? colors.orangeSecondary + "20"
-                              : colors.accent + "20"
-                          }
-                          textColor={isPending ? colors.orangeSecondary : colors.accent}
-                          iconColor={isPending ? colors.orangeSecondary : colors.accent}
-                          size="sm"
-                          style={{
-                            borderWidth: 1,
-                            borderColor: isPending
-                              ? colors.orangeSecondary + "40"
-                              : colors.accent + "40",
-                          }}
-                        />
-                    </View>
+                      <Badge
+                        text={isPending ? t("pending") : t("booked")}
+                        variant={isPending ? "pending" : "default"}
+                        backgroundColor={
+                          isPending
+                            ? colors.orange + "20"
+                            : colors.accent + "20"
+                        }
+                        textColor={isPending ? colors.orange : colors.accent}
+                        iconColor={isPending ? colors.orange : colors.accent}
+                        size="sm"
+                        style={{
+                          borderWidth: 1,
+                          borderColor: isPending
+                            ? colors.orange + "40"
+                            : colors.accent + "40",
+                        }}
+                      />
                     </View>
                     <View style={styles.applicationMetaContainer}>
                       <View style={styles.applicationMeta}>
@@ -1106,6 +1220,8 @@ export default function CalendarScreen() {
             </View>
           )}
           contentContainerStyle={styles.listContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={400}
         />
       );
     }
@@ -1115,7 +1231,8 @@ export default function CalendarScreen() {
       ? groupedApplications.filter((g) => g.date === getDateKey(selectedDate))
       : groupedApplications;
 
-    if (displayData.length === 0) {
+    // Don't show empty state while refreshing - keep showing existing data
+    if (displayData.length === 0 && !isRefetching) {
       const emptyTitle =
         dateFilterMode === "applied"
           ? t("noAppliedApplications")
@@ -1147,6 +1264,13 @@ export default function CalendarScreen() {
         ]}
         data={displayData}
         keyExtractor={(item) => item.date}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.tint}
+          />
+        }
         renderItem={({ item }) => (
           <View style={styles.dateGroup}>
             <View
@@ -1283,11 +1407,14 @@ export default function CalendarScreen() {
           </View>
         )}
         contentContainerStyle={styles.listContent}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
       />
     );
   };
 
-  if (isLoading) {
+  // Only show skeleton on initial load, not when refetching (e.g., changing months)
+  if (isInitialLoading) {
     return <CalendarSkeleton />;
   }
 
@@ -1602,14 +1729,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 24,
     letterSpacing: 0.2,
-  },
-  statusBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BorderRadius.md,
-    gap: 6,
   },
   statusDot: {
     width: 8,

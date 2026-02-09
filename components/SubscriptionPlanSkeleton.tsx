@@ -35,7 +35,7 @@ export const SubscriptionPlanSkeleton: React.FC<
 
   const opacity = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
+    outputRange: [0.5, 0.9],
   });
 
   const SkeletonBox = ({

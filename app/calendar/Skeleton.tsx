@@ -1,14 +1,66 @@
 import { Spacing, ThemeColors, BorderRadius } from "@/constants/styles";
 import { Header } from "@/components/Header";
 import { router } from "expo-router";
-import { ScrollView, useColorScheme, View, StyleSheet } from "react-native";
+import { ScrollView, useColorScheme, View, StyleSheet, Animated } from "react-native";
 import { Layout } from "@/components/Layout";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { useEffect, useRef } from "react";
 
 const CalendarSkeleton = () => {
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  const opacity = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 0.9],
+  });
+
+  const SkeletonBox = ({
+    width,
+    height,
+    borderRadius = 8,
+    style,
+  }: {
+    width?: number | string;
+    height: number;
+    borderRadius?: number;
+    style?: any;
+  }) => (
+    <Animated.View
+      style={[
+        {
+          width: width || "100%",
+          height,
+          borderRadius,
+          backgroundColor: colors.border,
+          opacity,
+        },
+        style,
+      ]}
+    />
+  );
+
   return (
     <Layout>
       <Header
@@ -18,20 +70,19 @@ const CalendarSkeleton = () => {
       />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.skeletonTopRow}>
-          <View
-            style={[
-              styles.skeletonTitle,
-              { backgroundColor: colors.border + "40" },
-            ]}
+          <SkeletonBox
+            height={22}
+            width="55%"
+            borderRadius={BorderRadius.md}
+            style={styles.skeletonTitle}
           />
           <View style={styles.skeletonToggleGroup}>
             {[1, 2].map((i) => (
-              <View
+              <SkeletonBox
                 key={`view-toggle-${i}`}
-                style={[
-                  styles.skeletonSquare,
-                  { backgroundColor: colors.border + "30" },
-                ]}
+                height={44}
+                width={44}
+                borderRadius={BorderRadius.md}
               />
             ))}
           </View>
@@ -39,32 +90,32 @@ const CalendarSkeleton = () => {
 
         <View style={styles.skeletonFilterRow}>
           {[1, 2].map((i) => (
-            <View
+            <SkeletonBox
               key={`filter-${i}`}
-              style={[
-                styles.skeletonPill,
-                { backgroundColor: colors.border + "30" },
-              ]}
+              height={40}
+              width={120}
+              borderRadius={20}
             />
           ))}
         </View>
 
-        <View
-          style={[
-            styles.skeletonMonthCard,
-            { backgroundColor: colors.border + "30" },
-          ]}
+        <SkeletonBox
+          height={74}
+          width="100%"
+          borderRadius={BorderRadius.lg}
+          style={styles.skeletonMonthCard}
         />
 
         <View style={styles.skeletonCalendarGrid}>
           {Array.from({ length: 6 }).map((_, row) => (
             <View key={`row-${row}`} style={styles.skeletonCalendarRow}>
               {Array.from({ length: 7 }).map((_, col) => (
-                <View
+                <SkeletonBox
                   key={`cell-${row}-${col}`}
+                  height={44}
+                  borderRadius={BorderRadius.md}
                   style={[
                     styles.skeletonDay,
-                    { backgroundColor: colors.border + "35" },
                     col === 6 && { marginRight: 0 },
                   ]}
                 />
@@ -74,20 +125,19 @@ const CalendarSkeleton = () => {
         </View>
 
         <View style={styles.skeletonLegend}>
-          <View
-            style={[
-              styles.skeletonLine,
-              { width: "35%", backgroundColor: colors.border + "40" },
-            ]}
+          <SkeletonBox
+            height={12}
+            width="35%"
+            borderRadius={BorderRadius.sm}
+            style={styles.skeletonLine}
           />
           <View style={styles.skeletonLegendRow}>
             {Array.from({ length: 4 }).map((_, idx) => (
-              <View
+              <SkeletonBox
                 key={`legend-${idx}`}
-                style={[
-                  styles.skeletonLegendPill,
-                  { backgroundColor: colors.border + "30" },
-                ]}
+                height={34}
+                width={80}
+                borderRadius={BorderRadius.md}
               />
             ))}
           </View>

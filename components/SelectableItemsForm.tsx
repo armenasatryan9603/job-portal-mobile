@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "80%",
+    height: "80%",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
