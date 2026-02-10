@@ -55,6 +55,9 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
   const [activeTab, setActiveTab] = useState<"pattern" | "preview">("pattern");
   const [defaultStartTime, setDefaultStartTime] = useState("09:00");
   const [defaultEndTime, setDefaultEndTime] = useState("17:00");
+  const [subscribeAheadInput, setSubscribeAheadInput] = useState(
+    value.subscribeAheadDays != null ? value.subscribeAheadDays.toString() : ""
+  );
 
   // Initialize default times from existing schedule
   useEffect(() => {
@@ -69,6 +72,13 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
       }
     }
   }, []);
+
+  // Keep local subscribe-ahead input in sync with external value
+  useEffect(() => {
+    if (value.subscribeAheadDays != null) {
+      setSubscribeAheadInput(value.subscribeAheadDays.toString());
+    }
+  }, [value.subscribeAheadDays]);
 
   const days = [
     { key: "monday", label: t("monday") },
@@ -515,10 +525,10 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
       {/* Subscribe Ahead Days */}
       <View style={[styles.section, { backgroundColor: colors.background }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("subscribeAheadDays") || "How Long Can Users Subscribe Ahead"}
+          {t("subscribeAheadDays")}
         </Text>
         <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
-          {t("subscribeAheadDaysDesc") || "Set how many days in advance users can book appointments"}
+          {t("subscribeAheadDaysDesc")}
         </Text>
         <View style={styles.subscribeAheadRow}>
           <TextInput
@@ -530,10 +540,18 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                 color: colors.text,
               },
             ]}
-            value={(value.subscribeAheadDays || 90).toString()}
+            value={subscribeAheadInput}
             onChangeText={(text) => {
-              const days = parseInt(text.replace(/[^0-9]/g, ""), 10) || 90;
-              onChange({ ...value, subscribeAheadDays: days });
+              const digitsOnly = text.replace(/[^0-9]/g, "");
+              setSubscribeAheadInput(digitsOnly);
+
+              const parsed = parseInt(digitsOnly, 10);
+              const nextValue: WeeklySchedule = {
+                ...value,
+                subscribeAheadDays: Number.isNaN(parsed) ? undefined : parsed,
+              };
+
+              onChange(nextValue);
             }}
             placeholder="90"
             placeholderTextColor={colors.tabIconDefault}

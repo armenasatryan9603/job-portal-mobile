@@ -3,6 +3,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
   StyleSheet,
   Text,
@@ -242,6 +243,22 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
           {resendTimer > 0 ? `${t("resendIn")} ${resendTimer}s` : t("resend")}
         </Text>
       </TouchableOpacity>
+
+      {isLoading && (
+        <View
+          style={[
+            styles.loadingOverlay,
+            {
+              backgroundColor:
+                colorScheme === "dark"
+                  ? "rgba(0,0,0,0.4)"
+                  : "rgba(255,255,255,0.7)",
+            },
+          ]}
+        >
+          <ActivityIndicator size="large" color={colors.tint} />
+        </View>
+      )}
     </View>
   );
 };
@@ -301,6 +318,11 @@ const styles = StyleSheet.create({
   resendButton: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorContainer: {
     marginTop: 12,
