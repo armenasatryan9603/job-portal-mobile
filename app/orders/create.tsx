@@ -599,10 +599,10 @@ export default function CreateOrderScreen() {
           // Store order status
           setOrderStatus(orderData.status || null);
 
-          // Populate form with existing data
+          // Populate form with existing data (use localized title/description when available)
           setFormData({
-            title: orderData.title || "",
-            description: orderData.description || "",
+            title: TranslatedContent.name || "",
+            description: TranslatedContent.description || "",
             budget: orderData.budget?.toString() || "",
             location: orderData.location || "",
             skills: orderData.skills?.join(", ") || "",
@@ -1545,6 +1545,19 @@ export default function CreateOrderScreen() {
         finalOrderData.useAIEnhancement = true;
       } else {
         finalOrderData.useAIEnhancement = false;
+        // When updating without AI, set the current language's title/description so the correct field is updated
+        const titleVal = (orderData.title ?? "").trim();
+        const descVal = (orderData.description ?? "").trim();
+        if (language === "en") {
+          finalOrderData.titleEn = titleVal;
+          finalOrderData.descriptionEn = descVal;
+        } else if (language === "ru") {
+          finalOrderData.titleRu = titleVal;
+          finalOrderData.descriptionRu = descVal;
+        } else if (language === "hy") {
+          finalOrderData.titleHy = titleVal;
+          finalOrderData.descriptionHy = descVal;
+        }
       }
 
       const currentOrderId = orderId ? parseInt(orderId as string) : null;

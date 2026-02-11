@@ -114,7 +114,6 @@ export default function OrdersScreen() {
   >({
     status: isMyJobs || isSavedOrders || isMyOrders ? "all" : "open",
     categories: filterCategoryId ? [filterCategoryId.toString()] : [],
-    priceRange: { min: 0, max: 100000 },
     sortBy: "relevance", // Default sort: relevance, date_desc, date_asc, price_desc, price_asc
     location: null as {
       latitude: number;
@@ -931,13 +930,11 @@ export default function OrdersScreen() {
       : [];
     const sortBy = (selectedFilters.sortBy as string) || "relevance";
 
-    // alert('yyyyyyyyyyyyyyyyyyyyy' + isMyOrders + ' -- ' + isMyJobs + ' -- ' + isSavedOrders);
-    
     if (isMyOrders || isMyJobs || isSavedOrders) {
       // Client-side pagination for My Orders/My Jobs/Saved Orders
       // Note: These queries don't support server-side service filtering yet
       let filteredOrders = allUserOrders;
-      
+
       // Apply search filter
       if (searchQuery.trim()) {
         filteredOrders = filterOrdersBySearch(filteredOrders, searchQuery);
@@ -1845,6 +1842,7 @@ export default function OrdersScreen() {
             onFilterChange={handleFilterChange}
             loading={filterLoading}
             hideModalForLocation={filterModalHiddenForLocation}
+            priceRangeCurrency={user?.currency ?? "USD"}
           />
 
           {/* Show skeleton loading during initial load */}
@@ -1865,7 +1863,7 @@ export default function OrdersScreen() {
                   isMyOrders={isMyOrders}
                   isMyJobs={isMyJobs}
                   hasAppliedToOrder={hasAppliedToOrder}
-                  isViewed={isOrderViewed(item.id)}
+                  isViewed={isMyOrders || isMyJobs ? false : isOrderViewed(item.id)}
                   isSaved={isOrderSaved(item.id)}
                   onOrderViewed={handleOrderViewed}
                   onApplyToOrder={handleApplyToOrder}

@@ -66,6 +66,25 @@ export interface FilterProps {
   ) => void;
   loading?: boolean;
   hideModalForLocation?: boolean; // Hide filter modal when location modal is open
+  /** Currency code for price range label (e.g. USD, EUR, AMD). Default USD. */
+  priceRangeCurrency?: string;
+}
+
+/** Returns symbol or code for price range prefix (e.g. USD → $, EUR → €, AMD → AMD). */
+function getPriceRangeCurrencyDisplay(currency: string): string {
+  const code = (currency || "USD").toUpperCase();
+  switch (code) {
+    case "USD":
+      return "$";
+    case "EUR":
+      return "€";
+    case "RUB":
+      return "₽";
+    case "AMD":
+      return "֏";
+    default:
+      return code;
+  }
 }
 
 export const Filter: React.FC<FilterProps> = ({
@@ -77,6 +96,7 @@ export const Filter: React.FC<FilterProps> = ({
   onFilterChange,
   loading = false,
   hideModalForLocation = false,
+  priceRangeCurrency = "USD",
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -725,7 +745,7 @@ export const Filter: React.FC<FilterProps> = ({
                                           { color: colors.tabIconDefault },
                                         ]}
                                       >
-                                        $
+                                        {getPriceRangeCurrencyDisplay(priceRangeCurrency)}
                                       </Text>
                                     )}
                                     {sectionKey === "radius" && (

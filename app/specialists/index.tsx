@@ -578,6 +578,7 @@ export default function SpecialistsScreen() {
           filterSections={filterSections}
           selectedFilters={selectedFilters}
           onFilterChange={handleFilterChange}
+          priceRangeCurrency={user?.currency ?? "USD"}
         />
 
         {/* Show content based on active tab */}
