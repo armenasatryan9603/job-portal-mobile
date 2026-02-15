@@ -146,17 +146,50 @@ const OrderItem = ({
   const getStatusVariant = (status: string): "success" | "warning" | "info" | "error" | "pending" | "default" => {
     switch (status) {
       case "open":
+      case "active":
         return "success";
       case "in_progress":
         return "warning";
       case "completed":
         return "info";
       case "cancelled":
+      case "rejected":
         return "error";
       case "pending":
+      case "pending_review":
         return "pending";
+      case "draft":
+        return "warning";
+      case "closed":
+        return "default";
       default:
         return "default";
+    }
+  };
+
+  // Explicit status-to-label mapping to ensure correct display (draft vs pending_review)
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case "draft":
+        return t("draft");
+      case "pending_review":
+        return t("pendingReview");
+      case "open":
+        return t("open");
+      case "active":
+        return t("active");
+      case "in_progress":
+        return t("inProgress");
+      case "completed":
+        return t("completed");
+      case "cancelled":
+        return t("cancelled");
+      case "rejected":
+        return t("rejected");
+      case "closed":
+        return t("closed");
+      default:
+        return t(status) || status;
     }
   };
 
@@ -414,7 +447,7 @@ const OrderItem = ({
               )}
             </View>
             <Badge
-              text={t(`${order.status}`)}
+              text={getStatusLabel(order.status)}
               variant={getStatusVariant(order.status)}
               // icon={getStatusIcon(order.status)}
               iconSize={10}

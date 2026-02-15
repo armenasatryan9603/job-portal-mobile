@@ -313,48 +313,6 @@ export const useOrderById = (id: number) => {
   });
 };
 
-export const useAllOrders = (
-  page: number = 1,
-  limit: number = 10,
-  status?: string,
-  categoryId?: number,
-  categoryIds?: number[],
-  clientId?: number,
-  orderType?: "one_time" | "permanent",
-  country?: string,
-  enabled: boolean = true
-) => {
-  const { isOnline } = useNetworkStatus();
-  return useQuery({
-    queryKey: [
-      "orders",
-      "all",
-      page,
-      limit,
-      status,
-      categoryId,
-      categoryIds,
-      clientId,
-      orderType,
-      country,
-    ],
-    queryFn: () =>
-      apiService.getAllOrders(
-        page,
-        limit,
-        status,
-        categoryId,
-        categoryIds,
-        clientId,
-        orderType,
-        country
-      ),
-    staleTime: CACHE_TTL.USER_DATA,
-    enabled: enabled,
-    retry: isOnline,
-  });
-};
-
 export const useMyOrders = (startDate?: string, endDate?: string) => {
   const { isOnline } = useNetworkStatus();
   const { isAuthenticated } = useAuth();
@@ -379,99 +337,84 @@ export const useMyJobs = () => {
   });
 };
 
-export const useAvailableOrders = (
+/**
+ * Unified hook for orders feed: uses getPublicOrders when no search query,
+ * and searchOrders when search query is provided.
+ */
+export const useOrdersFeed = (
   page: number = 1,
   limit: number = 10,
-  categoryId?: number,
-  location?: string,
-  budgetMin?: number,
-  budgetMax?: number
+  options: {
+    searchQuery?: string;
+    status?: string;
+    categoryIds?: number[];
+    orderType?: "one_time" | "permanent";
+    country?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    budgetCurrency?: string;
+    enabled?: boolean;
+  } = {}
 ) => {
   const { isOnline } = useNetworkStatus();
-  return useQuery({
-    queryKey: [
-      "orders",
-      "available",
-      page,
-      limit,
-      categoryId,
-      location,
-      budgetMin,
-      budgetMax,
-    ],
-    queryFn: () =>
-      apiService.getAvailableOrders(
-        page,
-        limit,
-        categoryId,
-        location,
-        budgetMin,
-        budgetMax
-      ),
-    staleTime: CACHE_TTL.DYNAMIC,
-    enabled: true,
-    retry: isOnline,
-  });
-};
+  const {
+    searchQuery,
+    status,
+    categoryIds,
+    orderType,
+    country,
+    budgetMin,
+    budgetMax,
+    budgetCurrency,
+    enabled = true,
+  } = options;
 
-export const usePublicOrders = (
-  page: number = 1,
-  limit: number = 10,
-  status?: string,
-  categoryId?: number,
-  categoryIds?: number[],
-  clientId?: number,
-  orderType?: "one_time" | "permanent",
-  country?: string,
-  enabled: boolean = true
-) => {
-  const { isOnline } = useNetworkStatus();
+  const trimmedSearch = searchQuery?.trim() ?? "";
+  const isSearchMode = trimmedSearch.length > 0;
+
   return useQuery({
     queryKey: [
       "orders",
-      "public",
+      isSearchMode ? "search" : "public",
+      isSearchMode ? trimmedSearch : undefined,
       page,
       limit,
-      status,
-      categoryId,
+      isSearchMode ? undefined : status,
       categoryIds,
-      clientId,
       orderType,
       country,
+      budgetMin,
+      budgetMax,
+      budgetCurrency,
     ],
     queryFn: () =>
-      apiService.getPublicOrders(
-        page,
-        limit,
-        status,
-        categoryId,
-        categoryIds,
-        clientId,
-        orderType,
-        country
-      ),
+      isSearchMode
+        ? apiService.searchOrders(
+            trimmedSearch,
+            page,
+            limit,
+            categoryIds,
+            orderType,
+            country,
+            budgetMin,
+            budgetMax,
+            budgetCurrency
+          )
+        : apiService.getPublicOrders(
+            page,
+            limit,
+            status,
+            undefined,
+            categoryIds,
+            undefined,
+            orderType,
+            country,
+            budgetMin,
+            budgetMax,
+            budgetCurrency
+          ),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: enabled,
-    retry: isOnline,
-  });
-};
-
-export const useSearchOrders = (
-  query: string,
-  page: number = 1,
-  limit: number = 10,
-  categoryIds?: number[],
-  orderType?: "one_time" | "permanent",
-  country?: string,
-  enabled: boolean = true
-) => {
-  const { isOnline } = useNetworkStatus();
-  return useQuery({
-    queryKey: ["orders", "search", query, page, limit, categoryIds, orderType, country],
-    queryFn: () =>
-      apiService.searchOrders(query, page, limit, categoryIds, orderType, country),
-    staleTime: CACHE_TTL.DYNAMIC,
-    enabled: enabled && !!query,
     retry: isOnline,
   });
 };

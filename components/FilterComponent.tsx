@@ -107,9 +107,40 @@ export const Filter: React.FC<FilterProps> = ({
     Record<string, boolean>
   >({});
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [priceRangeDraft, setPriceRangeDraft] = useState<{
+    min: number;
+    max: number;
+  } | null>(null);
+  const priceRangeExpandedRef = useRef(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const panY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+
+  const priceRangeSection = filterSections.find(
+    (s) => (s.key || s.title) === "priceRange"
+  );
+  const priceRangeConfig = priceRangeSection?.rangeConfig;
+
+  // Sync price draft when price range section is expanded (so inputs show applied values)
+  useEffect(() => {
+    const expanded = !!expandedSections["priceRange"];
+    if (expanded && priceRangeConfig && !priceRangeExpandedRef.current) {
+      setPriceRangeDraft(
+        getRangeValues(
+          selectedFilters.priceRange,
+          priceRangeConfig.min,
+          priceRangeConfig.max
+        )
+      );
+      priceRangeExpandedRef.current = true;
+    }
+    if (!expanded) priceRangeExpandedRef.current = false;
+  }, [
+    expandedSections["priceRange"],
+    selectedFilters.priceRange,
+    priceRangeConfig?.min,
+    priceRangeConfig?.max,
+  ]);
 
   // Helper function to get range values
   const getRangeValues = (
@@ -550,6 +581,24 @@ export const Filter: React.FC<FilterProps> = ({
                     if (section.type === "range" && section.rangeConfig) {
                       const rangeConfig = section.rangeConfig; // Store to help TypeScript
                       const isExpanded = isSectionExpanded(sectionKey, true);
+                      const isPriceRange = sectionKey === "priceRange";
+                      const appliedRange = getRangeValues(
+                        selectedFilters[sectionKey],
+                        rangeConfig.min,
+                        rangeConfig.max
+                      );
+                      const effectiveRange =
+                        isPriceRange && priceRangeDraft
+                          ? priceRangeDraft
+                          : appliedRange;
+                      const minDisplay =
+                        effectiveRange.min === rangeConfig.min
+                          ? ""
+                          : effectiveRange.min.toString();
+                      const maxDisplay =
+                        effectiveRange.max === rangeConfig.max
+                          ? ""
+                          : effectiveRange.max.toString();
                       return (
                         <View
                           key={sectionKey}
@@ -577,11 +626,39 @@ export const Filter: React.FC<FilterProps> = ({
                               </Text>
                             </TouchableOpacity>
                             <View style={styles.sectionHeaderRight}>
-                              <CountBadge
-                                count={selectedCount}
-                                color={colors.background}
-                                backgroundColor={colors.tint}
-                              />
+                              {selectedCount > 0 && (
+                                <>
+                                  <CountBadge
+                                    count={selectedCount}
+                                    color={colors.background}
+                                    backgroundColor={colors.tint}
+                                    style={styles.badge}
+                                    textStyle={styles.badgeText}
+                                  />
+                                  <TouchableOpacity
+                                    onPress={() => {
+                                      clearFilter(sectionKey);
+                                      setPriceRangeDraft({
+                                        min: rangeConfig.min,
+                                        max: rangeConfig.max,
+                                      });
+                                    }}
+                                    hitSlop={{
+                                      top: 5,
+                                      bottom: 5,
+                                      left: 5,
+                                      right: 5,
+                                    }}
+                                    style={styles.clearButton}
+                                  >
+                                    <IconSymbol
+                                      name="xmark.circle.fill"
+                                      size={14}
+                                      color={colors.tabIconDefault}
+                                    />
+                                  </TouchableOpacity>
+                                </>
+                              )}
                               <TouchableOpacity
                                 onPress={() => toggleSection(sectionKey, true)}
                                 hitSlop={{
@@ -629,7 +706,7 @@ export const Filter: React.FC<FilterProps> = ({
                                           { color: colors.tabIconDefault },
                                         ]}
                                       >
-                                        $
+                                        {getPriceRangeCurrencyDisplay(priceRangeCurrency)}
                                       </Text>
                                     )}
                                     {sectionKey === "radius" && (
@@ -662,22 +739,46 @@ export const Filter: React.FC<FilterProps> = ({
                                         colors.tabIconDefault
                                       }
                                       keyboardType="numeric"
-                                      value={
-                                        getRangeValues(
-                                          selectedFilters[sectionKey],
-                                          rangeConfig.min,
-                                          rangeConfig.max
-                                        ).min === rangeConfig.min
-                                          ? ""
-                                          : getRangeValues(
-                                              selectedFilters[sectionKey],
-                                              rangeConfig.min,
-                                              rangeConfig.max
-                                            ).min.toString()
-                                      }
+                                      value={minDisplay}
                                       onChangeText={(text) => {
+                                        if (isPriceRange) {
+                                          if (text === "") {
+                                            setPriceRangeDraft((prev) =>
+                                              prev
+                                                ? {
+                                                    ...prev,
+                                                    min: rangeConfig.min,
+                                                  }
+                                                : {
+                                                    min: rangeConfig.min,
+                                                    max: appliedRange.max,
+                                                  }
+                                            );
+                                            return;
+                                          }
+                                          const numValue = parseInt(text);
+                                          if (isNaN(numValue)) return;
+                                          const min = Math.max(
+                                            rangeConfig.min,
+                                            numValue
+                                          );
+                                          setPriceRangeDraft((prev) =>
+                                            prev
+                                              ? {
+                                                  ...prev,
+                                                  min: Math.min(min, prev.max),
+                                                }
+                                              : {
+                                                  min: Math.min(
+                                                    min,
+                                                    appliedRange.max
+                                                  ),
+                                                  max: appliedRange.max,
+                                                }
+                                          );
+                                          return;
+                                        }
                                         if (text === "") {
-                                          // If empty, reset to default min
                                           const max = getRangeValues(
                                             selectedFilters[sectionKey],
                                             rangeConfig.min,
@@ -691,7 +792,6 @@ export const Filter: React.FC<FilterProps> = ({
                                         }
                                         const numValue = parseInt(text);
                                         if (isNaN(numValue)) return;
-
                                         const min = Math.max(
                                           rangeConfig.min,
                                           numValue
@@ -778,22 +878,43 @@ export const Filter: React.FC<FilterProps> = ({
                                         colors.tabIconDefault
                                       }
                                       keyboardType="numeric"
-                                      value={
-                                        getRangeValues(
-                                          selectedFilters[sectionKey],
-                                          rangeConfig.min,
-                                          rangeConfig.max
-                                        ).max === rangeConfig.max
-                                          ? ""
-                                          : getRangeValues(
-                                              selectedFilters[sectionKey],
-                                              rangeConfig.min,
-                                              rangeConfig.max
-                                            ).max.toString()
-                                      }
+                                      value={maxDisplay}
                                       onChangeText={(text) => {
+                                        if (isPriceRange) {
+                                          if (text === "") {
+                                            setPriceRangeDraft((prev) =>
+                                              prev
+                                                ? {
+                                                    ...prev,
+                                                    max: rangeConfig.max,
+                                                  }
+                                                : {
+                                                    min: appliedRange.min,
+                                                    max: rangeConfig.max,
+                                                  }
+                                            );
+                                            return;
+                                          }
+                                          const numValue = parseInt(text);
+                                          if (isNaN(numValue)) return;
+                                          const max = Math.min(
+                                            rangeConfig.max,
+                                            numValue
+                                          );
+                                          setPriceRangeDraft((prev) =>
+                                            prev
+                                              ? {
+                                                  ...prev,
+                                                  max: Math.max(max, prev.min),
+                                                }
+                                              : {
+                                                  min: appliedRange.min,
+                                                  max: Math.max(max, appliedRange.min),
+                                                }
+                                          );
+                                          return;
+                                        }
                                         if (text === "") {
-                                          // If empty, reset to default max
                                           const min = getRangeValues(
                                             selectedFilters[sectionKey],
                                             rangeConfig.min,
@@ -807,7 +928,6 @@ export const Filter: React.FC<FilterProps> = ({
                                         }
                                         const numValue = parseInt(text);
                                         if (isNaN(numValue)) return;
-
                                         const min = getRangeValues(
                                           selectedFilters[sectionKey],
                                           rangeConfig.min,
@@ -827,6 +947,21 @@ export const Filter: React.FC<FilterProps> = ({
                                   </View>
                                 </View>
                               </View>
+                              {isPriceRange && (
+                                <View style={styles.applyPriceButtonWrap}>
+                                  <Button
+                                    variant="primary"
+                                    title={t("apply")}
+                                    onPress={() => {
+                                      const toApply =
+                                        priceRangeDraft ?? appliedRange;
+                                      onFilterChange("priceRange", toApply);
+                                    }}
+                                    disabled={loading}
+                                    style={styles.applyPriceButton}
+                                  />
+                                </View>
+                              )}
                             </View>
                           )}
                         </View>
@@ -1620,6 +1755,13 @@ const styles = StyleSheet.create({
   rangeContainer: {
     paddingVertical: 6,
     paddingTop: 8,
+  },
+  applyPriceButtonWrap: {
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  applyPriceButton: {
+    alignSelf: "stretch",
   },
   priceInputsContainer: {
     flexDirection: "row",

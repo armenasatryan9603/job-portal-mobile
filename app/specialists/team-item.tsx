@@ -15,6 +15,7 @@ export interface Team {
   createdBy: number;
   createdAt: string;
   isActive: boolean;
+  bannerUrl?: string | null;
   Creator?: {
     id: number;
     name: string;
@@ -65,10 +66,13 @@ export const TeamItem: React.FC<TeamItemProps> = ({
   const acceptedMembers = getAcceptedMembers(team);
   const memberCount = acceptedMembers.length;
 
-  // Check if user is part of this team (creator or member)
   const isUserPartOfTeam =
     team.createdBy === user?.id ||
     acceptedMembers.some((member) => member.userId === user?.id);
+
+  const hasBanner = !!(team.bannerUrl?.trim?.());
+  const [bannerError, setBannerError] = React.useState(false);
+  const showBannerImage = hasBanner && !bannerError;
 
   return (
     <TouchableOpacity
@@ -77,135 +81,100 @@ export const TeamItem: React.FC<TeamItemProps> = ({
     >
       <ResponsiveCard padding={0}>
         <View style={styles.teamCard}>
-          <View style={styles.teamHeader}>
-            <View
-              style={[
-                styles.iconContainer,
-                { backgroundColor: colors.tint + "20" },
-              ]}
-            >
-              <IconSymbol
-                name="person.3.fill"
-                size={32}
-                color={colors.tint}
+          {/* Banner - full width, replaces profile circle */}
+          <View style={styles.bannerContainer}>
+            {showBannerImage && team.bannerUrl ? (
+              <Image
+                source={{ uri: team.bannerUrl.trim() }}
+                style={styles.bannerImage}
+                resizeMode="cover"
+                onError={() => setBannerError(true)}
               />
-            </View>
+            ) : (
+              <View
+                style={[
+                  styles.bannerPlaceholder,
+                  { backgroundColor: colors.tint + "20" },
+                ]}
+              >
+                <IconSymbol
+                  name="person.3.fill"
+                  size={40}
+                  color={colors.tint}
+                />
+              </View>
+            )}
+          </View>
+
+          <View style={styles.teamHeader}>
             <View style={styles.teamInfo}>
-              <Text style={[styles.teamName, { color: colors.text }]}>
+              <Text style={[styles.teamName, { color: colors.text }]} numberOfLines={1}>
                 {team.name}
               </Text>
-              <View style={styles.teamMeta}>
-                <View style={styles.metaItem}>
-                  <IconSymbol
-                    name="person.fill"
-                    size={14}
-                    color={colors.tabIconDefault}
-                  />
-                  <Text
-                    style={[
-                      styles.metaText,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {memberCount} {t("members")}
-                  </Text>
-                </View>
-                {team.Creator && (
-                  <View style={styles.metaItem}>
-                    <IconSymbol
-                      name="person.circle.fill"
-                      size={14}
-                      color={colors.tabIconDefault}
-                    />
-                    <Text
-                      style={[
-                        styles.metaText,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      {team.Creator.name}
-                    </Text>
-                  </View>
-                )}
+              <View style={styles.teamMetaRow}>
+                <Text style={[styles.teamSubtitle, { color: colors.tabIconDefault }]}>
+                  {t("team")} • {memberCount} {t("members")}
+                </Text>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: team.isActive ? colors.success : colors.warning },
+                  ]}
+                />
+                <Text style={[styles.statusText, { color: colors.tabIconDefault }]}>
+                  {team.isActive ? t("active") : t("inactive")}
+                </Text>
               </View>
             </View>
-            <IconSymbol
-              name="chevron.right"
-              size={20}
-              color={colors.tabIconDefault}
-            />
+            <IconSymbol name="chevron.right" size={20} color={colors.tabIconDefault} />
           </View>
 
           {acceptedMembers.length > 0 && (
-            <View style={styles.membersContainer}>
-              <Text
-                style={[
-                  styles.membersTitle,
-                  { color: colors.tabIconDefault },
-                ]}
-              >
-                {t("teamMembers")}
-              </Text>
-              <View style={styles.membersList}>
-                {acceptedMembers.slice(0, 5).map((member) => (
-                  <View
-                    key={member.id}
-                    style={[
-                      styles.memberAvatar,
-                      { backgroundColor: colors.border },
-                    ]}
-                  >
-                    {member.User?.avatarUrl &&
-                    !teamImageErrors.has(member.User?.id || 0) ? (
-                      <Image
-                        source={{ uri: member.User?.avatarUrl }}
-                        style={styles.avatar}
-                        onError={() =>
-                          onImageError(member.User?.id || 0)
-                        }
-                      />
-                    ) : (
-                      <View style={styles.defaultAvatar}>
-                        <Text
-                          style={[
-                            styles.avatarInitials,
-                            { color: colors.tabIconDefault },
-                          ]}
-                        >
-                          {(member.User?.name || t("deletedUser"))
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ))}
-                {memberCount > 5 && (
-                  <View
-                    style={[
-                      styles.memberAvatar,
-                      styles.moreMembers,
-                      { backgroundColor: colors.background },
-                    ]}
-                  >
+            <View style={styles.membersRow}>
+              {acceptedMembers.slice(0, 5).map((member) => (
+                <View
+                  key={member.id}
+                  style={[styles.memberAvatar, { backgroundColor: colors.border }]}
+                >
+                  {member.User?.avatarUrl &&
+                  !teamImageErrors.has(member.User?.id || 0) ? (
+                    <Image
+                      source={{ uri: member.User?.avatarUrl }}
+                      style={styles.memberAvatarImg}
+                      onError={() => onImageError(member.User?.id || 0)}
+                    />
+                  ) : (
                     <Text
-                      style={[
-                        styles.moreMembersText,
-                        { color: colors.tint },
-                      ]}
+                      style={[styles.memberInitials, { color: colors.tabIconDefault }]}
                     >
-                      +{memberCount - 5}
+                      {(member.User?.name || t("deletedUser"))
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
                     </Text>
-                  </View>
-                )}
-              </View>
+                  )}
+                </View>
+              ))}
+              {memberCount > 5 && (
+                <View style={[styles.memberAvatar, styles.moreAvatar, { backgroundColor: colors.background }]}>
+                  <Text style={[styles.moreMembersText, { color: colors.tint }]}>
+                    +{memberCount - 5}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
           <View style={styles.teamFooter}>
+            <View style={styles.statsContainer}>
+              {team.Creator && (
+                <Text style={[styles.creatorText, { color: colors.tabIconDefault }]} numberOfLines={1}>
+                  {t("ledBy")} {team.Creator.name}
+                </Text>
+              )}
+            </View>
             {!isUserPartOfTeam && (
               <TouchableOpacity
                 style={[
@@ -238,87 +207,86 @@ export const TeamItem: React.FC<TeamItemProps> = ({
 
 const styles = StyleSheet.create({
   teamCard: {
-    padding: 20,
     borderRadius: 16,
+    overflow: "hidden",
+  },
+  bannerContainer: {
+    width: "100%",
+    height: 96,
+    overflow: "hidden",
+  },
+  bannerImage: {
+    width: "100%",
+    height: "100%",
+  },
+  bannerPlaceholder: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   teamHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.md,
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   teamInfo: {
     flex: 1,
+    minWidth: 0,
   },
   teamName: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-    marginBottom: 8,
-    lineHeight: 26,
+    marginBottom: 4,
   },
-  teamMeta: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.md,
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  membersContainer: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.1)",
-  },
-  membersTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  membersList: {
+  teamMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+  teamSubtitle: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  membersRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
   memberAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  memberAvatarImg: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
   },
-  defaultAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.1)",
-  },
-  avatarInitials: {
-    fontSize: 14,
+  memberInitials: {
+    fontSize: 12,
     fontWeight: "600",
   },
-  moreMembers: {
+  moreAvatar: {
     borderWidth: 1,
     borderStyle: "dashed",
+    borderColor: "rgba(0,0,0,0.2)",
   },
   moreMembersText: {
     fontSize: 12,
@@ -326,16 +294,26 @@ const styles = StyleSheet.create({
   },
   teamFooter: {
     flexDirection: "row",
-    gap: Spacing.sm,
-    paddingTop: 12,
-    borderTopWidth: 1,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(0,0,0,0.1)",
   },
+  statsContainer: {
+    flex: 1,
+    minWidth: 0,
+  },
+  creatorText: {
+    fontSize: 13,
+    opacity: 0.8,
+  },
   hireButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 10,
-    minWidth: 70,
+    minWidth: 64,
   },
   hireButtonText: {
     fontSize: 14,

@@ -1,7 +1,3 @@
-import { ThemeColors } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useTranslation } from "@/hooks/useTranslation";
-import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
@@ -11,6 +7,11 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+
+import { ThemeColors } from "@/constants/styles";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface OTPVerificationProps {
   phoneNumber: string;
@@ -246,15 +247,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 
       {isLoading && (
         <View
-          style={[
-            styles.loadingOverlay,
-            {
-              backgroundColor:
-                colorScheme === "dark"
-                  ? "rgba(0,0,0,0.4)"
-                  : "rgba(255,255,255,0.7)",
-            },
-          ]}
+          style={styles.loadingOverlay}
         >
           <ActivityIndicator size="large" color={colors.tint} />
         </View>

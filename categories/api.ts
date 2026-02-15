@@ -1240,33 +1240,6 @@ class ApiService {
     );
   }
 
-  async getAvailableOrders(
-    page: number = 1,
-    limit: number = 10,
-    categoryId?: number,
-    location?: string,
-    budgetMin?: number,
-    budgetMax?: number
-  ): Promise<OrderListResponse> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    if (categoryId) params.append("categoryId", categoryId.toString());
-    if (location) params.append("location", location);
-    if (budgetMin !== undefined)
-      params.append("budgetMin", budgetMin.toString());
-    if (budgetMax !== undefined)
-      params.append("budgetMax", budgetMax.toString());
-
-    return this.request<OrderListResponse>(
-      `/orders/available?${params}`,
-      {},
-      false
-    );
-  }
-
   // Public method to get all orders without authentication
   async getPublicOrders(
     page: number = 1,
@@ -1276,7 +1249,10 @@ class ApiService {
     categoryIds?: number[],
     clientId?: number,
     orderType?: "one_time" | "permanent",
-    country?: string
+    country?: string,
+    budgetMin?: number,
+    budgetMax?: number,
+    budgetCurrency?: string
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -1292,6 +1268,11 @@ class ApiService {
     if (clientId) params.append("clientId", clientId.toString());
     if (orderType) params.append("orderType", orderType);
     if (country) params.append("country", country);
+    if (budgetMin != null && Number.isFinite(budgetMin))
+      params.append("budgetMin", budgetMin.toString());
+    if (budgetMax != null && Number.isFinite(budgetMax))
+      params.append("budgetMax", budgetMax.toString());
+    if (budgetCurrency?.trim()) params.append("budgetCurrency", budgetCurrency.trim());
 
     return this.request<OrderListResponse>(`/orders?${params}`, {}, false);
   }
@@ -1302,7 +1283,10 @@ class ApiService {
     limit: number = 10,
     categoryIds?: number[],
     orderType?: "one_time" | "permanent",
-    country?: string
+    country?: string,
+    budgetMin?: number,
+    budgetMax?: number,
+    budgetCurrency?: string
   ): Promise<OrderListResponse> {
     const params = new URLSearchParams({
       q: query,
@@ -1315,6 +1299,11 @@ class ApiService {
     }
     if (orderType) params.append("orderType", orderType);
     if (country) params.append("country", country);
+    if (budgetMin != null && Number.isFinite(budgetMin))
+      params.append("budgetMin", budgetMin.toString());
+    if (budgetMax != null && Number.isFinite(budgetMax))
+      params.append("budgetMax", budgetMax.toString());
+    if (budgetCurrency?.trim()) params.append("budgetCurrency", budgetCurrency.trim());
 
     return this.request<OrderListResponse>(`/orders/search?${params}`);
   }

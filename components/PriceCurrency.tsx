@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, TextStyle } from "react-native";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text, TextStyle, View } from "react-native";
+
+import { API_CONFIG } from "@/config/api";
+import { formatRateUnitLabel } from "@/utils/currencyRateUnit";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRateUnits } from "@/hooks/useRateUnits";
-import { formatRateUnitLabel } from "@/utils/currencyRateUnit";
-import { API_CONFIG } from "@/config/api";
 
 const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
   en: "USD",
@@ -86,8 +87,9 @@ export const PriceCurrency: React.FC<PriceCurrencyProps> = ({
   );
 
   useEffect(() => {
-    if (!price || !convertCurrency) {
-      setConvertedPrice(price || null);
+    const hasPrice = price !== null && price !== undefined;
+    if (!hasPrice || !convertCurrency) {
+      setConvertedPrice(hasPrice ? price : null);
       setConvertedCurrency((currency || "USD").toUpperCase());
       return;
     }
@@ -107,11 +109,11 @@ export const PriceCurrency: React.FC<PriceCurrencyProps> = ({
       const rate = await fetchConversionRate(sourceCurrency, targetCurrency);
       if (!isActive) return;
 
-      if (rate) {
+      // Only use rate if valid and positive (avoids wrong or zero conversion)
+      if (typeof rate === "number" && rate > 0) {
         setConvertedPrice(price * rate);
         setConvertedCurrency(targetCurrency);
       } else {
-        // Fallback to original currency if conversion fails
         setConvertedPrice(price);
         setConvertedCurrency(sourceCurrency);
       }
@@ -133,7 +135,16 @@ export const PriceCurrency: React.FC<PriceCurrencyProps> = ({
     ? formatRateUnitLabel(rateUnit || "per_project", rateUnits, language)
     : null;
 
-  const formattedConvertedPrice = Math.round(convertedPrice).toLocaleString();
+  // When converted amount rounds to 0 but original price is non-zero (e.g. 30 AMD → 0.075 USD),
+  // show decimals so we don't display misleading "0"
+  const rounded = Math.round(convertedPrice);
+  const formattedConvertedPrice =
+    rounded === 0 && price !== 0 && convertedPrice > 0
+      ? convertedPrice.toLocaleString(undefined, {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : rounded.toLocaleString();
   const formattedOriginalPrice = Math.round(price).toLocaleString();
 
   const showOriginalPrice =

@@ -49,7 +49,7 @@ export function useInfinitePagination<T extends { id: number | string }>(
     isFetching,
     enableScrollGate = false,
     onRefreshCallback,
-    // resetDeps,
+    resetDeps = [],
   } = options;
 
   // State for accumulated items and current page
@@ -60,18 +60,29 @@ export function useInfinitePagination<T extends { id: number | string }>(
   const isLoadingMoreRef = useRef(false);
   const hasScrolledRef = useRef(false);
   const isRefreshingRef = useRef(false);
+  const onEndReachedCalledRef = useRef(false);
 
-  // Reset everything when reset dependencies change
-  // useEffect(() => {
-  //   setAllItems([]);
-  //   setCurrentPage(1);
-  //   isLoadingMoreRef.current = false;
-  //   hasScrolledRef.current = false;
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, resetDeps);
+  // Reset everything when reset dependencies change (e.g. tab switch, filter change)
+  useEffect(() => {
+    if (resetDeps.length === 0) return;
+    setAllItems([]);
+    setCurrentPage(1);
+    isLoadingMoreRef.current = false;
+    hasScrolledRef.current = false;
+    onEndReachedCalledRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, resetDeps);
 
   // Accumulate items when new data arrives for the current page
   useEffect(() => {
+    // When on page 1 with no items, clear the list (handles tab switch to empty, filter with no results, etc.)
+    // Use functional update to avoid setState when already empty (prevents infinite loop - items = [] creates new ref each render)
+    if (currentPage === 1 && items.length === 0) {
+      setAllItems((prev) => (prev.length === 0 ? prev : []));
+      isRefreshingRef.current = false;
+      return;
+    }
+
     // Only process if we have items and the pagination page matches our current page
     if (items.length === 0 || pagination.page !== currentPage) {
       return;
@@ -93,22 +104,25 @@ export function useInfinitePagination<T extends { id: number | string }>(
 
     // Re-enable loading after data is processed
     isLoadingMoreRef.current = false;
+    if (currentPage > 1) {
+      onEndReachedCalledRef.current = false; // Allow next page load when user scrolls again
+    }
   }, [items, pagination.page, currentPage]);
 
-  // Load more callback
+  // Load more callback - guards against initial mount fires and duplicate calls per scroll
   const loadMore = useCallback(() => {
-    // Check scroll gate if enabled
-    if (enableScrollGate && !hasScrolledRef.current) {
-      return;
-    }
+    if (enableScrollGate && !hasScrolledRef.current) return;
 
-    // Only load if: not already loading, not fetching, has next page
+    // Prevent multiple onEndReached fires during one scroll (FlatList known issue)
+    if (onEndReachedCalledRef.current) return;
+
     if (
       !isLoadingMoreRef.current &&
       !isFetching &&
       !isLoading &&
       pagination.hasNextPage
     ) {
+      onEndReachedCalledRef.current = true;
       isLoadingMoreRef.current = true;
       setCurrentPage((prev) => prev + 1);
     }
@@ -122,31 +136,31 @@ export function useInfinitePagination<T extends { id: number | string }>(
     setCurrentPage(1);
     isLoadingMoreRef.current = false;
     hasScrolledRef.current = false;
+    onEndReachedCalledRef.current = false;
     // Call parent's refresh callback if provided (e.g., to trigger refetch)
     onRefreshCallback?.();
     // Note: We don't clear allItems here to avoid showing empty data
     // Items will be replaced when new page 1 data arrives
   }, [onRefreshCallback]);
 
-  // Handle scroll event for scroll gate
-  const handleScroll = useCallback(() => {
-    if (enableScrollGate && !hasScrolledRef.current) {
-      hasScrolledRef.current = true;
-    }
+  // Set scroll gate and reset load guard when user starts a new scroll (fires immediately)
+  const handleScrollBeginDrag = useCallback(() => {
+    if (enableScrollGate) hasScrolledRef.current = true;
+    onEndReachedCalledRef.current = false; // Allow loadMore on this scroll gesture
   }, [enableScrollGate]);
 
   // Loading states
   const isInitialLoading = isLoading && currentPage === 1;
   const isLoadingMore = isFetching && currentPage > 1;
 
-  // FlatList props
+  // FlatList props - scrollEventThrottle helps onEndReached fire reliably when scrolling
   const flatListProps = {
     ...(enableScrollGate && {
-      onScroll: handleScroll,
-      scrollEventThrottle: 400,
+      onScrollBeginDrag: handleScrollBeginDrag,
     }),
     onEndReached: loadMore,
     onEndReachedThreshold: 0.5,
+    scrollEventThrottle: 16,
   };
 
   return {

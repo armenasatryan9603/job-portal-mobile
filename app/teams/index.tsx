@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { router, usePathname } from "expo-router";
-import { View, ActivityIndicator } from "react-native";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useAnalytics } from "@/hooks/useAnalytics";
+
 import { ThemeColors } from "@/constants/styles";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useEffect } from "react";
 
 export default function TeamsScreen() {
   useAnalytics("Teams");
@@ -13,7 +14,7 @@ export default function TeamsScreen() {
 
   useEffect(() => {
     // Redirect to specialists page with teams tab active
-    router.replace("/specialists?tab=teams" as any);
+    router.replace("/specialists?tab=teams");
   }, [pathname]);
 
   // Show loading indicator while redirecting

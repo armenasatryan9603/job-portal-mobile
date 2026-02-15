@@ -25,14 +25,12 @@ import {
 } from "@/utils/countryExtraction";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import {
-  useAllOrders,
   useApplyToOrder,
   useCategories,
   useMyJobs,
   useMyOrders,
-  usePublicOrders,
+  useOrdersFeed,
   useSavedOrders,
-  useSearchOrders,
 } from "@/hooks/useApi";
 
 import AnalyticsService from "@/categories/AnalyticsService";
@@ -47,7 +45,6 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { LocationFilterModal } from "@/components/LocationFilterModal";
 import OrderItem from "./Item";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { TopTabs } from "@/components/TopTabs";
 import { chatService } from "@/categories/chatService";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
@@ -61,6 +58,40 @@ import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+
+/** Price range config per currency so filter min/max/step match (e.g. AMD in drams, USD in dollars). */
+function getPriceRangeConfigForCurrency(currency: string): {
+  min: number;
+  max: number;
+  step: number;
+} {
+  const code = (currency || "USD").toUpperCase();
+  switch (code) {
+    case "AMD":
+      return { min: 0, max: 50_000_000, step: 10_000 };
+    case "RUB":
+      return { min: 0, max: 10_000_000, step: 1000 };
+    case "EUR":
+      return { min: 0, max: 100_000, step: 100 };
+    case "USD":
+    default:
+      return { min: 0, max: 100_000, step: 100 };
+  }
+}
+
+/** Approximate rate to USD for price filter comparison (rates may vary; update periodically). */
+const CURRENCY_TO_USD: Record<string, number> = {
+  USD: 1,
+  EUR: 1.05,
+  AMD: 1 / 400,
+  RUB: 1 / 95,
+};
+
+function amountToUsd(amount: number, currency: string): number {
+  const code = (currency || "USD").toUpperCase();
+  const rate = CURRENCY_TO_USD[code] ?? 1;
+  return amount * rate;
+}
 
 export default function OrdersScreen() {
   const screenName =
@@ -124,13 +155,22 @@ export default function OrdersScreen() {
     rating: [], // Selected ratings array (empty = no rating filter)
   });
   const queryClient = useQueryClient();
-  const filterStorageKey = useMemo(
-    () => `ordersFilters:${screenName}`,
+  // Per-tab filter/search keys so each tab keeps its own saved state
+  const getFilterStorageKey = useCallback(
+    (tab: string) => `ordersFilters:${screenName}:${tab}`,
     [screenName]
   );
-  const searchStorageKey = useMemo(
-    () => `ordersSearch:${screenName}`,
+  const getSearchStorageKey = useCallback(
+    (tab: string) => `ordersSearch:${screenName}:${tab}`,
     [screenName]
+  );
+  const filterStorageKey = useMemo(
+    () => getFilterStorageKey(activeOrderTab),
+    [getFilterStorageKey, activeOrderTab]
+  );
+  const searchStorageKey = useMemo(
+    () => getSearchStorageKey(activeOrderTab),
+    [getSearchStorageKey, activeOrderTab]
   );
   // Temporary currentPage for query initialization (will be overridden by hook)
   const [tempCurrentPage, setTempCurrentPage] = useState(1);
@@ -163,46 +203,64 @@ export default function OrdersScreen() {
     return name ? getCountryIsoCode(name) ?? undefined : undefined;
   }, [user?.location, isMyOrders, isMyJobs, isSavedOrders]);
 
+  // Currency for price filter: based on app language for now (use user?.currency ?? "USD" in future)
+  const priceFilterCurrency = useMemo(() => {
+    const lang = (language || "en").toLowerCase();
+    if (lang === "hy") return "AMD";
+    if (lang === "ru") return "RUB";
+    if (lang === "en") return "USD";
+    return "USD";
+  }, [language]);
+
   // TanStack Query hooks
   const myOrdersQuery = useMyOrders();
   const myJobsQuery = useMyJobs();
   // For saved orders, fetch all at once (like My Orders/My Jobs) since users typically don't have many saved orders
   const savedOrdersQuery = useSavedOrders(1, 100);
 
-  const allOrdersQuery = useAllOrders(
-    tempCurrentPage,
-    limit,
-    status && status !== "all" ? status : undefined,
-    undefined, // categoryId (single, for backward compatibility)
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
-    undefined, // clientId
-    activeOrderTab, // Pass the active tab to filter by orderType
-    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
-    tabLoaded // Only enable query after tab is loaded from storage
-  );
+  // Budget params for feed: only when one-time tab and user has set a non-default price range (backend filters by budget + currency)
+  const feedBudgetParams = useMemo(() => {
+    if (activeOrderTab !== "one_time") return {};
+    const range = selectedFilters.priceRange;
+    if (
+      !range ||
+      typeof range !== "object" ||
+      !("min" in range) ||
+      !("max" in range)
+    )
+      return {};
+    const config = getPriceRangeConfigForCurrency(priceFilterCurrency);
+    const min = Number((range as { min: number; max: number }).min);
+    const max = Number((range as { min: number; max: number }).max);
+    if (
+      !Number.isFinite(min) ||
+      !Number.isFinite(max) ||
+      (min === config.min && max === config.max)
+    )
+      return {};
+    return {
+      budgetMin: min,
+      budgetMax: max,
+      budgetCurrency: priceFilterCurrency,
+    };
+  }, [
+    activeOrderTab,
+    selectedFilters.priceRange,
+    priceFilterCurrency,
+  ]);
 
-  const publicOrdersQuery = usePublicOrders(
-    tempCurrentPage,
-    limit,
-    status && status !== "all" ? status : undefined,
-    undefined, // categoryId (single, for backward compatibility)
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
-    undefined, // clientId
-    activeOrderTab, // Pass the active tab to filter by orderType
-    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
-    tabLoaded // Only enable query after tab is loaded from storage
-  );
-  const searchOrdersQuery = useSearchOrders(
-    searchQuery.trim(),
-    tempCurrentPage,
-    limit,
-    selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
-    activeOrderTab, // Pass the active tab to filter by orderType
-    userCountryIso ?? undefined, // Pass user's country ISO for default filtering
-    tabLoaded // Only enable query after tab is loaded from storage
-  );
+  // Single orders feed: uses getPublicOrders when no search, searchOrders when searching (price range handled by backend)
+  const ordersFeedQuery = useOrdersFeed(tempCurrentPage, limit, {
+    searchQuery: searchQuery.trim() || undefined,
+    status: status && status !== "all" ? status : undefined,
+    categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    orderType: activeOrderTab,
+    country: userCountryIso ?? undefined,
+    ...feedBudgetParams,
+    enabled: tabLoaded,
+  });
 
-  const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering
+  const { data: categoriesData } = useCategories(1, 100, undefined, language);
 
   // Mutations
   const applyToOrderMutation = useApplyToOrder();
@@ -212,29 +270,21 @@ export default function OrdersScreen() {
     if (isMyOrders) return myOrdersQuery;
     if (isMyJobs) return myJobsQuery;
     if (isSavedOrders) return savedOrdersQuery;
-    if (searchQuery.trim()) return searchOrdersQuery;
-    if (user?.id) return allOrdersQuery;
-    return publicOrdersQuery;
+    return ordersFeedQuery;
   }, [
     isMyOrders,
     isMyJobs,
     isSavedOrders,
-    searchQuery,
-    user?.id,
     myOrdersQuery,
     myJobsQuery,
     savedOrdersQuery,
-    searchOrdersQuery,
-    allOrdersQuery,
-    publicOrdersQuery,
+    ordersFeedQuery,
   ]);
 
-  // Load saved filters/search from local storage
+  // Load saved filters/search from local storage (per-tab keys using loadedTab)
   useEffect(() => {
     const loadSavedFilters = async () => {
       try {
-        const savedFiltersString = await AsyncStorage.getItem(filterStorageKey);
-        const savedSearch = await AsyncStorage.getItem(searchStorageKey);
         const savedTab = await AsyncStorage.getItem(tabStorageKey);
 
         // Load saved tab BEFORE marking as loaded
@@ -243,6 +293,14 @@ export default function OrdersScreen() {
           loadedTab = savedTab as "one_time" | "permanent";
           setActiveOrderTab(loadedTab);
         }
+
+        // Load filters and search for this tab only
+        const savedFiltersString = await AsyncStorage.getItem(
+          getFilterStorageKey(loadedTab)
+        );
+        const savedSearch = await AsyncStorage.getItem(
+          getSearchStorageKey(loadedTab)
+        );
 
         // Mark tab as loaded (enables queries)
         setTabLoaded(true);
@@ -265,17 +323,14 @@ export default function OrdersScreen() {
             return updated;
           });
         } else {
-          // If no saved filters, set appropriate defaults
+          // If no saved filters for this tab, set appropriate defaults
           if (filterCategoryId !== null) {
-            // If categoryId in URL, set it
             setSelectedFilters((prev) => ({
               ...prev,
               categories: [filterCategoryId.toString()],
-              // For permanent orders, set status to "all"
               status: loadedTab === "permanent" ? "all" : prev.status,
             }));
           } else if (loadedTab === "permanent") {
-            // If permanent tab and no saved filters, set status to "all"
             setSelectedFilters((prev) => ({
               ...prev,
               status: "all",
@@ -292,7 +347,7 @@ export default function OrdersScreen() {
       }
     };
     loadSavedFilters();
-  }, [filterStorageKey, searchStorageKey, tabStorageKey, q, filterCategoryId]);
+  }, [getFilterStorageKey, getSearchStorageKey, tabStorageKey, q, filterCategoryId]);
 
   // Update search query when URL parameter changes
   useEffect(() => {
@@ -367,6 +422,30 @@ export default function OrdersScreen() {
     hasPrevPage: false,
   };
 
+  // Only reset pagination when filters that affect the API request change (not client-side sort/location/rating)
+  const ordersFeedResetDeps = useMemo(
+    () => [
+      searchQuery,
+      activeOrderTab,
+      status,
+      selectedCategoryIds.length ? selectedCategoryIds.join(",") : "",
+      feedBudgetParams.budgetMin ?? "",
+      feedBudgetParams.budgetMax ?? "",
+      feedBudgetParams.budgetCurrency ?? "",
+      userCountryIso ?? "",
+    ],
+    [
+      searchQuery,
+      activeOrderTab,
+      status,
+      selectedCategoryIds,
+      feedBudgetParams.budgetMin,
+      feedBudgetParams.budgetMax,
+      feedBudgetParams.budgetCurrency,
+      userCountryIso,
+    ]
+  );
+
   // Use infinite pagination hook for server-side pagination
   const {
     allItems: allOrders,
@@ -382,9 +461,9 @@ export default function OrdersScreen() {
     pagination,
     isLoading: activeQuery.isLoading,
     isFetching: activeQuery.isFetching,
-    resetDeps: [selectedFilters, searchQuery, activeOrderTab],
-    enableScrollGate: true,
-  });
+    resetDeps: ordersFeedResetDeps,
+    enableScrollGate: false, // Allow onEndReached to trigger without requiring scroll-begin (fixes pagination when list is short or with numColumns)
+  });  
 
   // Sync tempCurrentPage with currentPage from hook
   useEffect(() => {
@@ -440,17 +519,17 @@ export default function OrdersScreen() {
       });
     }
 
-    sections.push(
-      {
+    // Only show price filter for one-time orders (range depends on currency, e.g. dram for AMD)
+    if (activeOrderTab === "one_time") {
+      sections.push({
         key: "priceRange",
         title: t("priceRange"),
         type: "range",
-        rangeConfig: {
-          min: 0,
-          max: 100000,
-          step: 100,
-        },
-      },
+        rangeConfig: getPriceRangeConfigForCurrency(priceFilterCurrency),
+      });
+    }
+
+    sections.push(
       {
         key: "location",
         title: t("location"),
@@ -486,6 +565,7 @@ export default function OrdersScreen() {
     isAuthenticated,
     isMyJobs,
     isSavedOrders,
+    priceFilterCurrency,
   ]);
 
   // Loading states - use hook's provided values for better pagination handling
@@ -717,16 +797,23 @@ export default function OrdersScreen() {
     []
   );
 
-  // Helper function to filter orders by price range
+  // Helper function to filter orders by price range (converts to USD so filter works across currencies)
   const filterOrdersByPriceRange = useCallback(
-    (orders: Order[], priceRange: { min: number; max: number }): Order[] => {
+    (
+      orders: Order[],
+      priceRange: { min: number; max: number },
+      filterCurrency: string
+    ): Order[] => {
       if (!priceRange) return orders;
+      const minUsd = amountToUsd(priceRange.min, filterCurrency);
+      const maxUsd = amountToUsd(priceRange.max, filterCurrency);
       return orders.filter((order: Order) => {
-        // If order has no budget, include it (don't filter out orders without budgets)
-        if (order.budget == null || order.budget === undefined) {
-          return true;
-        }
-        return order.budget >= priceRange.min && order.budget <= priceRange.max;
+        if (order.budget == null || order.budget === undefined) return true;
+        const orderBudgetUsd = amountToUsd(
+          order.budget,
+          order.currency ?? "USD"
+        );
+        return orderBudgetUsd >= minUsd && orderBudgetUsd <= maxUsd;
       });
     },
     []
@@ -920,8 +1007,9 @@ export default function OrdersScreen() {
     ) {
       return range as { min: number; max: number };
     }
-    return { min: 0, max: 100000 };
-  }, [selectedFilters.priceRange]);
+    const config = getPriceRangeConfigForCurrency(priceFilterCurrency);
+    return { min: config.min, max: config.max };
+  }, [selectedFilters.priceRange, priceFilterCurrency]);
 
   // Compute orders for My Orders/My Jobs with client-side pagination
   const displayedOrders = useMemo(() => {
@@ -955,9 +1043,13 @@ export default function OrdersScreen() {
       }
 
       // Apply price range filter (client-side for My Orders/My Jobs)
-      // Skip price filter for saved orders - show all saved orders regardless of price
-      if (!isSavedOrders) {
-        filteredOrders = filterOrdersByPriceRange(filteredOrders, priceRange);
+      // Skip price filter for saved orders and for permanent orders
+      if (!isSavedOrders && activeOrderTab === "one_time") {
+        filteredOrders = filterOrdersByPriceRange(
+          filteredOrders,
+          priceRange,
+          priceFilterCurrency
+        );
       }
 
       // Apply location filter using distance calculation
@@ -1011,22 +1103,13 @@ export default function OrdersScreen() {
         return orderType === activeOrderTab;
       });
 
-      console.log('fffffffffffffffffffffffff', filteredOrders.length);
-      // console.log('fffffffffffffffffffffffff', JSON.stringify(filteredOrders, null, 2));
-      
-      
-
       // Get paginated results - return all items up to current page for infinite scroll
       const endIndex = clientSidePage * limit;
       return filteredOrders.slice(0, endIndex);
     }
 
-    // For regular orders, apply price filter and sorting client-side
-    // (Server-side price filtering can be added later)
+    // For regular orders feed: price range is handled by backend (budgetMin/Max/Currency). Only location, rating, sort client-side.
     let filteredOrders = orders;
-    if (priceRange.min !== 0 || priceRange.max !== 100000) {
-      filteredOrders = filterOrdersByPriceRange(orders, priceRange);
-    }
 
     // Apply location filter using distance calculation
     const locationFilterValue = selectedFilters.location;
@@ -1106,6 +1189,7 @@ export default function OrdersScreen() {
     selectedFilters.services,
     selectedFilters.sortBy,
     priceRange,
+    priceFilterCurrency,
     clientSidePage,
     selectedFilters.location,
     selectedFilters.rating,
@@ -1141,7 +1225,13 @@ export default function OrdersScreen() {
         if (selectedCategories.length > 0) {
           filtered = filterOrdersByCategories(filtered, selectedCategories);
         }
-        filtered = filterOrdersByPriceRange(filtered, priceRange);
+        if (activeOrderTab === "one_time") {
+          filtered = filterOrdersByPriceRange(
+            filtered,
+            priceRange,
+            priceFilterCurrency
+          );
+        }
         const locationFilter = selectedFilters.location as {
           latitude: number;
           longitude: number;
@@ -1202,6 +1292,7 @@ export default function OrdersScreen() {
     status,
     selectedFilters.services,
     priceRange,
+    priceFilterCurrency,
     clientSidePage,
     pagination,
     activeOrderTab,
@@ -1531,7 +1622,7 @@ export default function OrdersScreen() {
         // Still show success for the application, but mention chat creation failed
         Alert.alert(
           t("success"),
-          t("applicationSubmittedSuccessfully") + " (Chat creation failed)"
+          t("applicationSubmittedSuccessfully") + " " + t("chatCreationFailed")
         );
       }
     } catch (error: any) {
@@ -1773,55 +1864,78 @@ export default function OrdersScreen() {
   // Tab configuration
   const tabs = useMemo(
     () => [
-      { key: "one_time", label: t("oneTimeOrders") || "One-Time Orders" },
-      { key: "permanent", label: t("permanentOrders") || "Permanent Orders" },
+      { key: "one_time", label: t("oneTimeOrders") },
+      { key: "permanent", label: t("permanentOrders") },
     ],
     [t]
   );
 
   const handleTabChange = useCallback(
     async (tabKey: string) => {
-      setActiveOrderTab(tabKey as "one_time" | "permanent");
+      if (tabKey === activeOrderTab) return;
 
-      // Save to AsyncStorage
+      setClientSidePage(1);
+      router.setParams({ status: undefined, q: undefined });
+
+      // Load the switched-to tab's saved filters and search first (each tab has its own storage key)
+      try {
+        const savedFiltersString = await AsyncStorage.getItem(
+          getFilterStorageKey(tabKey)
+        );
+        const savedSearch = await AsyncStorage.getItem(
+          getSearchStorageKey(tabKey)
+        );
+
+        if (savedFiltersString) {
+          const parsed = JSON.parse(savedFiltersString);
+          setSelectedFilters((prev) => {
+            const updated = { ...prev, ...parsed };
+            if (tabKey === "permanent" && updated.status !== "all") {
+              updated.status = "all";
+            }
+            return updated;
+          });
+        } else {
+          setSelectedFilters((prev) => ({
+            ...prev,
+            status:
+              tabKey === "permanent"
+                ? "all"
+                : isMyJobs || isSavedOrders || isMyOrders
+                ? "all"
+                : "open",
+          }));
+        }
+
+        setSearchQuery(savedSearch ?? "");
+      } catch (error) {
+        console.error("Error loading tab filters:", error);
+        setSelectedFilters((prev) => ({
+          ...prev,
+          status:
+            tabKey === "permanent"
+              ? "all"
+              : isMyJobs || isSavedOrders || isMyOrders
+              ? "all"
+              : "open",
+        }));
+        setSearchQuery("");
+      }
+
+      // Then switch tab and persist tab choice (save effect will write to new tab key with the filters we just set)
+      setActiveOrderTab(tabKey as "one_time" | "permanent");
       try {
         await AsyncStorage.setItem(tabStorageKey, tabKey);
       } catch (error) {
         console.error("Error saving tab:", error);
       }
 
-      // Reset search query
-      setSearchQuery("");
-
-      // Reset client-side pagination
-      setClientSidePage(1);
-
-      // Reset filters when switching tabs
-      // For permanent orders, set status to "all" to show all statuses (draft, pending_review, open, etc.)
-      setSelectedFilters({
-        status:
-          tabKey === "permanent"
-            ? "all"
-            : isMyJobs || isSavedOrders || isMyOrders
-            ? "all"
-            : "open",
-        categories: [],
-        services: [],
-        priceRange: { min: 0, max: 10000 },
-        location: null,
-        rating: null,
-        sortBy: "relevance",
-      });
-
-      // Reset status filter and search from URL
-      router.setParams({ status: undefined, q: undefined });
-
       AnalyticsService.getInstance().logEvent("tab_changed", {
         tab: tabKey,
         location: "orders_screen",
       });
     },
-    [router, tabStorageKey]
+    [router, tabStorageKey, activeOrderTab, getFilterStorageKey, getSearchStorageKey]
   );
 
   return (
@@ -1842,7 +1956,7 @@ export default function OrdersScreen() {
             onFilterChange={handleFilterChange}
             loading={filterLoading}
             hideModalForLocation={filterModalHiddenForLocation}
-            priceRangeCurrency={user?.currency ?? "USD"}
+            priceRangeCurrency={priceFilterCurrency}
           />
 
           {/* Show skeleton loading during initial load */}
@@ -1881,7 +1995,6 @@ export default function OrdersScreen() {
                 ? {}
                 : paginationFlatListProps)}
               onEndReached={loadMoreOrdersWrapper}
-              onEndReachedThreshold={0.5}
               refreshControl={
                 <RefreshControl
                   refreshing={refreshing}

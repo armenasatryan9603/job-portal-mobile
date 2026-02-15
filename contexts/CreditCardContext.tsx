@@ -10,6 +10,7 @@ import React, {
 
 import type { ApiCard } from "@/categories/api";
 import { apiService } from "@/categories/api";
+import { useAuth } from "./AuthContext";
 
 interface CreditCardContextType {
   creditCards: CreditCard[];
@@ -55,6 +56,7 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCards, setIsLoadingCards] = useState(true);
+  const { user, isAuthenticated } = useAuth();
 
   const detectCardType = (
     cardNumber: string
@@ -82,8 +84,10 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   }, []);
 
   useEffect(() => {
-    refreshCards();
-  }, [refreshCards]);
+    if (isAuthenticated && user?.id) {
+      refreshCards();
+    }
+  }, [refreshCards, isAuthenticated, user?.id]);
 
   const addCreditCard = async (
     cardData: CreditCardSubmissionData

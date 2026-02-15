@@ -44,7 +44,8 @@ export default function ProfileHelpScreen() {
         Linking.openURL("tel:+37477754955");
         break;
       case "website":
-        Linking.openURL("https://job-portal-web-gamma.vercel.app");
+        // Linking.openURL("https://job-portal-web-gamma.vercel.app");
+        Linking.openURL("https://www.hotwork.app");
         break;
       default:
         Alert.alert(t("contactSupport"), t("chooseContactMethod"));

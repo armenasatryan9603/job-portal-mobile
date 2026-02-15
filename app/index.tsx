@@ -230,7 +230,7 @@ export default function WelcomeScreen() {
                           <ThemedText
                             style={[styles.creditText, { color: colors.primary }]}
                           >
-                            {user.creditBalance.toFixed(0)}
+                            {user.creditBalance}
                           </ThemedText>
                         </View>
                       </>

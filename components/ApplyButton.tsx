@@ -1,13 +1,14 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useAuth } from "@/contexts/AuthContext";
 import { Order } from "@/categories/api";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors } from "@/constants/styles";
-import { useMySubscription } from "@/hooks/useApi";
 import { PriceCurrency } from "./PriceCurrency";
+import React from "react";
+import { ThemeColors } from "@/constants/styles";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useMySubscription } from "@/hooks/useApi";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface ApplyButtonProps {
   order: Order;
@@ -74,7 +75,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
           onPress={() => {}}
           variant={variant}
           icon="checkmark.circle.fill"
-          iconSize={16}
+          iconSize={12}
           iconPosition="left"
           disabled={true}
         >
@@ -91,7 +92,6 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
     <Button
       style={{ ...style, ...styles.container }}
       onPress={() => onApply(order)}
-      icon="paperplane.fill"
       variant={variant}
     >
       <View style={styles.applyButtonContent}>
@@ -123,10 +123,11 @@ const styles = StyleSheet.create({
   applyButtonContent: {
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
     gap: 2,
   },
   applyButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   applyButtonPriceContainer: {
