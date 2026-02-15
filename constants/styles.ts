@@ -299,7 +299,7 @@ export const ThemeColors = {
     textInverse: "#0F172A",
 
     // Border colors
-    border: "#334155",
+    border: "#1f2633",
     borderSecondary: "#475569",
     borderTertiary: "#64748B",
 

@@ -437,7 +437,7 @@ export default function ProfileSettingsScreen() {
               {t("notifications")}
             </Text>
 
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { marginBottom: Spacing.lg }]}>
               <View style={styles.settingInfo}>
                 <IconSymbol name="bell.fill" size={20} color={colors.primary} />
                 <View style={styles.settingText}>
@@ -607,28 +607,6 @@ export default function ProfileSettingsScreen() {
                   color={colors.textSecondary}
                 />
               </TouchableOpacity>
-
-              {/* Development-only Translation Test Section */}
-              {__DEV__ && (
-                <View style={styles.settingItem}>
-                  <View style={styles.settingInfo}>
-                    <IconSymbol name="globe" size={20} color={colors.accent} />
-                    <View style={styles.settingText}>
-                      <Text style={[styles.settingTitle, { color: colors.accent }]}>
-                        🧪 Translation Test (Dev Only)
-                      </Text>
-                      <Text
-                        style={[
-                          styles.settingDescription,
-                          { color: colors.textSecondary },
-                        ]}
-                      >
-                        Test translations and cache
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
             </ResponsiveCard>
           )}
 

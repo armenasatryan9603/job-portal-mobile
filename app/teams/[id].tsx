@@ -1,46 +1,47 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
+  ActivityIndicator,
+  Alert,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   BorderRadius,
   Spacing,
   ThemeColors,
   Typography,
 } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  TouchableOpacity,
-  ImageBackground,
-  TextInput,
-} from "react-native";
-import { apiService } from "@/categories/api";
-import { useAnalytics } from "@/hooks/useAnalytics";
-import { useTeamData } from "@/hooks/useTeamData";
-import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
-import { TeamMemberItem } from "@/components/TeamMemberItem";
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { router, useLocalSearchParams } from "expo-router";
+
 import { AddMemberModal } from "@/components/AddMemberModal";
-import { TeamGallerySection } from "@/components/TeamGallerySection";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import AnalyticsService from "@/categories/AnalyticsService";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { TeamGallerySection } from "@/components/TeamGallerySection";
+import { TeamMemberItem } from "@/components/TeamMemberItem";
+import { apiService } from "@/categories/api";
+import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
+import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
+import { useTeamData } from "@/hooks/useTeamData";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function TeamDetailScreen() {
   useAnalytics("TeamDetail");

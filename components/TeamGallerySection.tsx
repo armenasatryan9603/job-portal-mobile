@@ -1,24 +1,27 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  Image,
-  ScrollView,
-  Alert,
-  TextInput,
-  Modal,
-  Dimensions,
-} from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { PortfolioItem, apiService } from "@/categories/api";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useAuth } from "@/contexts/AuthContext";
 import * as ImagePicker from "expo-image-picker";
+
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { PortfolioItem, apiService } from "@/categories/api";
+import React, { useEffect, useState } from "react";
+import { ThemeColors, Typography } from "@/constants/styles";
+
+import { Button } from "@/components/ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 type ThemeColorsType = typeof ThemeColors;
 
@@ -28,7 +31,7 @@ interface TeamGallerySectionProps {
   isTeamLead: boolean;
 }
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const ITEM_SIZE = (width - 60) / 3; // 3 items per row with padding
 
 export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
@@ -194,9 +197,9 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
             style={[styles.addButton, { backgroundColor: colors.primary }]}
           >
             {uploading ? (
-              <ActivityIndicator size={16} color={colors.textInverse} />
+              <ActivityIndicator size={16} color={'#fff'} />
             ) : (
-              <IconSymbol name="plus" size={16} color={colors.textInverse} />
+              <IconSymbol name="plus" size={16} color={'#fff'} />
             )}
           </TouchableOpacity>
         )}
@@ -243,7 +246,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
                     ]}
                     onPress={() => handleEditItem(item)}
                   >
-                    <IconSymbol name="pencil" size={14} color={colors.textInverse} />
+                    <IconSymbol name="pencil" size={14} color={'#fff'} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -252,7 +255,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
                     ]}
                     onPress={() => handleDeleteItem(item)}
                   >
-                    <IconSymbol name="trash" size={14} color="white" />
+                    <IconSymbol name="trash" size={14} color="#fff" />
                   </TouchableOpacity>
                 </View>
               )}
@@ -276,23 +279,18 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
         animationType="fade"
         onRequestClose={() => setSelectedImage(null)}
       >
-        <TouchableOpacity
+        <Pressable
           style={styles.imageModalOverlay}
-          activeOpacity={1}
           onPress={() => setSelectedImage(null)}
         >
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-            style={styles.fullscreenImageContainer}
-          >
+          <View style={styles.fullscreenImageContainer} pointerEvents="box-none">
             <Image
               source={{ uri: selectedImage || "" }}
-              style={styles.fullscreenImage}
+              style={{ width: width * 0.9, height: height * 0.9 }}
               resizeMode="contain"
             />
-          </TouchableOpacity>
-        </TouchableOpacity>
+          </View>
+        </Pressable>
       </Modal>
 
       {/* Edit Modal */}
@@ -487,13 +485,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   fullscreenImageContainer: {
-    width: "100%",
-    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-  },
-  fullscreenImage: {
-    width: "90%",
-    height: "90%",
   },
 });

@@ -277,19 +277,21 @@ export const Layout: React.FC<LayoutProps> = ({
 
           {/* Menu Items */}
           <View style={styles.menuItems}>
-            <TouchableOpacity
-              style={[styles.menuItem, { borderBottomColor: colors.border }]}
-              onPress={navigateToSettings}
-            >
-              <IconSymbol name="gearshape.fill" size={20} color={colors.tint} />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>
-                {t("settings")}
-              </Text>
-            </TouchableOpacity>
             {isAuthenticated ? (
               <>
                 {/* Authenticated User Menu */}
-
+                <TouchableOpacity
+                  style={[
+                    styles.menuItem,
+                    { borderBottomColor: colors.border },
+                  ]}
+                  onPress={navigateToCalendar}
+                >
+                  <IconSymbol name="calendar" size={20} color={colors.tint} />
+                  <Text style={[styles.menuItemText, { color: colors.text }]}>
+                    {t("calendar")}
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
@@ -343,18 +345,6 @@ export const Layout: React.FC<LayoutProps> = ({
                     styles.menuItem,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToCalendar}
-                >
-                  <IconSymbol name="calendar" size={20} color={colors.tint} />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("calendar")}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    { borderBottomColor: colors.border },
-                  ]}
                   onPress={navigateToSavedOrders}
                 >
                   <IconSymbol
@@ -364,38 +354,6 @@ export const Layout: React.FC<LayoutProps> = ({
                   />
                   <Text style={[styles.menuItemText, { color: colors.text }]}>
                     {t("savedOrders")}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    { borderBottomColor: colors.border },
-                  ]}
-                  onPress={navigateToHelp}
-                >
-                  <IconSymbol
-                    name="questionmark.circle.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("helpAndSupport")}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    { borderBottomColor: "transparent" },
-                  ]}
-                  onPress={handleLogout}
-                >
-                  <IconSymbol
-                    name="rectangle.portrait.and.arrow.right"
-                    size={20}
-                    color={colors.danger}
-                  />
-                  <Text style={[styles.menuItemText, { color: colors.danger }]}>
-                    {t("logout")}
                   </Text>
                 </TouchableOpacity>
               </>
@@ -418,24 +376,50 @@ export const Layout: React.FC<LayoutProps> = ({
                     {t("getStarted")}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.menuItem,
-                    { borderBottomColor: colors.border },
-                  ]}
-                  onPress={navigateToHelp}
-                >
-                  <IconSymbol
-                    name="questionmark.circle.fill"
-                    size={20}
-                    color={colors.tint}
-                  />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("helpAndSupport")}
-                  </Text>
-                </TouchableOpacity>
               </>
             )}
+            <TouchableOpacity
+              style={[styles.menuItem, { borderBottomColor: colors.border }]}
+              onPress={navigateToSettings}
+            >
+              <IconSymbol name="gearshape.fill" size={20} color={colors.tint} />
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                {t("settings")}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.menuItem,
+                { borderBottomColor: colors.border },
+              ]}
+              onPress={navigateToHelp}
+            >
+              <IconSymbol
+                name="questionmark.circle.fill"
+                size={20}
+                color={colors.tint}
+              />
+              <Text style={[styles.menuItemText, { color: colors.text }]}>
+                {t("helpAndSupport")}
+              </Text>
+            </TouchableOpacity>
+            {isAuthenticated &&
+              <TouchableOpacity
+                style={[
+                  styles.menuItem,
+                  { borderBottomColor: "transparent" },
+                ]}
+                onPress={handleLogout}
+              >
+                <IconSymbol
+                  name="rectangle.portrait.and.arrow.right"
+                  size={20}
+                  color={colors.danger}
+                />
+                <Text style={[styles.menuItemText, { color: colors.danger }]}>
+                  {t("logout")}
+                </Text>
+              </TouchableOpacity>}
           </View>
         </Animated.View>
       )}

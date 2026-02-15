@@ -44,7 +44,6 @@ export default function ProfileHelpScreen() {
         Linking.openURL("tel:+37477754955");
         break;
       case "website":
-        // Linking.openURL("https://job-portal-web-gamma.vercel.app");
         Linking.openURL("https://www.hotwork.app");
         break;
       default:
@@ -289,8 +288,51 @@ export default function ProfileHelpScreen() {
             </ResponsiveCard>
           ))}
 
-          {/* Contact Support */}
+          {/* FAQ */}
           <ResponsiveCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t("frequentlyAskedQuestions")}
+            </Text>
+
+            {faqData.map((faq, index) => (
+              <View key={index}>
+                <TouchableOpacity
+                  style={[
+                    styles.faqItem,
+                    index === faqData.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                  onPress={() =>
+                    setExpandedFaq(expandedFaq === index ? null : index)
+                  }
+                >
+                  <Text style={[styles.faqQuestion, { color: colors.text }]}>
+                    {faq.question}
+                  </Text>
+                  <IconSymbol
+                    name={expandedFaq === index ? "chevron.up" : "chevron.down"}
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+                {expandedFaq === index && (
+                  <View style={styles.faqAnswer}>
+                    <Text
+                      style={[
+                        styles.faqAnswerText,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {faq.answer}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </ResponsiveCard>
+
+
+          {/* Contact Support */}
+          <ResponsiveCard style={{ marginBottom: 100 }}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
               {t("contactSupport")}
             </Text>
@@ -352,48 +394,6 @@ export default function ProfileHelpScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-          </ResponsiveCard>
-
-          {/* FAQ */}
-          <ResponsiveCard style={{ marginBottom: 110 }}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("frequentlyAskedQuestions")}
-            </Text>
-
-            {faqData.map((faq, index) => (
-              <View key={index}>
-                <TouchableOpacity
-                  style={[
-                    styles.faqItem,
-                    index === faqData.length - 1 && { borderBottomWidth: 0 },
-                  ]}
-                  onPress={() =>
-                    setExpandedFaq(expandedFaq === index ? null : index)
-                  }
-                >
-                  <Text style={[styles.faqQuestion, { color: colors.text }]}>
-                    {faq.question}
-                  </Text>
-                  <IconSymbol
-                    name={expandedFaq === index ? "chevron.up" : "chevron.down"}
-                    size={16}
-                    color={colors.textSecondary}
-                  />
-                </TouchableOpacity>
-                {expandedFaq === index && (
-                  <View style={styles.faqAnswer}>
-                    <Text
-                      style={[
-                        styles.faqAnswerText,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {faq.answer}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))}
           </ResponsiveCard>
         </ResponsiveContainer>
       </ScrollView>

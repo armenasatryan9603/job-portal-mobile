@@ -18,6 +18,7 @@ import { AdBanner } from "@/components/AdBanner";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
+import { PriceCurrency } from "@/components/PriceCurrency";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ThemedText } from "@/components/themed-text";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -156,7 +157,7 @@ export default function WelcomeScreen() {
   return (
     <Layout header={header} onLogout={handleLogout}>
       <ScrollView
-        style={{ flex: 1, marginBottom: 6 * Spacing.lg }}
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.container}>
@@ -224,13 +225,13 @@ export default function WelcomeScreen() {
                         <View style={styles.creditContainer}>
                           <IconSymbol
                             name="creditcard.fill"
-                            size={12}
+                            size={20}
                             color={colors.primary}
                           />
                           <ThemedText
                             style={[styles.creditText, { color: colors.primary }]}
                           >
-                            {user.creditBalance}
+                            <PriceCurrency style={{ color: colors.text }} price={user.creditBalance} showRateUnit={false} currency={user.currency} />
                           </ThemedText>
                         </View>
                       </>
@@ -504,6 +505,7 @@ const styles = StyleSheet.create({
   container: {
     padding: Spacing.md,
     gap: Spacing.xl,
+    marginBottom: 2 * Spacing.xxxl,
   },
   adSlotPlaceholder: {
     alignItems: "center",

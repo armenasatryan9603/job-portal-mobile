@@ -449,7 +449,6 @@ const OrderItem = ({
             <Badge
               text={getStatusLabel(order.status)}
               variant={getStatusVariant(order.status)}
-              // icon={getStatusIcon(order.status)}
               iconSize={10}
               size="sm"
             />
