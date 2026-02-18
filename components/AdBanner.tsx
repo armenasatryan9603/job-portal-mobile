@@ -1,14 +1,17 @@
 /**
  * AdMob Banner component. Renders a Google AdMob banner when the native module is available.
- * Uses test IDs in __DEV__, or EXPO_PUBLIC_ADMOB_BANNER_ID in production.
+ * Uses test IDs in __DEV__, or platform-specific env vars in production:
+ *   - EXPO_PUBLIC_ADMOB_BANNER_ID_IOS   (iOS)
+ *   - EXPO_PUBLIC_ADMOB_BANNER_ID_ANDROID (Android)
  * Returns null if the native module is not available (e.g. Expo Go).
  */
 import React, { useEffect } from "react";
+import { Platform } from "react-native";
 
 const ADMOB_BANNER_ID =
-  typeof process !== "undefined" && process.env?.EXPO_PUBLIC_ADMOB_BANNER_ID
-    ? process.env.EXPO_PUBLIC_ADMOB_BANNER_ID
-    : null;
+  Platform.OS === "ios"
+    ? process.env.EXPO_PUBLIC_ADMOB_BANNER_ID_IOS ?? null
+    : process.env.EXPO_PUBLIC_ADMOB_BANNER_ID_ANDROID ?? null;
 
 let BannerAd: React.ComponentType<any> | null = null;
 let BannerAdSize: { ANCHORED_ADAPTIVE_BANNER: string } | null = null;

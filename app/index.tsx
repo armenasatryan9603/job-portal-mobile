@@ -377,6 +377,9 @@ export default function WelcomeScreen() {
               ))}
             </View>
           </View>
+            <View style={styles.adSlotPlaceholder}>
+              <AdBanner />
+            </View>
           
           {/* Features */}
           <View style={styles.sectionContainer}>
