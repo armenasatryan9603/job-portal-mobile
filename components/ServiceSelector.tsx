@@ -137,8 +137,8 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
       <View
         style={[
           styles.servicesContainer,
-          { 
-            backgroundColor: colors.background, 
+          {
+            backgroundColor: colors.background,
             ...(error && {
               borderColor: colors.error,
               borderWidth: 1,
@@ -232,13 +232,13 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
                         },
                       ]}
                     >
-                      {category.imageUrl && (
+                      {category.imageUrl ? (
                         <Image
                           source={{ uri: category.imageUrl }}
                           style={styles.gridCardImage}
                           resizeMode="contain"
                         />
-                      )}
+                      ) : <View style={styles.gridCardImage} />}
                       <View style={styles.gridCardContent}>
                         <Text
                           style={[
@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   servicesContainer: {
     gap: 2,
-    padding: Spacing.sm, 
+    padding: Spacing.sm,
     borderRadius: BorderRadius.md,
   },
   expandButton: {
@@ -361,7 +361,6 @@ const styles = StyleSheet.create({
   gridCardImage: {
     width: "100%",
     height: 40,
-    // Note: Should use colors.surface dynamically - consider inline style
     backgroundColor: "white",
   },
   gridCardContent: {

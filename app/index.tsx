@@ -80,7 +80,7 @@ export default function WelcomeScreen() {
       title: t("findJobs"),
       description: t("findJobsDesc"),
       icon: "briefcase.fill",
-      route: "/orders/create",
+      route: "/orders",
       color: "#2196F3",
       gradient: ["#2196F3", "#1976D2"],
     },
@@ -287,7 +287,7 @@ export default function WelcomeScreen() {
                   <TouchableOpacity
                     style={[
                       styles.signupButton,
-                      { 
+                      {
                         backgroundColor: colors.surface,
                         borderColor: colors.primary,
                         borderWidth: 1.5,
@@ -377,10 +377,10 @@ export default function WelcomeScreen() {
               ))}
             </View>
           </View>
-            <View style={styles.adSlotPlaceholder}>
-              <AdBanner />
-            </View>
-          
+          <View style={styles.adSlotPlaceholder}>
+            <AdBanner />
+          </View>
+
           {/* Features */}
           <View style={styles.sectionContainer}>
             <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>

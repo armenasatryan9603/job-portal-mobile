@@ -82,7 +82,7 @@ export const FooterTabs: React.FC = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.tabBar, { borderTopColor: colors.border }]}>
+      <View style={[styles.tabBar, { borderTopColor: colors.border, paddingBottom: Platform.OS === "ios" ? 20 : 30 }]}>
         {tabs.map((tab) => {
           const active = isActive(tab);
           const isMiddleTab = tab.name === "orders";
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: "row",
     borderTopWidth: 1,
-    paddingBottom: 20,
   },
   tab: {
     flex: 1,
