@@ -5,6 +5,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Text,
@@ -70,7 +71,22 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(t("permissionRequired"), t("cameraRollPermissionMessage"));
+      Alert.alert(
+        t("permissionRequired"),
+        t("cameraRollPermissionMessage"),
+        [
+          {
+            text: t("cancel"),
+            style: "cancel",
+          },
+          {
+            text: t("settings"),
+            onPress: () => {
+              Linking.openSettings();
+            },
+          },
+        ]
+      );
       return false;
     }
     return true;
@@ -79,7 +95,22 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
   const requestCameraPermissions = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(t("permissionRequired"), t("cameraPermissionMessage"));
+      Alert.alert(
+        t("permissionRequired"),
+        t("cameraPermissionMessage"),
+        [
+          {
+            text: t("cancel"),
+            style: "cancel",
+          },
+          {
+            text: t("settings"),
+            onPress: () => {
+              Linking.openSettings();
+            },
+          },
+        ]
+      );
       return false;
     }
     return true;

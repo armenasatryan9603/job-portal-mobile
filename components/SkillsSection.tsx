@@ -13,8 +13,60 @@ import { Category } from "@/categories/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type ThemeColorsType = typeof ThemeColors;
+
+function getLocalizedCategory(
+  service: Category,
+  language: string
+): { name: string; description: string | undefined } {
+  switch (language) {
+    case "ru":
+      return {
+        name:
+          service.nameRu ||
+          service.nameEn ||
+          service.nameHy ||
+          service.name ||
+          "",
+        description:
+          service.descriptionRu ||
+          service.descriptionEn ||
+          service.descriptionHy ||
+          service.description,
+      };
+    case "hy":
+      return {
+        name:
+          service.nameHy ||
+          service.nameEn ||
+          service.nameRu ||
+          service.name ||
+          "",
+        description:
+          service.descriptionHy ||
+          service.descriptionEn ||
+          service.descriptionRu ||
+          service.description,
+      };
+    case "en":
+    default:
+      return {
+        name:
+          service.nameEn ||
+          service.nameRu ||
+          service.nameHy ||
+          service.name ||
+          "",
+        description:
+          service.descriptionEn ||
+          service.descriptionRu ||
+          service.descriptionHy ||
+          service.description,
+      };
+  }
+}
 
 interface SkillsSectionProps {
   userServices: Category[];
@@ -42,6 +94,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
   serviceNotifications = {},
 }) => {
   const { t } = useTranslation();
+  const { language } = useLanguage();
+
   return (
     <>
       <View style={styles.header}>
@@ -111,38 +165,43 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
         </View>
       ) : (
         <View style={styles.skillsList}>
-          {userServices.map((service) => (
-            <View
-              key={service.id}
-              style={[
-                styles.skillItem,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
-              {service.imageUrl && (
-                <Image
-                  source={{ uri: service.imageUrl }}
-                  style={styles.skillImage}
-                  resizeMode="cover"
-                />
-              )}
-              <View style={styles.skillInfo}>
-                <Text style={[styles.skillName, { color: colors.text }]}>
-                  {service.name}
-                </Text>
-                {service.description && (
-                  <Text
-                    style={[
-                      styles.skillDescription,
-                      { color: colors.textSecondary },
-                    ]}
-                  >
-                    {service.description}
-                  </Text>
+          {userServices.map((service) => {
+            const { name, description } = getLocalizedCategory(
+              service,
+              language
+            );
+            return (
+              <View
+                key={service.id}
+                style={[
+                  styles.skillItem,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                {service.imageUrl && (
+                  <Image
+                    source={{ uri: service.imageUrl }}
+                    style={styles.skillImage}
+                    resizeMode="cover"
+                  />
                 )}
+                <View style={styles.skillInfo}>
+                  <Text style={[styles.skillName, { color: colors.text }]}>
+                    {name}
+                  </Text>
+                  {description ? (
+                    <Text
+                      style={[
+                        styles.skillDescription,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      {description}
+                    </Text>
+                  ) : null}
                 {service.averagePrice && (
                   <Text style={[styles.skillPrice, { color: colors.primary }]}>
                     ${service.averagePrice}
@@ -196,7 +255,8 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
                 )}
               </View>
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
     </>

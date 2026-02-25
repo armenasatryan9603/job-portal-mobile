@@ -1809,218 +1809,218 @@ export default function CreateOrderScreen() {
 
   // Handle break overlap modal actions
   const handleBreakOverlap = async () => {
-        if (!pendingScheduleData) return;
+    if (!pendingScheduleData) return;
 
-        setShowBreakOverlapModal(false);
-        setIsSubmitting(true);
+    setShowBreakOverlapModal(false);
+    setIsSubmitting(true);
 
-        try {
-          const currentOrderId = orderId ? parseInt(orderId as string) : null;
-          if (!currentOrderId) return;
+    try {
+      const currentOrderId = orderId ? parseInt(orderId as string) : null;
+      if (!currentOrderId) return;
 
-          // Separate new files (local URIs) from existing files (HTTP URLs)
-          const newFiles = mediaFiles.filter(
-            (file) =>
-              file.uri.startsWith("file://") || file.uri.startsWith("content://")
-          );
+      // Separate new files (local URIs) from existing files (HTTP URLs)
+      const newFiles = mediaFiles.filter(
+        (file) =>
+          file.uri.startsWith("file://") || file.uri.startsWith("content://")
+      );
 
-          // Upload new files with the actual orderId
-          if (newFiles.length > 0) {
-            await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
-          }
+      // Upload new files with the actual orderId
+      if (newFiles.length > 0) {
+        await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
+      }
 
-          // Save with breaks as-is (overlapping)
-          await apiService.updateOrder(currentOrderId, pendingScheduleData);
+      // Save with breaks as-is (overlapping)
+      await apiService.updateOrder(currentOrderId, pendingScheduleData);
 
-          // Handle banner image update (same logic as in saveOrder)
-          let bannerIndexToUse = selectedBannerIndex;
-          if (bannerIndexToUse === null && mediaFiles.length > 0) {
-            const firstImageIndex = mediaFiles.findIndex(
-              (file) => file.type === "image"
-            );
-            if (firstImageIndex !== -1) {
-              bannerIndexToUse = firstImageIndex;
-            }
-          }
-
-          if (bannerIndexToUse !== null) {
-            const updatedOrder = await apiService.getOrderById(currentOrderId);
-            if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
-              const bannerFile = mediaFiles[bannerIndexToUse];
-              let targetMediaFile = null;
-
-              if ((bannerFile as any).id) {
-                targetMediaFile = updatedOrder.MediaFiles.find(
-                  (mf: any) => mf.id === (bannerFile as any).id
-                );
-              } else {
-                targetMediaFile = updatedOrder.MediaFiles.find(
-                  (mf: any) =>
-                    mf.fileType === "image" && mf.fileName === bannerFile.fileName
-                );
-              }
-
-              if (targetMediaFile && targetMediaFile.fileType === "image") {
-                try {
-                  await apiService.setBannerImage(
-                    currentOrderId,
-                    targetMediaFile.id
-                  );
-                } catch (error) {
-                  console.error("Error setting banner image:", error);
-                }
-              }
-            }
-          }
-
-          await queryClient.invalidateQueries({ queryKey: ["orders"] });
-          Alert.alert(t("success"), t("orderUpdatedSuccessfully") || "Order updated successfully");
-          router.back();
-        } catch (error: any) {
-          console.error("Error saving order:", error);
-          Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
-        } finally {
-          setIsSubmitting(false);
-          setPendingScheduleData(null);
-          setOverlappingBookings([]);
+      // Handle banner image update (same logic as in saveOrder)
+      let bannerIndexToUse = selectedBannerIndex;
+      if (bannerIndexToUse === null && mediaFiles.length > 0) {
+        const firstImageIndex = mediaFiles.findIndex(
+          (file) => file.type === "image"
+        );
+        if (firstImageIndex !== -1) {
+          bannerIndexToUse = firstImageIndex;
         }
-      };
+      }
 
-      const handleMakePriority = async () => {
-        if (!pendingScheduleData) return;
+      if (bannerIndexToUse !== null) {
+        const updatedOrder = await apiService.getOrderById(currentOrderId);
+        if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
+          const bannerFile = mediaFiles[bannerIndexToUse];
+          let targetMediaFile = null;
 
-        setShowBreakOverlapModal(false);
-        setIsSubmitting(true);
+          if ((bannerFile as any).id) {
+            targetMediaFile = updatedOrder.MediaFiles.find(
+              (mf: any) => mf.id === (bannerFile as any).id
+            );
+          } else {
+            targetMediaFile = updatedOrder.MediaFiles.find(
+              (mf: any) =>
+                mf.fileType === "image" && mf.fileName === bannerFile.fileName
+            );
+          }
 
-        try {
-          const currentOrderId = orderId ? parseInt(orderId as string) : null;
-          if (!currentOrderId) return;
-
-          // Create modified schedule with breaks excluded on priority booking dates
-          const modifiedSchedule = { ...pendingScheduleData.weeklySchedule };
-          const breakExclusions: { [date: string]: Array<{ start: string; end: string }> } = {};
-
-          // For each overlapping booking, mark break exclusions on that date
-          for (const booking of overlappingBookings) {
-            const bookingDayName = getDayNameFromDate(booking.scheduledDate);
-            const daySchedule = (modifiedSchedule as any)[bookingDayName] as any;
-
-            if (daySchedule?.breaks) {
-              // Find breaks that overlap with this booking
-              const overlappingBreaks = daySchedule.breaks.filter((breakItem: any) =>
-                timeRangesOverlap(
-                  breakItem.start,
-                  breakItem.end,
-                  booking.startTime,
-                  booking.endTime
-                )
+          if (targetMediaFile && targetMediaFile.fileType === "image") {
+            try {
+              await apiService.setBannerImage(
+                currentOrderId,
+                targetMediaFile.id
               );
-
-              if (overlappingBreaks.length > 0) {
-                // Store exclusions for this date
-                if (!breakExclusions[booking.scheduledDate]) {
-                  breakExclusions[booking.scheduledDate] = [];
-                }
-                breakExclusions[booking.scheduledDate].push(...overlappingBreaks);
-
-                // Remove overlapping breaks from the schedule for this day
-                daySchedule.breaks = daySchedule.breaks.filter(
-                  (breakItem: any) =>
-                    !overlappingBreaks.some(
-                      (ob: any) =>
-                        ob.start === breakItem.start && ob.end === breakItem.end
-                    )
-                );
-              }
+            } catch (error) {
+              console.error("Error setting banner image:", error);
             }
           }
-
-          // Add breakExclusions to the schedule
-          (modifiedSchedule as any).breakExclusions = breakExclusions;
-
-          const finalOrderData = {
-            ...pendingScheduleData,
-            weeklySchedule: modifiedSchedule,
-          };
-
-          // Separate new files (local URIs) from existing files (HTTP URLs)
-          const newFiles = mediaFiles.filter(
-            (file) =>
-              file.uri.startsWith("file://") || file.uri.startsWith("content://")
-          );
-
-          // Upload new files with the actual orderId
-          if (newFiles.length > 0) {
-            await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
-          }
-
-          // Save with modified schedule (breaks excluded on priority dates)
-          await apiService.updateOrder(currentOrderId, finalOrderData);
-
-          // Handle banner image update (same logic as in saveOrder)
-          let bannerIndexToUse = selectedBannerIndex;
-          if (bannerIndexToUse === null && mediaFiles.length > 0) {
-            const firstImageIndex = mediaFiles.findIndex(
-              (file) => file.type === "image"
-            );
-            if (firstImageIndex !== -1) {
-              bannerIndexToUse = firstImageIndex;
-            }
-          }
-
-          if (bannerIndexToUse !== null) {
-            const updatedOrder = await apiService.getOrderById(currentOrderId);
-            if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
-              const bannerFile = mediaFiles[bannerIndexToUse];
-              let targetMediaFile = null;
-
-              if ((bannerFile as any).id) {
-                targetMediaFile = updatedOrder.MediaFiles.find(
-                  (mf: any) => mf.id === (bannerFile as any).id
-                );
-              } else {
-                targetMediaFile = updatedOrder.MediaFiles.find(
-                  (mf: any) =>
-                    mf.fileType === "image" && mf.fileName === bannerFile.fileName
-                );
-              }
-
-              if (targetMediaFile && targetMediaFile.fileType === "image") {
-                try {
-                  await apiService.setBannerImage(
-                    currentOrderId,
-                    targetMediaFile.id
-                  );
-                } catch (error) {
-                  console.error("Error setting banner image:", error);
-                }
-              }
-            }
-          }
-
-          await queryClient.invalidateQueries({ queryKey: ["orders"] });
-          Alert.alert(
-            t("success"),
-            t("orderUpdatedWithPriorityBreaks") ||
-              "Order updated successfully. Breaks excluded on priority booking dates."
-          );
-          router.back();
-        } catch (error: any) {
-          console.error("Error saving order:", error);
-          Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
-        } finally {
-          setIsSubmitting(false);
-          setPendingScheduleData(null);
-          setOverlappingBookings([]);
         }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      Alert.alert(t("success"), t("orderUpdatedSuccessfully") || "Order updated successfully");
+      router.back();
+    } catch (error: any) {
+      console.error("Error saving order:", error);
+      Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
+    } finally {
+      setIsSubmitting(false);
+      setPendingScheduleData(null);
+      setOverlappingBookings([]);
+    }
+  };
+
+  const handleMakePriority = async () => {
+    if (!pendingScheduleData) return;
+
+    setShowBreakOverlapModal(false);
+    setIsSubmitting(true);
+
+    try {
+      const currentOrderId = orderId ? parseInt(orderId as string) : null;
+      if (!currentOrderId) return;
+
+      // Create modified schedule with breaks excluded on priority booking dates
+      const modifiedSchedule = { ...pendingScheduleData.weeklySchedule };
+      const breakExclusions: { [date: string]: Array<{ start: string; end: string }> } = {};
+
+      // For each overlapping booking, mark break exclusions on that date
+      for (const booking of overlappingBookings) {
+        const bookingDayName = getDayNameFromDate(booking.scheduledDate);
+        const daySchedule = (modifiedSchedule as any)[bookingDayName] as any;
+
+        if (daySchedule?.breaks) {
+          // Find breaks that overlap with this booking
+          const overlappingBreaks = daySchedule.breaks.filter((breakItem: any) =>
+            timeRangesOverlap(
+              breakItem.start,
+              breakItem.end,
+              booking.startTime,
+              booking.endTime
+            )
+          );
+
+          if (overlappingBreaks.length > 0) {
+            // Store exclusions for this date
+            if (!breakExclusions[booking.scheduledDate]) {
+              breakExclusions[booking.scheduledDate] = [];
+            }
+            breakExclusions[booking.scheduledDate].push(...overlappingBreaks);
+
+            // Remove overlapping breaks from the schedule for this day
+            daySchedule.breaks = daySchedule.breaks.filter(
+              (breakItem: any) =>
+                !overlappingBreaks.some(
+                  (ob: any) =>
+                    ob.start === breakItem.start && ob.end === breakItem.end
+                )
+            );
+          }
+        }
+      }
+
+      // Add breakExclusions to the schedule
+      (modifiedSchedule as any).breakExclusions = breakExclusions;
+
+      const finalOrderData = {
+        ...pendingScheduleData,
+        weeklySchedule: modifiedSchedule,
       };
 
-      const handleCancelBreakOverlap = () => {
-        setShowBreakOverlapModal(false);
-        setPendingScheduleData(null);
-        setOverlappingBookings([]);
-        setIsSubmitting(false);
-      };
+      // Separate new files (local URIs) from existing files (HTTP URLs)
+      const newFiles = mediaFiles.filter(
+        (file) =>
+          file.uri.startsWith("file://") || file.uri.startsWith("content://")
+      );
+
+      // Upload new files with the actual orderId
+      if (newFiles.length > 0) {
+        await fileUploadService.uploadMultipleFiles(newFiles, currentOrderId);
+      }
+
+      // Save with modified schedule (breaks excluded on priority dates)
+      await apiService.updateOrder(currentOrderId, finalOrderData);
+
+      // Handle banner image update (same logic as in saveOrder)
+      let bannerIndexToUse = selectedBannerIndex;
+      if (bannerIndexToUse === null && mediaFiles.length > 0) {
+        const firstImageIndex = mediaFiles.findIndex(
+          (file) => file.type === "image"
+        );
+        if (firstImageIndex !== -1) {
+          bannerIndexToUse = firstImageIndex;
+        }
+      }
+
+      if (bannerIndexToUse !== null) {
+        const updatedOrder = await apiService.getOrderById(currentOrderId);
+        if (updatedOrder.MediaFiles && updatedOrder.MediaFiles.length > 0) {
+          const bannerFile = mediaFiles[bannerIndexToUse];
+          let targetMediaFile = null;
+
+          if ((bannerFile as any).id) {
+            targetMediaFile = updatedOrder.MediaFiles.find(
+              (mf: any) => mf.id === (bannerFile as any).id
+            );
+          } else {
+            targetMediaFile = updatedOrder.MediaFiles.find(
+              (mf: any) =>
+                mf.fileType === "image" && mf.fileName === bannerFile.fileName
+            );
+          }
+
+          if (targetMediaFile && targetMediaFile.fileType === "image") {
+            try {
+              await apiService.setBannerImage(
+                currentOrderId,
+                targetMediaFile.id
+              );
+            } catch (error) {
+              console.error("Error setting banner image:", error);
+            }
+          }
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ["orders"] });
+      Alert.alert(
+        t("success"),
+        t("orderUpdatedWithPriorityBreaks") ||
+          "Order updated successfully. Breaks excluded on priority booking dates."
+      );
+      router.back();
+    } catch (error: any) {
+      console.error("Error saving order:", error);
+      Alert.alert(t("error"), error?.message || t("failedToUpdateOrder") || "Failed to update order");
+    } finally {
+      setIsSubmitting(false);
+      setPendingScheduleData(null);
+      setOverlappingBookings([]);
+    }
+  };
+
+  const handleCancelBreakOverlap = () => {
+    setShowBreakOverlapModal(false);
+    setPendingScheduleData(null);
+    setOverlappingBookings([]);
+    setIsSubmitting(false);
+  };
 
   // Preview modal handlers
   const handleAcceptAI = async (enhanced: any) => {

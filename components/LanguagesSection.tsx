@@ -41,13 +41,13 @@ const getProficiencyColor = (level: LanguageProficiencyLevel, colors: typeof The
     case LanguageProficiencyLevel.FLUENT:
       return colors.info;
     case LanguageProficiencyLevel.ADVANCED:
-      return colors.purple;
+      return colors.accent;
     case LanguageProficiencyLevel.UPPER_INTERMEDIATE:
       return colors.warning;
     case LanguageProficiencyLevel.INTERMEDIATE:
-      return colors.amber;
+      return colors.warning;
     case LanguageProficiencyLevel.ELEMENTARY:
-      return colors.deepOrange;
+      return colors.error;
     case LanguageProficiencyLevel.BEGINNER:
       return colors.textTertiary;
     default:

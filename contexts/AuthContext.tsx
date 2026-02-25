@@ -25,7 +25,7 @@ interface AuthContextType {
   setUser: (user: UserProfile | null) => void;
   updateUser: (userData: Partial<UserProfile>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
-  login: (phone: string, countryCode: string, otp: string, name?: string) => Promise<boolean>;
+  login: (phone: string, countryCode: string, otp: string, name?: string) => Promise<UserProfile | null>;
   signup: (
     name: string,
     email: string,
@@ -108,7 +108,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     countryCode: string,
     otp: string,
     name?: string
-  ): Promise<boolean> => {
+  ): Promise<UserProfile | null> => {
     try {
       setIsLoading(true);
 
@@ -185,28 +185,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           );
         }
 
-        // Send FCM token to backend after login
-        try {
-          await NotificationService.getInstance().ensureFCMTokenSent();
-        } catch (error) {
-          console.error("Error sending FCM token after login:", error);
-        }
+        // Run FCM and calendar in background so login returns immediately and UI can update
+        void (async () => {
+          try {
+            await NotificationService.getInstance().ensureFCMTokenSent();
+          } catch (error) {
+            console.error("Error sending FCM token after login:", error);
+          }
+          try {
+            const calendarService = CalendarNotificationService.getInstance();
+            await calendarService.scheduleAllNotificationsForUser(result.user.id);
+          } catch (error) {
+            console.error(
+              "Error scheduling calendar notifications after login:",
+              error
+            );
+          }
+        })();
 
-        // Schedule calendar notifications for accepted jobs
-        try {
-          const calendarService = CalendarNotificationService.getInstance();
-          await calendarService.scheduleAllNotificationsForUser(result.user.id);
-        } catch (error) {
-          console.error(
-            "Error scheduling calendar notifications after login:",
-            error
-          );
-        }
-
-        return true;
+        return result.user;
       }
 
-      return false;
+      return null;
     } catch (error) {
       console.error("Error during OTP verification:", error);
       // Re-throw the error so the calling component can handle it

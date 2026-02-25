@@ -5,6 +5,7 @@ import {
   Alert,
   Dimensions,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -79,7 +80,22 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.granted === false) {
-        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
+        Alert.alert(
+          t("permissionRequired"),
+          t("permissionToAccessCameraRoll"),
+          [
+            {
+              text: t("cancel"),
+              style: "cancel",
+            },
+            {
+              text: t("settings"),
+              onPress: () => {
+                Linking.openSettings();
+              },
+            },
+          ]
+        );
         return;
       }
 

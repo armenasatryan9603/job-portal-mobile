@@ -1,5 +1,7 @@
-import { Alert } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+
+import { Alert, Linking } from "react-native";
+
 import { fileUploadService } from "@/categories/fileUpload";
 
 export interface BannerUploadOptions {
@@ -8,6 +10,8 @@ export interface BannerUploadOptions {
   onError?: (error: string) => void;
   permissionRequiredText?: string;
   permissionToAccessText?: string;
+  cancelText?: string;
+  settingsText?: string;
   uploadFailedText?: string;
   failedToSelectImageText?: string;
   failedToUploadText?: string;
@@ -26,8 +30,9 @@ export async function handleBannerUpload(
     onError,
     permissionRequiredText = "Permission Required",
     permissionToAccessText = "Permission to access camera roll is required",
+    cancelText = "Cancel",
+    settingsText = "Settings",
     uploadFailedText = "Upload failed",
-    failedToSelectImageText = "Failed to select image",
     failedToUploadText = "Failed to upload banner",
   } = options;
 
@@ -36,7 +41,18 @@ export async function handleBannerUpload(
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert(permissionRequiredText, permissionToAccessText);
+      Alert.alert(permissionRequiredText, permissionToAccessText, [
+        {
+          text: cancelText,
+          style: "cancel",
+        },
+        {
+          text: settingsText,
+          onPress: () => {
+            Linking.openSettings();
+          },
+        },
+      ]);
       return;
     }
 

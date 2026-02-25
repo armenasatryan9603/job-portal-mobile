@@ -23,6 +23,7 @@ import {
 import { router, useLocalSearchParams } from "expo-router";
 
 import { AddMarketMemberModal } from "@/components/AddMemberModal";
+import AnalyticsService from "@/categories/AnalyticsService";
 import { AttachOrderModal } from "@/components/AttachOrderModal";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { Button } from "@/components/ui/button";
@@ -35,9 +36,8 @@ import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { apiService } from "@/categories/api";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
-import AnalyticsService from "@/categories/AnalyticsService";
-import { useAuth } from "@/contexts/AuthContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
@@ -74,8 +74,6 @@ export default function CreateMarketScreen() {
   const [selectedBannerIndex, setSelectedBannerIndex] = useState<number | null>(
     null
   );
-  const [existingBannerId, setExistingBannerId] = useState<number | null>(null);
-  const [marketStatus, setMarketStatus] = useState<string | null>(null);
   const [phoneNumbers, setPhoneNumbers] = useState<string[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>({});
   const [marketMembers, setMarketMembers] = useState<Array<{
@@ -162,9 +160,6 @@ export default function CreateMarketScreen() {
         setSelectedLocation(parsedLocation);
       }
 
-      // Store market status
-      setMarketStatus(market.status || null);
-
       // Load phone numbers
       if (Array.isArray((market as any).phoneNumbers) && (market as any).phoneNumbers.length > 0) {
         setPhoneNumbers((market as any).phoneNumbers);
@@ -231,7 +226,6 @@ export default function CreateMarketScreen() {
 
         // Set existing banner image if available
         if (market.bannerImageId) {
-          setExistingBannerId(market.bannerImageId);
           const bannerIndex = existingMediaFiles.findIndex(
             (mf: any) => mf.id === market.bannerImageId
           );
@@ -720,8 +714,7 @@ export default function CreateMarketScreen() {
       Alert.alert(
         t("error"),
         (isEditMode ? t("failedToUpdateMarket") : t("failedToCreateMarket")) +
-          ": " +
-          errorMessage
+          ": " + t(errorMessage)
       );
     } finally {
       setIsSubmitting(false);
@@ -825,15 +818,14 @@ export default function CreateMarketScreen() {
           <ResponsiveCard>
             <View style={styles.phoneNumbersSectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("contact")} ({t("phoneNumber")})
+                {t("phoneNumber")}
               </Text>
               <Button
                 onPress={() => setPhoneNumbers([...phoneNumbers, ""])}
                 title={t("add")}
-                variant="outline"
+                variant="primary"
                 icon="plus.circle"
                 iconSize={14}
-                backgroundColor={colors.background}
                 textColor={colors.text}
               />
             </View>
@@ -842,11 +834,7 @@ export default function CreateMarketScreen() {
             >
               {t("enterPhoneNumber")}
             </Text>
-            {phoneNumbers.length === 0 ? (
-              <Text style={[styles.phoneNumbersEmpty, { color: colors.tabIconDefault }]}>
-                {t("noPhoneNumbers")}
-              </Text>
-            ) : (
+            {
               phoneNumbers.map((phone, index) => (
                 <View
                   key={index}
@@ -877,11 +865,11 @@ export default function CreateMarketScreen() {
                     }
                     style={[styles.removePhoneButton, { backgroundColor: colors.error + "20" }]}
                   >
-                    <IconSymbol name="xmark" size={18} color={colors.error} />
+                    <IconSymbol name="trash" size={18} color={colors.error} />
                   </TouchableOpacity>
                 </View>
               ))
-            )}
+            }
           </ResponsiveCard>
 
           {/* Weekly Schedule - Business Hours */}
@@ -1208,7 +1196,7 @@ export default function CreateMarketScreen() {
                 </>
               )}
               <Button
-                style={{ minWidth: 80, flex: 1, maxWidth: '33%' }}
+                style={marketId ? { minWidth: 80, maxWidth: '33%', flex: 1, } : { flex: 1, maxWidth: '50%' }}
                 onPress={handleSubmit}
                 title={marketId ? t("save") : t("createMarket")}
                 variant="primary"

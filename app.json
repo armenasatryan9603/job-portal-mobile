@@ -121,6 +121,9 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "extra": {}
+    "extra": {
+      "EXPO_PUBLIC_ADMOB_BANNER_ID_IOS": "ca-app-pub-7411351649298687/7613367608",
+      "EXPO_PUBLIC_ADMOB_BANNER_ID_ANDROID": "ca-app-pub-7411351649298687/6701618914"
+    }
   }
 }

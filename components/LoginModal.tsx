@@ -1,5 +1,6 @@
 import {
   Alert,
+  InteractionManager,
   Modal,
   ScrollView,
   StyleSheet,
@@ -69,11 +70,13 @@ export function LoginModal({
         // User has no name, show name input
         setStep("name");
       } else {
-        // User has a name, login is complete
-        onClose();
-        if (onSuccess) {
-          onSuccess();
-        }
+        // User has a name - delay closing so the screen behind can re-render with
+        // auth state first (fixes app stuck after modal closes)
+        const closeTimer = setTimeout(() => {
+          onClose();
+          if (onSuccess) onSuccess();
+        }, 200);
+        return () => clearTimeout(closeTimer);
       }
     }
   }, [user, step, onClose, onSuccess]);
@@ -106,12 +109,18 @@ export function LoginModal({
     setOtpError(null); // Clear previous errors
 
     try {
-      // Try to login with the OTP
-      const success = await login(phoneNumber, countryCode, otp);
-      if (success) {
-        // The useEffect will handle checking if user has a name
-        // and transitioning to the appropriate step
-        setOtpError(null); // Clear error on success
+      // Try to login with the OTP - returns user on success so we can close modal without waiting for context
+      const loggedInUser = await login(phoneNumber, countryCode, otp);
+      if (loggedInUser) {
+        setOtpError(null);
+        const hasName = loggedInUser.name && loggedInUser.name.trim() !== "";
+        if (hasName) {
+          // Don't close here - let the useEffect close when it sees user in context.
+          // That way the modal only closes after auth state has propagated and the
+          // screen behind has re-rendered (fixes app stuck after modal closes).
+        } else {
+          setStep("name");
+        }
         return;
       }
     } catch (error) {
@@ -207,12 +216,14 @@ export function LoginModal({
         }
       } else {
         // Normal flow for new users
-        const success = await login(phoneNumber, countryCode, "", name);
-        if (success) {
-          onClose();
-          if (onSuccess) {
-            onSuccess();
-          }
+        const loggedInUser = await login(phoneNumber, countryCode, "", name);
+        if (loggedInUser) {
+          InteractionManager.runAfterInteractions(() => {
+            setTimeout(() => {
+              onClose();
+              if (onSuccess) onSuccess();
+            }, 150);
+          });
         } else {
           Alert.alert(t("error"), t("failedToCompleteRegistration"));
         }

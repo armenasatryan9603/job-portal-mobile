@@ -1,9 +1,5 @@
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors } from "@/constants/styles";
-import { useTheme } from "@/contexts/ThemeContext";
-import { MapViewComponent } from "./MapView";
 import * as Location from "expo-location";
-import React, { useEffect, useState } from "react";
+
 import {
   Alert,
   Modal,
@@ -13,6 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import React, { useEffect, useState } from "react";
+
+import { Button } from "./ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { MapViewComponent } from "./MapView";
+import { ThemeColors } from "@/constants/styles";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface LocationPickerProps {
@@ -151,23 +154,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           <Text style={[styles.headerTitle, { color: colors.text }]}>
             {t("setLocation")}
           </Text>
-          <TouchableOpacity
+          <Button
+            variant="primary"
+            title={t("confirm")}
             onPress={handleConfirm}
             disabled={!location}
-            style={[
-              styles.confirmButton,
-              { backgroundColor: location ? colors.primary : colors.border },
-            ]}
-          >
-            <Text
-              style={[
-                styles.confirmButtonText,
-                { color: location ? colors.textInverse : colors.textSecondary },
-              ]}
-            >
-              {t("confirm")}
-            </Text>
-          </TouchableOpacity>
+          />
         </View>
 
         {/* Manual Address Input */}
@@ -194,7 +186,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
             onPress={handleManualAddressSearch}
             disabled={loading}
           >
-            <IconSymbol name="magnifyingglass" size={20} color={colors.textInverse} />
+            <IconSymbol name="magnifyingglass" size={20} color={'#fff'} />
           </TouchableOpacity>
         </View>
 
@@ -231,7 +223,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         </View>
 
         {/* Location Display */}
-        {/* <View
+        <View
           style={[
             styles.locationDisplayContainer,
             { backgroundColor: colors.surface },
@@ -281,7 +273,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
               </Text>
             </View>
           )}
-        </View> */}
+        </View>
 
         {/* Instructions */}
         <View style={styles.instructionsContainer}>
@@ -397,7 +389,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   locationDisplayContainer: {
-    flex: 1,
+    // flex: 1,
     marginHorizontal: 20,
     borderRadius: 12,
     padding: 20,

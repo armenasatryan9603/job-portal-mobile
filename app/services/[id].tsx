@@ -145,6 +145,8 @@ export default function MarketDetailScreen() {
         },
         permissionRequiredText: t("permissionRequired"),
         permissionToAccessText: t("permissionToAccessCameraRoll"),
+        cancelText: t("cancel"),
+        settingsText: t("settings"),
         uploadFailedText: t("uploadFailed"),
         failedToSelectImageText: t("failedToSelectImage"),
         failedToUploadText: t("failedToUploadBanner"),

@@ -3,6 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   ScrollView,
   StyleSheet,
@@ -17,6 +18,11 @@ import {
   ThemeColors,
   Typography,
 } from "@/constants/styles";
+import {
+  LOCATION_COUNTRY_SEPARATOR,
+  getCountryIsoFromLocation,
+  getLocationDisplay,
+} from "@/utils/countryExtraction";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ResponsiveCard,
@@ -51,11 +57,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useSkills } from "@/hooks/useSkills";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import {
-  getLocationDisplay,
-  getCountryIsoFromLocation,
-  LOCATION_COUNTRY_SEPARATOR,
-} from "@/utils/countryExtraction";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -302,7 +303,22 @@ export default function ProfileScreen() {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (permissionResult.granted === false) {
-        Alert.alert(t("permissionRequired"), t("permissionToAccessCameraRoll"));
+        Alert.alert(
+          t("permissionRequired"),
+          t("permissionToAccessCameraRoll"),
+          [
+            {
+              text: t("cancel"),
+              style: "cancel",
+            },
+            {
+              text: t("settings"),
+              onPress: () => {
+                Linking.openSettings();
+              },
+            },
+          ]
+        );
         return;
       }
 
@@ -488,6 +504,8 @@ export default function ProfileScreen() {
         },
         permissionRequiredText: t("permissionRequired"),
         permissionToAccessText: t("permissionToAccessCameraRoll"),
+        cancelText: t("cancel"),
+        settingsText: t("settings"),
         uploadFailedText: t("uploadFailed"),
         failedToSelectImageText: t("failedToSelectImage"),
         failedToUploadText: t("failedToUploadProfilePicture"),
@@ -1522,7 +1540,6 @@ export default function ProfileScreen() {
                 style={{
                   flexDirection: "row",
                   justifyContent: "space-between",
-                  alignItems: "center",
                 }}
               >
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -1668,7 +1685,6 @@ export default function ProfileScreen() {
                 style={{
                   flexDirection: "row",
                   justifyContent: "space-between",
-                  alignItems: "center",
                 }}
               >
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -2505,6 +2521,7 @@ const styles = StyleSheet.create({
   },
   // Location styles
   locationEditContainer: {
+    marginTop: Spacing.md,
     gap: 16,
   },
   locationInputContainer: {

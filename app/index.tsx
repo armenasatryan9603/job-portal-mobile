@@ -162,6 +162,10 @@ export default function WelcomeScreen() {
       >
         <View style={styles.container}>
           {/* User Profile Card */}
+          <View style={styles.adSlotPlaceholder}>
+            <AdBanner />
+          </View>
+
           <ResponsiveCard
             marginBlock={0}
             marginHorizontal={0}
@@ -312,10 +316,6 @@ export default function WelcomeScreen() {
               </View>
             )}
           </ResponsiveCard>
-
-          <View style={styles.adSlotPlaceholder}>
-            <AdBanner />
-          </View>
 
           {/* Quick Actions */}
           <View style={styles.sectionContainer}>

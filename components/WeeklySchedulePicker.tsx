@@ -455,11 +455,6 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
             {workDurationPerClient} {t("minutes")}
           </Text>
         )}
-        <Text
-          style={[styles.suggestionSubtext, { color: colors.tabIconDefault }]}
-        >
-          {t("clientsCanBookCustomRange")}
-        </Text>
 
         <View style={styles.timeRow}>
           <View style={styles.timeInputContainer}>
@@ -520,48 +515,6 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
           icon="arrow.down.circle"
           iconSize={14}
         />
-      </View>
-
-      {/* Subscribe Ahead Days */}
-      <View style={[styles.section, { backgroundColor: colors.background }]}>
-        <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("subscribeAheadDays")}
-        </Text>
-        <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
-          {t("subscribeAheadDaysDesc")}
-        </Text>
-        <View style={styles.subscribeAheadRow}>
-          <TextInput
-            style={[
-              styles.subscribeAheadInput,
-              {
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                color: colors.text,
-              },
-            ]}
-            value={subscribeAheadInput}
-            onChangeText={(text) => {
-              const digitsOnly = text.replace(/[^0-9]/g, "");
-              setSubscribeAheadInput(digitsOnly);
-
-              const parsed = parseInt(digitsOnly, 10);
-              const nextValue: WeeklySchedule = {
-                ...value,
-                subscribeAheadDays: Number.isNaN(parsed) ? undefined : parsed,
-              };
-
-              onChange(nextValue);
-            }}
-            placeholder="90"
-            placeholderTextColor={colors.tabIconDefault}
-            keyboardType="numeric"
-            editable={!disabled}
-          />
-          <Text style={[styles.subscribeAheadLabel, { color: colors.text }]}>
-            {t("days") || "days"}
-          </Text>
-        </View>
       </View>
 
       {/* Day-by-Day Schedule */}
@@ -706,7 +659,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                             color={colors.primary}
                           />
                           <Text style={[styles.addBreakText, { color: colors.primary }]}>
-                            {t("addBreak") || "Add Break"}
+                            {t("addBreak")}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -795,6 +748,48 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
             </View>
           );
         })}
+      </View>
+
+      {/* Subscribe Ahead Days */}
+      <View style={[styles.section, { backgroundColor: colors.background }]}>
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>
+          {t("subscribeAheadDays")}
+        </Text>
+        <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
+          {t("subscribeAheadDaysDesc")}
+        </Text>
+        <View style={styles.subscribeAheadRow}>
+          <TextInput
+            style={[
+              styles.subscribeAheadInput,
+              {
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+            value={subscribeAheadInput}
+            onChangeText={(text) => {
+              const digitsOnly = text.replace(/[^0-9]/g, "");
+              setSubscribeAheadInput(digitsOnly);
+
+              const parsed = parseInt(digitsOnly, 10);
+              const nextValue: WeeklySchedule = {
+                ...value,
+                subscribeAheadDays: Number.isNaN(parsed) ? undefined : parsed,
+              };
+
+              onChange(nextValue);
+            }}
+            placeholder="90"
+            placeholderTextColor={colors.tabIconDefault}
+            keyboardType="numeric"
+            editable={!disabled}
+          />
+          <Text style={[styles.subscribeAheadLabel, { color: colors.text }]}>
+            {t("days") || "days"}
+          </Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -1064,13 +1059,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderRadius: BorderRadius.sm,
   },
-  suggestionSubtext: {
-    fontSize: 11,
-    fontStyle: "italic",
-    marginTop: Spacing.xs,
-    opacity: 0.7,
-    lineHeight: 15,
-  },
   breaksSection: {
     marginTop: Spacing.md,
     paddingLeft: 36,
@@ -1090,8 +1078,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
   },
   addBreakText: {
     fontSize: 12,
