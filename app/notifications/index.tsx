@@ -246,52 +246,46 @@ export default function NotificationsScreen() {
 
   return (
     <Layout header={header}>
-      <View style={styles.container}>
-        {notifications.length > 0 && (
-          <View style={styles.markAllContainer}>
-            <TouchableOpacity
-              style={[styles.markAllButton, { borderColor: colors.border }]}
-              onPress={markAllAsRead}
-            >
-              <Text style={[styles.markAllText, { color: colors.primary }]}>
-                {t("markAllAsRead")}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.markAllButton,
-                { borderColor: colors.border, marginLeft: 10 },
-              ]}
-              onPress={clearAllNotifications}
-            >
-              <Text style={[styles.markAllText, { color: colors.primary }]}>
-                {t("clearAll")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
+      {notifications.length > 0 && (
+        <View style={styles.markAllContainer}>
+          <TouchableOpacity
+            style={[styles.markAllButton, { borderColor: colors.border }]}
+            onPress={markAllAsRead}
+          >
+            <Text style={[styles.markAllText, { color: colors.primary }]}>
+              {t("markAllAsRead")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.markAllButton,
+              { borderColor: colors.border, marginLeft: 10 },
+            ]}
+            onPress={clearAllNotifications}
+          >
+            <Text style={[styles.markAllText, { color: colors.primary }]}>
+              {t("clearAll")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
-        <FlatList
-          data={notifications}
-          renderItem={renderNotification}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-        />
-      </View>
+      <FlatList
+        data={notifications}
+        renderItem={renderNotification}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+      />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginBottom: 80,
-  },
   markAllContainer: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: Spacing.xs,
     justifyContent: "flex-end",
     alignItems: "center",
   },

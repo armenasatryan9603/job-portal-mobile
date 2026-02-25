@@ -51,13 +51,6 @@ export default function ChatScreen() {
     conversationsRef.current = conversations;
   }, [conversations]);
 
-  // Note: Conversations are loaded in ConversationsContext on mount
-  // No need to reload on focus - Pusher keeps them updated in real-time
-
-  // Note: User updates subscription is handled globally in ConversationsContext
-  // to prevent handler conflicts. This screen uses the context's updateConversation
-  // which is automatically called when Pusher events arrive.
-
   // Handle conversation deletion events (bound directly to channel, not via subscribeToUserUpdates)
   useEffect(() => {
     if (!user?.id) return;
@@ -419,7 +412,7 @@ export default function ChatScreen() {
   if (error) {
     return (
       <Layout header={header}>
-        <View style={[styles.container, styles.centerContent]}>
+        <View style={styles.centerContent}>
           <Text style={[styles.errorText, { color: colors.text }]}>
             {error}
           </Text>
@@ -436,80 +429,73 @@ export default function ChatScreen() {
 
   return (
     <Layout header={header}>
-      <View style={styles.container}>
-        {/* Search Section */}
-        <ResponsiveCard padding={0}>
-          <View style={styles.searchContainer}>
-            <IconSymbol
-              name="magnifyingglass"
-              size={20}
-              color={colors.tabIconDefault}
-            />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text }]}
-              placeholder={t("searchConversations")}
-              placeholderTextColor={colors.tabIconDefault}
-              value={searchQuery}
-              onChangeText={(text) => {
-                setSearchQuery(text);
-                if (text.trim().length > 0) {
-                  setTimeout(() => {
-                    AnalyticsService.getInstance().logSearch(text.trim(), {
-                      search_type: "conversations",
-                    });
-                  }, 500);
-                }
-              }}
-            />
-          </View>
-        </ResponsiveCard>
+      {/* Search Section */}
+      <ResponsiveCard padding={0}>
+        <View style={styles.searchContainer}>
+          <IconSymbol
+            name="magnifyingglass"
+            size={20}
+            color={colors.tabIconDefault}
+          />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder={t("searchConversations")}
+            placeholderTextColor={colors.tabIconDefault}
+            value={searchQuery}
+            onChangeText={(text) => {
+              setSearchQuery(text);
+              if (text.trim().length > 0) {
+                setTimeout(() => {
+                  AnalyticsService.getInstance().logSearch(text.trim(), {
+                    search_type: "conversations",
+                  });
+                }, 500);
+              }
+            }}
+          />
+        </View>
+      </ResponsiveCard>
 
-        {/* Conversations List */}
-        <FlatList
-          data={filteredConversations}
-          renderItem={renderConversation}
-          keyExtractor={(item) => item.id.toString()}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContainer}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              colors={[colors.primary]}
-              tintColor={colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                {t("noConversationsYet")}
-              </Text>
-            </View>
-          }
-        />
-      </View>
+      {/* Conversations List */}
+      <FlatList
+        data={filteredConversations}
+        renderItem={renderConversation}
+        keyExtractor={(item) => item.id.toString()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+              {t("noConversationsYet")}
+            </Text>
+          </View>
+        }
+      />
     </Layout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginBottom: 80,
-  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 4,
-    backgroundColor: "rgba(0,0,0,0.05)",
     borderRadius: 12,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    paddingVertical: 12,
+    paddingVertical: Spacing.sm,
   },
   listContainer: {
     paddingBottom: 24,
@@ -592,7 +578,6 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 2,
-    // Note: Should use colors.surface or colors.textInverse dynamically - consider inline style
     borderColor: "white",
   },
   conversationInfo: {
@@ -655,7 +640,6 @@ const styles = StyleSheet.create({
     minWidth: 8,
   },
   unreadBadgeText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 12,
     fontWeight: "600",
@@ -680,7 +664,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",
