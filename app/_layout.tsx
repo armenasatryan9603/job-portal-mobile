@@ -18,6 +18,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import AnalyticsService from "@/categories/AnalyticsService";
 import { AuthProvider } from "@/contexts/AuthContext";
 import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import RatingService from "@/categories/RatingService";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
 import { ChatReminderToast } from "@/components/ChatReminderToast";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
@@ -58,6 +59,11 @@ const analytics = AnalyticsService.getInstance();
 
 function AppContent() {
   const { isDark } = useTheme();
+
+  // Track app launches for rating heuristics
+  useEffect(() => {
+    RatingService.getInstance().onAppLaunch();
+  }, []);
 
   // Initialize Calendar Notification Service
   useEffect(() => {

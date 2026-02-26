@@ -33,6 +33,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useConversations } from "@/contexts/ConversationsContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/contexts/TranslationContext";
+import RatingService from "@/categories/RatingService";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -1171,6 +1172,11 @@ export default function ChatDetailScreen() {
         comment: feedback,
         feedbackType: pendingAction === "cancel" ? "canceled" : "completed",
       });
+
+      // After a clearly positive rating, record a positive event for app rating
+      if (rating >= 4) {
+        RatingService.getInstance().recordPositiveEvent();
+      }
 
       // Mark feedback as submitted and close dialog
       setFeedbackSubmitted(true);

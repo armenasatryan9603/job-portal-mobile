@@ -1,5 +1,5 @@
 /**
- * Comprehensive style constants for the Job Portal Mobile App
+ * Comprehensive style constants for the HotWork Mobile App
  * This file contains all reusable style constants organized by category
  */
 
