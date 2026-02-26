@@ -190,7 +190,6 @@ export default function ProfileScreen() {
         profileData = await apiService.getUserById(targetUserId);
       }
 
-      console.log("Profile data loaded:", profileData);
       setProfile(profileData);
       setBannerImage((profileData as any).bannerUrl || null);
 
