@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
@@ -34,7 +35,7 @@ import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";
 import { Layout } from "@/components/Layout";
-import { MapViewComponent } from "@/components/MapView";
+import { MediaGrid } from "@/components/MediaGrid";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { SkillDescriptionModal } from "@/components/SkillDescriptionModal";
@@ -43,6 +44,7 @@ import { getFrontendUrl } from "@/config/api";
 import { getLocationDisplay } from "@/utils/countryExtraction";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { LocationWithMap } from "@/components/LocationWithMap";
 import { useApplyToOrder } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -113,7 +115,6 @@ export default function EditOrderScreen() {
   const [loading, setLoading] = useState(true);
   const [order, setOrder] = useState<Order | null>(null);
   const [pendingApply, setPendingApply] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Track applied orders (fetched from backend)
   const [appliedOrders, setAppliedOrders] = useState<Set<number>>(new Set());
@@ -128,9 +129,6 @@ export default function EditOrderScreen() {
   // Change history state
   const [changeHistory, setChangeHistory] = useState<OrderChangeHistory[]>([]);
   const [changeHistoryLoading, setChangeHistoryLoading] = useState(false);
-
-  // Map modal state
-  const [showMapModal, setShowMapModal] = useState(false);
 
   // Skill description modal state
   const [selectedSkillId, setSelectedSkillId] = useState<number | null>(null);
@@ -1173,49 +1171,12 @@ export default function EditOrderScreen() {
 
     return (
       <ResponsiveCard>
-        <View style={styles.mediaGrid}>
-          {mediaFiles.map((mediaFile) => (
-            <View key={mediaFile.id} style={styles.mediaGridItemContainer}>
-              <TouchableOpacity
-                style={styles.mediaGridItem}
-                onPress={() => setSelectedImage(mediaFile.fileUrl)}
-              >
-                {mediaFile.fileType === "image" ? (
-                  <Image
-                    source={mediaFile.fileUrl}
-                    style={styles.mediaGridImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.mediaGridPlaceholder,
-                      { backgroundColor: colors.background },
-                    ]}
-                  >
-                    <IconSymbol
-                      name="play.circle.fill"
-                      size={24}
-                      color={colors.tint}
-                    />
-                  </View>
-                )}
-              </TouchableOpacity>
-              {canDelete && (
-                <TouchableOpacity
-                  style={styles.deleteMediaButton}
-                  onPress={() => handleDeleteMedia(mediaFile.id)}
-                >
-                  <IconSymbol
-                    name="xmark.circle.fill"
-                    size={20}
-                    color={colors.errorVariant}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </View>
+        <MediaGrid
+          mediaFiles={mediaFiles}
+          colors={colors}
+          canDelete={canDelete}
+          onDelete={(file) => handleDeleteMedia(file.id)}
+        />
       </ResponsiveCard>
     );
   };
@@ -1250,52 +1211,19 @@ export default function EditOrderScreen() {
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.detailItem}
-            onPress={() => {
-              const locationDisplay = getLocationDisplay(order?.location);
-              const locationCoordinates = parseLocationCoordinates(locationDisplay);
-              if (locationCoordinates) {
-                setShowMapModal(true);
-              }
-            }}
-            disabled={!parseLocationCoordinates(getLocationDisplay(order?.location))}
-            activeOpacity={parseLocationCoordinates(getLocationDisplay(order?.location)) ? 0.6 : 1}
-          >
-            <IconSymbol
-              name="location.fill"
-              size={20}
-              color={
-                parseLocationCoordinates(getLocationDisplay(order?.location))
-                  ? colors.tint
-                  : colors.tabIconDefault
-              }
-            />
-            <View style={styles.detailContent}>
-              <Text
-                style={[styles.detailLabel, { color: colors.tabIconDefault }]}
-              >
-                {t("location")}
-              </Text>
-              <Text
-                style={[
-                  styles.detailValue,
-                  {
-                    color: colors.text,
-                    textDecorationLine: parseLocationCoordinates(
-                      getLocationDisplay(order?.location)
-                    )
-                      ? "underline"
-                      : "none",
-                  },
-                ]}
-              >
-                {parseLocationCoordinates(getLocationDisplay(order?.location))?.address ||
-                  getLocationDisplay(order?.location) ||
-                  t("remote")}
-              </Text>
-            </View>
-          </TouchableOpacity>
+          <LocationWithMap
+            colors={colors}
+            locationString={getLocationDisplay(order?.location)}
+            label={t("location")}
+            remoteText={t("remote")}
+            containerStyle={styles.detailItem}
+            labelStyle={[styles.detailLabel, { color: colors.tabIconDefault }]}
+            valueTextStyle={styles.detailValue}
+            iconSize={20}
+            enabledColor={colors.tint}
+            disabledColor={colors.tabIconDefault}
+            underlineOnEnabled
+          />
 
           <View style={styles.detailItem}>
             <IconSymbol name="calendar" size={20} color={colors.tint} />
@@ -1894,26 +1822,6 @@ export default function EditOrderScreen() {
         </ResponsiveContainer>
       </ScrollView>
 
-      {/* Image Modal */}
-      <Modal
-        visible={!!selectedImage}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setSelectedImage(null)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setSelectedImage(null)}
-        >
-          <Image
-            source={selectedImage || ""}
-            style={styles.modalImage}
-            contentFit="contain"
-          />
-        </TouchableOpacity>
-      </Modal>
-
       {/* Feedback Dialog */}
       <FeedbackDialog
         visible={feedbackDialogVisible}
@@ -1923,26 +1831,6 @@ export default function EditOrderScreen() {
         subtitle={t("reviewSubtitle")}
         loading={feedbackLoading}
       />
-
-      {/* Map Modal */}
-      {parseLocationCoordinates(getLocationDisplay(order?.location)) && (
-        <Modal
-          visible={showMapModal}
-          animationType="slide"
-          presentationStyle="fullScreen"
-          onRequestClose={() => setShowMapModal(false)}
-        >
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <MapViewComponent
-              initialLocation={parseLocationCoordinates(getLocationDisplay(order?.location))!}
-              onLocationSelect={() => {}}
-              onClose={() => setShowMapModal(false)}
-              showCurrentLocationButton={false}
-              showConfirmButton={false}
-            />
-          </View>
-        </Modal>
-      )}
 
       {/* Skill Description Modal */}
       <SkillDescriptionModal
@@ -2323,50 +2211,6 @@ const styles = StyleSheet.create({
   clientDetailText: {
     fontSize: 13,
     fontWeight: "500",
-  },
-  // Media Files Styles
-  mediaGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  mediaGridItemContainer: {
-    width: "30%",
-    position: "relative",
-  },
-  mediaGridItem: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-  mediaGridImage: {
-    width: "100%",
-    height: "100%",
-  },
-  mediaGridPlaceholder: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  deleteMediaButton: {
-    position: "absolute",
-    top: -6,
-    right: -6,
-    // Note: Should use colors.surface dynamically - consider inline style
-    backgroundColor: "white",
-    borderRadius: 12,
-    zIndex: 10,
-  },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "center",
-    alignItems: "center",
   },
   modalImage: {
     width: "90%",

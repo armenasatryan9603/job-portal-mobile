@@ -1973,6 +1973,7 @@ export default function OrdersScreen() {
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem
+                  style={{ marginTop: Spacing.sm }}
                   order={item}
                   isMyOrders={isMyOrders}
                   isMyJobs={isMyJobs}

@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { DaySchedule, WeeklySchedule } from "@/components/WeeklySchedulePicker";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -29,16 +29,15 @@ import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";
 import { Layout } from "@/components/Layout";
-import { MapViewComponent } from "@/components/MapView";
+import { LocationWithMap } from "@/components/LocationWithMap";
 import { MarketDetailSkeleton } from "@/components/MarketDetailSkeleton";
+import { MediaGrid } from "@/components/MediaGrid";
 import OrderItem from "@/app/orders/Item";
-import { TopTabs } from "@/components/TopTabs";
 import { UserAvatar } from "@/components/UserAvatar";
 import { apiService } from "@/categories/api";
 import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
-import { parseLocationCoordinates } from "@/utils/locationParsing";
-import { useAuth } from "@/contexts/AuthContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -64,12 +63,6 @@ export default function MarketDetailScreen() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [editingReviewId, setEditingReviewId] = useState<number | null>(null);
-
-  // State for map modal
-  const [showMapModal, setShowMapModal] = useState(false);
-
-  // State for orders/reviews tab
-  const [activeTab, setActiveTab] = useState<"orders" | "reviews">("orders");
 
   // State for delete operation
   const [isDeleting, setIsDeleting] = useState(false);
@@ -378,7 +371,6 @@ export default function MarketDetailScreen() {
     });
   };
 
-
   const header = (
     <Header
       title={t("marketDetails")}
@@ -394,9 +386,9 @@ export default function MarketDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>
-          {/* Banner Section */}
-          <ResponsiveCard padding={0} style={{ overflow: "hidden", marginBottom: Spacing.md }}>
-            <View style={styles.bannerContainer}>
+          {/* Market Header */}
+          <ResponsiveCard>
+          <View style={styles.bannerContainer}>
               {bannerImage ? (
                 <View style={styles.bannerImageWrapper}>
                   <Image
@@ -468,10 +460,6 @@ export default function MarketDetailScreen() {
                 </View>
               )}
             </View>
-          </ResponsiveCard>
-
-          {/* Market Header */}
-          <ResponsiveCard>
             <View style={styles.marketHeader}>
               <View style={styles.marketTitleRow}>
                 <Text style={[styles.marketName, { color: colors.text }]}>
@@ -489,109 +477,110 @@ export default function MarketDetailScreen() {
                     </Text>
                   </View>
                 )}
-              </View>
-
-              {/* Status Badge */}
-              <Badge
-                text={getStatusLabel()}
-                backgroundColor={getStatusColor() + "20"}
-                textColor={getStatusColor()}
-                size="md"
-                style={{ marginTop: 12, alignSelf: "flex-start" }}
-              />
-
-              <View style={styles.metaRow}>
-                {market.rating > 0 && (
-                  <View style={styles.ratingContainer}>
-                    <IconSymbol name="star.fill" size={16} color={colors.rating} />
-                    <Text style={[styles.rating, { color: colors.text }]}>
-                      {market.rating.toFixed(1)}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.reviewCount,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      ({market._count?.Reviews || market.reviewCount || 0})
-                    </Text>
-                  </View>
-                )}
-                {market.location && (
-                  <TouchableOpacity
-                    style={styles.locationContainer}
-                    onPress={() => {
-                      const locationCoordinates = parseLocationCoordinates(
-                        market.location
-                      );
-                      if (locationCoordinates) {
-                        setShowMapModal(true);
-                      }
-                    }}
-                    disabled={!parseLocationCoordinates(market.location)}
-                    activeOpacity={parseLocationCoordinates(market.location) ? 0.6 : 1}
-                  >
-                    <IconSymbol
-                      name="location.fill"
-                      size={14}
-                      color={
-                        parseLocationCoordinates(market.location)
-                          ? colors.tint
-                          : colors.textSecondary
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.location,
-                        {
-                          color: parseLocationCoordinates(market.location)
-                            ? colors.tint
-                            : colors.textSecondary,
-                          textDecorationLine: parseLocationCoordinates(
-                            market.location
-                          )
-                            ? "underline"
-                            : "none",
-                        },
-                      ]}
-                    >
-                      {parseLocationCoordinates(market.location)?.address ||
-                        market.location}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <View style={styles.joinDateContainer}>
-                <IconSymbol
-                  name="calendar"
-                  size={14}
-                  color={colors.textSecondary}
+                
+                <Badge
+                  text={getStatusLabel()}
+                  backgroundColor={getStatusColor() + "20"}
+                  textColor={getStatusColor()}
                 />
+              </View>
+            {market.rating > 0 && (
+              <View style={styles.ratingContainer}>
+                <IconSymbol name="star.fill" size={16} color={colors.rating} />
+                <Text style={[styles.rating, { color: colors.text }]}>
+                  {market.rating.toFixed(1)}
+                </Text>
                 <Text
                   style={[
-                    styles.joinDate,
-                    { color: colors.textSecondary },
+                    styles.reviewCount,
+                    { color: colors.tabIconDefault },
                   ]}
                 >
-                  {t("joined")}{" "}
-                  {new Date(market.joinDate).toLocaleDateString()}
+                  ({market._count?.Reviews || market.reviewCount || 0})
                 </Text>
               </View>
+            )}
             </View>
-          </ResponsiveCard>
-
-          {/* Description Section */}
-          <ResponsiveCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("about")}
-              </Text>
-            </View>
-
             <Text style={[styles.description, { color: colors.text }]}>
               {getLocalizedDescription() || t("noDescription")}
             </Text>
+          </ResponsiveCard>
+
+          {/* Gallery Section */}
+          {market.MediaFiles && market.MediaFiles.length > 0 && (
+            <ResponsiveCard>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("gallery")}
+                </Text>
+                <CountBadge count={market.MediaFiles.length} />
+              </View>
+              <MediaGrid mediaFiles={market.MediaFiles} colors={colors} />
+            </ResponsiveCard>
+          )}
+
+          {/* Market Metadata */}
+          <ResponsiveCard>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("marketInformation")}
+              </Text>
+            </View>
+            <View style={styles.metadataContainer}>
+                {market.location && (
+                  <LocationWithMap
+                    label={`${t("location")}:`}
+                    colors={colors}
+                    locationString={market.location}
+                    containerStyle={styles.metadataRow}
+                    valueTextStyle={styles.metadataLabel}
+                    labelStyle={styles.metadataLabel}
+                    iconSize={14}
+                    enabledColor={colors.tint}
+                    disabledColor={colors.textSecondary}
+                    underlineOnEnabled
+                  />
+                )}
+              <View style={styles.metadataRow}>
+                <IconSymbol
+                  name="calendar"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
+                  {t("createdAt")}:
+                </Text>
+                <Text style={[styles.metadataValue, { color: colors.text }]}>
+                  {new Date(market.createdAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.metadataRow}>
+                <IconSymbol
+                  name="clock"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
+                  {t("updatedAt")}:
+                </Text>
+                <Text style={[styles.metadataValue, { color: colors.text }]}>
+                  {new Date(market.updatedAt).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.metadataRow}>
+                <IconSymbol
+                  name="doc.text.fill"
+                  size={16}
+                  color={colors.textSecondary}
+                />
+                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
+                  {t("orders")}:
+                </Text>
+                <Text style={[styles.metadataValue, { color: colors.text }]}>
+                  {market._count?.Orders || market.Orders?.length || 0}
+                </Text>
+              </View>
+            </View>
           </ResponsiveCard>
 
           {/* Contact Phone Numbers Section */}
@@ -683,57 +672,6 @@ export default function MarketDetailScreen() {
             </ResponsiveCard>
           )}
 
-          {/* Creator Information */}
-          {market.Creator && (
-            <ResponsiveCard>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("createdBy")}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.creatorItem}
-                onPress={() => router.push(`/profile/profile?userId=${market.Creator.id}`)}
-              >
-                {market.Creator.avatarUrl ? (
-                  <Image
-                    source={{ uri: market.Creator.avatarUrl }}
-                    style={styles.creatorAvatar}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                  />
-                ) : (
-                  <View style={[styles.creatorAvatar, { backgroundColor: colors.border }]}>
-                    <IconSymbol
-                      name="person.fill"
-                      size={20}
-                      color={colors.tabIconDefault}
-                    />
-                  </View>
-                )}
-                <View style={styles.creatorInfo}>
-                  <Text style={[styles.creatorName, { color: colors.text }]}>
-                    {market.Creator.name}
-                  </Text>
-                  {market.Creator.verified && (
-                    <Badge
-                      text={t("verified")}
-                      variant="verified"
-                      icon="checkmark.seal.fill"
-                      iconSize={12}
-                      size="sm"
-                    />
-                  )}
-                </View>
-                <IconSymbol
-                  name="chevron.right"
-                  size={16}
-                  color={colors.tabIconDefault}
-                />
-              </TouchableOpacity>
-            </ResponsiveCard>
-          )}
-
           {/* Rejection Reason (if rejected) */}
           {market.status === "rejected" && market.rejectionReason && (
             <ResponsiveCard>
@@ -754,69 +692,6 @@ export default function MarketDetailScreen() {
               </View>
             </ResponsiveCard>
           )}
-
-          {/* Market Metadata */}
-          <ResponsiveCard>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {t("marketInformation")}
-              </Text>
-            </View>
-            <View style={styles.metadataContainer}>
-              <View style={styles.metadataRow}>
-                <IconSymbol
-                  name="calendar"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
-                  {t("createdAt")}:
-                </Text>
-                <Text style={[styles.metadataValue, { color: colors.text }]}>
-                  {new Date(market.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={styles.metadataRow}>
-                <IconSymbol
-                  name="clock"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
-                  {t("updatedAt")}:
-                </Text>
-                <Text style={[styles.metadataValue, { color: colors.text }]}>
-                  {new Date(market.updatedAt).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={styles.metadataRow}>
-                <IconSymbol
-                  name="person.3.fill"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
-                  {t("members")}:
-                </Text>
-                <Text style={[styles.metadataValue, { color: colors.text }]}>
-                  {market._count?.Members || market.Members?.length || 0}
-                </Text>
-              </View>
-              <View style={styles.metadataRow}>
-                <IconSymbol
-                  name="doc.text.fill"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={[styles.metadataLabel, { color: colors.textSecondary }]}>
-                  {t("orders")}:
-                </Text>
-                <Text style={[styles.metadataValue, { color: colors.text }]}>
-                  {market._count?.Orders || market.Orders?.length || 0}
-                </Text>
-              </View>
-            </View>
-          </ResponsiveCard>
 
           {/* Roles Section */}
           {market.Roles && market.Roles.length > 0 && (
@@ -859,39 +734,6 @@ export default function MarketDetailScreen() {
                   )}
                 </View>
               ))}
-            </ResponsiveCard>
-          )}
-
-          {/* Gallery Section */}
-          {market.Gallery && market.Gallery.length > 0 && (
-            <ResponsiveCard>
-              <View style={styles.sectionHeader}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                  {t("gallery")}
-                </Text>
-                <CountBadge count={market.Gallery.length} />
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.galleryScroll}
-              >
-                {market.Gallery.map((file: any) => (
-                  <TouchableOpacity
-                    key={file.id}
-                    onPress={() => {
-                      // Could open full screen image viewer
-                    }}
-                  >
-                    <Image
-                      source={{ uri: file.fileUrl }}
-                      style={styles.galleryImage}
-                      contentFit="cover"
-                      cachePolicy="memory-disk"
-                    />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
             </ResponsiveCard>
           )}
 
@@ -966,170 +808,198 @@ export default function MarketDetailScreen() {
             </ResponsiveCard>
           )}
 
-          {/* Orders and Reviews Section with Tabs */}
-          <ResponsiveCard style={{ borderBottomLeftRadius: 0, borderBottomRightRadius: 0, paddingBottom: 0 }}>
-            <TopTabs
-              tabs={[
-                {
-                  key: "orders",
-                  label: `${t("attachedOrders")} (${market.Orders?.length || 0})`,
-                },
-                {
-                  key: "reviews",
-                  label: `${t("reviews")} (${reviews.length})`,
-                },
-              ]}
-              style={{ borderTopLeftRadius: BorderRadius.md, borderTopRightRadius: BorderRadius.md, paddingTop: Spacing.sm }}
-              activeTab={activeTab}
-              onTabChange={(tabKey) => setActiveTab(tabKey as "orders" | "reviews")}
-              compact={true}
-              labelStyle={{ fontSize: Typography.md }}
-            />
-          </ResponsiveCard>
-          
-            {activeTab === "orders" ? (
-              <>
-                {!market.Orders || market.Orders.length === 0 ? (
-                  <View style={styles.emptyOrdersContainer}>
+           {/* Creator Information */}
+           {market.Creator && (
+            <ResponsiveCard>
+              <View style={styles.sectionHeader}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {t("createdBy")}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.creatorItem}
+                onPress={() => router.push(`/profile/profile?userId=${market.Creator.id}`)}
+              >
+                {market.Creator.avatarUrl ? (
+                  <Image
+                    source={{ uri: market.Creator.avatarUrl }}
+                    style={styles.creatorAvatar}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <View style={[styles.creatorAvatar, { backgroundColor: colors.border }]}>
                     <IconSymbol
-                      name="doc.text"
-                      size={48}
+                      name="person.fill"
+                      size={20}
                       color={colors.tabIconDefault}
                     />
-                    <Text
-                      style={[styles.emptyOrdersTitle, { color: colors.text }]}
-                    >
-                      {t("noOrdersAttached")}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.emptyOrdersDescription,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      {t("attachPermanentOrdersToService")}
+                  </View>
+                )}
+                <View style={styles.creatorInfo}>
+                  <Text style={[styles.creatorName, { color: colors.text }]}>
+                    {market.Creator.name}
+                  </Text>
+                  {market.Creator.verified && (
+                    <Badge
+                      text={t("verified")}
+                      variant="verified"
+                      icon="checkmark.seal.fill"
+                      iconSize={12}
+                      size="sm"
+                    />
+                  )}
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.tabIconDefault}
+                />
+              </TouchableOpacity>
+            </ResponsiveCard>
+          )}
+          {!market.Orders || market.Orders.length === 0 ? (
+            <View style={styles.emptyOrdersContainer}>
+              <IconSymbol
+                name="doc.text"
+                size={48}
+                color={colors.tabIconDefault}
+              />
+              <Text
+                style={[styles.emptyOrdersTitle, { color: colors.text }]}
+              >
+                {t("noOrdersAttached")}
+              </Text>
+              <Text
+                style={[
+                  styles.emptyOrdersDescription,
+                  { color: colors.tabIconDefault },
+                ]}
+              >
+                {t("attachPermanentOrdersToService")}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={market.Orders}
+              renderItem={({ item: marketOrder }) => (
+                <OrderItem
+                  order={marketOrder.Order}
+                />
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.ordersList}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              numColumns={2}
+              style={{ marginBlock: Spacing.xs }}
+              columnWrapperStyle={{ justifyContent: "space-between", marginRight: -Spacing.sm }}
+            />
+          )}
+          <ResponsiveCard>
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("reviews")}
+              </Text>
+              <View style={styles.reviewsHeaderRight}>
+                {market.rating > 0 && (
+                  <View style={styles.ratingBadge}>
+                    <IconSymbol name="star.fill" size={14} color={colors.rating} />
+                    <Text style={[styles.ratingBadgeText, { color: colors.text }]}>
+                      {market.rating.toFixed(1)}
                     </Text>
                   </View>
-                ) : (
-                  <FlatList
-                    data={market.Orders}
-                    renderItem={({ item: marketOrder }) => (
-                      <OrderItem
-                        order={marketOrder.Order}
-                      />
-                    )}
-                    keyExtractor={(item) => item.id.toString()}
-                    contentContainerStyle={styles.ordersList}
-                    showsVerticalScrollIndicator={false}
-                    scrollEnabled={false}
-                    numColumns={2}
-                    columnWrapperStyle={{ justifyContent: "space-between", marginRight: -Spacing.sm }}
+                )}
+                {user && !hasReviewed && (
+                  <Button
+                    onPress={handleOpenReviewModal}
+                    title={t("submitMarketReview")}
+                    variant="primary"
+                    icon="star"
+                    iconSize={14}
+                    iconPosition="left"
+                    backgroundColor={colors.primary}
                   />
                 )}
-              </>
-            ) : (
-              <ResponsiveCard>
-                <View style={styles.sectionHeader}>
-                  <View style={styles.reviewsHeaderRight}>
-                    {market.rating > 0 && (
-                      <View style={styles.ratingBadge}>
-                        <IconSymbol name="star.fill" size={14} color={colors.rating} />
-                        <Text style={[styles.ratingBadgeText, { color: colors.text }]}>
-                          {market.rating.toFixed(1)}
-                        </Text>
-                      </View>
-                    )}
-                    {user && !hasReviewed && (
-                      <Button
-                        onPress={handleOpenReviewModal}
-                        title={t("submitMarketReview")}
-                        variant="primary"
-                        icon="star"
-                        iconSize={14}
-                        iconPosition="left"
-                        backgroundColor={colors.primary}
-                      />
-                    )}
-                  </View>
-                </View>
+              </View>
+            </View>
 
-                {reviews.length > 0 ? (
-                  reviews.map((review: any) => (
-                    <View
-                      key={review.id}
-                      style={[
-                        styles.reviewItem,
-                        { borderBottomColor: colors.border },
-                      ]}
-                    >
-                      <View style={styles.reviewHeader}>
-                        <View style={styles.reviewerInfo}>
-                          <Text
-                            style={[styles.reviewerName, { color: colors.text }]}
-                          >
-                            {review.Reviewer?.name || t("anonymous")}
-                          </Text>
-                          <View style={styles.reviewRating}>
-                            {[...Array(5)].map((_, i) => (
-                              <IconSymbol
-                                key={i}
-                                name="star.fill"
-                                size={12}
-                                color={i < review.rating ? colors.rating : colors.border}
-                              />
-                            ))}
-                          </View>
-                        </View>
-                        <View style={styles.reviewHeaderRight}>
-                          <Text
-                            style={[
-                              styles.reviewDate,
-                              { color: colors.tabIconDefault },
-                            ]}
-                          >
-                            {new Date(review.createdAt).toLocaleDateString()}
-                          </Text>
-                          {user && review.reviewerId === user.id && (
-                            <TouchableOpacity
-                              onPress={() => {
-                                setReviewRating(review.rating);
-                                setReviewComment(review.comment || "");
-                                setEditingReviewId(review.id);
-                                setShowReviewModal(true);
-                              }}
-                              style={styles.editReviewButton}
-                            >
-                              <IconSymbol
-                                name="pencil"
-                                size={16}
-                                color={colors.tint}
-                              />
-                            </TouchableOpacity>
-                          )}
-                        </View>
+            {reviews.length > 0 ? (
+              reviews.map((review: any, index: number) => (
+                <View
+                  key={review.id}
+                  style={[
+                    styles.reviewItem,
+                    { borderBottomColor: colors.border, borderBottomWidth: index < (reviews.length - 1) ? 1 : 0, paddingBottom: index < (reviews.length - 1) ? 16 : 0 },
+                  ]}
+                >
+                  <View style={styles.reviewHeader}>
+                    <View style={styles.reviewerInfo}>
+                      <Text
+                        style={[styles.reviewerName, { color: colors.text }]}
+                      >
+                        {review.Reviewer?.name || t("anonymous")}
+                      </Text>
+                      <View style={styles.reviewRating}>
+                        {[...Array(5)].map((_, i) => (
+                          <IconSymbol
+                            key={i}
+                            name="star.fill"
+                            size={12}
+                            color={i < review.rating ? colors.rating : colors.border}
+                          />
+                        ))}
                       </View>
-                      {review.comment && (
-                        <Text
-                          style={[styles.reviewComment, { color: colors.text }]}
+                    </View>
+                    <View style={styles.reviewHeaderRight}>
+                      <Text
+                        style={[
+                          styles.reviewDate,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </Text>
+                      {user && review.reviewerId === user.id && (
+                        <TouchableOpacity
+                          onPress={() => {
+                            setReviewRating(review.rating);
+                            setReviewComment(review.comment || "");
+                            setEditingReviewId(review.id);
+                            setShowReviewModal(true);
+                          }}
+                          style={styles.editReviewButton}
                         >
-                          {review.comment}
-                        </Text>
+                          <IconSymbol
+                            name="pencil"
+                            size={16}
+                            color={colors.tint}
+                          />
+                        </TouchableOpacity>
                       )}
                     </View>
-                  ))
-                ) : (
-                  <Text
-                    style={[
-                      styles.noReviews,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {t("noReviews")}
-                  </Text>
-                )}
-              </ResponsiveCard>
+                  </View>
+                  {review.comment && (
+                    <Text
+                      style={[styles.reviewComment, { color: colors.text }]}
+                    >
+                      {review.comment}
+                    </Text>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text
+                style={[
+                  styles.noReviews,
+                  { color: colors.tabIconDefault },
+                ]}
+              >
+                {t("noReviews")}
+              </Text>
             )}
-
+          </ResponsiveCard>
+           
           {/* Owner Action Buttons */}
           {isOwner && (
             <ActionButtons
@@ -1257,27 +1127,7 @@ export default function MarketDetailScreen() {
         </View>
       </Modal>
 
-      {/* Map Modal */}
-      {parseLocationCoordinates(market.location) && (
-        <Modal
-          visible={showMapModal}
-          animationType="slide"
-          presentationStyle="fullScreen"
-          onRequestClose={() => setShowMapModal(false)}
-        >
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <MapViewComponent
-              initialLocation={parseLocationCoordinates(market.location)!}
-              onLocationSelect={() => {}}
-              onClose={() => setShowMapModal(false)}
-              showCurrentLocationButton={false}
-              showConfirmButton={false}
-            />
-          </View>
-        </Modal>
-      )}
-
-
+      
     </Layout>
   );
 }
@@ -1311,6 +1161,7 @@ const styles = StyleSheet.create({
     width: "100%",
     aspectRatio: 16 / 9,
     overflow: "hidden",
+    marginBottom: Spacing.md,
   },
   bannerImageWrapper: {
     width: "100%",
@@ -1351,11 +1202,17 @@ const styles = StyleSheet.create({
   },
   marketHeader: {
     gap: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: 'space-between',
+    flexWrap: "wrap",
+    
   },
   marketTitleRow: {
     flexDirection: "row",
-    alignItems: "center",
     flexWrap: "wrap",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   marketName: {
@@ -1376,16 +1233,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    flexWrap: "wrap",
-    marginTop: 4,
-  },
   ratingContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: Spacing.sm,
     gap: 4,
   },
   rating: {
@@ -1393,23 +1244,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   reviewCount: {
-    fontSize: 14,
-  },
-  locationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  location: {
-    fontSize: 14,
-  },
-  joinDateContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 4,
-  },
-  joinDate: {
     fontSize: 14,
   },
   sectionHeader: {
@@ -1425,16 +1259,6 @@ const styles = StyleSheet.create({
   description: {
     fontSize: 16,
     lineHeight: 24,
-  },
-  galleryScroll: {
-    marginHorizontal: -Spacing.card,
-    paddingHorizontal: Spacing.card,
-  },
-  galleryImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
-    marginRight: 8,
   },
   memberItem: {
     flexDirection: "row",

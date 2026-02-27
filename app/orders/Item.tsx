@@ -2,10 +2,12 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  StyleProp,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ViewStyle,
 } from "react-native";
 import { Order, apiService } from "@/categories/api";
 import React, { useState } from "react";
@@ -42,10 +44,12 @@ interface OrderItemProps {
   onSaveToggle?: (orderId: number, isSaved: boolean) => void;
   onCheckIn?: (order: Order) => void;
   onPublishOrder?: (order: Order) => void;
+  style?: StyleProp<ViewStyle>;
 }
 
 const OrderItem = ({
   order,
+  style,
   isMyOrders = false,
   isMyJobs = false,
   hasAppliedToOrder = () => false,
@@ -330,7 +334,7 @@ const OrderItem = ({
   }, [order.BannerImage?.fileUrl]);
 
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, style]}>
       <TouchableOpacity 
         onPress={() => handleOrderPress(order)} 
         activeOpacity={1}
@@ -339,7 +343,7 @@ const OrderItem = ({
         <ResponsiveCard
           padding={0}
           marginHorizontal={0}
-          marginBlock={Spacing.xs}
+          marginBlock={0}
           style={[
             isViewed && styles.viewedCard,
             isViewed && { borderWidth: 2, borderColor: colors.border },
@@ -597,6 +601,7 @@ const styles = StyleSheet.create({
   },
   touchable: {
     flex: 1,
+    // backgroundColor: 'red',
   },
   card: {
     flex: 1,

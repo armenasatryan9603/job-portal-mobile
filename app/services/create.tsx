@@ -36,6 +36,7 @@ import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { apiService } from "@/categories/api";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { LOCATION_COUNTRY_SEPARATOR } from "@/utils/countryExtraction";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -66,6 +67,7 @@ export default function CreateMarketScreen() {
     latitude: number;
     longitude: number;
     address: string;
+    isoCountryCode?: string;
   } | null>(null);
 
 
@@ -110,6 +112,15 @@ export default function CreateMarketScreen() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleLocationChange = (location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+    isoCountryCode?: string;
+  }) => {
+    setSelectedLocation(location);
+  };
 
   // Refs for scrolling to error fields
   const scrollViewRef = useRef<ScrollView>(null);
@@ -436,7 +447,11 @@ export default function CreateMarketScreen() {
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
         location: selectedLocation
-          ? `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`
+          ? (() => {
+              const base = `${selectedLocation.address} (${selectedLocation.latitude}, ${selectedLocation.longitude})`;
+              const iso = selectedLocation.isoCountryCode;
+              return iso ? `${base}${LOCATION_COUNTRY_SEPARATOR}${iso}` : base;
+            })()
           : formData.location.trim() || undefined,
         phoneNumbers: phoneNumbers.filter((p) => p.trim() !== ""),
         weeklySchedule:
@@ -804,10 +819,7 @@ export default function CreateMarketScreen() {
                   location: errors.location,
                 }}
                 onFieldChange={updateField}
-                onLocationChange={(location) => {
-                  // Parse location string to extract coordinates if needed
-                  // The location address is already set by BasicInformationForm
-                }}
+                onLocationChange={handleLocationChange}
                 titleLabel={t("marketName")}
                 titlePlaceholder={t("marketNamePlaceholder")}
               />
