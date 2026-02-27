@@ -201,7 +201,6 @@ export default function ServicesScreen() {
 
   const {
     allItems: allMarkets,
-    loadMore: loadMoreMarkets,
     onRefresh: handlePaginationRefresh,
     isInitialLoading: isPaginationInitialLoading,
     isLoadingMore: isPaginationLoadingMore,
@@ -211,7 +210,12 @@ export default function ServicesScreen() {
     pagination,
     isLoading,
     isFetching,
-    resetDeps: [selectedFilters, searchQuery],
+    resetDeps: [
+      searchQuery,
+      myServices,
+      selectedFilters.location,
+      selectedFilters.verified,
+    ],
     enableScrollGate: true,
     onRefreshCallback: () => {
       setCurrentPage(1);
