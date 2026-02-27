@@ -107,6 +107,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
             currency={order.currency}
             showOriginal={false}
             showRateUnit={false}
+            convertCurrency={true}
             style={{ ...styles.applyButtonPrice, color: textColor }}
           />
         )}

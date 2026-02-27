@@ -1,10 +1,11 @@
-import { Spacing, ThemeColors, BorderRadius } from "@/constants/styles";
-import { Header } from "@/components/Header";
-import { router } from "expo-router";
-import { ScrollView, useColorScheme, View, StyleSheet, Animated } from "react-native";
-import { Layout } from "@/components/Layout";
-import { useTranslation } from "@/contexts/TranslationContext";
+import { Animated, ScrollView, StyleSheet, View, useColorScheme } from "react-native";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { useEffect, useRef } from "react";
+
+import { Header } from "@/components/Header";
+import { Layout } from "@/components/Layout";
+import { router } from "expo-router";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 const CalendarSkeleton = () => {
   const { t } = useTranslation();
@@ -61,13 +62,10 @@ const CalendarSkeleton = () => {
     />
   );
 
+  const header = <Header title={t("calendar")} showBackButton onBackPress={() => router.back()}/>
+
   return (
-    <Layout>
-      <Header
-        title={t("calendar")}
-        showBackButton
-        onBackPress={() => router.back()}
-      />
+    <Layout header={header}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.skeletonTopRow}>
           <SkeletonBox

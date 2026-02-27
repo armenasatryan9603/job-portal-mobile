@@ -21,6 +21,7 @@ import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import DeleteAccountDialog from "@/components/DeleteAccountDialog";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -82,6 +83,7 @@ export default function ProfileSettingsScreen() {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] =
     useState(true);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
+  const [currency, setCurrency] = useState<string>("AMD");
 
   const languages = [
     { code: "en", name: "English", nativeName: "English" },
@@ -101,12 +103,16 @@ export default function ProfileSettingsScreen() {
       const emailPrefs = await AsyncStorage.getItem(
         "emailNotificationsEnabled"
       );
+      const storedCurrency = await AsyncStorage.getItem("preferredCurrency");
 
       if (pushPrefs !== null) {
         setPushNotificationsEnabled(JSON.parse(pushPrefs));
       }
       if (emailPrefs !== null) {
         setEmailNotificationsEnabled(JSON.parse(emailPrefs));
+      }
+      if (storedCurrency) {
+        setCurrency(storedCurrency);
       }
 
       // Then sync with backend if user is authenticated
@@ -190,6 +196,15 @@ export default function ProfileSettingsScreen() {
     });
     setEmailNotificationsEnabled(value);
     await saveNotificationPreferences(pushNotificationsEnabled, value);
+  };
+
+  const handleCurrencyChange = async (newCurrency: string) => {
+    try {
+      setCurrency(newCurrency);
+      await AsyncStorage.setItem("preferredCurrency", newCurrency);
+    } catch (error) {
+      console.error("Error saving currency preference:", error);
+    }
   };
 
   const handleLanguageChange = (newLanguage: string) => {
@@ -354,6 +369,49 @@ export default function ProfileSettingsScreen() {
                 color={colors.textSecondary}
               />
             </TouchableOpacity>
+          </ResponsiveCard>
+
+          {/* Currency Settings */}
+          <ResponsiveCard>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              {t("currency")}
+            </Text>
+
+            <View style={styles.settingItem}>
+              <View style={styles.settingInfo}>
+                <IconSymbol
+                  name="dollarsign.circle"
+                  size={20}
+                  color={colors.primary}
+                />
+                <View style={styles.settingText}>
+                  <Text style={[styles.settingTitle, { color: colors.text }]}>
+                    {t("currency")}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.settingDescription,
+                      { color: colors.textSecondary },
+                    ]}
+                  >
+                    {t("currencyPreferenceDescription")}
+                  </Text>
+                </View>
+              </View>
+              <CurrencySelector
+                value={currency}
+                onChange={handleCurrencyChange}
+                iconColor={colors.textSecondary}
+                buttonStyle={{
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                  minWidth: 100
+                }}
+                textStyle={{ color: colors.text }}
+              />
+            </View>
           </ResponsiveCard>
 
           {/* Referral Program */}

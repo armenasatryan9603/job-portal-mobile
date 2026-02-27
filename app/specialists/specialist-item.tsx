@@ -145,7 +145,7 @@ export const SpecialistItem: React.FC<SpecialistItemProps> = ({
             </View>
           </View>
 
-          <Text style={[styles.bio, { color: colors.tabIconDefault }]}>
+          <Text numberOfLines={3} style={[styles.bio, { color: colors.tabIconDefault }]}>
             {specialist.User.bio || t("defaultSpecialistBio")}
           </Text>
 

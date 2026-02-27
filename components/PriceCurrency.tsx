@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, TextStyle, View } from "react-native";
 
 import { API_CONFIG } from "@/config/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { formatRateUnitLabel } from "@/utils/currencyRateUnit";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRateUnits } from "@/hooks/useRateUnits";
@@ -15,6 +16,9 @@ const LANGUAGE_CURRENCY_MAP: Record<string, string> = {
 const getCurrencyForLanguage = (language: string) =>
   LANGUAGE_CURRENCY_MAP[language] || LANGUAGE_CURRENCY_MAP.en;
 
+const RATE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const rateCache = new Map<string, { rate: number; timestamp: number }>();
+
 const fetchConversionRate = async (
   from: string,
   to: string
@@ -27,6 +31,14 @@ const fetchConversionRate = async (
       ) as Promise<Response>,
     ]);
   };
+
+  const cacheKey = `${from.toUpperCase()}-${to.toUpperCase()}`;
+  const now = Date.now();
+  const cached = rateCache.get(cacheKey);
+
+  if (cached && now - cached.timestamp < RATE_CACHE_TTL_MS) {
+    return cached.rate;
+  }
 
   const frankfurterBase =
     API_CONFIG.FRANKFURTER_API_URL || "https://api.frankfurter.app";
@@ -43,6 +55,7 @@ const fetchConversionRate = async (
         const data = await response.json();
         const rate = data?.rates?.[to] ?? data?.conversion_rates?.[to] ?? null;
         if (typeof rate === "number") {
+          rateCache.set(cacheKey, { rate, timestamp: Date.now() });
           return rate;
         }
       }
@@ -87,18 +100,31 @@ export const PriceCurrency: React.FC<PriceCurrencyProps> = ({
   );
 
   useEffect(() => {
-    const hasPrice = price !== null && price !== undefined;
-    if (!hasPrice || !convertCurrency) {
-      setConvertedPrice(hasPrice ? price : null);
-      setConvertedCurrency((currency || "USD").toUpperCase());
-      return;
-    }
-
     let isActive = true;
 
     const convertPrice = async () => {
+      const hasPrice = price !== null && price !== undefined;
+      if (!hasPrice || !convertCurrency) {
+        setConvertedPrice(hasPrice ? price : null);
+        setConvertedCurrency((currency || "USD").toUpperCase());
+        return;
+      }
+
       const sourceCurrency = (currency || "USD").toUpperCase();
-      const targetCurrency = getCurrencyForLanguage(language).toUpperCase();
+      let targetCurrency: string;
+
+      try {
+        const stored = await AsyncStorage.getItem("preferredCurrency");
+        if (stored) {
+          targetCurrency = stored.toUpperCase();
+        } else {
+          targetCurrency = getCurrencyForLanguage(language).toUpperCase();
+        }
+      } catch {
+        targetCurrency = getCurrencyForLanguage(language).toUpperCase();
+      }
+
+      if (!isActive) return;
 
       if (sourceCurrency === targetCurrency) {
         setConvertedPrice(price);

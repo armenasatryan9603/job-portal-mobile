@@ -51,6 +51,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { CurrencySelector } from "@/components/CurrencySelector";
 
 // Note: Slot generation removed - clients now book custom time ranges within work hours
 
@@ -132,7 +133,6 @@ export default function CreateOrderScreen() {
     };
   } | null>(null);
   const [pendingOrderData, setPendingOrderData] = useState<any>(null);
-  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
   const [showRateUnitModal, setShowRateUnitModal] = useState(false);
   const [orderType, setOrderType] = useState<"one_time" | "permanent">(
     "one_time"
@@ -161,6 +161,11 @@ export default function CreateOrderScreen() {
   const [pendingScheduleData, setPendingScheduleData] = useState<any>(null);
   const canAddAnotherQuestion = () =>
     questions.length === 0 || questions[questions.length - 1].trim().length > 0;
+
+  const handleCurrencyChange = (newCurrency: string) => {
+    setPreviousCurrency(currency);
+    setCurrency(newCurrency);
+  };
 
   // Form persistence - only for new orders (not editing)
   // NOTE: We intentionally do NOT persist mediaFiles or banner selection.
@@ -2637,40 +2642,30 @@ export default function CreateOrderScreen() {
                 </View>
 
                 {/* Currency Selector */}
-                <View style={styles.currencyContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.selectorButton,
-                      {
-                        backgroundColor: colors.background,
-                        borderColor: errors.budget ? colors.error : colors.border,
-                        borderTopColor: errors.budget
-                          ? colors.error
-                          : colors.border,
-                        borderBottomColor: errors.budget
-                          ? colors.error
-                          : colors.border,
-                        borderLeftColor: colors.border, // Keep inner border normal
-                        borderRightColor: colors.border, // Keep inner border normal
-                      },
-                    ]}
-                    onPress={() => setShowCurrencyModal(true)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[styles.selectorText, { color: colors.text }]}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {currency}
-                    </Text>
-                    <IconSymbol
-                      name="chevron.down"
-                      size={14}
-                      color={colors.textSecondary}
-                    />
-                  </TouchableOpacity>
-                </View>
+                <CurrencySelector
+                  value={currency}
+                  onChange={handleCurrencyChange}
+                  options={currencyOptions}
+                  containerStyle={styles.currencyContainer}
+                  buttonStyle={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.budget ? colors.error : colors.border,
+                    borderTopColor: errors.budget
+                      ? colors.error
+                      : colors.border,
+                    borderBottomColor: errors.budget
+                      ? colors.error
+                      : colors.border,
+                    borderLeftColor: colors.border,
+                    borderRightColor: colors.border,
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
+                    borderTopRightRadius: 0,
+                    borderBottomRightRadius: 0,
+                  }}
+                  textStyle={{ color: colors.text }}
+                  iconColor={colors.textSecondary}
+                />
 
                 {/* Rate Unit Selector */}
                 <View style={styles.rateUnitContainer}>
@@ -2981,64 +2976,6 @@ export default function CreateOrderScreen() {
         onMakePriority={handleMakePriority}
         onCancel={handleCancelBreakOverlap}
       />
-
-      {/* Currency Selection Modal */}
-      <Modal
-        visible={showCurrencyModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCurrencyModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.selectorModalContent,
-              { backgroundColor: colors.background },
-            ]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {t("selectCurrency")}
-              </Text>
-              <TouchableOpacity onPress={() => setShowCurrencyModal(false)}>
-                <IconSymbol name="xmark" size={20} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-            {currencyOptions.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.modalOption,
-                  {
-                    backgroundColor:
-                      currency === option
-                        ? colors.primary + "10"
-                        : "transparent",
-                    borderBottomColor: colors.border,
-                  },
-                ]}
-                onPress={() => {
-                  // Store current currency before changing
-                  setPreviousCurrency(currency);
-                  setCurrency(option);
-                  setShowCurrencyModal(false);
-                }}
-              >
-                <Text style={[styles.modalOptionText, { color: colors.text }]}>
-                  {option}
-                </Text>
-                {currency === option && (
-                  <IconSymbol
-                    name="checkmark"
-                    size={16}
-                    color={colors.primary}
-                  />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      </Modal>
 
       {/* Rate Unit Selection Modal */}
       <Modal

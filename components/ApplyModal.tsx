@@ -221,9 +221,13 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                     size={16}
                     color={colors.tint}
                   />
-                  <Text style={[styles.detailText, { color: colors.text }]}>
-                    {order.currency}&nbsp;{order.budget.toLocaleString()}
-                  </Text>
+                  <PriceCurrency
+                    price={order.budget}
+                    currency={order.currency}
+                    rateUnit={order.rateUnit}
+                    showOriginal={false}
+                    style={{ ...styles.detailText, color: colors.text }}
+                  />
                 </View>
                 {getLocationDisplay(order.location) && (
                   <View style={styles.detailRow}>
@@ -426,6 +430,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                       currency={order.currency}
                       showOriginal={false}
                       showRateUnit={false}
+                      convertCurrency={true}
                       style={{ ...styles.creditText, color: colors.text }}
                     />
                   </View>
@@ -452,6 +457,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                           currency={order.currency}
                           showOriginal={false}
                           showRateUnit={false}
+                          convertCurrency={true}
                           style={{ ...styles.creditText, color: colors.text }}
                         />
                       </View>
