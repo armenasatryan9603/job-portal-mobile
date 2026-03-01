@@ -740,13 +740,11 @@ export default function ProfileScreen() {
         profile.id
       );
 
-      // Keep country from login (__ISO); only update the address part
-      const existingIso = getCountryIsoFromLocation((profile as any)?.location);
-      const locationValue =
-        locationText.trim() +
-        (existingIso ? `${LOCATION_COUNTRY_SEPARATOR}${existingIso}` : "");
+      const existingIso =
+        (profile as any)?.country ?? getCountryIsoFromLocation((profile as any)?.location);
       const result = await apiService.updateSpecialistProfile(profile.id, {
-        location: locationValue,
+        location: locationText.trim(),
+        ...(existingIso ? { country: existingIso } : {}),
       });
 
       console.log("Location update result:", result);

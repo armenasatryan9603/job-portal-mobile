@@ -268,11 +268,15 @@ export const useSearchServices = (
 
 // ===== SPECIALISTS HOOKS =====
 
-export const useSpecialists = (page: number = 1, limit: number = 10) => {
+export const useSpecialists = (
+  page: number = 1,
+  limit: number = 10,
+  country?: string | null
+) => {
   const { isOnline } = useNetworkStatus();
   return useQuery({
-    queryKey: ["specialists", page, limit],
-    queryFn: () => apiService.getAllSpecialists(page, limit),
+    queryKey: ["specialists", page, limit, country ?? ""],
+    queryFn: () => apiService.getAllSpecialists(page, limit, country ?? undefined),
     staleTime: CACHE_TTL.DYNAMIC,
     enabled: true,
     retry: isOnline,

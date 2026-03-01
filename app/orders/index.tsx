@@ -2,9 +2,11 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
@@ -52,6 +54,7 @@ import { parseLocationCoordinates as parseLocationCoordinatesUtil } from "@/util
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -111,6 +114,7 @@ export default function OrdersScreen() {
   const { language } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { user, isAuthenticated } = useAuth();
+  const { guestCountryIso, requestLocationAndStore } = useGuestCountry();
   const { showLoginModal } = useModal();
   const isMyOrders = myOrders === "true";
   const isMyJobs = myJobs === "true";
@@ -174,7 +178,7 @@ export default function OrdersScreen() {
   );
   // Temporary currentPage for query initialization (will be overridden by hook)
   const [tempCurrentPage, setTempCurrentPage] = useState(1);
-  const limit = 10;
+  const limit = 40;
   const status = selectedFilters?.status as string;
 
   // Convert selected categories to number array
@@ -191,17 +195,18 @@ export default function OrdersScreen() {
     return categories.map((id) => parseInt(id)).filter((id) => !isNaN(id));
   }, [filterCategoryId, selectedFilters.categories]);
 
-  // Extract country from user location for default filtering
-  // Only apply for general orders view (not My Orders, My Jobs, or Saved Orders)
-  // ISO from location: "address__ISO" or fallback parse from address text
+  // Country for feed filter: user.country when logged in, else guest-stored
   const userCountryIso = useMemo(() => {
     if (isMyOrders || isMyJobs || isSavedOrders) return undefined;
-    const fromSeparator = user?.location ? getCountryIsoFromLocation(user.location) : null;
-    if (fromSeparator) return fromSeparator;
-    if (!user?.location) return undefined;
-    const name = extractCountryFromLocation(getLocationDisplay(user.location));
-    return name ? getCountryIsoCode(name) ?? undefined : undefined;
-  }, [user?.location, isMyOrders, isMyJobs, isSavedOrders]);
+    if (user?.country) return user.country;
+    if (user?.location) {
+      const fromSeparator = getCountryIsoFromLocation(user.location);
+      if (fromSeparator) return fromSeparator;
+      const name = extractCountryFromLocation(getLocationDisplay(user.location));
+      return name ? getCountryIsoCode(name) ?? undefined : undefined;
+    }
+    return guestCountryIso ?? undefined;
+  }, [user?.country, user?.location, guestCountryIso, isMyOrders, isMyJobs, isSavedOrders]);
 
   // Currency for price filter: based on app language for now (use user?.currency ?? "USD" in future)
   const priceFilterCurrency = useMemo(() => {
@@ -1378,7 +1383,10 @@ export default function OrdersScreen() {
   useFocusEffect(
     useCallback(() => {
       loadViewedOrders();
-    }, [])
+      if (!isAuthenticated && !guestCountryIso && !isMyOrders && !isMyJobs && !isSavedOrders) {
+        requestLocationAndStore();
+      }
+    }, [isAuthenticated, guestCountryIso, isMyOrders, isMyJobs, isSavedOrders, requestLocationAndStore])
   );
 
   const handleCreateOrder = () => {
@@ -1941,6 +1949,14 @@ export default function OrdersScreen() {
   return (
     <>
       <Layout header={header}>
+        {!isAuthenticated && !guestCountryIso && !isMyOrders && !isMyJobs && !isSavedOrders && (
+          <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
+            <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
+              {t("setLocationToSeeRelevant")}
+            </Text>
+            <Button title={t("openSettings")} icon="globe" iconSize={16} variant="outline" onPress={() => Linking.openSettings()} style={styles.locationBannerBtn}/>
+          </View>
+        )}
         <TopTabs
           tabs={tabs}
           activeTab={activeOrderTab}
@@ -2101,4 +2117,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: Spacing.lg,
   },
+  locationBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  locationBannerText: { flex: 1, fontSize: 13 },
+  locationBannerBtn: { paddingVertical: 4, paddingHorizontal: 8 },
 });

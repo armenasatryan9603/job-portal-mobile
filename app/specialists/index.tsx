@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Linking,
   RefreshControl,
   StyleSheet,
   Text,
@@ -13,21 +14,22 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { SpecialistProfile, apiService } from "@/categories/api";
 import { Team, TeamItem } from "./team-item";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useCategories, useMyOrders, useSpecialists } from "@/hooks/useApi";
 
 import AnalyticsService from "@/categories/AnalyticsService";
+import { Button } from "@/components/ui/button";
 import { EmptyPage } from "@/components/EmptyPage";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
 import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { SpecialistItem } from "./specialist-item";
 import { TopTabs } from "@/components/TopTabs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
@@ -41,6 +43,7 @@ export default function SpecialistsScreen() {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { isAuthenticated, user } = useAuth();
+  const { guestCountryIso, requestLocationAndStore } = useGuestCountry();
   const { data: rateUnitsData } = useRateUnits();
   const rateUnits = (rateUnitsData || []) as RateUnit[];
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
@@ -94,15 +97,16 @@ export default function SpecialistsScreen() {
   const [teamsLoading, setTeamsLoading] = useState(true);
   const [teamsRefreshing, setTeamsRefreshing] = useState(false);
 
-  // Use TanStack Query for data fetching
+  // Use TanStack Query for data fetching (country always from frontend: user.country when logged in, guest when not)
   const [tempCurrentPage, setTempCurrentPage] = useState(1);
+  const countryFilter = (user?.country ?? guestCountryIso) ?? undefined;
   const {
     data: specialistsData,
     isLoading,
     isFetching,
     error,
     refetch,
-  } = useSpecialists(tempCurrentPage, 20);
+  } = useSpecialists(tempCurrentPage, 20, countryFilter);
   const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering with correct language
   const { data: ordersData } = useMyOrders();
 
@@ -110,7 +114,7 @@ export default function SpecialistsScreen() {
   const userOrders = ordersData?.orders || [];
   const pagination = specialistsData?.pagination || {
     page: 1,
-    limit: 20,
+    limit: 40,
     total: 0,
     totalPages: 0,
     hasNextPage: false,
@@ -171,6 +175,12 @@ export default function SpecialistsScreen() {
       loadTeams();
     }
   }, [activeTab, loadTeams]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isAuthenticated && !guestCountryIso) requestLocationAndStore();
+    }, [isAuthenticated, guestCountryIso, requestLocationAndStore])
+  );
 
   const onTeamsRefresh = useCallback(async () => {
     setTeamsRefreshing(true);
@@ -562,6 +572,14 @@ export default function SpecialistsScreen() {
 
   return (
     <Layout header={header}>
+      {!isAuthenticated && !guestCountryIso && (
+        <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
+          <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
+            {t("setLocationToSeeRelevant")}
+          </Text>
+          <Button title={t("openSettings")} icon="globe" iconSize={16} variant="outline" onPress={() => Linking.openSettings()} style={styles.locationBannerBtn}/>
+        </View>
+      )}
       <TopTabs
         tabs={tabs}
         activeTab={activeTab}
@@ -696,4 +714,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     opacity: 0.7,
   },
+  locationBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  locationBannerText: { flex: 1, fontSize: 13 },
+  locationBannerBtn: { paddingVertical: 4, paddingHorizontal: 8 },
 });

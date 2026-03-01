@@ -1297,6 +1297,7 @@ export default function CreateOrderScreen() {
         const iso = selectedLocation?.isoCountryCode;
         return iso ? `${base}${LOCATION_COUNTRY_SEPARATOR}${iso}` : base;
       })(),
+      country: selectedLocation?.isoCountryCode ?? user?.country ?? undefined,
       availableDates:
         formatAllDatesWithTimes().length > 0
           ? formatAllDatesWithTimes()

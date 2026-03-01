@@ -135,6 +135,7 @@ export interface SpecialistProfile {
   priceMin?: number;
   priceMax?: number;
   location?: string;
+  country?: string;
   currency?: string;
   rateUnit?: string;
   User: User & {
@@ -187,6 +188,7 @@ export interface UserProfile {
   priceMin?: number;
   priceMax?: number;
   location?: string;
+  country?: string;
   currency?: string;
   rateUnit?: string;
   portfolio?: PortfolioItem[];
@@ -198,6 +200,8 @@ export interface UpdateUserProfileData {
   email?: string;
   avatarUrl?: string;
   bio?: string;
+  location?: string;
+  country?: string;
   role?: string;
   languages?: UserLanguage[];
   experienceYears?: number;
@@ -413,6 +417,7 @@ export interface Order {
     | "not_applied"
     | "draft";
   location?: string;
+  country?: string;
   skills: string[];
   availableDates: string[];
   createdAt: string;
@@ -770,13 +775,14 @@ class ApiService {
   // Specialist Profiles API methods
   async getAllSpecialists(
     page: number = 1,
-    limit: number = 10
+    limit: number = 10,
+    country?: string
   ): Promise<SpecialistListResponse> {
     const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
     });
-
+    if (country) params.append("country", country);
     return this.request<SpecialistListResponse>(
       `/users/specialists?${params}`,
       {},
@@ -867,6 +873,7 @@ class ApiService {
       priceMin?: number;
       priceMax?: number;
       location?: string;
+      country?: string;
     }
   ): Promise<any> {
     return this.request<any>(
@@ -1102,6 +1109,7 @@ class ApiService {
     rateUnit?: string;
     categoryId: number;
     location?: string;
+    country?: string;
     skills?: string[];
     skillIds?: number[];
     availableDates?: string[];
@@ -1134,6 +1142,7 @@ class ApiService {
       rateUnit?: string;
       status?: string;
       location?: string;
+      country?: string;
       skills?: string[];
       skillIds?: number[];
       availableDates?: string[];

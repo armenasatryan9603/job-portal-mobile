@@ -17,6 +17,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { GuestLocationProvider } from "@/contexts/GuestLocationContext";
 import CalendarNotificationService from "@/categories/CalendarNotificationService";
 import RatingService from "@/categories/RatingService";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
@@ -287,6 +288,7 @@ export default function RootLayout() {
         <LanguageProvider>
           <TranslationProvider>
             <AuthProvider>
+              <GuestLocationProvider>
               <UnreadCountProvider>
                 <ConversationsProvider>
                   <CreditCardProvider>
@@ -300,6 +302,7 @@ export default function RootLayout() {
                   </CreditCardProvider>
                 </ConversationsProvider>
               </UnreadCountProvider>
+              </GuestLocationProvider>
             </AuthProvider>
           </TranslationProvider>
         </LanguageProvider>

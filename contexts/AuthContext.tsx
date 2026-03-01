@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { UserLanguage, UserProfile, apiService } from "@/categories/api";
+import { clearGuestLocation, getGuestCountryIso, getGuestLocationAddress, setGuestCountryIso } from "@/utils/guestLocationStorage";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -63,9 +64,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       if (storedUser && storedToken) {
         const userData = JSON.parse(storedUser);
-        
         setUser(userData);
         setIsAuthenticated(true);
+        await clearGuestLocation();
+        const userCountry = userData?.country?.trim();
+        if (userCountry) await setGuestCountryIso(userCountry);
 
         // Check if user has incomplete profile (no name or empty name)
         const isIncomplete = !userData.name || userData.name.trim() === "";
@@ -155,6 +158,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AsyncStorage.setItem("user", JSON.stringify(result.user));
         setUser(result.user);
         setIsAuthenticated(true);
+
+        // If user already has country in DB, use it; otherwise optionally save guest location to profile. Always clear guest storage so we use user data when logged in.
+        const guestCountry = await getGuestCountryIso();
+        const guestAddress = await getGuestLocationAddress();
+        const userHasCountry = !!(result.user as { country?: string } | null)?.country?.trim();
+        const userHasLocation = !!(result.user as { location?: string } | null)?.location?.trim();
+
+        let finalUser = result.user as { country?: string };
+        if (guestCountry || guestAddress) {
+          try {
+            if (!userHasCountry || !userHasLocation) {
+              const updated = await apiService.updateUserProfile({
+                ...(!userHasCountry && guestCountry && { country: guestCountry }),
+                ...(!userHasLocation && guestAddress && { location: guestAddress }),
+              });
+              await AsyncStorage.setItem("user", JSON.stringify(updated));
+              setUser(updated);
+              finalUser = updated as { country?: string };
+            }
+          } catch (e) {
+            console.warn("Could not save guest location to profile:", e);
+          }
+        }
+        await clearGuestLocation();
+        // Store user's country in guest storage so after logout the same orders/specialists filter is used
+        const countryToStore = finalUser?.country?.trim();
+        if (countryToStore) await setGuestCountryIso(countryToStore);
 
         // Check if user has incomplete profile
         const isIncomplete =
