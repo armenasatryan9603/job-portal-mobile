@@ -19,7 +19,6 @@ import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { LocationFilterModal } from "@/components/LocationFilterModal";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ServiceItem } from "@/components/ServiceItem";
 import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -381,7 +380,7 @@ export default function ServicesScreen() {
             />
           </View>
       ) : sortedMarkets.length === 0 ? (
-        <View style={[styles.emptyContainer, { paddingTop: 100 }]}>
+        <View style={styles.emptyContainer}>
           <IconSymbol
             name="building.2"
             size={64}
@@ -541,7 +540,7 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
+    marginTop: 60,
     alignItems: "center",
     padding: Spacing.lg,
   },
