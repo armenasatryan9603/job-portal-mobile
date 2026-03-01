@@ -7,15 +7,18 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { UserLanguage, UserProfile, apiService } from "@/categories/api";
+import { UserProfile, apiService } from "@/categories/api";
 import { clearGuestLocation, getGuestCountryIso, getGuestLocationAddress, setGuestCountryIso } from "@/utils/guestLocationStorage";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import CalendarNotificationService from "@/categories/CalendarNotificationService";
+import { InteractionManager } from "react-native";
 import NotificationService from "@/categories/NotificationService";
 import PhoneVerificationService from "@/categories/PhoneVerificationService";
 import { getAndClearReferralCode } from "@/utils/referralStorage";
+import { queryClient } from "@/categories/queryClient";
+import { router } from "expo-router";
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -394,30 +397,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async (): Promise<void> => {
+    // Reset state first so UI updates immediately and no component tries to use null user
+    setUser(null);
+    setIsAuthenticated(false);
+    setHasIncompleteProfile(false);
+    setJustSignedUp(false);
+
     try {
-      // Call backend logout endpoint if user is authenticated
+      // Call backend logout endpoint if user was authenticated
       if (isAuthenticated) {
         try {
           await apiService.post("/auth/logout", {}, true);
         } catch (error) {
           console.error("Error calling logout endpoint:", error);
-          // Continue with local logout even if backend call fails
         }
       }
 
-      // Reset analytics data on logout
-      await AnalyticsService.getInstance().resetAnalyticsData();
-      await AnalyticsService.getInstance().setUserId(null);
+      // Reset analytics data (non-critical, don't block)
+      try {
+        await AnalyticsService.getInstance().resetAnalyticsData();
+        await AnalyticsService.getInstance().setUserId(null);
+      } catch (error) {
+        console.error("Error resetting analytics on logout:", error);
+      }
 
-      // Clear local state and storage
-      setUser(null);
-      setIsAuthenticated(false);
-      setHasIncompleteProfile(false);
-      setJustSignedUp(false);
+      // Clear storage and token
       await AsyncStorage.removeItem("user");
       await apiService.clearAuthToken();
+
+      // Clear React Query cache to avoid stale user-specific data and potential crashes
+      queryClient.clear();
+
+      // Navigate to home after interactions complete (avoids "update during render" crashes)
+      InteractionManager.runAfterInteractions(() => {
+        router.replace("/");
+      });
     } catch (error) {
       console.error("Error during logout:", error);
+      InteractionManager.runAfterInteractions(() => {
+        router.replace("/");
+      });
     }
   };
 
