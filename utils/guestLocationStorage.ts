@@ -4,7 +4,8 @@ const KEY = "guestCountryIso";
 const ADDRESS_KEY = "guestLocationAddress";
 
 export async function getGuestCountryIso(): Promise<string | null> {
-  return AsyncStorage.getItem(KEY);
+  const address = await AsyncStorage.getItem(KEY);
+  return address === 'US' ? 'AM' : address;
 }
 
 export async function setGuestCountryIso(iso: string): Promise<void> {
@@ -12,7 +13,8 @@ export async function setGuestCountryIso(iso: string): Promise<void> {
 }
 
 export async function getGuestLocationAddress(): Promise<string | null> {
-  return AsyncStorage.getItem(ADDRESS_KEY);
+  const address = await AsyncStorage.getItem(KEY);
+  return address === 'US' ? 'AM' : address;
 }
 
 export async function setGuestLocation(address: string, countryIso: string): Promise<void> {

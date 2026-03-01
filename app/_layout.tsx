@@ -17,18 +17,18 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { GuestLocationProvider } from "@/contexts/GuestLocationContext";
 import CalendarNotificationService from "@/categories/CalendarNotificationService";
-import RatingService from "@/categories/RatingService";
 import { ChatReminderProvider } from "@/contexts/ChatReminderContext";
 import { ChatReminderToast } from "@/components/ChatReminderToast";
 import { ConversationsProvider } from "@/contexts/ConversationsContext";
 import { CreditCardProvider } from "@/contexts/CreditCardContext";
 import { GlobalModals } from "@/components/GlobalModals";
+import { GuestLocationProvider } from "@/contexts/GuestLocationContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ModalProvider } from "@/contexts/ModalContext";
 import { NavigationProvider } from "@/contexts/NavigationContext";
 import { QueryClientProvider } from "@tanstack/react-query";
+import RatingService from "@/categories/RatingService";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { TranslationProvider } from "@/contexts/TranslationContext";
@@ -289,19 +289,19 @@ export default function RootLayout() {
           <TranslationProvider>
             <AuthProvider>
               <GuestLocationProvider>
-              <UnreadCountProvider>
-                <ConversationsProvider>
-                  <CreditCardProvider>
-                    <ModalProvider>
-                      <NavigationProvider>
-                        <ChatReminderProvider>
-                          <AppContent />
-                        </ChatReminderProvider>
-                      </NavigationProvider>
-                    </ModalProvider>
-                  </CreditCardProvider>
-                </ConversationsProvider>
-              </UnreadCountProvider>
+                <UnreadCountProvider>
+                  <ConversationsProvider>
+                    <CreditCardProvider>
+                      <ModalProvider>
+                        <NavigationProvider>
+                          <ChatReminderProvider>
+                            <AppContent />
+                          </ChatReminderProvider>
+                        </NavigationProvider>
+                      </ModalProvider>
+                    </CreditCardProvider>
+                  </ConversationsProvider>
+                </UnreadCountProvider>
               </GuestLocationProvider>
             </AuthProvider>
           </TranslationProvider>
