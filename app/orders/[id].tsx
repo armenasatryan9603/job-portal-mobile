@@ -35,6 +35,7 @@ import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";
 import { Layout } from "@/components/Layout";
+import { LocationWithMap } from "@/components/LocationWithMap";
 import { MediaGrid } from "@/components/MediaGrid";
 import { OrderDetailSkeleton } from "@/components/OrderDetailSkeleton";
 import { PriceCurrency } from "@/components/PriceCurrency";
@@ -44,7 +45,6 @@ import { getFrontendUrl } from "@/config/api";
 import { getLocationDisplay } from "@/utils/countryExtraction";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { LocationWithMap } from "@/components/LocationWithMap";
 import { useApplyToOrder } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -118,6 +118,10 @@ export default function EditOrderScreen() {
 
   // Track applied orders (fetched from backend)
   const [appliedOrders, setAppliedOrders] = useState<Set<number>>(new Set());
+
+  // Saved/ bookmarked state for this order
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // Feedback dialog state
   const [feedbackDialogVisible, setFeedbackDialogVisible] = useState(false);
@@ -195,6 +199,15 @@ export default function EditOrderScreen() {
         // Load change history if user is authenticated
         if (user?.id) {
           loadChangeHistory(parseInt(id as string));
+          // Load saved (bookmarked) state for this order
+          try {
+            const savedStatus = await apiService.isOrderSaved(orderData.id);
+            if (typeof savedStatus?.isSaved === "boolean") {
+              setSaved(savedStatus.isSaved);
+            }
+          } catch (error) {
+            console.error("Error checking saved status:", error);
+          }
         }
 
         // Load bookings if this is a permanent order and user is the owner
@@ -332,6 +345,25 @@ export default function EditOrderScreen() {
 
     // Show apply modal
     setShowApplyModal(true);
+  };
+
+  const handleSaveToggle = async () => {
+    if (!user?.id || !order) return;
+
+    setSaving(true);
+    try {
+      if (saved) {
+        await apiService.unsaveOrder(order.id);
+        setSaved(false);
+      } else {
+        await apiService.saveOrder(order.id);
+        setSaved(true);
+      }
+    } catch (error) {
+      console.error("Error toggling save:", error);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSubmitApplication = async (
@@ -1048,6 +1080,26 @@ export default function EditOrderScreen() {
   const renderOrderOverview = () => {
     return (
       <ResponsiveCard>
+        {user?.id &&
+          !isMyJobs &&
+          order &&
+          user.id !== order.clientId && (
+            <TouchableOpacity
+              onPress={handleSaveToggle}
+              style={styles.bookmarkButton}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color={colors.tint} />
+              ) : (
+                <IconSymbol
+                  name={saved ? "bookmark.fill" : "bookmark"}
+                  size={20}
+                  color={saved ? colors.tint : colors.tabIconDefault}
+                />
+              )}
+            </TouchableOpacity>
+          )}
         <View>
           <Text style={[styles.orderTitle, { color: colors.text }]}>
             {getLocalizedText("title", language, order)}
@@ -2017,11 +2069,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
+  bookmarkButton: {
+    padding: 2,
+    position: "absolute",
+    zIndex: 1000,
+    top: 12,
+    right: 8,
+  },
   orderTitle: {
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 12,
-    lineHeight: 32,
+    lineHeight: 24
   },
   orderDescription: {
     marginBottom: 10,

@@ -219,7 +219,7 @@ export interface ApiCard {
   expiryYear: string;
   cardholderName: string;
   cardType: string;
-  bindingId?: string; // AmeriaBank binding ID for saved card payments
+  bindingId?: string; // Bank binding/token ID for saved card payments
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;

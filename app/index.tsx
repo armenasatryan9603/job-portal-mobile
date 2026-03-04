@@ -255,7 +255,7 @@ export default function WelcomeScreen() {
                 <View style={[styles.loginIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
                   <IconSymbol
                     name="person.circle.fill"
-                    size={32}
+                    size={84}
                     color={colors.primary}
                   />
                 </View>

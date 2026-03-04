@@ -1,9 +1,10 @@
-import React from "react";
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from "react-native";
+import { BorderRadius, Spacing, Typography } from "@/constants/styles";
+import { StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
+
 import { IconSymbol } from "./icon-symbol";
+import React from "react";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
-import { BorderRadius, Spacing, Typography } from "@/constants/styles";
 
 export type BadgeVariant =
   | "default"
@@ -84,56 +85,56 @@ export const Badge: React.FC<BadgeProps> = ({
       case "success":
         return {
           bg: colors.success,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "warning":
         return {
           bg: colors.warning,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "error":
         return {
           bg: colors.error,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "info":
         return {
           bg: colors.info,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "primary":
         return {
           bg: colors.primary,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "secondary":
         return {
           bg: colors.secondary,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "pending":
         return {
           bg: colors.orange,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       case "verified":
         return {
           bg: colors.success,
-          text: colors.textInverse,
-          icon: colors.textInverse,
+          text: '#fff',
+          icon: '#fff',
         };
       default:
         return {
           bg: colors.backgroundSecondary,
-          text: colors.text,
-          icon: colors.text,
+          text: '#fff',
+          icon: '#fff',
         };
     }
   };

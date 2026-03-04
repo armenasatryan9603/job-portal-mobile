@@ -155,8 +155,8 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   const syncCardsFromBank = useCallback(async () => {
     // Refresh cards from backend (which should now include bindingId if available)
     await refreshCards();
-    // Note: Full sync from AmeriaBank GetBindings would require a backend endpoint
-    // For now, we rely on cards being updated when bindings are saved during payment callbacks
+    // Note: Full sync from the underlying payment provider would require a dedicated backend endpoint.
+    // For now, we rely on cards being updated when bindings are saved during payment callbacks.
   }, [refreshCards]);
 
   const value: CreditCardContextType = {

@@ -335,6 +335,40 @@ const OrderItem = ({
 
   return (
     <View style={[styles.wrapper, style]}>
+      <Badge
+        style={{ position: "absolute", zIndex: 1000, top: 10, right: 10 }}
+        text={getStatusLabel(order.status)}
+        variant={getStatusVariant(order.status)}
+        iconSize={10}
+        size="sm"
+      />
+      {user?.id && !isMyOrders && user.id !== order.clientId && (
+        <TouchableOpacity
+          onPress={handleSaveToggle}
+          style={styles.bookmarkButton}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.tint} />
+          ) : (
+            <IconSymbol
+              name={saved ? "bookmark.fill" : "bookmark"}
+              size={20}
+              color={saved ? colors.tint : colors.tabIconDefault}
+            />
+          )}
+        </TouchableOpacity>
+      )}
+      {isViewed && (
+          <View style={[styles.viewedTag, { backgroundColor: colors.border }]}>
+            <IconSymbol name="eye" size={12} color={colors.tabIconDefault} />
+            <Text
+              style={[styles.viewedTagText, { color: colors.tabIconDefault }]}
+            >
+              {t("viewed")}
+            </Text>
+          </View>
+        )}
       <TouchableOpacity 
         onPress={() => handleOrderPress(order)} 
         activeOpacity={1}
@@ -350,16 +384,6 @@ const OrderItem = ({
             styles.card,
           ]}
         >
-        {isViewed && (
-          <View style={[styles.viewedTag, { backgroundColor: colors.border }]}>
-            <IconSymbol name="eye" size={12} color={colors.tabIconDefault} />
-            <Text
-              style={[styles.viewedTagText, { color: colors.tabIconDefault }]}
-            >
-              {t("viewed")}
-            </Text>
-          </View>
-        )}
         {/* Banner Image */}
         <View style={styles.bannerImageContainer}>
           {order.Category && displayServiceName && (
@@ -431,31 +455,13 @@ const OrderItem = ({
                 {displayTitle}
               </Text>
               {/* Bookmark Button */}
-              {user?.id && !isMyOrders && user.id !== order.clientId && (
-                <TouchableOpacity
-                  onPress={handleSaveToggle}
-                  style={styles.bookmarkButton}
-                  disabled={saving}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color={colors.tint} />
-                  ) : (
-                    <IconSymbol
-                      name={saved ? "bookmark.fill" : "bookmark"}
-                      size={16}
-                      color={saved ? colors.tint : colors.tabIconDefault}
-                    />
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-            <Badge
-              text={getStatusLabel(order.status)}
-              variant={getStatusVariant(order.status)}
-              iconSize={10}
-              size="sm"
-            />
+              <View style={styles.detailItem}>
+              <IconSymbol name="person.fill" size={10} color={colors.tabIconDefault} />
+                <Text style={[styles.detailText, { color: colors.tabIconDefault }]}>
+                  {order._count?.Proposals ?? order.Proposals?.length ?? 0}
+                </Text>
+              </View>
+            </View>  
           </View>
 
           {/* Price */}
@@ -494,12 +500,6 @@ const OrderItem = ({
                 </Text>
               </View>
             )}
-            <View style={styles.detailItem}>
-              <IconSymbol name="person.fill" size={10} color={colors.tabIconDefault} />
-              <Text style={[styles.detailText, { color: colors.tabIconDefault }]}>
-                {order._count?.Proposals ?? order.Proposals?.length ?? 0}
-              </Text>
-            </View>
           </View>
 
           {/* Action Button */}
@@ -660,6 +660,10 @@ const styles = StyleSheet.create({
   bookmarkButton: {
     padding: 2,
     marginLeft: Spacing.xs / 2,
+    position: "absolute",
+    zIndex: 1000,
+    top: 6,
+    left: 2,
   },
   priceContainer: {
     marginBottom: Spacing.xs,
@@ -732,18 +736,18 @@ const styles = StyleSheet.create({
   },
   viewedTag: {
     position: "absolute",
-    top: 10,
+    top: 96,
     right: 10,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
+    gap: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 8,
     zIndex: 1000,
   },
   viewedTagText: {
-    fontSize: 11,
+    fontSize: 8,
     fontWeight: "700",
   },
 });

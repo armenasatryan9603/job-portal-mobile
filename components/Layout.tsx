@@ -265,11 +265,6 @@ export const Layout: React.FC<LayoutProps> = ({
                       {t("login")}
                     </Text>
                   </View>
-                  <IconSymbol
-                    name="person.badge.plus"
-                    size={16}
-                    color={colors.tabIconDefault}
-                  />
                 </>
               )}
             </View>
