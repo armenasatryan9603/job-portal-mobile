@@ -104,6 +104,16 @@ export interface PlatformStats {
   supportAvailability: string;
 }
 
+export interface TopData {
+  id: number;
+  name: string;
+  image: string | null;
+  country: string | null;
+  action: "open" | "external" | "apply" | "book" | null;
+  url: string | null;
+  sortOrder: number;
+}
+
 export interface UserCategory {
   id: number;
   userId: number;
@@ -2010,6 +2020,14 @@ class ApiService {
   // Platform statistics
   async getPlatformStats(): Promise<PlatformStats> {
     return this.request(`/stats/platform`, {}, false);
+  }
+
+  async getTopData(country?: string): Promise<TopData[]> {
+    const params = new URLSearchParams();
+    if (country) params.append("country", country);
+    const query = params.toString();
+    const endpoint = query ? `/top-data?${query}` : `/top-data`;
+    return this.request<TopData[]>(endpoint, {}, false);
   }
 
   // Constants API

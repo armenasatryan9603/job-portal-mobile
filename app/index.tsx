@@ -21,11 +21,13 @@ import { Layout } from "@/components/Layout";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ThemedText } from "@/components/themed-text";
+import { TopDataSlider } from "@/components/TopDataSlider";
 import { UserAvatar } from "@/components/UserAvatar";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useModal } from "@/contexts/ModalContext";
 import { usePlatformStats } from "@/hooks/useApi";
+import { useState } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -74,6 +76,8 @@ export default function WelcomeScreen() {
       },
     ]);
   };
+
+  const [hasTopData, setHasTopData] = useState(true);
 
   const quickActions = [
     {
@@ -160,13 +164,15 @@ export default function WelcomeScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
       >
+      <View style={styles.adSlotPlaceholder}>
+        <AdBanner/>
+      </View>
+      <View style={styles.topDataSliderContainer}>
+        <TopDataSlider onEmpty={() => setHasTopData(false)} />
+      </View>
         <View style={styles.container}>
           {/* User Profile Card */}
-          <View style={styles.adSlotPlaceholder}>
-            <AdBanner />
-          </View>
-
-          <ResponsiveCard
+          {!hasTopData && <ResponsiveCard
             marginBlock={0}
             marginHorizontal={0}
             style={[
@@ -315,7 +321,7 @@ export default function WelcomeScreen() {
                 </View>
               </View>
             )}
-          </ResponsiveCard>
+          </ResponsiveCard>}
 
           {/* Quick Actions */}
           <View style={styles.sectionContainer}>
@@ -505,6 +511,9 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  topDataSliderContainer: {
+    marginTop: Spacing.xl,
+  },
   container: {
     padding: Spacing.md,
     gap: Spacing.xl,

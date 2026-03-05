@@ -117,6 +117,15 @@ export const usePlatformStats = () => {
   });
 };
 
+export const useTopData = (country?: string) => {
+  return useQuery({
+    queryKey: ["topData", country ?? ""],
+    queryFn: () => apiService.getTopData(country ?? undefined),
+    staleTime: CACHE_TTL.STATIC,
+    gcTime: CACHE_TTL.STATIC,
+  });
+};
+
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   return useMutation({
