@@ -254,11 +254,15 @@ export default function PaymentsScreen() {
                 iconSize={14}
                 backgroundColor={colors.primary}
                 onPress={() => {
-                  AnalyticsService.getInstance().logEvent("button_clicked", {
-                    button_name: "refill_credits",
-                    location: "payments_screen",
-                  });
-                  router.push("/profile/payment/refill-credits");
+                  if (creditCards.length) {
+                    AnalyticsService.getInstance().logEvent("button_clicked", {
+                      button_name: "refill_credits",
+                      location: "payments_screen",
+                    });
+                    router.push("/profile/payment/refill-credits");
+                    return;
+                  }
+                  router.push("/profile/add-credit-card")
                 }}
               />
             </View>

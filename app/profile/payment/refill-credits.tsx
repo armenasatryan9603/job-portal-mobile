@@ -31,11 +31,11 @@ import { Layout } from "@/components/Layout";
 import { PaymentWebView } from "@/components/PaymentWebView";
 import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
 import { useCreditCard } from "@/contexts/CreditCardContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
@@ -1265,10 +1265,6 @@ const styles = StyleSheet.create({
   summaryValueNew: {
     fontSize: Typography.xl,
     fontWeight: "700",
-  },
-  // Refill Button
-  refillButtonDisabled: {
-    opacity: 0.5,
   },
   refillButtonBadge: {
     position: "absolute",

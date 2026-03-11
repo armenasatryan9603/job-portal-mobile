@@ -1767,6 +1767,15 @@ class ApiService {
     return this.post("/cards", payload, true);
   }
 
+  // Initialize FastBank card binding session
+  async initCardBinding(): Promise<{
+    bindingOperationId: string;
+    bindingUrl: string;
+    raw: any;
+  }> {
+    return this.post("/cards/bind/init", {}, true);
+  }
+
   async getCards(): Promise<ApiCard[]> {
     return this.request<ApiCard[]>("/cards", {}, true);
   }

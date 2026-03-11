@@ -34,6 +34,8 @@ import { useCreditCard } from "@/contexts/CreditCardContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { PaymentWebView } from "@/components/PaymentWebView";
+import { apiService } from "@/categories/api";
 
 export default function AddCreditCardScreen() {
   useAnalytics("AddCreditCard");
@@ -53,6 +55,8 @@ export default function AddCreditCardScreen() {
 
   const [errors, setErrors] = useState<CreditCardErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [bindingUrl, setBindingUrl] = useState<string | null>(null);
+  const [showWebView, setShowWebView] = useState(false);
 
   const header = (
     <Header
@@ -123,39 +127,12 @@ export default function AddCreditCardScreen() {
   };
 
   const handleSubmit = async () => {
-    // Mark all fields as touched
-    setTouched({
-      cardNumber: true,
-      cardholderName: true,
-      expiryMonth: true,
-      expiryYear: true,
-      cvv: true,
-    });
-
-    const { isValid, errors: validationErrors } = validateCreditCardForm(form);
-
-    if (!isValid) {
-      setErrors(validationErrors);
-      return;
-    }
-
+    // Start FastBank binding flow via backend
     try {
-      const success = await addCreditCard({
-        cardNumber: form.cardNumber.replace(/\s/g, ""),
-        cardholderName: form.cardholderName.trim(),
-        expiryMonth: form.expiryMonth,
-        expiryYear: form.expiryYear,
-        cvv: form.cvv,
-        cardType: "auto-detect", // Will be detected in context
-      });
-
-      if (success) {
-        // Track credit card added
-        AnalyticsService.getInstance().logEvent("credit_card_added", {
-          card_type: "credit_card",
-        });
-        // Credit card added successfully
-        router.back();
+      const result = await apiService.initCardBinding();
+      if (result?.bindingUrl) {
+        setBindingUrl(result.bindingUrl);
+        setShowWebView(true);
       } else {
         Alert.alert(t("error"), t("failedToAddCreditCard"));
       }
@@ -451,6 +428,28 @@ export default function AddCreditCardScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <PaymentWebView
+        visible={showWebView && !!bindingUrl}
+        paymentUrl={bindingUrl}
+        onClose={() => {
+          setShowWebView(false);
+          setBindingUrl(null);
+        }}
+        onSuccess={() => {
+          setShowWebView(false);
+          setBindingUrl(null);
+          AnalyticsService.getInstance().logEvent("credit_card_added", {
+            card_type: "credit_card",
+          });
+          router.back();
+        }}
+        onFailure={() => {
+          setShowWebView(false);
+          setBindingUrl(null);
+          Alert.alert(t("error"), t("failedToAddCreditCard"));
+        }}
+      />
     </Layout>
   );
 }

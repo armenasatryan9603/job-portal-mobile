@@ -89,31 +89,15 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
     }
   }, [refreshCards, isAuthenticated, user?.id]);
 
-  const addCreditCard = async (
-    cardData: CreditCardSubmissionData
-  ): Promise<boolean> => {
+  const addCreditCard = async (): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const cleanNumber = cardData.cardNumber.replace(/\s/g, "");
-      const last4 = cleanNumber.slice(-4);
-      const brand = detectCardType(cardData.cardNumber);
-      const expMonth = parseInt(cardData.expiryMonth, 10);
-      const expYear = parseInt(cardData.expiryYear, 10);
-      if (isNaN(expMonth) || isNaN(expYear)) {
-        return false;
-      }
-      const added = await apiService.addCard({
-        last4,
-        brand,
-        expMonth,
-        expYear,
-        holderName: cardData.cardholderName.trim() || undefined,
-      });
-      const newCard = apiCardToCreditCard(added);
-      setCreditCards((prev) => [...prev, newCard]);
-      return true;
+      const result = await apiService.initCardBinding();
+      // The actual binding and card creation will happen via the FastBank
+      // webview flow and callback; just indicate that the flow was started.
+      return !!result?.bindingUrl;
     } catch (error) {
-      console.error("Error adding credit card:", error);
+      console.error("Error initiating card binding:", error);
       return false;
     } finally {
       setIsLoading(false);
