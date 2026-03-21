@@ -1,31 +1,32 @@
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
-import { Badge } from "@/components/ui/badge";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Button } from "@/components/ui/button";
-import { Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { router } from "expo-router";
-import React, { useCallback, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  Image,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  Modal,
+  View,
 } from "react-native";
-import { apiService, User } from "@/categories/api";
-import { useFocusEffect } from "expo-router";
+import React, { useCallback, useState } from "react";
+import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+import { User, apiService } from "@/categories/api";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useFocusEffect } from "expo-router";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface Team {
   id: number;
@@ -263,6 +264,36 @@ export default function PeersScreen() {
     ]);
   };
 
+  const handleRemoveTeam = async (teamId: number) => {
+    const team = teams.find((t) => t.id === teamId);
+    const isCreator = team?.createdBy === user?.id;
+
+    Alert.alert(
+      isCreator ? t("deleteTeam") : t("leaveTeam"),
+      isCreator ? t("confirmDeleteTeam") : t("confirmLeaveTeam"),
+      [
+        { text: t("cancel"), style: "cancel" },
+        {
+          text: isCreator ? t("delete") : t("leave"),
+          style: "destructive",
+          onPress: async () => {
+            try {
+              if (isCreator) {
+                await apiService.deleteTeam(teamId);
+              } else {
+                await apiService.removeTeamMember(teamId, user!.id);
+              }
+              setTeams((prev) => prev.filter((t) => t.id !== teamId));
+            } catch (error: any) {
+              console.error("Error removing team:", error);
+              Alert.alert(t("error"), error.message || t("failedToLeaveTeam"));
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleCreateTeam = async () => {
     if (!newTeamName.trim()) {
       Alert.alert(t("error"), t("teamNameRequired"));
@@ -286,20 +317,7 @@ export default function PeersScreen() {
   const renderPeerItem = (peer: User & { relationshipStatus?: string }) => {
     const isPending = peer.relationshipStatus === "pending";
     return (
-      <ResponsiveCard
-        marginBlock={0}
-        padding={0}
-        style={[
-          { marginTop: Spacing.lg },
-          isPending && {
-            borderLeftWidth: 4,
-            borderLeftColor: colors.orange,
-            backgroundColor: isDark ? colors.orange + "10" : colors.orange + "08",
-          },
-        ]}
-        key={peer.id}
-      >
-        <View style={styles.peerItem}>
+        <View key={peer.id} style={[styles.peerItem, { borderBottomColor: colors.border }]}>
           {peer.avatarUrl ? (
             <Image source={{ uri: peer.avatarUrl }} style={styles.avatar} />
           ) : (
@@ -360,42 +378,37 @@ export default function PeersScreen() {
             <IconSymbol name="trash" size={20} color={colors.errorVariant} />
           </TouchableOpacity>
         </View>
-      </ResponsiveCard>
     );
   };
 
   const renderTeamItem = (team: Team) => (
-    <ResponsiveCard
-      marginBlock={0}
-      padding={0}
-      style={{ marginTop: Spacing.lg }}
-      key={team.id}
-    >
+    <View key={team.id} style={[styles.peerItem, { borderBottomColor: colors.border }]}>
+      <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: colors.tint + "20" }]}>
+        <IconSymbol name="person.3.fill" size={22} color={colors.tint} />
+      </View>
       <TouchableOpacity
-        onPress={() => router.push(`/profile/teams/${team.id}`)}
+        onPress={() => router.push(`/teams/${team.id}`)}
+        style={styles.peerInfo}
       >
-        <View style={styles.teamItem}>
-          <View style={styles.teamInfo}>
-            <Text style={[styles.teamName, { color: colors.text }]}>
-              {team.name}
-            </Text>
-            <Text
-              style={[styles.teamMembers, { color: colors.tabIconDefault }]}
-            >
-              {team.Members?.length || 0} {t("members")}
-            </Text>
-          </View>
-
-          <IconSymbol name="chevron.right" size={20} color={colors.text} />
-        </View>
+        <Text style={[styles.teamName, { color: colors.text }]}>
+          {team.name}
+        </Text>
+        <Text style={[styles.teamMembers, { color: colors.tabIconDefault }]}>
+          {team.Members?.length || 0} {t("members")}
+        </Text>
       </TouchableOpacity>
-    </ResponsiveCard>
+      <TouchableOpacity
+        onPress={() => handleRemoveTeam(team.id)}
+        style={styles.removeButton}
+      >
+        <IconSymbol name="trash" size={20} color={colors.errorVariant} />
+      </TouchableOpacity>
+    </View>
   );
 
   const header = (
     <Header
       title={t("peers")}
-      subtitle={t("managePeersAndTeams")}
       showBackButton={true}
       onBackPress={() => router.back()}
     />
@@ -435,7 +448,7 @@ export default function PeersScreen() {
             </Text>
             <Button
               onPress={() => setShowAddPeerModal(true)}
-              title={t("addPeer")}
+              title={t("add")}
               icon="person.badge.plus"
               variant="primary"
             />
@@ -739,16 +752,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   peerItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.md,
+    borderBottomWidth: 1,
     gap: Spacing.md,
-  },
-  teamItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.md,
+    paddingVertical: Spacing.md,
   },
   avatar: {
     width: 50,
@@ -778,9 +786,6 @@ const styles = StyleSheet.create({
   peerEmail: {
     fontSize: 14,
     marginTop: 2,
-  },
-  teamInfo: {
-    flex: 1,
   },
   teamName: {
     fontSize: 16,

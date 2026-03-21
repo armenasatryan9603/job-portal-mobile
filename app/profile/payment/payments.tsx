@@ -240,7 +240,7 @@ export default function PaymentsScreen() {
                     {t("creditBalance")}
                   </Text>
                   <Text style={[styles.metricValue, { color: colors.text }]}>
-                    {(user?.creditBalance || 0).toFixed(2)}
+                    {(user?.creditBalance || 0).toFixed(2)} {user?.currency || "USD"}
                   </Text>
                 </View>
               </View>
@@ -254,15 +254,11 @@ export default function PaymentsScreen() {
                 iconSize={14}
                 backgroundColor={colors.primary}
                 onPress={() => {
-                  if (creditCards.length) {
-                    AnalyticsService.getInstance().logEvent("button_clicked", {
-                      button_name: "refill_credits",
-                      location: "payments_screen",
-                    });
-                    router.push("/profile/payment/refill-credits");
-                    return;
-                  }
-                  router.push("/profile/add-credit-card")
+                  AnalyticsService.getInstance().logEvent("button_clicked", {
+                    button_name: "refill_credits",
+                    location: "payments_screen",
+                  });
+                  router.push("/profile/payment/refill-credits");
                 }}
               />
             </View>
@@ -284,15 +280,6 @@ export default function PaymentsScreen() {
                   {t("addAndManagePaymentOptions")}
                 </Text>
               </View>
-
-              <Button
-                title={t("addCreditCard")}
-                variant="primary"
-                icon="plus"
-                iconSize={14}
-                backgroundColor={colors.primary}
-                onPress={() => router.push("/profile/add-credit-card")}
-              />
             </View>
 
             {creditCards.length === 0 ? (
@@ -479,6 +466,7 @@ const styles = StyleSheet.create({
   },
   summaryActions: {
     flexWrap: "wrap",
+    justifyContent: 'center',
     flexDirection: "row",
     gap: Spacing.md,
     marginTop: Spacing.lg,

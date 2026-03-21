@@ -20,7 +20,6 @@ import {
   Typography,
 } from "@/constants/styles";
 import React, { useCallback, useEffect, useState } from "react";
-import { router, useFocusEffect } from "expo-router";
 
 import { API_CONFIG } from "@/config/api";
 import AnalyticsService from "@/categories/AnalyticsService";
@@ -30,6 +29,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { PaymentWebView } from "@/components/PaymentWebView";
 import { apiService } from "@/categories/api";
+import { router, useFocusEffect } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreditCard } from "@/contexts/CreditCardContext";
@@ -49,7 +49,7 @@ export default function RefillCreditsScreen() {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState<string>("");
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [saveCard, setSaveCard] = useState(false);
+  const [cardSelectionInitialised, setCardSelectionInitialised] = useState(false);
   const [loading, setLoading] = useState(false);
   const [baseBalance, setBaseBalance] = useState<number>(0); // Balance in USD (base currency)
   const [convertedBalance, setConvertedBalance] = useState<number>(0); // Balance in selected currency (for display)
@@ -80,6 +80,24 @@ export default function RefillCreditsScreen() {
     />
   );
 
+  // Refresh cards when screen comes into focus (e.g., after payment callback)
+  useFocusEffect(
+    useCallback(() => {
+      refreshCards();
+    }, [refreshCards])
+  );
+
+  // Auto-select the first saved card that has a valid bindingId once cards load
+  useEffect(() => {
+    if (!isLoadingCards && !cardSelectionInitialised) {
+      const firstUsable = creditCards.find(
+        (c) => c.bindingId && typeof c.bindingId === "string" && c.bindingId.trim().length > 0
+      );
+      if (firstUsable) setSelectedCardId(firstUsable.id);
+      setCardSelectionInitialised(true);
+    }
+  }, [isLoadingCards, creditCards, cardSelectionInitialised]);
+
   // Fetch current balance and refresh translations
   useEffect(() => {
     fetchCurrentBalance();
@@ -92,57 +110,6 @@ export default function RefillCreditsScreen() {
     }).start();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Refresh cards when screen comes into focus (e.g., after payment callback)
-  useFocusEffect(
-    useCallback(() => {
-      refreshCards();
-    }, [refreshCards])
-  );
-
-  // Check if app was opened via deep link after payment
-  useEffect(() => {
-    const checkPaymentCallback = async () => {
-      try {
-        // Check if we have a pending payment and the app was just opened
-        // This happens when payment succeeds and redirects back to app
-        if (showPaymentWebView && pendingAmount > 0) {
-          // Small delay to ensure deep link has been processed and backend has updated
-          setTimeout(async () => {
-            try {
-              // Get current balance before refresh
-              const previousBalance = baseBalance;
-              
-              // Fetch fresh balance from backend
-              const profile = await apiService.getUserProfile();
-              const newBalance = profile.creditBalance || 0;
-              
-              // Update AsyncStorage cache with full profile data
-              await updateUser(profile);
-              
-              // Update state
-              setBaseBalance(newBalance);
-              
-              // If balance increased, payment was successful
-              if (newBalance > previousBalance) {
-                console.log("✅ Payment detected as successful via balance check");
-                handlePaymentSuccess();
-              } else {
-                console.log("⚠️ Balance unchanged, payment may still be processing");
-              }
-            } catch (error) {
-              console.error("Error checking payment status:", error);
-            }
-          }, 2000); // Give backend time to process payment
-        }
-      } catch (error) {
-        console.error("Error checking payment callback:", error);
-      }
-    };
-
-    checkPaymentCallback();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showPaymentWebView]);
 
   const fetchCurrentBalance = async () => {
     try {
@@ -235,11 +202,6 @@ export default function RefillCreditsScreen() {
     convertBalance();
   }, [currency, baseBalance]);
 
-  const handleAmountSelect = (amount: number) => {
-    setSelectedAmount(amount);
-    setCustomAmount("");
-  };
-
   const handleCustomAmountChange = (value: string) => {
     // Only allow numbers and one decimal point
     const cleaned = value.replace(/[^0-9.]/g, "");
@@ -286,10 +248,7 @@ export default function RefillCreditsScreen() {
         // Verify the selected card has a bindingId
         const selectedCard = creditCards.find((card) => card.id === selectedCardId);
         if (!selectedCard || !selectedCard.bindingId) {
-          Alert.alert(
-            t("error"),
-            t("cardNotSaved") || "This card needs to be saved first. Please use 'New Card' option and check 'Save card for future payments'."
-          );
+          Alert.alert( t("error"), t("cardNotSaved"));
           setLoading(false);
           return;
         }
@@ -328,6 +287,16 @@ export default function RefillCreditsScreen() {
               },
             },
           ]);
+        } else if (result.requires3ds && result.challengeUrl && result.cReq) {
+          // The ACS endpoint requires a POST with `creq` — open our backend
+          // bridge that auto-submits the form so the WebView sees a normal page.
+          const bridgeUrl =
+            `${API_CONFIG.BASE_URL}/credit/3ds/challenge` +
+            `?acsUrl=${encodeURIComponent(result.challengeUrl)}` +
+            `&cReq=${encodeURIComponent(result.cReq)}`;
+          setPendingAmount(amount);
+          setPaymentUrl(bridgeUrl);
+          setShowPaymentWebView(true);
         } else {
           Alert.alert(t("paymentFailed"), result.message || t("paymentFailedMessage"));
         }
@@ -339,15 +308,10 @@ export default function RefillCreditsScreen() {
       const result = await apiService.initiateCreditRefill(
         amount,
         currency,
-        undefined,
-        saveCard
+        undefined
       );
 
-      // Log full response for debugging
-      console.log("🔍 Full payment response:", JSON.stringify(result, null, 2));
-
       // Extract payment URL from response
-      // The backend should return paymentUrl in the response
       const url =
         result.paymentUrl ||
         result.paymentData?.PaymentURL ||
@@ -368,12 +332,6 @@ export default function RefillCreditsScreen() {
         result.paymentData?.link;
 
       if (!url && !result.paymentHtml) {
-        // If no URL, check if paymentData contains HTML form or other data
-        console.error("❌ Payment URL not found in response");
-        console.error(
-          "Response structure:",
-          Object.keys(result.paymentData || {})
-        );
         Alert.alert(
           t("error"),
           t("paymentUrlNotAvailable") ||
@@ -396,7 +354,6 @@ export default function RefillCreditsScreen() {
       setConversionInfo(result.conversionInfo || null);
       setShowPaymentWebView(true);
     } catch (error: any) {
-      console.error("Error initiating credit refill:", error);
       Alert.alert(t("error"), error.message || t("failedToInitiatePayment"));
     } finally {
       setLoading(false);
@@ -457,41 +414,10 @@ export default function RefillCreditsScreen() {
     ]);
   };
 
-  const handlePaymentClose = async () => {
-    // Before closing, check if payment was successful by checking balance
-    if (pendingAmount > 0) {
-      try {
-        // Get current balance
-        const previousBalance = baseBalance;
-        
-        // Fetch fresh balance from backend
-        const profile = await apiService.getUserProfile();
-        const newBalance = profile.creditBalance || 0;
-        
-        // Update AsyncStorage cache with full profile data
-        await updateUser(profile);
-        
-        // Update state
-        setBaseBalance(newBalance);
-        
-        // If balance increased, payment was successful
-        if (newBalance > previousBalance) {
-          console.log("✅ Payment detected as successful when closing webview");
-          // Show success instead of just closing
-          handlePaymentSuccess();
-          return; // Don't clear state here, handlePaymentSuccess will do it
-        } else {
-          console.log("⚠️ Balance unchanged when closing webview - payment may have failed or still processing");
-          // Don't show failure alert - just close silently
-          // User can check their balance manually or try again
-        }
-      } catch (error) {
-        console.error("Error checking payment status on close:", error);
-        // On error, don't assume failure - just close silently
-      }
-    }
-    
-    // Clear state
+  const handlePaymentClose = () => {
+    // Called only when the user manually closes the browser without completing payment.
+    // Success/failure are handled exclusively by handlePaymentSuccess/handlePaymentFailure
+    // via the deep-link callback, so no balance check is needed here.
     setShowPaymentWebView(false);
     setPaymentUrl(null);
     setPendingAmount(0);
@@ -655,12 +581,7 @@ export default function RefillCreditsScreen() {
                     const hasBindingId = card.bindingId && typeof card.bindingId === 'string' && card.bindingId.trim().length > 0;
                     const isSelected = selectedCardId === card.id;
                     const isDisabled = !hasBindingId;
-                    
-                    // Debug logging
-                    if (__DEV__) {
-                      console.log(`Card ${card.id}: bindingId="${card.bindingId}", hasBindingId=${hasBindingId}, type=${typeof card.bindingId}`);
-                    }
-                    
+
                     return (
                       <TouchableOpacity
                         key={card.id}
@@ -748,55 +669,26 @@ export default function RefillCreditsScreen() {
                     );
                   })}
                 </View>
-
-                {/* Save Card Checkbox (only show when new card selected) */}
-                {selectedCardId === null && (
-                  <TouchableOpacity
-                    style={styles.saveCardOption}
-                    onPress={() => setSaveCard(!saveCard)}
-                    activeOpacity={0.7}
-                  >
-                    <IconSymbol
-                      name={saveCard ? "checkmark.square.fill" : "square"}
-                      size={20}
-                      color={saveCard ? colors.tint : colors.tabIconDefault}
-                    />
-                    <Text
-                      style={[styles.saveCardText, { color: colors.text }]}
-                    >
-                      {t("saveCardForFuture") || "Save this card for future payments"}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
             )}
 
-            {/* Save Card Checkbox - Show when user has no cards */}
+            {/* No cards hint */}
             {!isLoadingCards && creditCards.length === 0 && (
-              <View style={styles.section}>
-                <TouchableOpacity
-                  style={styles.saveCardOption}
-                  onPress={() => setSaveCard(!saveCard)}
-                  activeOpacity={0.7}
-                >
-                  <IconSymbol
-                    name={saveCard ? "checkmark.square.fill" : "square"}
-                    size={20}
-                    color={saveCard ? colors.tint : colors.tabIconDefault}
-                  />
-                  <Text
-                    style={[styles.saveCardText, { color: colors.text }]}
-                  >
-                    {t("saveCardForFuture")}
+              <View
+                style={[
+                  styles.section,
+                  styles.noCardsSection,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+              >
+                <View style={styles.noCardsHeader}>
+                  <IconSymbol name="creditcard.fill" size={18} color={colors.tint} />
+                  <Text style={[styles.noCardsSectionTitle, { color: colors.text }]}>
+                    {t("payWithCard") || "Pay with card"}
                   </Text>
-                </TouchableOpacity>
-                <Text
-                  style={[
-                    styles.saveCardHint,
-                    { color: colors.tabIconDefault },
-                  ]}
-                >
-                  {t("saveCardHint")}
+                </View>
+                <Text style={[styles.noCardsDescription, { color: colors.tabIconDefault }]}>
+                  {t("selectAmountAndProceed") || "Select an amount below, then tap Refill to enter your card details."}
                 </Text>
               </View>
             )}
@@ -1180,21 +1072,24 @@ const styles = StyleSheet.create({
   cardExpiry: {
     fontSize: Typography.xs,
   },
-  saveCardOption: {
+  noCardsSection: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    gap: Spacing.sm,
+  },
+  noCardsHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
   },
-  saveCardText: {
+  noCardsSectionTitle: {
+    fontSize: Typography.md,
+    fontWeight: "600",
+  },
+  noCardsDescription: {
     fontSize: Typography.sm,
-  },
-  saveCardHint: {
-    fontSize: Typography.xs,
-    marginTop: Spacing.xs,
-    marginLeft: Spacing.md + 4, // Align with checkbox text
-    lineHeight: 16,
+    lineHeight: 18,
   },
   // Custom Amount
   customAmountSection: {

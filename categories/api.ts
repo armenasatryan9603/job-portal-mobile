@@ -1756,25 +1756,6 @@ class ApiService {
     return this.post("/referrals/apply-code", { referralCode, userId }, false);
   }
 
-  // Cards API (saved payment methods)
-  async addCard(payload: {
-    last4: string;
-    brand: string;
-    expMonth: number;
-    expYear: number;
-    holderName?: string;
-  }): Promise<ApiCard> {
-    return this.post("/cards", payload, true);
-  }
-
-  // Initialize FastBank card binding session
-  async initCardBinding(): Promise<{
-    bindingOperationId: string;
-    bindingUrl: string;
-    raw: any;
-  }> {
-    return this.post("/cards/bind/init", {}, true);
-  }
 
   async getCards(): Promise<ApiCard[]> {
     return this.request<ApiCard[]>("/cards", {}, true);
@@ -1794,8 +1775,7 @@ class ApiService {
   async initiateCreditRefill(
     amount: number,
     currency?: string,
-    cardId?: string,
-    saveCard?: boolean
+    cardId?: string
   ): Promise<{
     orderId?: string;
     paymentUrl?: string | null;
@@ -1815,7 +1795,7 @@ class ApiService {
   }> {
     return this.post(
       "/credit/refill/initiate",
-      { amount, currency, cardId, saveCard },
+      { amount, currency, cardId },
       true
     );
   }
@@ -1827,6 +1807,10 @@ class ApiService {
     cardId: string
   ): Promise<{
     success: boolean;
+    requires3ds: boolean;
+    challengeUrl: string;
+    cReq: string;
+    orderNumber: string;
     message: string;
     orderId?: string;
     paymentId?: string;
@@ -1955,6 +1939,14 @@ class ApiService {
 
   async updateTeamName(teamId: number, name: string): Promise<any> {
     return this.updateTeam(teamId, { name });
+  }
+
+  async deleteTeam(teamId: number): Promise<void> {
+    return this.request(
+      `/peers/teams/${teamId}`,
+      { method: "DELETE" },
+      true
+    );
   }
 
   async updateTeam(

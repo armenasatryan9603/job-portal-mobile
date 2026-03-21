@@ -16,7 +16,6 @@ export default function ProfileLayout() {
       <Stack.Screen name="help" />
       <Stack.Screen name="help/[id]" />
       <Stack.Screen name="refill-credits" />
-      <Stack.Screen name="add-credit-card" />
       <Stack.Screen name="peers" />
       <Stack.Screen name="teams/[id]" />
       <Stack.Screen name="invitations" />

@@ -1280,7 +1280,7 @@ export default function ProfileScreen() {
                   }}
                 >
                   <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                    {userId ? t("teams") : t("myTeams")}
+                    {userId ? t("teams") : t("myTeamsAndPeers")}
                   </Text>
                   {!teamsLoading && <CountBadge count={userTeams.length} />}
                 </View>
@@ -1367,27 +1367,16 @@ export default function ProfileScreen() {
                     })}
                   </View>
                   {!userId && (
-                    <TouchableOpacity
-                      style={[
-                        styles.viewAllTeamsButton,
-                        { borderColor: colors.primary },
-                      ]}
-                      onPress={() => router.push("/profile/peers")}
-                    >
-                      <Text
-                        style={[
-                          styles.viewAllTeamsButtonText,
-                          { color: colors.primary },
-                        ]}
-                      >
+                    <Button variant="primary" onPress={() => router.push("/profile/peers")}>
+                      <Text style={{ color: '#fff' }} >
                         {t("manageAllTeams")}
                       </Text>
                       <IconSymbol
                         name="chevron.right"
                         size={16}
-                        color={colors.primary}
+                        color={'#fff'}
                       />
-                    </TouchableOpacity>
+                    </Button>
                   )}
                 </>
               ) : null}
@@ -1413,16 +1402,11 @@ export default function ProfileScreen() {
                       {t("managePeersAndTeamsDescription")}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={[
-                      styles.paymentsCta,
-                      { borderColor: colors.primary },
-                    ]}
+                  <Button
+                    variant="primary"
                     onPress={() => router.push("/profile/peers")}
                   >
-                    <Text
-                      style={[styles.paymentsCtaText, { color: colors.text }]}
-                    >
+                    <Text style={{ color: '#fff' }} >
                       {t("managePeers")}
                     </Text>
                     <IconSymbol
@@ -1430,10 +1414,10 @@ export default function ProfileScreen() {
                       size={16}
                       color={colors.primary}
                     />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
               </ResponsiveCard>
-            )}
+          )}
 
           {/* Payments entry point */}
           {!userId && (
@@ -1453,21 +1437,16 @@ export default function ProfileScreen() {
                       {t("paymentsOverviewDescription")}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.paymentsCta, { borderColor: colors.primary }]}
-                    onPress={() => router.push("/profile/payment/payments")}
-                  >
-                    <Text
-                      style={[styles.paymentsCtaText, { color: colors.text }]}
-                    >
+                  <Button variant="primary" onPress={() => router.push("/profile/payment/payments")} >
+                    <Text style={{ color: '#fff' }}>
                       {t("managePaymentsCta")}
                     </Text>
                     <IconSymbol
                       name="chevron.right"
                       size={16}
-                      color={colors.primary}
+                      color={'#fff'}
                     />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
               </ResponsiveCard>
               <ResponsiveCard>
@@ -1487,8 +1466,7 @@ export default function ProfileScreen() {
                       </Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.paymentsCta, { borderColor: colors.primary }]}
+                  <Button
                     onPress={() => {
                       AnalyticsService.getInstance().logEvent("button_clicked", {
                         button_name: "view_subscriptions",
@@ -1497,17 +1475,15 @@ export default function ProfileScreen() {
                       router.push("/subscriptions");
                     }}
                   >
-                    <Text
-                      style={[styles.paymentsCtaText, { color: colors.text }]}
-                    >
+                    <Text style={{ color: '#fff' }} >
                       {t("viewSubscriptions")}
                     </Text>
                     <IconSymbol
                       name="chevron.right"
                       size={16}
-                      color={colors.primary}
+                      color={'#fff'}
                     />
-                  </TouchableOpacity>
+                  </Button>
                 </View>
               </ResponsiveCard>
             
@@ -2468,10 +2444,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.xs,
   },
-  paymentsCtaText: {
-    fontSize: Typography.md,
-    fontWeight: Typography.semibold,
-  },
   // Price range styles
   priceEditContainer: {
     gap: 16,
@@ -2644,18 +2616,8 @@ const styles = StyleSheet.create({
   teamItemMetaText: {
     fontSize: 13,
   },
-  viewAllTeamsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    marginTop: Spacing.sm,
-  },
   viewAllTeamsButtonText: {
+    color: '#fff',
     fontSize: Typography.md,
     fontWeight: Typography.semibold,
   },

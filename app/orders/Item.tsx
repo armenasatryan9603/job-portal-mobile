@@ -601,7 +601,6 @@ const styles = StyleSheet.create({
   },
   touchable: {
     flex: 1,
-    // backgroundColor: 'red',
   },
   card: {
     flex: 1,

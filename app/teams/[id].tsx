@@ -438,7 +438,6 @@ export default function TeamDetailScreen() {
     () => (
       <Header
         title={team?.name || t("team")}
-        subtitle={t("manageTeamMembers")}
         showBackButton={true}
         onBackPress={() => router.back()}
         showNotificationsButton={!!user}
@@ -711,8 +710,6 @@ export default function TeamDetailScreen() {
                     iconSize={14}
                     title={t("cancel")}
                     iconPosition="left"
-                    backgroundColor={colors.background}
-                    textColor={colors.text}
                     onPress={handleCancelEditDescription}
                     disabled={savingDescription}
                   />
@@ -722,8 +719,6 @@ export default function TeamDetailScreen() {
                     iconSize={14}
                     title={t("save")}
                     iconPosition="left"
-                    backgroundColor={colors.primary}
-                    textColor={colors.textInverse}
                     onPress={handleSaveDescription}
                     disabled={savingDescription}
                   />

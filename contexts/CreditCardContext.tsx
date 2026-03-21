@@ -1,4 +1,4 @@
-import { CreditCard, CreditCardSubmissionData } from "@/types/creditCard";
+import { CreditCard } from "@/types/creditCard";
 import React, {
   ReactNode,
   createContext,
@@ -16,7 +16,6 @@ interface CreditCardContextType {
   creditCards: CreditCard[];
   isLoading: boolean;
   isLoadingCards: boolean;
-  addCreditCard: (cardData: CreditCardSubmissionData) => Promise<boolean>;
   removeCreditCard: (cardId: string) => Promise<boolean>;
   setDefaultCard: (cardId: string) => Promise<boolean>;
   getDefaultCard: () => CreditCard | null;
@@ -58,18 +57,6 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   const [isLoadingCards, setIsLoadingCards] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
-  const detectCardType = (
-    cardNumber: string
-  ): "visa" | "mastercard" | "amex" | "discover" | "unknown" => {
-    const cleanNumber = cardNumber.replace(/\s/g, "");
-    if (/^4/.test(cleanNumber)) return "visa";
-    if (/^5[1-5]/.test(cleanNumber) || /^2[2-7]/.test(cleanNumber))
-      return "mastercard";
-    if (/^3[47]/.test(cleanNumber)) return "amex";
-    if (/^6(?:011|5)/.test(cleanNumber)) return "discover";
-    return "unknown";
-  };
-
   const refreshCards = useCallback(async () => {
     setIsLoadingCards(true);
     try {
@@ -88,21 +75,6 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
       refreshCards();
     }
   }, [refreshCards, isAuthenticated, user?.id]);
-
-  const addCreditCard = async (): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      const result = await apiService.initCardBinding();
-      // The actual binding and card creation will happen via the FastBank
-      // webview flow and callback; just indicate that the flow was started.
-      return !!result?.bindingUrl;
-    } catch (error) {
-      console.error("Error initiating card binding:", error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const removeCreditCard = async (cardId: string): Promise<boolean> => {
     setIsLoading(true);
@@ -137,17 +109,13 @@ export const CreditCardProvider: React.FC<CreditCardProviderProps> = ({
   };
 
   const syncCardsFromBank = useCallback(async () => {
-    // Refresh cards from backend (which should now include bindingId if available)
     await refreshCards();
-    // Note: Full sync from the underlying payment provider would require a dedicated backend endpoint.
-    // For now, we rely on cards being updated when bindings are saved during payment callbacks.
   }, [refreshCards]);
 
   const value: CreditCardContextType = {
     creditCards,
     isLoading,
     isLoadingCards,
-    addCreditCard,
     removeCreditCard,
     setDefaultCard,
     getDefaultCard,

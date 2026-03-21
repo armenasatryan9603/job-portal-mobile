@@ -430,7 +430,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     gap: Spacing.md,
-    borderColor: "transparent", // Will be overridden by inline style if needed
   },
   teamItemContent: {
     flex: 1,

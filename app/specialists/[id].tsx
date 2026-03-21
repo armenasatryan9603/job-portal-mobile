@@ -1,38 +1,38 @@
-import { Footer, FooterButton } from "@/components/Footer";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
 import {
-  ResponsiveCard,
-  ResponsiveContainer,
-} from "@/components/ResponsiveContainer";
-import { Badge } from "@/components/ui/badge";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { ThemeColors, Typography } from "@/constants/styles";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { router, useLocalSearchParams } from "expo-router";
-import { useRateUnits, RateUnit } from "@/hooks/useRateUnits";
-import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
-import React, { useState, useEffect } from "react";
-import {
+  Alert,
   Image,
   ImageBackground,
   ScrollView,
   StyleSheet,
   Text,
-  View,
-  Alert,
   TouchableOpacity,
+  View,
 } from "react-native";
-import { apiService, SpecialistProfile } from "@/categories/api";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
+import React, { useEffect, useState } from "react";
+import {
+  ResponsiveCard,
+  ResponsiveContainer,
+} from "@/components/ResponsiveContainer";
+import { SpecialistProfile, apiService } from "@/categories/api";
+import { ThemeColors, Typography } from "@/constants/styles";
+import { router, useLocalSearchParams } from "expo-router";
+
 import AnalyticsService from "@/categories/AnalyticsService";
-import { SpecialistDetailSkeleton } from "@/components/SpecialistDetailSkeleton";
+import { Badge } from "@/components/ui/badge";
+import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
+import { SpecialistDetailSkeleton } from "@/components/SpecialistDetailSkeleton";
+import { formatPriceRangeDisplay } from "@/utils/currencyRateUnit";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function SpecialistDetailScreen() {
   useAnalytics("SpecialistDetail");
@@ -208,12 +208,12 @@ export default function SpecialistDetailScreen() {
       return { value: t("recently"), label: t("newMember") };
     } else if (diffInMonths < 12) {
       return {
-        value: `${diffInMonths} month${diffInMonths === 1 ? "" : "s"}`,
+        value: `${diffInMonths} ${t("month")}`,
         label: t("memberFor"),
       };
     } else {
       return {
-        value: `${diffInYears} year${diffInYears === 1 ? "" : "s"}`,
+        value: `${diffInYears} ${t("years")}`,
         label: t("memberFor"),
       };
     }
@@ -453,6 +453,7 @@ export default function SpecialistDetailScreen() {
                       return (
                         <>
                           <Text style={[styles.bio, { color: colors.text }]}>
+                            {/* asdf */}
                             {timeInfo.value}
                           </Text>
                           <Text
@@ -764,8 +765,9 @@ export default function SpecialistDetailScreen() {
           {specialist.reviews && specialist.reviews.length > 0 && (
             <ResponsiveCard>
               <View style={styles.reviewsList}>
-                {specialist.reviews.map((review) => (
-                  <View key={review.id} style={styles.reviewItem}>
+                {/*  */}
+                {specialist.reviews.map((review, index) => (
+                  <View key={review.id} style={[styles.reviewItem, { borderBottomColor: index !== (specialist.reviews?.length || 0) -1 ? colors.border : 'transparent'}]}>
                     <View style={styles.reviewHeader}>
                       <View style={styles.reviewerInfo}>
                         <Text
@@ -1054,7 +1056,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBlock: 10,
   },
   skillsCount: {
     paddingHorizontal: 10,
@@ -1123,10 +1125,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   reviewItem: {
-    marginBottom: 24,
-    paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.1)",
   },
   reviewHeader: {
     flexDirection: "row",

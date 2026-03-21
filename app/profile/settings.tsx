@@ -83,7 +83,7 @@ export default function ProfileSettingsScreen() {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] =
     useState(true);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
-  const [currency, setCurrency] = useState<string>("AMD");
+  const [currency, setCurrency] = useState<string>(user?.currency || "AMD");
 
   const languages = [
     { code: "en", name: "English", nativeName: "English" },
@@ -216,7 +216,7 @@ export default function ProfileSettingsScreen() {
     setShowLanguageModal(false);
   };
 
-  const handleDeleteAccount = async (confirmationText: string) => {
+  const handleDeleteAccount = async () => {
     if (!user?.id) {
       Alert.alert(t("error"), t("userNotLoggedIn"));
       return;
@@ -275,7 +275,6 @@ export default function ProfileSettingsScreen() {
   const header = (
     <Header
       title={t("settings")}
-      subtitle={t("manageAccountPreferences")}
       showBackButton={true}
       onBackPress={() => router.back()}
     />

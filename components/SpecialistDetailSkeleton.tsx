@@ -355,6 +355,7 @@ const styles = StyleSheet.create({
   },
   bioSection: {
     gap: 8,
+    marginTop: 22,
   },
   quickStats: {
     flexDirection: "row",

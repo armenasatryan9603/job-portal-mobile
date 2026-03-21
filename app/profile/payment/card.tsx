@@ -1,4 +1,4 @@
-import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
+import { BorderRadius, Shadows, Spacing, ThemeColors } from "@/constants/styles";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import AnalyticsService from "@/categories/AnalyticsService";
@@ -224,60 +224,141 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
   },
-  cardItem: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
-  cardInfo: {
-    flexDirection: "row",
-    alignItems: "center",
+  cardWrapper: {
     gap: Spacing.md,
-    marginBottom: Spacing.sm,
   },
-  cardIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: BorderRadius.md,
+  cardFaceContainer: {
+    position: "relative",
+  },
+  cardFace: {
+    backgroundColor: "#0B2E45",
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    overflow: "hidden",
+    minHeight: 180,
+    ...Shadows.lg,
+  },
+  cardDecorCircle1: {
+    position: "absolute",
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    top: -70,
+    right: -50,
+  },
+  cardDecorCircle2: {
+    position: "absolute",
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: "rgba(10,126,164,0.25)",
+    bottom: -60,
+    left: 10,
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
+    marginBottom: Spacing.lg,
   },
-  cardNumber: {
-    fontSize: 16,
-    fontWeight: "600",
+  cardBrandText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "rgba(255,255,255,0.9)",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
   },
-  defaultPill: {
+  cardDefaultBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
+    backgroundColor: "rgba(250,204,21,0.18)",
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 4,
     borderRadius: BorderRadius.round,
-    marginTop: Spacing.sm,
+    borderWidth: 1,
+    borderColor: "rgba(250,204,21,0.35)",
   },
-  defaultPillText: {
-    fontSize: 12,
+  cardDefaultBadgeText: {
+    fontSize: 11,
     fontWeight: "600",
+    color: "#FACC15",
   },
-  cardMeta: {
-    fontSize: 13,
+  cardRemoveBtn: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.round,
+    backgroundColor: "#EF4444",
+    alignItems: "center",
+    justifyContent: "center",
+    ...Shadows.md,
+    zIndex: 10,
   },
-  cardActions: {
+  cardChip: {
+    width: 38,
+    height: 28,
+    backgroundColor: "#D4A537",
+    borderRadius: 5,
+    marginBottom: Spacing.xl,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cardChipLine: {
+    position: "absolute",
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+  cardChipLineV: {
+    position: "absolute",
+    width: 1,
+    height: "100%",
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+  cardNumberText: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: 2.5,
+    marginBottom: Spacing.md,
+  },
+  cardBottomRow: {
     flexDirection: "row",
-    gap: Spacing.sm,
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  cardMetaRight: {
+    alignItems: "flex-end",
+  },
+  cardMetaLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.45)",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  cardMetaValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.8)",
   },
   actionButton: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
     borderWidth: 1,
   },
   actionButtonText: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  removeButton: {
-    borderStyle: "dashed",
   },
 });
 
@@ -299,76 +380,54 @@ export function CreditCardItem({
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   return (
-    <View
-      style={[
-        styles.cardItem,
-        {
-          borderColor: colors.border,
-          backgroundColor: colors.warningLight,
-        },
-      ]}
-    >
-      <View style={styles.cardInfo}>
-        <View
-          style={[
-            styles.cardIcon,
-            { backgroundColor: colors.primary + "20" },
-          ]}
-        >
-          <IconSymbol
-            name="creditcard.fill"
-            size={20}
-            color={colors.primary}
-          />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.cardNumber, { color: colors.text }]}>
-            •••• •••• •••• {card.cardNumber}
-          </Text>
-          <Text style={[styles.cardMeta, { color: colors.textSecondary }]}>
-            {t("cardEndingIn")} {card.cardNumber}
+    <View style={styles.cardWrapper}>
+      {/* Card face */}
+      <View style={styles.cardFaceContainer}>
+      <View style={styles.cardFace}>
+        <View style={styles.cardDecorCircle1} />
+        <View style={styles.cardDecorCircle2} />
+
+        <View style={styles.cardTopRow}>
+          <Text style={styles.cardBrandText}>
+            {card.cardType.toUpperCase()}
           </Text>
           {card.isDefault && (
-            <View
-              style={[
-                styles.defaultPill,
-                { backgroundColor: colors.primary + "15" },
-              ]}
-            >
-              <IconSymbol name="star.fill" size={12} color={colors.primary} />
-              <Text
-                style={[styles.defaultPillText, { color: colors.primary }]}
-              >
-                {t("default")}
-              </Text>
+            <View style={styles.cardDefaultBadge}>
+              <IconSymbol name="star.fill" size={10} color="#FACC15" />
+              <Text style={styles.cardDefaultBadgeText}>{t("default")}</Text>
             </View>
           )}
         </View>
-      </View>
-      <View style={styles.cardActions}>
-        {!card.isDefault && (
-          <TouchableOpacity
-            style={[styles.actionButton, { borderColor: colors.border }]}
-            onPress={async () => {
-              AnalyticsService.getInstance().logEvent("credit_card_action", {
-                action: "set_default",
-                card_id: card.id.toString(),
-              });
-              await onSetDefault(card.id);
-            }}
-            disabled={isLoading}
-          >
-            <Text style={[styles.actionButtonText, { color: colors.text }]}>
-              {t("setDefault")}
+
+        <View style={styles.cardChip}>
+          <View style={[styles.cardChipLine, { top: "33%" }]} />
+          <View style={[styles.cardChipLine, { top: "66%" }]} />
+          <View style={[styles.cardChipLineV, { left: "33%" }]} />
+          <View style={[styles.cardChipLineV, { left: "66%" }]} />
+        </View>
+
+        <Text style={styles.cardNumberText}>
+          •••• •••• •••• {card.cardNumber.slice(-4)}
+        </Text>
+
+        <View style={styles.cardBottomRow}>
+          <View>
+            <Text style={styles.cardMetaLabel}>{t("cardHolder") || "Card Holder"}</Text>
+            <Text style={styles.cardMetaValue}>
+              {card.cardholderName || "—"}
             </Text>
-          </TouchableOpacity>
-        )}
+          </View>
+          <View style={styles.cardMetaRight}>
+            <Text style={styles.cardMetaLabel}>{t("expires") || "Expires"}</Text>
+            <Text style={styles.cardMetaValue}>
+              {card.expiryMonth}/{card.expiryYear.slice(-2)}
+            </Text>
+          </View>
+        </View>
+      </View>
+
         <TouchableOpacity
-          style={[
-            styles.actionButton,
-            styles.removeButton,
-            { borderColor: colors.error },
-          ]}
+          style={styles.cardRemoveBtn}
           onPress={async () => {
             AnalyticsService.getInstance().logEvent("credit_card_action", {
               action: "remove",
@@ -378,11 +437,34 @@ export function CreditCardItem({
           }}
           disabled={isLoading}
         >
-          <Text style={[styles.actionButtonText, { color: colors.error }]}>
-            {t("remove")}
-          </Text>
+          <IconSymbol name="xmark" size={11} color="#fff" />
         </TouchableOpacity>
       </View>
+
+      {!card.isDefault && (
+        <TouchableOpacity
+          style={[
+            styles.actionButton,
+            {
+              backgroundColor: colors.primary + "12",
+              borderColor: colors.primary + "35",
+            },
+          ]}
+          onPress={async () => {
+            AnalyticsService.getInstance().logEvent("credit_card_action", {
+              action: "set_default",
+              card_id: card.id.toString(),
+            });
+            await onSetDefault(card.id);
+          }}
+          disabled={isLoading}
+        >
+          <IconSymbol name="star" size={14} color={colors.primary} />
+          <Text style={[styles.actionButtonText, { color: colors.primary }]}>
+            {t("setDefault")}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

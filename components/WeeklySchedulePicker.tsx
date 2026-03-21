@@ -753,7 +753,7 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
       {/* Subscribe Ahead Days */}
       <View style={[styles.section, { backgroundColor: colors.background }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("subscribeAheadDays")}
+          {t("subscribeAheadDays")}?
         </Text>
         <Text style={[styles.sectionDesc, { color: colors.tabIconDefault }]}>
           {t("subscribeAheadDaysDesc")}
@@ -1054,9 +1054,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 13,
     fontWeight: "600",
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
+    marginBottom: Spacing.xs,
     borderRadius: BorderRadius.sm,
   },
   breaksSection: {

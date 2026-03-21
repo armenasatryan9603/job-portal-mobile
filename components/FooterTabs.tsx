@@ -1,11 +1,13 @@
+import * as Haptics from "expo-haptics";
+
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
+
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import React from "react";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/hooks/useTranslation";
-import * as Haptics from "expo-haptics";
-import { router, useLocalSearchParams, usePathname } from "expo-router";
-import React from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface TabItem {
   name: string;
@@ -34,12 +36,12 @@ export const FooterTabs: React.FC = () => {
     {
       name: "categories",
       title: t("category"),
-      icon: "gearshape.fill",
+      icon: "square.grid.2x2.fill",
       route: "/categories",
     },
     {
       name: "orders",
-      title: t("orders"),
+      title: t("jobs"),
       icon: "list.bullet",
       route: "/orders",
     },
