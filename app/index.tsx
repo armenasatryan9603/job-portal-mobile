@@ -164,12 +164,12 @@ export default function WelcomeScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
       >
-      <View style={styles.adSlotPlaceholder}>
-        <AdBanner/>
-      </View>
-      <View style={styles.topDataSliderContainer}>
-        <TopDataSlider onEmpty={() => setHasTopData(false)} />
-      </View>
+        <View style={styles.adSlotPlaceholder}>
+          <AdBanner/>
+        </View>
+        <View style={styles.topDataSliderContainer}>
+          <TopDataSlider onEmpty={() => setHasTopData(false)} />
+        </View>
         <View style={styles.container}>
           {/* User Profile Card */}
           {!hasTopData && <ResponsiveCard

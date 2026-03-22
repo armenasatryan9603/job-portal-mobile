@@ -83,7 +83,7 @@ export const FooterTabs: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <View style={[styles.tabBar, { borderTopColor: colors.border, paddingBottom: Platform.OS === "ios" ? 20 : 30 }]}>
         {tabs.map((tab) => {
           const active = isActive(tab);
