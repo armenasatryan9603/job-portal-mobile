@@ -1804,7 +1804,13 @@ class ApiService {
   async refillWithSavedCard(
     amount: number,
     currency: string,
-    cardId: string
+    cardId: string,
+    clientBrowserInfo?: {
+      screenWidth: number;
+      screenHeight: number;
+      browserLanguage: string;
+      browserTimeZoneOffset: number;
+    }
   ): Promise<{
     success: boolean;
     requires3ds: boolean;
@@ -1825,7 +1831,7 @@ class ApiService {
   }> {
     return this.post(
       "/credit/refill/initiate",
-      { amount, currency, cardId },
+      { amount, currency, cardId, clientBrowserInfo },
       true
     );
   }

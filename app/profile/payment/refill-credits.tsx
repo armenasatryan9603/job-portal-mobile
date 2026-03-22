@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -253,10 +254,20 @@ export default function RefillCreditsScreen() {
           return;
         }
 
+        const screen = Dimensions.get("screen");
+        const clientBrowserInfo = {
+          screenWidth: Math.round(screen.width),
+          screenHeight: Math.round(screen.height),
+          browserLanguage:
+            Intl.DateTimeFormat().resolvedOptions().locale ?? "en-US",
+          browserTimeZoneOffset: new Date().getTimezoneOffset(),
+        };
+
         const result = await apiService.refillWithSavedCard(
           amount,
           currency,
-          selectedCardId
+          selectedCardId,
+          clientBrowserInfo
         );
 
         if (result.success) {
