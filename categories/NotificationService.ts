@@ -574,14 +574,6 @@ class NotificationService {
     }
   }
 
-  // Deprecated: Notifications are stored in backend only
-  // This method kept for backward compatibility but should not be used
-  async saveNotification(notification: Notification): Promise<void> {
-    // Notifications are stored in backend, not locally
-    // This method is kept for compatibility but does nothing
-    console.log("saveNotification called but notifications are backend-only");
-  }
-
   async getStoredNotifications(): Promise<Notification[]> {
     try {
       // Fetch from backend (primary source)
