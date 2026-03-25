@@ -305,20 +305,14 @@ const ServicesScreen = () => {
   return (
     <Layout header={header}>
       <ResponsiveContainer scrollable={false}>
-        {/* Fixed Header with Filter */}
-        {/* <View> */}
-          <Filter
-            searchPlaceholder={t("searchCategories")}
-            onSearchChange={handleSearchChange}
-            filterSections={filterSections}
-            selectedFilters={selectedFilters}
-            onFilterChange={handleFilterChange}
-            loading={!!debouncedSearchQuery.trim() && isInitialLoading}
-          />
-        {/* </View> */}
-
-        
-        {/* Show skeleton only on first load (no search); never on search typing */}
+        <Filter
+          searchPlaceholder={t("searchCategories")}
+          onSearchChange={handleSearchChange}
+          filterSections={filterSections}
+          selectedFilters={selectedFilters}
+          onFilterChange={handleFilterChange}
+          loading={!!debouncedSearchQuery.trim() && isInitialLoading}
+        />
         {!isSearchMode && isInitialLoading ? (
           <View
             style={{ flex: 1, paddingHorizontal: Spacing.sm }}
@@ -345,6 +339,8 @@ const ServicesScreen = () => {
             contentContainerStyle={{
               paddingBottom: 6 * Spacing.lg,
               paddingHorizontal: Spacing.sm,
+              marginTop: 2
+
             }}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"

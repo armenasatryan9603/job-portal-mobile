@@ -344,11 +344,6 @@ export const Filter: React.FC<FilterProps> = ({
     }
   }, [filterModalVisible, slideAnim, panY]);
 
-  const modalContentTranslateY = slideAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [Dimensions.get("window").height, 0],
-  });
-
   // PanResponder for swipe-down gesture
   const panResponder = useRef(
     PanResponder.create({

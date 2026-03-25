@@ -18,3 +18,7 @@ cd android && ./gradlew assembleRelease
 # Or for debug build (easier, no signing required)
 
 ./gradlew assembleDebug
+
+<!-- FOR WEB release -->
+# npx expo export --platform web
+

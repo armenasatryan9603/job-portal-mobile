@@ -1995,7 +1995,6 @@ export default function OrdersScreen() {
           ) : (
             <FlatList
               key={isDesktopWeb ? "orders-grid-4" : "orders-grid-2"}
-              style={{ flex: 1 }}
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem
@@ -2030,7 +2029,7 @@ export default function OrdersScreen() {
                 />
               }
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ marginHorizontal: Spacing.md, paddingBottom: Spacing.lg }}
+              contentContainerStyle={{ marginHorizontal: Spacing.sm, paddingBottom: Spacing.lg }}
             />
           )}
 
