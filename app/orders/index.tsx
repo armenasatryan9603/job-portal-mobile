@@ -6,7 +6,6 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
@@ -45,8 +44,9 @@ import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
-import { LocationFilterModal } from "@/components/LocationFilterModal";
+import { LocationFilterModal } from "@/components/LocationFilterModal/LocationFilterModal";
 import OrderItem from "./Item";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { TopTabs } from "@/components/TopTabs";
 import { chatService } from "@/categories/chatService";
 import { getViewedOrders } from "@/utils/viewedOrdersStorage";
@@ -56,6 +56,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -113,6 +114,7 @@ export default function OrdersScreen() {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
+  const isDesktopWeb = useIsWeb();
   const { user, isAuthenticated } = useAuth();
   const { guestCountryIso, requestLocationAndStore } = useGuestCountry();
   const { showLoginModal } = useModal();
@@ -1949,6 +1951,7 @@ export default function OrdersScreen() {
   return (
     <>
       <Layout header={header}>
+        <ResponsiveContainer scrollable={false}>
         {!isAuthenticated && !guestCountryIso && !isMyOrders && !isMyJobs && !isSavedOrders && (
           <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
             <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
@@ -1962,7 +1965,12 @@ export default function OrdersScreen() {
           activeTab={activeOrderTab}
           onTabChange={handleTabChange}
         />
-        <View style={{ flex: 1, marginBottom: Spacing.xxxl * 2.5 }}>    
+        <View
+          style={{
+            flex: 1,
+            marginBottom: !isDesktopWeb ? Spacing.xxxl * 2.5 : 0,
+          }}
+        >    
           <Filter
             searchPlaceholder={t("searchOrdersSkills")}
             initialSearchValue={searchQuery}
@@ -1986,6 +1994,8 @@ export default function OrdersScreen() {
             </View>
           ) : (
             <FlatList
+              key={isDesktopWeb ? "orders-grid-4" : "orders-grid-2"}
+              style={{ flex: 1 }}
               data={displayedOrders}
               renderItem={({ item }) => (
                 <OrderItem
@@ -2005,7 +2015,7 @@ export default function OrdersScreen() {
               )}
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
-              numColumns={2}
+              numColumns={isDesktopWeb ? 4 : 2}
               columnWrapperStyle={{ marginRight: -Spacing.sm }}
               ListEmptyComponent={renderEmptyComponent}
               {...(isMyOrders || isMyJobs || isSavedOrders
@@ -2036,6 +2046,7 @@ export default function OrdersScreen() {
             />
           )}
         </View>
+        </ResponsiveContainer>
       </Layout>
 
       <ApplyModal
@@ -2070,7 +2081,12 @@ export default function OrdersScreen() {
           // Show filter modal again when location modal closes
           setFilterModalHiddenForLocation(false);
         }}
-        onConfirm={(locationData) => {
+        onConfirm={(locationData: {
+          latitude: number;
+          longitude: number;
+          address: string;
+          radius: number;
+        }) => {
           setSelectedFilters((prev) => ({
             ...prev,
             location: locationData,

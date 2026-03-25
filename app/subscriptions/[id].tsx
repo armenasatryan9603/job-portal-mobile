@@ -117,7 +117,7 @@ export default function SubscriptionDetailScreen() {
 
   if (loading) {
     return (
-      <Layout header={header} showFooterTabs={false}>
+      <Layout header={header} showMainTabs={false}>
         <View style={[styles.loadingContainer, { paddingTop: insets.top }]}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -141,7 +141,7 @@ export default function SubscriptionDetailScreen() {
   ].filter(Boolean);
 
   return (
-    <Layout header={header} showFooterTabs={false}>
+    <Layout header={header} showMainTabs={false}>
       <ScrollView
         style={[styles.container, { paddingTop: insets.top }]}
         contentContainerStyle={styles.contentContainer}

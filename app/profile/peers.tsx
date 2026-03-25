@@ -1,16 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useCallback, useState } from "react";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { User, apiService } from "@/categories/api";
@@ -48,6 +37,7 @@ export default function PeersScreen() {
   const { user } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [peers, setPeers] = useState<User[]>([]);
@@ -496,7 +486,7 @@ export default function PeersScreen() {
       {/* Add Peer Modal */}
       <Modal
         visible={showAddPeerModal}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         presentationStyle="pageSheet"
         onRequestClose={() => {
           setShowAddPeerModal(false);
@@ -685,7 +675,7 @@ export default function PeersScreen() {
       {/* Create Team Modal */}
       <Modal
         visible={showCreateTeamModal}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         presentationStyle="pageSheet"
         onRequestClose={() => setShowCreateTeamModal(false)}
       >

@@ -1,18 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Dimensions,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import {
   BorderRadius,
   Shadows,
@@ -42,6 +29,7 @@ export default function RefillCreditsScreen() {
   useAnalytics("RefillCredits");
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { creditCards, isLoadingCards, syncCardsFromBank, refreshCards } = useCreditCard();
   const { updateUser } = useAuth();
@@ -927,7 +915,7 @@ export default function RefillCreditsScreen() {
       <Modal
         visible={showCurrencyModal}
         transparent={true}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => setShowCurrencyModal(false)}
       >
         <View style={styles.modalOverlay}>

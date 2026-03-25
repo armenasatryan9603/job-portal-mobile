@@ -18,7 +18,8 @@ import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
-import { LocationFilterModal } from "@/components/LocationFilterModal";
+import { LocationFilterModal } from "@/components/LocationFilterModal/LocationFilterModal";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { ServiceItem } from "@/components/ServiceItem";
 import { apiService } from "@/categories/api";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -360,6 +361,7 @@ export default function ServicesScreen() {
 
   return (
     <Layout header={header}>
+      <ResponsiveContainer scrollable={false}>
       <View style={{ backgroundColor: colors.background }}>
         <Filter
           searchPlaceholder={t("searchServices")}
@@ -402,7 +404,7 @@ export default function ServicesScreen() {
         </View>
       ) : (
         <FlatList
-          style={{ top: -8 }}
+          style={{ top: -8, flex: 1 }}
           data={sortedMarkets}
           renderItem={renderMarketItem}
           keyExtractor={(item, index) => `${item.id}-${index}`}
@@ -446,7 +448,12 @@ export default function ServicesScreen() {
           // Show filter modal again when location modal closes
           setFilterModalHiddenForLocation(false);
         }}
-        onConfirm={(locationData) => {
+        onConfirm={(locationData: {
+          latitude: number;
+          longitude: number;
+          address: string;
+          radius: number;
+        }) => {
           setSelectedFilters((prev) => ({
             ...prev,
             location: locationData,
@@ -471,6 +478,7 @@ export default function ServicesScreen() {
             : undefined
         }
       />
+      </ResponsiveContainer>
     </Layout>
   );
 }

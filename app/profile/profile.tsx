@@ -1,17 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 
-import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import {
   BorderRadius,
   Spacing,
@@ -43,7 +32,7 @@ import { Image } from "expo-image";
 import { LanguagesSection } from "@/components/LanguagesSection";
 import { Layout } from "@/components/Layout";
 import { LocationPicker } from "@/components/LocationPicker";
-import { MapViewComponent } from "@/components/MapView";
+import { MapViewComponent } from "@/components/MapView/MapView";
 import { ProfileSkeleton } from "@/components/ProfileSkeleton";
 import { ServicesSelectionModal } from "@/components/ServicesSelectionModal";
 import { SkillsSection } from "@/components/SkillsSection";
@@ -54,6 +43,7 @@ import { fileUploadService } from "@/categories/fileUpload";
 import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useSkills } from "@/hooks/useSkills";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -63,6 +53,7 @@ export default function ProfileScreen() {
   const { user, updateUser } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   // Get URL parameters for handling refresh from edit screen and viewing other users
@@ -1977,7 +1968,7 @@ export default function ProfileScreen() {
       {showMapView && (
         <Modal
           visible={showMapView}
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           presentationStyle="fullScreen"
           onRequestClose={() => {
             console.log("MapView closed");

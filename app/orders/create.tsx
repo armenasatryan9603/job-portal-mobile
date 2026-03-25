@@ -1,17 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Keyboard,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Image, Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { Category, apiService } from "@/categories/api";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -59,6 +47,7 @@ export default function CreateOrderScreen() {
   useAnalytics("CreateOrder");
   const { serviceId, orderId } = useLocalSearchParams();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -2982,7 +2971,7 @@ export default function CreateOrderScreen() {
       <Modal
         visible={showRateUnitModal}
         transparent={true}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => {
           setShowRateUnitModal(false);
           setShowAddCustomRateUnit(false);

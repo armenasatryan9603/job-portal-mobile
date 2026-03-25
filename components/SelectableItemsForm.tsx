@@ -1,14 +1,5 @@
-import {
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
@@ -77,6 +68,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
   onInputBlur,
 }) => {
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -518,7 +510,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
       <Modal
         visible={showModal}
         transparent
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => {
           setShowModal(false);
           setSearchQuery("");

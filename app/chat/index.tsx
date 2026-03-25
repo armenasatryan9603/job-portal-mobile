@@ -18,7 +18,7 @@ import { ChatListSkeleton } from "@/components/ChatListSkeleton";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { formatTimestamp } from "@/utils/dateFormatting";
 import { pusherService } from "@/categories/pusherService";
 import { router } from "expo-router";
@@ -404,7 +404,9 @@ export default function ChatScreen() {
   if (loading) {
     return (
       <Layout header={header}>
-        <ChatListSkeleton itemCount={6} />
+        <ResponsiveContainer>
+          <ChatListSkeleton itemCount={6} />
+        </ResponsiveContainer>
       </Layout>
     );
   }
@@ -412,73 +414,78 @@ export default function ChatScreen() {
   if (error) {
     return (
       <Layout header={header}>
-        <View style={styles.centerContent}>
-          <Text style={[styles.errorText, { color: colors.text }]}>
-            {error}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={refreshConversations}
-          >
-            <Text style={styles.retryButtonText}>{t("retry")}</Text>
-          </TouchableOpacity>
-        </View>
+        <ResponsiveContainer>
+          <View style={styles.centerContent}>
+            <Text style={[styles.errorText, { color: colors.text }]}>
+              {error}
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              onPress={refreshConversations}
+            >
+              <Text style={styles.retryButtonText}>{t("retry")}</Text>
+            </TouchableOpacity>
+          </View>
+        </ResponsiveContainer>
       </Layout>
     );
   }
 
   return (
     <Layout header={header}>
-      {/* Search Section */}
-      <ResponsiveCard padding={0}>
-        <View style={styles.searchContainer}>
-          <IconSymbol
-            name="magnifyingglass"
-            size={20}
-            color={colors.tabIconDefault}
-          />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder={t("searchConversations")}
-            placeholderTextColor={colors.tabIconDefault}
-            value={searchQuery}
-            onChangeText={(text) => {
-              setSearchQuery(text);
-              if (text.trim().length > 0) {
-                setTimeout(() => {
-                  AnalyticsService.getInstance().logSearch(text.trim(), {
-                    search_type: "conversations",
-                  });
-                }, 500);
-              }
-            }}
-          />
-        </View>
-      </ResponsiveCard>
-
-      {/* Conversations List */}
-      <FlatList
-        data={filteredConversations}
-        renderItem={renderConversation}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-              {t("noConversationsYet")}
-            </Text>
+      <ResponsiveContainer scrollable={false}>
+        {/* Search Section */}
+        <ResponsiveCard padding={0}>
+          <View style={styles.searchContainer}>
+            <IconSymbol
+              name="magnifyingglass"
+              size={20}
+              color={colors.tabIconDefault}
+            />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder={t("searchConversations")}
+              placeholderTextColor={colors.tabIconDefault}
+              value={searchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                if (text.trim().length > 0) {
+                  setTimeout(() => {
+                    AnalyticsService.getInstance().logSearch(text.trim(), {
+                      search_type: "conversations",
+                    });
+                  }, 500);
+                }
+              }}
+            />
           </View>
-        }
-      />
+        </ResponsiveCard>
+
+        {/* Conversations List */}
+        <FlatList
+          style={{ flex: 1, marginBottom: 80 }}
+          data={filteredConversations}
+          renderItem={renderConversation}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                {t("noConversationsYet")}
+              </Text>
+            </View>
+          }
+        />
+      </ResponsiveContainer>
     </Layout>
   );
 }

@@ -10,14 +10,16 @@ import {
   View,
 } from "react-native";
 
-import { FooterTabs } from "@/components/FooterTabs";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Logo } from "./Logo";
+import { MainTabs } from "@/components/MainTabs";
 import React from "react";
 import { ThemeColors } from "@/constants/styles";
+import { WEB_MAIN_CONTENT_MAX_WIDTH } from "@/constants/layout";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useModal } from "@/contexts/ModalContext";
 import { useNavigation } from "@/contexts/NavigationContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,8 +32,10 @@ interface LayoutProps {
   backgroundColor?: string;
   padding?: number;
   showSidebar?: boolean;
-  showFooterTabs?: boolean;
+  showMainTabs?: boolean;
   onLogout?: () => void;
+  /** Web: max width of the main column (header/body/footer). Default from `WEB_MAIN_CONTENT_MAX_WIDTH`. */
+  maxContentWidth?: number;
 }
 
 const { height } = Dimensions.get("window");
@@ -43,8 +47,9 @@ export const Layout: React.FC<LayoutProps> = ({
   backgroundColor,
   padding = 0,
   showSidebar = true,
-  showFooterTabs = true,
+  showMainTabs = true,
   onLogout,
+  maxContentWidth,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -56,6 +61,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
   const {
     sidebarVisible,
+    openSidebar,
     closeSidebar,
     navigateToProfile,
     navigateToSettings,
@@ -136,16 +142,47 @@ export const Layout: React.FC<LayoutProps> = ({
     setImageError(true);
   };
 
+  const sidebarWidth = 280;
+  const sidebarCollapsedWidthWeb = 72;
+  const isWeb = useIsWeb();
+  /** Web: collapsed = icon rail; expanded = full drawer. Native: boolean is open/closed overlay. */
+  const webSidebarCollapsed = isWeb && showSidebar && !sidebarVisible;
+  const webMainInsetLeft =
+    isWeb && showSidebar
+      ? padding +
+        (sidebarVisible ? sidebarWidth : sidebarCollapsedWidthWeb)
+      : padding;
+
+  const webMainMaxWidth =
+    maxContentWidth ?? WEB_MAIN_CONTENT_MAX_WIDTH;
+  /** Centered capped width (web); full width on native. No flex — use for header/footer. */
+  const webMainColumnStyle = isWeb
+    ? {
+        maxWidth: webMainMaxWidth,
+        width: "100%" as const,
+        alignSelf: "center" as const,
+      }
+    : { width: "100%" as const };
+  /** Main column + flex so body fills remaining height. */
+  const webBodyInnerStyle = [webMainColumnStyle, { flex: 1 }];
+
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {showMainTabs && (
+        <MainTabs
+          contentInsetLeft={isWeb && showSidebar ? webMainInsetLeft : 0}
+          contentMaxWidth={isWeb ? webMainMaxWidth : undefined}
+        />
+      )}
       <StatusBar
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
         backgroundColor={bgColor}
         translucent={false}
       />
 
-      {/* Sidebar Overlay */}
-      {sidebarVisible && (
+
+      {/* Overlay when drawer is open: native + narrow web (desktop web has no dimmed backdrop) */}
+      {sidebarVisible && !isWeb && (
         <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
@@ -159,11 +196,21 @@ export const Layout: React.FC<LayoutProps> = ({
           style={[
             styles.sidebar,
             {
+              width:
+                isWeb && showSidebar
+                  ? sidebarVisible
+                    ? sidebarWidth
+                    : sidebarCollapsedWidthWeb
+                  : sidebarWidth,
               backgroundColor: colors.background,
               borderRightColor: colors.border,
-              transform: [{ translateX: sidebarAnimation }],
-              opacity: sidebarOpacity,
-              pointerEvents: sidebarVisible ? "auto" : "none",
+              transform: [{ translateX: isWeb ? 0 : sidebarAnimation }],
+              opacity: isWeb ? 1 : sidebarOpacity,
+              pointerEvents: isWeb
+                ? "auto"
+                : sidebarVisible
+                  ? "auto"
+                  : "none",
             },
           ]}
         >
@@ -171,30 +218,62 @@ export const Layout: React.FC<LayoutProps> = ({
           <View
             style={[
               styles.logoSection,
-              { paddingTop: insets.top - 8, borderBottomColor: colors.border },
+              {
+                paddingTop: insets.top - 8,
+                borderBottomColor: colors.border,
+              },
+              webSidebarCollapsed && styles.logoSectionCollapsedWeb,
             ]}
           >
-            <Logo
-              size={33}
-              type="full"
-              onPress={() => {
-                closeSidebar();
-                router.push("/");
-              }}
-              style={styles.sidebarLogo}
-            />
+            {webSidebarCollapsed ? (
+              <View style={styles.webCollapsedLogoColumn}>
+                <Logo
+                  size={40}
+                  type="short"
+                  variant="small"
+                  onPress={() => {
+                    openSidebar();
+                    router.push("/");
+                  }}
+                  style={{ alignSelf: "center" }}
+                />
+              </View>
+            ) : (
+              <Logo
+                size={44}
+                type="full"
+                onPress={() => {
+                  closeSidebar();
+                  router.push("/");
+                }}
+                style={styles.sidebarLogo}
+              />
+            )}
           </View>
 
           {/* User Profile Section */}
           <TouchableOpacity
-            style={[styles.userSection, { borderBottomColor: colors.border }]}
+            style={[
+              styles.userSection,
+              { borderBottomColor: colors.border },
+              webSidebarCollapsed && styles.userSectionCollapsedWeb,
+            ]}
             onPress={isAuthenticated ? navigateToProfile : showLoginModal}
           >
-            <View style={styles.userInfo}>
+            <View
+              style={[
+                styles.userInfo,
+                webSidebarCollapsed && styles.userInfoCollapsedWeb,
+              ]}
+            >
               {isAuthenticated ? (
                 <>
                   <View
-                    style={[styles.avatar, { backgroundColor: colors.tint }]}
+                    style={[
+                      styles.avatar,
+                      { backgroundColor: colors.tint },
+                      webSidebarCollapsed && styles.avatarCollapsedWeb,
+                    ]}
                   >
                     {user?.avatarUrl && !imageError ? (
                       <Image
@@ -203,7 +282,10 @@ export const Layout: React.FC<LayoutProps> = ({
                           uri: user.avatarUrl,
                           cache: "default",
                         }}
-                        style={styles.avatarImage}
+                        style={[
+                          styles.avatarImage,
+                          webSidebarCollapsed && styles.avatarImageCollapsedWeb,
+                        ]}
                         onError={handleImageError}
                         onLoad={() => {
                           console.log(
@@ -217,54 +299,66 @@ export const Layout: React.FC<LayoutProps> = ({
                     ) : (
                       <IconSymbol
                         name="person.fill"
-                        size={24}
+                        size={webSidebarCollapsed ? 20 : 24}
                         color={colors.background}
                       />
                     )}
                   </View>
-                  <View style={styles.userDetails}>
-                    <Text style={[styles.userName, { color: colors.text }]}>
-                      {user ? user.name : t("welcome")}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.userPhone,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      {user ? user.phone || t("viewProfile") : t("viewProfile")}
-                    </Text>
-                  </View>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.tabIconDefault}
-                  />
+                  {!webSidebarCollapsed && (
+                    <>
+                      <View style={styles.userDetails}>
+                        <Text style={[styles.userName, { color: colors.text }]}>
+                          {user ? user.name : t("welcome")}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.userPhone,
+                            { color: colors.tabIconDefault },
+                          ]}
+                        >
+                          {user
+                            ? user.phone || t("viewProfile")
+                            : t("viewProfile")}
+                        </Text>
+                      </View>
+                      <IconSymbol
+                        name="chevron.right"
+                        size={16}
+                        color={colors.tabIconDefault}
+                      />
+                    </>
+                  )}
                 </>
               ) : (
                 <>
                   <View
-                    style={[styles.guestIcon, { backgroundColor: colors.tint }]}
+                    style={[
+                      styles.guestIcon,
+                      { backgroundColor: colors.tint },
+                      webSidebarCollapsed && styles.avatarCollapsedWeb,
+                    ]}
                   >
                     <IconSymbol
                       name="person.badge.plus"
-                      size={24}
+                      size={webSidebarCollapsed ? 20 : 24}
                       color={colors.background}
                     />
                   </View>
-                  <View style={styles.userDetails}>
-                    <Text style={[styles.userName, { color: colors.text }]}>
-                      {t("guest")}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.userPhone,
-                        { color: colors.tabIconDefault },
-                      ]}
-                    >
-                      {t("login")}
-                    </Text>
-                  </View>
+                  {!webSidebarCollapsed && (
+                    <View style={styles.userDetails}>
+                      <Text style={[styles.userName, { color: colors.text }]}>
+                        {t("guest")}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.userPhone,
+                          { color: colors.tabIconDefault },
+                        ]}
+                      >
+                        {t("login")}
+                      </Text>
+                    </View>
+                  )}
                 </>
               )}
             </View>
@@ -278,78 +372,97 @@ export const Layout: React.FC<LayoutProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={navigateToCalendar}
                 >
-                  <IconSymbol name="calendar" size={20} color={colors.tint} />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("calendar")}
-                  </Text>
+                  <IconSymbol
+                    name="calendar"
+                    size={webSidebarCollapsed ? 22 : 20}
+                    color={colors.tint}
+                  />
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("calendar")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={navigateToServices}
                 >
                   <IconSymbol
                     name="building.2.fill"
-                    size={20}
+                    size={webSidebarCollapsed ? 22 : 20}
                     color={colors.tint}
                   />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("myServices")}
-                  </Text>
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("myServices")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={navigateToMyOrders}
                 >
                   <IconSymbol
                     name="doc.text.fill"
-                    size={20}
+                    size={webSidebarCollapsed ? 22 : 20}
                     color={colors.tint}
                   />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("myOrders")}
-                  </Text>
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("myOrders")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={navigateToMyJobs}
                 >
                   <IconSymbol
                     name="briefcase.fill"
-                    size={20}
+                    size={webSidebarCollapsed ? 22 : 20}
                     color={colors.tint}
                   />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("myJobs")}
-                  </Text>
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("myJobs")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={navigateToSavedOrders}
                 >
                   <IconSymbol
                     name="bookmark.fill"
-                    size={20}
+                    size={webSidebarCollapsed ? 22 : 20}
                     color={colors.tint}
                   />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("savedOrders")}
-                  </Text>
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("savedOrders")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </>
             ) : (
@@ -358,63 +471,83 @@ export const Layout: React.FC<LayoutProps> = ({
                 <TouchableOpacity
                   style={[
                     styles.menuItem,
+                    webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
                   onPress={showLoginModal}
                 >
                   <IconSymbol
                     name="person.badge.plus"
-                    size={20}
+                    size={webSidebarCollapsed ? 22 : 20}
                     color={colors.tint}
                   />
-                  <Text style={[styles.menuItemText, { color: colors.text }]}>
-                    {t("getStarted")}
-                  </Text>
+                  {!webSidebarCollapsed && (
+                    <Text style={[styles.menuItemText, { color: colors.text }]}>
+                      {t("getStarted")}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               </>
             )}
             <TouchableOpacity
-              style={[styles.menuItem, { borderBottomColor: colors.border }]}
+              style={[
+                styles.menuItem,
+                webSidebarCollapsed && styles.menuItemCollapsedWeb,
+                { borderBottomColor: colors.border },
+              ]}
               onPress={navigateToSettings}
             >
-              <IconSymbol name="gearshape.fill" size={20} color={colors.tint} />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>
-                {t("settings")}
-              </Text>
+              <IconSymbol
+                name="gearshape.fill"
+                size={webSidebarCollapsed ? 22 : 20}
+                color={colors.tint}
+              />
+              {!webSidebarCollapsed && (
+                <Text style={[styles.menuItemText, { color: colors.text }]}>
+                  {t("settings")}
+                </Text>
+              )}
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.menuItem,
+                webSidebarCollapsed && styles.menuItemCollapsedWeb,
                 { borderBottomColor: colors.border },
               ]}
               onPress={navigateToHelp}
             >
               <IconSymbol
                 name="questionmark.circle.fill"
-                size={20}
+                size={webSidebarCollapsed ? 22 : 20}
                 color={colors.tint}
               />
-              <Text style={[styles.menuItemText, { color: colors.text }]}>
-                {t("helpAndSupport")}
-              </Text>
+              {!webSidebarCollapsed && (
+                <Text style={[styles.menuItemText, { color: colors.text }]}>
+                  {t("helpAndSupport")}
+                </Text>
+              )}
             </TouchableOpacity>
-            {isAuthenticated &&
+            {isAuthenticated && (
               <TouchableOpacity
                 style={[
                   styles.menuItem,
+                  webSidebarCollapsed && styles.menuItemCollapsedWeb,
                   { borderBottomColor: "transparent" },
                 ]}
                 onPress={handleLogout}
               >
                 <IconSymbol
                   name="rectangle.portrait.and.arrow.right"
-                  size={20}
+                  size={webSidebarCollapsed ? 22 : 20}
                   color={colors.danger}
                 />
-                <Text style={[styles.menuItemText, { color: colors.danger }]}>
-                  {t("logout")}
-                </Text>
-              </TouchableOpacity>}
+                {!webSidebarCollapsed && (
+                  <Text style={[styles.menuItemText, { color: colors.danger }]}>
+                    {t("logout")}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
         </Animated.View>
       )}
@@ -426,16 +559,26 @@ export const Layout: React.FC<LayoutProps> = ({
             {
               backgroundColor: bgColor,
               paddingTop: insets.top - 10,
+              paddingLeft: webMainInsetLeft,
             },
           ]}
         >
-          {header}
+          <View style={webMainColumnStyle}>{header}</View>
         </View>
       )}
 
       {/* Body */}
-      <View style={[styles.body, { backgroundColor: bgColor, padding }]}>
-        {children}
+      <View
+        style={[
+          styles.body,
+          {
+            backgroundColor: bgColor,
+            padding,
+            paddingLeft: webMainInsetLeft,
+          },
+        ]}
+      >
+        <View style={webBodyInnerStyle}>{children}</View>
       </View>
 
       {/* Footer */}
@@ -445,15 +588,15 @@ export const Layout: React.FC<LayoutProps> = ({
             styles.footer,
             {
               backgroundColor: bgColor,
+              paddingLeft: webMainInsetLeft,
             },
           ]}
         >
-          {footer}
+          <View style={webMainColumnStyle}>{footer}</View>
         </View>
       )}
 
       {/* Footer Tabs */}
-      {showFooterTabs && <FooterTabs />}
     </View>
   );
 };
@@ -557,5 +700,39 @@ const styles = StyleSheet.create({
   menuItemText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  /** Web collapsed sidebar (icon rail) */
+  logoSectionCollapsedWeb: {
+    alignItems: "center",
+    paddingHorizontal: 4,
+    paddingBottom: 8,
+  },
+  webCollapsedLogoColumn: {
+    alignItems: "center",
+    gap: 6,
+  },
+  userSectionCollapsedWeb: {
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+  },
+  userInfoCollapsedWeb: {
+    justifyContent: "center",
+    gap: 0,
+  },
+  avatarCollapsedWeb: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  avatarImageCollapsedWeb: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  menuItemCollapsedWeb: {
+    justifyContent: "center",
+    paddingHorizontal: 0,
+    paddingVertical: 14,
+    gap: 0,
   },
 });

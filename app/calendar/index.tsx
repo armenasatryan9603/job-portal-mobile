@@ -35,6 +35,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { ResponsiveContainer, ResponsiveGrid } from "@/components/ResponsiveContainer";
 
 interface Application {
   id: number;
@@ -1456,6 +1457,7 @@ export default function CalendarScreen() {
 
   return (
     <Layout>
+      <ResponsiveContainer scrollable={false}>
       <View style={{ paddingTop: 2 * Spacing.xxl }}>
         <Header
           title={t("myApplications")}
@@ -1591,6 +1593,7 @@ export default function CalendarScreen() {
         onSubmit={handleSubmitEditBooking}
         loading={editingBooking}
       />
+      </ResponsiveContainer>
     </Layout>
   );
 }

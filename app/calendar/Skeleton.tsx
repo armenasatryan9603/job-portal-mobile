@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { Layout } from "@/components/Layout";
 import { router } from "expo-router";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 const CalendarSkeleton = () => {
   const { t } = useTranslation();
@@ -66,81 +67,83 @@ const CalendarSkeleton = () => {
 
   return (
     <Layout header={header}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.skeletonTopRow}>
-          <SkeletonBox
-            height={22}
-            width="55%"
-            borderRadius={BorderRadius.md}
-            style={styles.skeletonTitle}
-          />
-          <View style={styles.skeletonToggleGroup}>
-            {[1, 2].map((i) => (
-              <SkeletonBox
-                key={`view-toggle-${i}`}
-                height={44}
-                width={44}
-                borderRadius={BorderRadius.md}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.skeletonFilterRow}>
-          {[1, 2].map((i) => (
+      <ResponsiveContainer>
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.skeletonTopRow}>
             <SkeletonBox
-              key={`filter-${i}`}
-              height={40}
-              width={120}
-              borderRadius={20}
+              height={22}
+              width="55%"
+              borderRadius={BorderRadius.md}
+              style={styles.skeletonTitle}
             />
-          ))}
-        </View>
-
-        <SkeletonBox
-          height={74}
-          width="100%"
-          borderRadius={BorderRadius.lg}
-          style={styles.skeletonMonthCard}
-        />
-
-        <View style={styles.skeletonCalendarGrid}>
-          {Array.from({ length: 6 }).map((_, row) => (
-            <View key={`row-${row}`} style={styles.skeletonCalendarRow}>
-              {Array.from({ length: 7 }).map((_, col) => (
+            <View style={styles.skeletonToggleGroup}>
+              {[1, 2].map((i) => (
                 <SkeletonBox
-                  key={`cell-${row}-${col}`}
+                  key={`view-toggle-${i}`}
                   height={44}
+                  width={44}
                   borderRadius={BorderRadius.md}
-                  style={[
-                    styles.skeletonDay,
-                    col === 6 && { marginRight: 0 },
-                  ]}
                 />
               ))}
             </View>
-          ))}
-        </View>
+          </View>
 
-        <View style={styles.skeletonLegend}>
-          <SkeletonBox
-            height={12}
-            width="35%"
-            borderRadius={BorderRadius.sm}
-            style={styles.skeletonLine}
-          />
-          <View style={styles.skeletonLegendRow}>
-            {Array.from({ length: 4 }).map((_, idx) => (
+          <View style={styles.skeletonFilterRow}>
+            {[1, 2].map((i) => (
               <SkeletonBox
-                key={`legend-${idx}`}
-                height={34}
-                width={80}
-                borderRadius={BorderRadius.md}
+                key={`filter-${i}`}
+                height={40}
+                width={120}
+                borderRadius={20}
               />
             ))}
           </View>
-        </View>
-      </ScrollView>
+
+          <SkeletonBox
+            height={74}
+            width="100%"
+            borderRadius={BorderRadius.lg}
+            style={styles.skeletonMonthCard}
+          />
+
+          <View style={styles.skeletonCalendarGrid}>
+            {Array.from({ length: 6 }).map((_, row) => (
+              <View key={`row-${row}`} style={styles.skeletonCalendarRow}>
+                {Array.from({ length: 7 }).map((_, col) => (
+                  <SkeletonBox
+                    key={`cell-${row}-${col}`}
+                    height={44}
+                    borderRadius={BorderRadius.md}
+                    style={[
+                      styles.skeletonDay,
+                      col === 6 && { marginRight: 0 },
+                    ]}
+                  />
+                ))}
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.skeletonLegend}>
+            <SkeletonBox
+              height={12}
+              width="35%"
+              borderRadius={BorderRadius.sm}
+              style={styles.skeletonLine}
+            />
+            <View style={styles.skeletonLegendRow}>
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <SkeletonBox
+                  key={`legend-${idx}`}
+                  height={34}
+                  width={80}
+                  borderRadius={BorderRadius.md}
+                />
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </ResponsiveContainer>
     </Layout>
   );
 };

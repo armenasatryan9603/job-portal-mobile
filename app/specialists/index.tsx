@@ -35,6 +35,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 export default function SpecialistsScreen() {
   useAnalytics("Specialists");
@@ -572,6 +573,7 @@ export default function SpecialistsScreen() {
 
   return (
     <Layout header={header}>
+      <ResponsiveContainer scrollable={false}>
       {!isAuthenticated && !guestCountryIso && (
         <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
           <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
@@ -619,6 +621,7 @@ export default function SpecialistsScreen() {
               </View>
             ) : (
               <FlatList
+                style={{ flex: 1 }}
                 data={filteredSpecialists}
                 renderItem={renderSpecialistItem}
                 keyExtractor={(item) => item.id.toString()}
@@ -654,6 +657,7 @@ export default function SpecialistsScreen() {
               />
             ) : (
               <FlatList
+                style={{ flex: 1 }}
                 data={filteredTeams}
                 renderItem={renderTeamItem}
                 keyExtractor={(item) => item.id.toString()}
@@ -684,6 +688,7 @@ export default function SpecialistsScreen() {
         userOrders={userOrders}
         loading={hiringLoading}
       />
+      </ResponsiveContainer>
     </Layout>
   );
 }

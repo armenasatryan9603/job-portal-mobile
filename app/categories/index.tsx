@@ -304,18 +304,9 @@ const ServicesScreen = () => {
 
   return (
     <Layout header={header}>
-      
+      <ResponsiveContainer scrollable={false}>
         {/* Fixed Header with Filter */}
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1,
-            backgroundColor: colors.background,
-          }}
-        >
+        {/* <View> */}
           <Filter
             searchPlaceholder={t("searchCategories")}
             onSearchChange={handleSearchChange}
@@ -324,19 +315,18 @@ const ServicesScreen = () => {
             onFilterChange={handleFilterChange}
             loading={!!debouncedSearchQuery.trim() && isInitialLoading}
           />
-        </View>
+        {/* </View> */}
 
-        <ResponsiveContainer padding={Spacing.xs} scrollable={false}>
+        
         {/* Show skeleton only on first load (no search); never on search typing */}
         {!isSearchMode && isInitialLoading ? (
           <View
-            style={{ flex: 1, marginTop: 80, paddingHorizontal: Spacing.sm }}
+            style={{ flex: 1, paddingHorizontal: Spacing.sm }}
           >
             <FloatingSkeleton count={9} variant="grid" />
           </View>
         ) : (
           <FlatList<Category[]>
-            style={{ marginTop: 68 }}
             data={parentCategoryRows}
             renderItem={renderCategoryRow}
             keyExtractor={(_, index) => `row-${index}`}
@@ -354,7 +344,7 @@ const ServicesScreen = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{
               paddingBottom: 6 * Spacing.lg,
-              paddingHorizontal: Spacing.xs,
+              paddingHorizontal: Spacing.sm,
             }}
             keyboardShouldPersistTaps="never"
             keyboardDismissMode="on-drag"

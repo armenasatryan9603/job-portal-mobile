@@ -1,12 +1,6 @@
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Modal,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -30,6 +24,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
   onClose,
   onEmojiSelect,
 }) => {
+  const isDesktopWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -42,7 +37,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       onRequestClose={onClose}
     >
       <TouchableOpacity

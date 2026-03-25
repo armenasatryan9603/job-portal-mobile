@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Pressable, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
@@ -38,6 +32,7 @@ export const RoleSelectorModal: React.FC<RoleSelectorModalProps> = ({
   title,
 }) => {
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
 
@@ -99,7 +94,7 @@ export const RoleSelectorModal: React.FC<RoleSelectorModalProps> = ({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       onRequestClose={onClose}
     >
       <Pressable

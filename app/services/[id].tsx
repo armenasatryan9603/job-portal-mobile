@@ -1,16 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Linking,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, FlatList, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { DaySchedule, WeeklySchedule } from "@/components/WeeklySchedulePicker";
 import React, { useCallback, useEffect, useState } from "react";
@@ -46,6 +35,7 @@ export default function MarketDetailScreen() {
   useAnalytics("MyServiceDetail");
   const { id } = useLocalSearchParams();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -1035,7 +1025,7 @@ export default function MarketDetailScreen() {
       <Modal
         visible={showReviewModal}
         transparent
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => setShowReviewModal(false)}
       >
         <View style={styles.modalOverlay}>

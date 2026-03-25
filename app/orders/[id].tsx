@@ -1,17 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Platform,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { ActivityIndicator, Alert, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -78,6 +66,7 @@ export default function EditOrderScreen() {
   useAnalytics("OrderDetail");
   const { id, myJobs, preview } = useLocalSearchParams();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -1772,18 +1761,8 @@ export default function EditOrderScreen() {
     />
   );
 
-  const footer = (
-    <Footer>
-      <FooterButton
-        title={t("startChat")}
-        onPress={handleStartChat}
-        variant="primary"
-      />
-    </Footer>
-  );
-
   if (loading || userLoading) {
-    return <OrderDetailSkeleton header={header} footer={footer} />;
+    return <OrderDetailSkeleton header={header}/>;
   }
 
   if (!order) {
@@ -1809,7 +1788,7 @@ export default function EditOrderScreen() {
   }
 
   return (
-    <Layout header={header} footer={footer}>
+    <Layout header={header}>
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
@@ -1917,7 +1896,7 @@ export default function EditOrderScreen() {
         <Modal
           visible={showReviewModal}
           transparent
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           onRequestClose={() => setShowReviewModal(false)}
         >
           <View style={styles.reviewModalOverlay}>
@@ -2021,6 +2000,7 @@ export default function EditOrderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginBottom: 80
   },
   scrollContent: {
     paddingBottom: 20,

@@ -143,7 +143,6 @@ export const ChatSkeleton: React.FC<ChatSkeletonProps> = ({ header }) => {
           styles.inputContainer,
           {
             backgroundColor: colors.background,
-            borderTopColor: colors.border,
           },
         ]}
       >
@@ -221,7 +220,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 6,
     paddingBottom: 30,
-    borderTopWidth: 1,
   },
   inputWrapper: {
     flexDirection: "row",

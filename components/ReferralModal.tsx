@@ -1,15 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  Clipboard,
-  Modal,
-  Platform,
-  Share,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Clipboard, Platform, Share, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
@@ -48,6 +38,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   const isDark = colorScheme === "dark";
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { user } = useAuth();
 
   const [stats, setStats] = useState<ReferralStats | null>(null);
@@ -144,7 +135,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >

@@ -170,7 +170,7 @@ export default function SubscriptionsScreen() {
   );
 
   return (
-    <Layout header={header} showFooterTabs={false}>
+    <Layout header={header} showMainTabs={false}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {plansLoading ? (
           <View style={styles.listContainer}>

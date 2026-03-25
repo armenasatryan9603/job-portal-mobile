@@ -1,13 +1,5 @@
-import {
-  ActivityIndicator,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +44,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState<"en" | "ru" | "hy">(
     language as "en" | "ru" | "hy"
@@ -168,7 +161,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >

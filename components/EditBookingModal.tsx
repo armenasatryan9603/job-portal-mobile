@@ -1,14 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, BorderRadius } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -47,6 +39,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
 
+  const isDesktopWeb = useIsWeb();
   const [availableDays, setAvailableDays] = useState<AvailableDay[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [workDuration, setWorkDuration] = useState<number | null>(null);
@@ -216,7 +209,7 @@ export const EditBookingModal: React.FC<EditBookingModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >

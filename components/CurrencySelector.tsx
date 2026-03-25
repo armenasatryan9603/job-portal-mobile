@@ -1,14 +1,7 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-  TextStyle,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle, TextStyle, Modal } from "react-native";
 
+import { useIsWeb } from "@/utils/isWeb";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -63,6 +56,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
 }) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [visible, setVisible] = useState(false);
@@ -108,7 +102,7 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
       <Modal
         visible={visible}
         transparent={true}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => setVisible(false)}
       >
         <View style={styles.modalOverlay}>

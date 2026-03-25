@@ -1,14 +1,4 @@
-import {
-  Alert,
-  InteractionManager,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, InteractionManager, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
 import {
   BorderRadius,
   ComponentSizes,

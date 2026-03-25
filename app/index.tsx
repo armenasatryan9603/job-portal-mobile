@@ -12,14 +12,14 @@ import {
   Typography,
   createThemeShadow,
 } from "@/constants/styles";
+import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { useAnalytics, useAnalyticsService } from "@/hooks/useAnalytics";
 
-import { AdBanner } from "@/components/AdBanner";
+import { AdBanner } from "@/components/adBanner/AdBanner";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { PriceCurrency } from "@/components/PriceCurrency";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ThemedText } from "@/components/themed-text";
 import { TopDataSlider } from "@/components/TopDataSlider";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -160,352 +160,354 @@ export default function WelcomeScreen() {
 
   return (
     <Layout header={header} onLogout={handleLogout}>
-      <ScrollView
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.adSlotPlaceholder}>
-          <AdBanner/>
-        </View>
-        <View style={styles.topDataSliderContainer}>
-          <TopDataSlider onEmpty={() => setHasTopData(false)} />
-        </View>
-        <View style={styles.container}>
-          {/* User Profile Card */}
-          {!hasTopData && <ResponsiveCard
-            marginBlock={0}
-            marginHorizontal={0}
-            style={[
-              styles.userCardWrapper,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                ...createThemeShadow(isDark, 3),
-              },
-            ]}
-          >
-            {user ? (
-              <TouchableOpacity
-                style={styles.userCardContent}
-                onPress={() => {
-                  analytics.logEvent("button_clicked", {
-                    button_name: "view_profile",
-                    location: "home_user_card",
-                  });
-                  router.push("/profile/profile");
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
-                  <UserAvatar user={user} size={56} />
-                  {user.verified && (
-                    <View style={[styles.verifiedBadge, { backgroundColor: colors.success }]}>
-                      <IconSymbol
-                        name="checkmark.seal.fill"
-                        size={12}
-                        color={colors.textInverse}
-                      />
-                    </View>
-                  )}
-                </View>
-                <View style={styles.userInfo}>
-                  <ThemedText
-                    style={[styles.welcomeText, { color: colors.textSecondary }]}
-                  >
-                    {t("welcomeBack")}
-                  </ThemedText>
-                  <View style={styles.userNameRow}>
-                    <ThemedText
-                      style={[styles.userName, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {user.name}
-                    </ThemedText>
-                  </View>
-                  <View style={styles.userMetaRow}>
-                    <ThemedText
-                      style={[styles.userRole, { color: colors.textSecondary }]}
-                      numberOfLines={1}
-                    >
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </ThemedText>
-                    {user.creditBalance !== undefined && (
-                      <>
-                        <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                        <View style={styles.creditContainer}>
-                          <IconSymbol
-                            name="creditcard.fill"
-                            size={20}
-                            color={colors.primary}
-                          />
-                          <ThemedText
-                            style={[styles.creditText, { color: colors.primary }]}
-                          >
-                            <PriceCurrency style={{ color: colors.text }} price={user.creditBalance} showRateUnit={false} currency={user.currency} />
-                          </ThemedText>
-                        </View>
-                      </>
+      <ResponsiveContainer>
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.adSlotPlaceholder}>
+            <AdBanner/>
+          </View>
+          <View style={styles.topDataSliderContainer}>
+            <TopDataSlider onEmpty={() => setHasTopData(false)} />
+          </View>
+          <View style={styles.container}>
+            {/* User Profile Card */}
+            {!hasTopData && <ResponsiveCard
+              marginBlock={0}
+              marginHorizontal={0}
+              style={[
+                styles.userCardWrapper,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  ...createThemeShadow(isDark, 3),
+                },
+              ]}
+            >
+              {user ? (
+                <TouchableOpacity
+                  style={styles.userCardContent}
+                  onPress={() => {
+                    analytics.logEvent("button_clicked", {
+                      button_name: "view_profile",
+                      location: "home_user_card",
+                    });
+                    router.push("/profile/profile");
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.avatarContainer, { borderColor: colors.border }]}>
+                    <UserAvatar user={user} size={56} />
+                    {user.verified && (
+                      <View style={[styles.verifiedBadge, { backgroundColor: colors.success }]}>
+                        <IconSymbol
+                          name="checkmark.seal.fill"
+                          size={12}
+                          color={colors.textInverse}
+                        />
+                      </View>
                     )}
                   </View>
-                </View>
-                <View style={[styles.arrowContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={18}
-                    color={colors.textSecondary}
-                  />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <View style={styles.loginPrompt}>
-                <View style={[styles.loginIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
-                  <IconSymbol
-                    name="person.circle.fill"
-                    size={84}
-                    color={colors.primary}
-                  />
-                </View>
-                <View style={styles.loginTextContainer}>
-                  <ThemedText
-                    style={[styles.loginTitle, { color: colors.text }]}
-                  >
-                    {t("signUpToAccess")}
-                  </ThemedText>
-                  <ThemedText
-                    style={[styles.loginSubtitle, { color: colors.textSecondary }]}
-                    numberOfLines={2}
-                  >
-                    {t("signUpToAccessDescription")}
-                  </ThemedText>
-                </View>
-                <View style={styles.loginButtons}>
-                  <TouchableOpacity
-                    style={[styles.loginButton, { backgroundColor: colors.primary }]}
-                    onPress={() => {
-                      analytics.logEvent("button_clicked", {
-                        button_name: "login",
-                        location: "home_user_card",
-                      });
-                      showLoginModal();
-                    }}
-                    activeOpacity={0.8}
-                  >
-                    <ThemedText style={styles.loginButtonText}>
-                      {t("login")}
-                    </ThemedText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.signupButton,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.primary,
-                        borderWidth: 1.5,
-                      },
-                    ]}
-                    onPress={() => {
-                      analytics.logEvent("button_clicked", {
-                        button_name: "signup",
-                        location: "home_user_card",
-                      });
-                      showLoginModal();
-                    }}
-                    activeOpacity={0.8}
-                  >
+                  <View style={styles.userInfo}>
                     <ThemedText
-                      style={[styles.signupButtonText, { color: colors.primary }]}
+                      style={[styles.welcomeText, { color: colors.textSecondary }]}
                     >
-                      {t("signup")}
+                      {t("welcomeBack")}
                     </ThemedText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </ResponsiveCard>}
-
-          {/* Quick Actions */}
-          <View style={styles.sectionContainer}>
-            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("quickActions")}
-            </ThemedText>
-            <View style={styles.quickActionsGrid}>
-              {quickActions.map((action, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.actionCard,
-                    {
-                      backgroundColor: colors.surface,
-                      ...createThemeShadow(isDark, 2),
-                    },
-                  ]}
-                  onPress={() => {
-                    analytics.logEvent("quick_action_clicked", {
-                      action_name: action.title,
-                      route: action.route,
-                    });
-                    router.push(action.route as any);
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.actionIcon,
-                      { backgroundColor: action.color },
-                    ]}
-                  >
+                    <View style={styles.userNameRow}>
+                      <ThemedText
+                        style={[styles.userName, { color: colors.text }]}
+                        numberOfLines={1}
+                      >
+                        {user.name}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.userMetaRow}>
+                      <ThemedText
+                        style={[styles.userRole, { color: colors.textSecondary }]}
+                        numberOfLines={1}
+                      >
+                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                      </ThemedText>
+                      {user.creditBalance !== undefined && (
+                        <>
+                          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                          <View style={styles.creditContainer}>
+                            <IconSymbol
+                              name="creditcard.fill"
+                              size={20}
+                              color={colors.primary}
+                            />
+                            <ThemedText
+                              style={[styles.creditText, { color: colors.primary }]}
+                            >
+                              <PriceCurrency style={{ color: colors.text }} price={user.creditBalance} showRateUnit={false} currency={user.currency} />
+                            </ThemedText>
+                          </View>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <View style={[styles.arrowContainer, { backgroundColor: colors.backgroundSecondary }]}>
                     <IconSymbol
-                      name={action.icon as any}
-                      size={24}
-                      color={colors.textInverse}
+                      name="chevron.right"
+                      size={18}
+                      color={colors.textSecondary}
                     />
                   </View>
-                  <View style={styles.actionContent}>
-                    <ThemedText
-                      style={[styles.actionTitle, { color: colors.text }]}
-                    >
-                      {action.title}
-                    </ThemedText>
-                    <ThemedText
-                      style={[
-                        styles.actionDescription,
-                        { color: colors.textSecondary },
-                      ]}
-                    >
-                      {action.description}
-                    </ThemedText>
-                  </View>
-                  <IconSymbol
-                    name="chevron.right"
-                    size={16}
-                    color={colors.textSecondary}
-                  />
                 </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-          <View style={styles.adSlotPlaceholder}>
-            <AdBanner />
-          </View>
-
-          {/* Features */}
-          <View style={styles.sectionContainer}>
-            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("whyChooseJobPortal")}
-            </ThemedText>
-            <View style={styles.featuresGrid}>
-              {features.map((feature, index) => (
-                <View
-                  key={index}
-                  style={[
-                    styles.featureCard,
-                    {
-                      backgroundColor: colors.surface,
-                      ...createThemeShadow(isDark, 1),
-                    },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.featureIcon,
-                      { backgroundColor: colors.primary + "20" },
-                    ]}
-                  >
+              ) : (
+                <View style={styles.loginPrompt}>
+                  <View style={[styles.loginIconContainer, { backgroundColor: colors.backgroundSecondary }]}>
                     <IconSymbol
-                      name={feature.icon as any}
-                      size={20}
+                      name="person.circle.fill"
+                      size={84}
                       color={colors.primary}
                     />
                   </View>
-                  <View style={styles.featureContent}>
+                  <View style={styles.loginTextContainer}>
                     <ThemedText
-                      style={[styles.featureTitle, { color: colors.text }]}
+                      style={[styles.loginTitle, { color: colors.text }]}
                     >
-                      {feature.title}
+                      {t("signUpToAccess")}
                     </ThemedText>
                     <ThemedText
+                      style={[styles.loginSubtitle, { color: colors.textSecondary }]}
+                      numberOfLines={2}
+                    >
+                      {t("signUpToAccessDescription")}
+                    </ThemedText>
+                  </View>
+                  <View style={styles.loginButtons}>
+                    <TouchableOpacity
+                      style={[styles.loginButton, { backgroundColor: colors.primary }]}
+                      onPress={() => {
+                        analytics.logEvent("button_clicked", {
+                          button_name: "login",
+                          location: "home_user_card",
+                        });
+                        showLoginModal();
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <ThemedText style={styles.loginButtonText}>
+                        {t("login")}
+                      </ThemedText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={[
-                        styles.featureDescription,
-                        { color: colors.textSecondary },
+                        styles.signupButton,
+                        {
+                          backgroundColor: colors.surface,
+                          borderColor: colors.primary,
+                          borderWidth: 1.5,
+                        },
+                      ]}
+                      onPress={() => {
+                        analytics.logEvent("button_clicked", {
+                          button_name: "signup",
+                          location: "home_user_card",
+                        });
+                        showLoginModal();
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <ThemedText
+                        style={[styles.signupButtonText, { color: colors.primary }]}
+                      >
+                        {t("signup")}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </ResponsiveCard>}
+
+            {/* Quick Actions */}
+            <View style={styles.sectionContainer}>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("quickActions")}
+              </ThemedText>
+              <View style={styles.quickActionsGrid}>
+                {quickActions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.actionCard,
+                      {
+                        backgroundColor: colors.surface,
+                        ...createThemeShadow(isDark, 2),
+                      },
+                    ]}
+                    onPress={() => {
+                      analytics.logEvent("quick_action_clicked", {
+                        action_name: action.title,
+                        route: action.route,
+                      });
+                      router.push(action.route as any);
+                    }}
+                  >
+                    <View
+                      style={[
+                        styles.actionIcon,
+                        { backgroundColor: action.color },
                       ]}
                     >
-                      {feature.description}
+                      <IconSymbol
+                        name={action.icon as any}
+                        size={24}
+                        color={colors.textInverse}
+                      />
+                    </View>
+                    <View style={styles.actionContent}>
+                      <ThemedText
+                        style={[styles.actionTitle, { color: colors.text }]}
+                      >
+                        {action.title}
+                      </ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.actionDescription,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {action.description}
+                      </ThemedText>
+                    </View>
+                    <IconSymbol
+                      name="chevron.right"
+                      size={16}
+                      color={colors.textSecondary}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={styles.adSlotPlaceholder}>
+              <AdBanner />
+            </View>
+
+            {/* Features */}
+            <View style={styles.sectionContainer}>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("whyChooseJobPortal")}
+              </ThemedText>
+              <View style={styles.featuresGrid}>
+                {features.map((feature, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.featureCard,
+                      {
+                        backgroundColor: colors.surface,
+                        ...createThemeShadow(isDark, 1),
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.featureIcon,
+                        { backgroundColor: colors.primary + "20" },
+                      ]}
+                    >
+                      <IconSymbol
+                        name={feature.icon as any}
+                        size={20}
+                        color={colors.primary}
+                      />
+                    </View>
+                    <View style={styles.featureContent}>
+                      <ThemedText
+                        style={[styles.featureTitle, { color: colors.text }]}
+                      >
+                        {feature.title}
+                      </ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.featureDescription,
+                          { color: colors.textSecondary },
+                        ]}
+                      >
+                        {feature.description}
+                      </ThemedText>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Stats */}
+            <View style={styles.sectionContainer}>
+              <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("platformStatistics")}
+              </ThemedText>
+              <View style={styles.statsContainer}>
+                <View style={styles.statsRow}>
+                  <View
+                    style={[styles.statCard, { backgroundColor: colors.surface }]}
+                  >
+                    <ThemedText
+                      style={[styles.statNumber, { color: colors.primary }]}
+                    >
+                      {formatCount(platformStats?.activeSpecialists)}
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.statLabel, { color: colors.textSecondary }]}
+                    >
+                      {t("activeSpecialists")}
+                    </ThemedText>
+                  </View>
+                  <View
+                    style={[styles.statCard, { backgroundColor: colors.surface }]}
+                  >
+                    <ThemedText
+                      style={[styles.statNumber, { color: colors.primary }]}
+                    >
+                      {formatCount(platformStats?.completedProjects)}
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.statLabel, { color: colors.textSecondary }]}
+                    >
+                      {t("completedProjects")}
                     </ThemedText>
                   </View>
                 </View>
-              ))}
-            </View>
-          </View>
-
-          {/* Stats */}
-          <View style={styles.sectionContainer}>
-            <ThemedText style={[styles.sectionTitle, { color: colors.text }]}>
-              {t("platformStatistics")}
-            </ThemedText>
-            <View style={styles.statsContainer}>
-              <View style={styles.statsRow}>
-                <View
-                  style={[styles.statCard, { backgroundColor: colors.surface }]}
-                >
-                  <ThemedText
-                    style={[styles.statNumber, { color: colors.primary }]}
+                <View style={styles.statsRow}>
+                  <View
+                    style={[styles.statCard, { backgroundColor: colors.surface }]}
                   >
-                    {formatCount(platformStats?.activeSpecialists)}
-                  </ThemedText>
-                  <ThemedText
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
+                    <ThemedText
+                      style={[styles.statNumber, { color: colors.primary }]}
+                    >
+                      {formatRating(platformStats?.averageRating)}
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.statLabel, { color: colors.textSecondary }]}
+                    >
+                      {t("averageRating")}
+                    </ThemedText>
+                  </View>
+                  <View
+                    style={[styles.statCard, { backgroundColor: colors.surface }]}
                   >
-                    {t("activeSpecialists")}
-                  </ThemedText>
-                </View>
-                <View
-                  style={[styles.statCard, { backgroundColor: colors.surface }]}
-                >
-                  <ThemedText
-                    style={[styles.statNumber, { color: colors.primary }]}
-                  >
-                    {formatCount(platformStats?.completedProjects)}
-                  </ThemedText>
-                  <ThemedText
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    {t("completedProjects")}
-                  </ThemedText>
-                </View>
-              </View>
-              <View style={styles.statsRow}>
-                <View
-                  style={[styles.statCard, { backgroundColor: colors.surface }]}
-                >
-                  <ThemedText
-                    style={[styles.statNumber, { color: colors.primary }]}
-                  >
-                    {formatRating(platformStats?.averageRating)}
-                  </ThemedText>
-                  <ThemedText
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    {t("averageRating")}
-                  </ThemedText>
-                </View>
-                <View
-                  style={[styles.statCard, { backgroundColor: colors.surface }]}
-                >
-                  <ThemedText
-                    style={[styles.statNumber, { color: colors.primary }]}
-                  >
-                    {supportAvailability}
-                  </ThemedText>
-                  <ThemedText
-                    style={[styles.statLabel, { color: colors.textSecondary }]}
-                  >
-                    {t("supportAvailable")}
-                  </ThemedText>
+                    <ThemedText
+                      style={[styles.statNumber, { color: colors.primary }]}
+                    >
+                      {supportAvailability}
+                    </ThemedText>
+                    <ThemedText
+                      style={[styles.statLabel, { color: colors.textSecondary }]}
+                    >
+                      {t("supportAvailable")}
+                    </ThemedText>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </ResponsiveContainer>
     </Layout>
   );
 }

@@ -25,6 +25,7 @@ import { formatTimestamp } from "@/utils/dateFormatting";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -226,26 +227,29 @@ export default function NotificationsScreen() {
   if (notifications.length === 0) {
     return (
       <Layout header={header}>
-        <View
-          style={[
-            styles.emptyContainer,
-            { backgroundColor: colors.background },
-          ]}
-        >
-          <IconSymbol name="bell" size={48} color={colors.tabIconDefault} />
-          <Text style={[styles.emptyText, { color: colors.text }]}>
-            {t("noNotifications")}
-          </Text>
-          <Text style={[styles.emptySubtext, { color: colors.tabIconDefault }]}>
-            {t("noNotificationsDesc")}
-          </Text>
-        </View>
+        <ResponsiveContainer>
+          <View
+            style={[
+              styles.emptyContainer,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <IconSymbol name="bell" size={48} color={colors.tabIconDefault} />
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              {t("noNotifications")}
+            </Text>
+            <Text style={[styles.emptySubtext, { color: colors.tabIconDefault }]}>
+              {t("noNotificationsDesc")}
+            </Text>
+          </View>
+        </ResponsiveContainer>
       </Layout>
     );
   }
 
   return (
     <Layout header={header}>
+      <ResponsiveContainer scrollable={false}>
       {notifications.length > 0 && (
         <View style={styles.markAllContainer}>
           <TouchableOpacity
@@ -271,12 +275,14 @@ export default function NotificationsScreen() {
       )}
 
       <FlatList
+        style={{ flex: 1, marginBottom: 80 }}
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContainer}
       />
+      </ResponsiveContainer>
     </Layout>
   );
 }

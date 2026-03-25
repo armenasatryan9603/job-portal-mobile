@@ -1,16 +1,6 @@
 import React, { memo, useCallback, useMemo, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  Modal,
-  Image,
-  Pressable,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Image, Pressable, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -61,6 +51,7 @@ export const AddMemberModal = memo(
     const effectiveDefaultRole = defaultRole || "member";
     const { isDark } = useTheme();
     const { t } = useTranslation();
+    const isDesktopWeb = useIsWeb();
     const colors = ThemeColors[isDark ? "dark" : "light"];
     const [selectedMembers, setSelectedMembers] = useState<Array<{ userId: number; role?: string }>>([]);
     const [addingMembers, setAddingMembers] = useState(false);
@@ -270,7 +261,7 @@ export const AddMemberModal = memo(
       <>
         <Modal
           visible={visible}
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           presentationStyle="pageSheet"
           onRequestClose={handleClose}
           onShow={() => {

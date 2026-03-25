@@ -1,6 +1,6 @@
 import * as WebBrowser from "expo-web-browser";
 
-import { ActivityIndicator, Linking, Modal, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, StyleSheet, Text, View, Modal } from "react-native";
 import { BorderRadius, Shadows, Spacing } from "@/constants/styles";
 import React, { useRef, useState } from "react";
 

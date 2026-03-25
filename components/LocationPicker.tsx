@@ -1,20 +1,13 @@
 import * as Location from "expo-location";
 
-import {
-  Alert,
-  Modal,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "./ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MapViewComponent } from "./MapView";
+import { MapViewComponent } from "./MapView/MapView";
 import { ThemeColors } from "@/constants/styles";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -41,6 +34,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
 }) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colors = ThemeColors[isDark ? "dark" : "light"];
   const [location, setLocation] = useState<{
     latitude: number;
@@ -141,7 +135,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
@@ -288,7 +282,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
       {/* Map View Modal */}
       <Modal
         visible={showMap}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         presentationStyle="fullScreen"
         onRequestClose={() => setShowMap(false)}
       >

@@ -1,17 +1,11 @@
+import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
 import { ThemeColors, Typography } from "@/constants/styles";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MapViewComponent } from "@/components/MapView";
-import { Modal } from "react-native";
+import { MapViewComponent } from "@/components/MapView/MapView";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface BasicInformationFormProps {
@@ -48,6 +42,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
   titlePlaceholder,
 }) => {
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const [mapVisible, setMapVisible] = useState(false);
@@ -179,7 +174,7 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
       {/* Map Modal */}
       <Modal
         visible={mapVisible}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         presentationStyle="fullScreen"
         onRequestClose={() => setMapVisible(false)}
       >

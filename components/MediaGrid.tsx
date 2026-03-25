@@ -1,10 +1,4 @@
-import {
-  Modal,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { StyleSheet, TouchableOpacity, View, useWindowDimensions, Modal } from "react-native";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";

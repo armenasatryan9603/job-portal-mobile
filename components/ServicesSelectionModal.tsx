@@ -1,14 +1,6 @@
-import {
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
 
+import { useIsWeb } from "@/utils/isWeb";
 import { Button } from "./ui/button";
 import { Category } from "@/categories/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -42,6 +34,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
   onToggleService,
 }) => {
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const filteredServices = availableServices.filter(
     (service) =>
       service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -51,7 +44,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >

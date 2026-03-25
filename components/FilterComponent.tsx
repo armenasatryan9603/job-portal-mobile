@@ -1,17 +1,4 @@
-import {
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Modal,
-  PanResponder,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Animated, Dimensions, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
 

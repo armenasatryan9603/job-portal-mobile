@@ -1,4 +1,5 @@
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import CheckInModalSkeleton, {
@@ -69,6 +70,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
 
+  const isDesktopWeb = useIsWeb();
   const [availableDays, setAvailableDays] = useState<AvailableDay[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [workDuration, setWorkDuration] = useState<number | null>(null);
@@ -451,7 +453,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >

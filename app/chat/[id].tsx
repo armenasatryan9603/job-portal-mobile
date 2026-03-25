@@ -34,6 +34,7 @@ import { useConversations } from "@/contexts/ConversationsContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/contexts/TranslationContext";
 import RatingService from "@/categories/RatingService";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -1319,26 +1320,30 @@ export default function ChatDetailScreen() {
 
   if (loading) {
     return (
-      <Layout header={header} showFooterTabs={false}>
-        <ChatSkeleton header={header} />
+      <Layout header={header} showMainTabs={false}>
+        <ResponsiveContainer>
+          <ChatSkeleton header={header} />
+        </ResponsiveContainer>
       </Layout>
     );
   }
 
   if (error || !conversation) {
     return (
-      <Layout header={header} showFooterTabs={false}>
-        <View style={[styles.container, styles.centerContent]}>
-          <Text style={[styles.errorText, { color: colors.text }]}>
-            {error || t("chatNotFound")}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryButton, { backgroundColor: colors.primary }]}
-            onPress={() => loadConversation(false)}
-          >
-            <Text style={styles.retryButtonText}>{t("retry")}</Text>
-          </TouchableOpacity>
-        </View>
+      <Layout header={header} showMainTabs={false}>
+        <ResponsiveContainer>
+          <View style={[styles.container, styles.centerContent]}>
+            <Text style={[styles.errorText, { color: colors.text }]}>
+              {error || t("chatNotFound")}
+            </Text>
+            <TouchableOpacity
+              style={[styles.retryButton, { backgroundColor: colors.primary }]}
+              onPress={() => loadConversation(false)}
+            >
+              <Text style={styles.retryButtonText}>{t("retry")}</Text>
+            </TouchableOpacity>
+          </View>
+        </ResponsiveContainer>
       </Layout>
     );
   }
@@ -1361,372 +1366,373 @@ export default function ChatDetailScreen() {
   ];
 
   return (
-    <Layout header={header} showFooterTabs={false}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={keyboardBehavior}
-        keyboardVerticalOffset={keyboardVerticalOffset}
-        enabled={isIOS}
-      >
-        {/* Order Reference Card with Action Buttons */}
-        {conversation?.Order && (
-          <View
-            style={[
-              styles.orderCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
-            {/* Order Info Section - Clickable */}
-            <TouchableOpacity
-              onPress={handleViewOrder}
-              activeOpacity={0.7}
-              style={styles.orderCardHeader}
-            >
-              <View style={styles.orderCardLeft}>
-                <IconSymbol name="doc.text" size={20} color={colors.primary} />
-                <View style={styles.orderCardInfo}>
-                  <Text
-                    style={[styles.orderCardTitle, { color: colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {conversation.Order.title || t("order")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.orderCardSubtitle,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {t("viewOrderDetails")}
-                  </Text>
-                </View>
-              </View>
-              <IconSymbol
-                name="chevron.right"
-                size={16}
-                color={colors.tabIconDefault}
-              />
-            </TouchableOpacity>
-
-            {/* Action Buttons - Only show for client and if conversation is not closed */}
-            {isClient() && !isConversationClosed() && (
-              <>
-                <View
-                  style={[
-                    styles.orderCardDivider,
-                    { backgroundColor: colors.border },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.orderCardActions,
-                    {
-                      paddingBottom: ["open", "in_progress"].includes(
-                        conversation?.Order?.status
-                      )
-                        ? 10
-                        : 0,
-                    },
-                  ]}
-                >
-                  {/* Show Reject/Choose buttons for open orders */}
-                  {conversation?.Order?.status === "open" && (
-                    <>
-                      <TouchableOpacity
-                        style={[
-                          styles.orderActionButton,
-                          styles.orderRejectButton,
-                          { borderColor: colors.danger },
-                          actionLoading && styles.disabledButton,
-                        ]}
-                        onPress={handleReject}
-                        disabled={actionLoading}
-                      >
-                        <IconSymbol name="xmark" size={14} color={colors.danger} />
-                        <Text
-                          style={[
-                            styles.orderActionButtonText,
-                            { color: colors.danger },
-                          ]}
-                        >
-                          {t("reject")}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.orderActionButton,
-                          styles.orderApproveButton,
-                          { backgroundColor: colors.primary },
-                          actionLoading && styles.disabledButton,
-                        ]}
-                        onPress={handleChoose}
-                        disabled={actionLoading}
-                      >
-                        <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
-                        <Text
-                          style={[
-                            styles.orderActionButtonText,
-                            { color: colors.textInverse },
-                          ]}
-                        >
-                          {t("choose")}
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-
-                  {/* Show Complete/Cancel buttons for in_progress orders */}
-                  {conversation?.Order?.status === "in_progress" && (
-                    <>
-                      <TouchableOpacity
-                        style={[
-                          styles.orderActionButton,
-                          styles.orderRejectButton,
-                          { borderColor: colors.danger },
-                          actionLoading && styles.disabledButton,
-                        ]}
-                        onPress={handleCancel}
-                        disabled={actionLoading}
-                      >
-                        <IconSymbol name="xmark" size={14} color={colors.danger} />
-                        <Text
-                          style={[
-                            styles.orderActionButtonText,
-                            { color: colors.danger },
-                          ]}
-                        >
-                          {t("cancel")}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={[
-                          styles.orderActionButton,
-                          styles.orderApproveButton,
-                          { backgroundColor: colors.primary },
-                          actionLoading && styles.disabledButton,
-                        ]}
-                        onPress={handleComplete}
-                        disabled={actionLoading}
-                      >
-                        <IconSymbol
-                          name="checkmark.circle"
-                          size={14}
-                          color={colors.textInverse}
-                        />
-                        <Text
-                          style={[
-                            styles.orderActionButtonText,
-                            { color: colors.textInverse },
-                          ]}
-                        >
-                          {t("complete")}
-                        </Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
-              </>
-            )}
-          </View>
-        )}
-
-        {/* Messages List */}
-        <View style={{ flex: 1 }}>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item, index) => {
-              // Use ID if available, otherwise fallback to index
-              // This prevents duplicate key errors
-              return item.id ? `msg-${item.id}` : `msg-${index}`;
-            }}
-            style={styles.messagesList}
-            contentContainerStyle={styles.messagesContent}
-            showsVerticalScrollIndicator={false}
-            onContentSizeChange={() => {
-              flatListRef.current?.scrollToEnd({ animated: false });
-            }}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            ListFooterComponent={
-              typingUsers.size > 0 ? (
-                <TypingIndicator
-                  typingUsers={typingUsers}
-                  conversation={conversation}
-                  colors={colors}
-                />
-              ) : null
-            }
-          />
-        </View>
-
-        {/* Conversation Status - Show when closed or removed */}
-        {(isConversationClosed() || conversation?.status === "removed") && (
-          <View
-            style={[
-              styles.statusContainer,
-              {
-                backgroundColor: colors.background,
-                borderTopColor: colors.border,
-                paddingBottom: 30,
-              },
-            ]}
-          >
-            <View style={styles.statusMessage}>
-              <IconSymbol
-                name={
-                  conversation?.status === "removed"
-                    ? "trash.fill"
-                    : conversation?.status === "completed"
-                    ? "checkmark.circle.fill"
-                    : "xmark.circle.fill"
-                }
-                size={20}
-                color={
-                  conversation?.status === "removed"
-                    ? colors.danger
-                    : conversation?.status === "completed"
-                    ? colors.primary
-                    : colors.danger
-                }
-              />
-              <Text style={[styles.statusText, { color: colors.text }]}>
-                {conversation?.status === "removed"
-                  ? t("conversationDeleted")
-                  : conversation?.status === "completed"
-                  ? t("conversationCompleted")
-                  : t("conversationClosed")}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Review Button - Show for all participants when conversation is closed */}
-        {!loading &&
-          conversation &&
-          isConversationClosed() &&
-          feedbackCheckComplete &&
-          !feedbackSubmitted &&
-          !hasExistingFeedback && (
+    <Layout header={header} showMainTabs={false}>
+      <ResponsiveContainer scrollable={false}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={keyboardBehavior}
+          keyboardVerticalOffset={keyboardVerticalOffset}
+          enabled={isIOS}
+        >
+          {/* Order Reference Card with Action Buttons */}
+          {conversation?.Order && (
             <View
               style={[
-                styles.reviewContainer,
+                styles.orderCard,
                 {
-                  backgroundColor: colors.background,
-                  paddingBottom: Platform.OS === "android" ? 20 : 8,
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
                 },
               ]}
             >
+              {/* Order Info Section - Clickable */}
               <TouchableOpacity
-                style={[
-                  styles.reviewButton,
-                  { backgroundColor: colors.primary },
-                ]}
-                onPress={() => {
-                  const actionType =
-                    conversation?.status === "completed"
-                      ? "complete"
-                      : "cancel";
-                  setPendingAction(actionType);
-                  setFeedbackDialogVisible(true);
-                }}
+                onPress={handleViewOrder}
+                activeOpacity={0.7}
+                style={styles.orderCardHeader}
               >
-                <IconSymbol name="star.fill" size={20} color={colors.textInverse} />
-                <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
+                <View style={styles.orderCardLeft}>
+                  <IconSymbol name="doc.text" size={20} color={colors.primary} />
+                  <View style={styles.orderCardInfo}>
+                    <Text
+                      style={[styles.orderCardTitle, { color: colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {conversation.Order.title || t("order")}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.orderCardSubtitle,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("viewOrderDetails")}
+                    </Text>
+                  </View>
+                </View>
+                <IconSymbol
+                  name="chevron.right"
+                  size={16}
+                  color={colors.tabIconDefault}
+                />
               </TouchableOpacity>
+
+              {/* Action Buttons - Only show for client and if conversation is not closed */}
+              {isClient() && !isConversationClosed() && (
+                <>
+                  <View
+                    style={[
+                      styles.orderCardDivider,
+                      { backgroundColor: colors.border },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.orderCardActions,
+                      {
+                        paddingBottom: ["open", "in_progress"].includes(
+                          conversation?.Order?.status
+                        )
+                          ? 10
+                          : 0,
+                      },
+                    ]}
+                  >
+                    {/* Show Reject/Choose buttons for open orders */}
+                    {conversation?.Order?.status === "open" && (
+                      <>
+                        <TouchableOpacity
+                          style={[
+                            styles.orderActionButton,
+                            styles.orderRejectButton,
+                            { borderColor: colors.danger },
+                            actionLoading && styles.disabledButton,
+                          ]}
+                          onPress={handleReject}
+                          disabled={actionLoading}
+                        >
+                          <IconSymbol name="xmark" size={14} color={colors.danger} />
+                          <Text
+                            style={[
+                              styles.orderActionButtonText,
+                              { color: colors.danger },
+                            ]}
+                          >
+                            {t("reject")}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.orderActionButton,
+                            styles.orderApproveButton,
+                            { backgroundColor: colors.primary },
+                            actionLoading && styles.disabledButton,
+                          ]}
+                          onPress={handleChoose}
+                          disabled={actionLoading}
+                        >
+                          <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
+                          <Text
+                            style={[
+                              styles.orderActionButtonText,
+                              { color: colors.textInverse },
+                            ]}
+                          >
+                            {t("choose")}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+
+                    {/* Show Complete/Cancel buttons for in_progress orders */}
+                    {conversation?.Order?.status === "in_progress" && (
+                      <>
+                        <TouchableOpacity
+                          style={[
+                            styles.orderActionButton,
+                            styles.orderRejectButton,
+                            { borderColor: colors.danger },
+                            actionLoading && styles.disabledButton,
+                          ]}
+                          onPress={handleCancel}
+                          disabled={actionLoading}
+                        >
+                          <IconSymbol name="xmark" size={14} color={colors.danger} />
+                          <Text
+                            style={[
+                              styles.orderActionButtonText,
+                              { color: colors.danger },
+                            ]}
+                          >
+                            {t("cancel")}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={[
+                            styles.orderActionButton,
+                            styles.orderApproveButton,
+                            { backgroundColor: colors.primary },
+                            actionLoading && styles.disabledButton,
+                          ]}
+                          onPress={handleComplete}
+                          disabled={actionLoading}
+                        >
+                          <IconSymbol
+                            name="checkmark.circle"
+                            size={14}
+                            color={colors.textInverse}
+                          />
+                          <Text
+                            style={[
+                              styles.orderActionButtonText,
+                              { color: colors.textInverse },
+                            ]}
+                          >
+                            {t("complete")}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+                </>
+              )}
             </View>
           )}
 
-        {/* Message Input - Only show if conversation is active, not removed, and user is active participant */}
-        {canSendMessages() && (
-          <View style={inputContainerStyle}>
+          {/* Messages List */}
+          <View style={{ flex: 1 }}>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item, index) => {
+                // Use ID if available, otherwise fallback to index
+                // This prevents duplicate key errors
+                return item.id ? `msg-${item.id}` : `msg-${index}`;
+              }}
+              style={styles.messagesList}
+              contentContainerStyle={styles.messagesContent}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={() => {
+                flatListRef.current?.scrollToEnd({ animated: false });
+              }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              ListFooterComponent={
+                typingUsers.size > 0 ? (
+                  <TypingIndicator
+                    typingUsers={typingUsers}
+                    conversation={conversation}
+                    colors={colors}
+                  />
+                ) : null
+              }
+            />
+          </View>
+
+          {/* Conversation Status - Show when closed or removed */}
+          {(isConversationClosed() || conversation?.status === "removed") && (
             <View
               style={[
-                styles.inputWrapper,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                styles.statusContainer,
+                {
+                  backgroundColor: colors.background,
+                  borderTopColor: colors.border,
+                  paddingBottom: 30,
+                },
               ]}
             >
-              <TouchableOpacity
-                style={styles.emojiButton}
-                onPress={() => {
-                  Keyboard.dismiss();
-                  setEmojiPickerVisible(true);
-                }}
-              >
-                <Text style={styles.emojiIcon}>😊</Text>
-              </TouchableOpacity>
-              <TextInput
-                style={[styles.textInput, { color: colors.text }]}
-                placeholder={t("typeMessage")}
-                placeholderTextColor={colors.tabIconDefault}
-                value={newMessage}
-                onChangeText={handleTyping}
-                multiline
-                maxLength={500}
-                textAlignVertical="top"
-                scrollEnabled={false}
-                returnKeyType="send"
-                onSubmitEditing={handleSendMessage}
-                blurOnSubmit={false}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.sendButton,
-                  {
-                    backgroundColor: newMessage.trim()
+              <View style={styles.statusMessage}>
+                <IconSymbol
+                  name={
+                    conversation?.status === "removed"
+                      ? "trash.fill"
+                      : conversation?.status === "completed"
+                      ? "checkmark.circle.fill"
+                      : "xmark.circle.fill"
+                  }
+                  size={20}
+                  color={
+                    conversation?.status === "removed"
+                      ? colors.danger
+                      : conversation?.status === "completed"
                       ? colors.primary
-                      : colors.border,
+                      : colors.danger
+                  }
+                />
+                <Text style={[styles.statusText, { color: colors.text }]}>
+                  {conversation?.status === "removed"
+                    ? t("conversationDeleted")
+                    : conversation?.status === "completed"
+                    ? t("conversationCompleted")
+                    : t("conversationClosed")}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Review Button - Show for all participants when conversation is closed */}
+          {!loading &&
+            conversation &&
+            isConversationClosed() &&
+            feedbackCheckComplete &&
+            !feedbackSubmitted &&
+            !hasExistingFeedback && (
+              <View
+                style={[
+                  styles.reviewContainer,
+                  {
+                    backgroundColor: colors.background,
+                    paddingBottom: Platform.OS === "android" ? 20 : 8,
                   },
                 ]}
-                onPress={handleSendMessage}
-                disabled={!newMessage.trim()}
               >
-                <IconSymbol
-                  name="arrow.up"
-                  size={20}
-                  color={newMessage.trim() ? colors.textInverse : colors.tabIconDefault}
-                />
-              </TouchableOpacity>
-            </View>
-            {newMessage.length > 400 && (
-              <Text
+                <TouchableOpacity
+                  style={[
+                    styles.reviewButton,
+                    { backgroundColor: colors.primary },
+                  ]}
+                  onPress={() => {
+                    const actionType =
+                      conversation?.status === "completed"
+                        ? "complete"
+                        : "cancel";
+                    setPendingAction(actionType);
+                    setFeedbackDialogVisible(true);
+                  }}
+                >
+                  <IconSymbol name="star.fill" size={20} color={colors.textInverse} />
+                  <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+          {/* Message Input - Only show if conversation is active, not removed, and user is active participant */}
+          {canSendMessages() && (
+            <View style={inputContainerStyle}>
+              <View
                 style={[
-                  styles.characterCount,
-                  { color: colors.tabIconDefault },
-                  newMessage.length > 480 && { color: colors.danger },
+                  styles.inputWrapper,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
                 ]}
               >
-                {newMessage.length}/500 {t("charactersRemaining")}
-              </Text>
-            )}
-          </View>
-        )}
+                <TouchableOpacity
+                  style={styles.emojiButton}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setEmojiPickerVisible(true);
+                  }}
+                >
+                  <Text style={styles.emojiIcon}>😊</Text>
+                </TouchableOpacity>
+                <TextInput
+                  style={[styles.textInput, { color: colors.text }]}
+                  placeholder={t("typeMessage")}
+                  placeholderTextColor={colors.tabIconDefault}
+                  value={newMessage}
+                  onChangeText={handleTyping}
+                  multiline
+                  maxLength={500}
+                  textAlignVertical="top"
+                  scrollEnabled={false}
+                  returnKeyType="send"
+                  onSubmitEditing={handleSendMessage}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.sendButton,
+                    {
+                      backgroundColor: newMessage.trim()
+                        ? colors.primary
+                        : colors.border,
+                    },
+                  ]}
+                  onPress={handleSendMessage}
+                  disabled={!newMessage.trim()}
+                >
+                  <IconSymbol
+                    name="arrow.up"
+                    size={20}
+                    color={newMessage.trim() ? colors.textInverse : colors.tabIconDefault}
+                  />
+                </TouchableOpacity>
+              </View>
+              {newMessage.length > 400 && (
+                <Text
+                  style={[
+                    styles.characterCount,
+                    { color: colors.tabIconDefault },
+                    newMessage.length > 480 && { color: colors.danger },
+                  ]}
+                >
+                  {newMessage.length}/500 {t("charactersRemaining")}
+                </Text>
+              )}
+            </View>
+          )}
 
-        {/* Feedback Dialog */}
-        <FeedbackDialog
-          visible={feedbackDialogVisible}
-          onClose={handleFeedbackClose}
-          onSubmit={handleFeedbackSubmit}
-          title={t("reviewTitle")}
-          subtitle={t("reviewSubtitle")}
-          loading={feedbackLoading}
-        />
+          {/* Feedback Dialog */}
+          <FeedbackDialog
+            visible={feedbackDialogVisible}
+            onClose={handleFeedbackClose}
+            onSubmit={handleFeedbackSubmit}
+            title={t("reviewTitle")}
+            subtitle={t("reviewSubtitle")}
+            loading={feedbackLoading}
+          />
 
-        {/* Emoji Picker */}
-        <EmojiPicker
-          visible={emojiPickerVisible}
-          onClose={() => setEmojiPickerVisible(false)}
-          onEmojiSelect={(emoji) => {
-            setNewMessage((prev) => prev + emoji);
-          }}
-        />
-      </KeyboardAvoidingView>
+          {/* Emoji Picker */}
+          <EmojiPicker
+            visible={emojiPickerVisible}
+            onClose={() => setEmojiPickerVisible(false)}
+            onEmojiSelect={(emoji) => {
+              setNewMessage((prev) => prev + emoji);
+            }}
+          />
+        </KeyboardAvoidingView>
+      </ResponsiveContainer>
     </Layout>
   );
 }
@@ -1976,6 +1982,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   textInput: {
+    outlineColor: 'transparent',
     flex: 1,
     fontSize: 15,
     maxHeight: 100,

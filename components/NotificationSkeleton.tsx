@@ -3,6 +3,7 @@ import { View, StyleSheet, Animated } from "react-native";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { Layout } from "@/components/Layout";
+import { ResponsiveContainer } from "./ResponsiveContainer";
 
 interface NotificationSkeletonProps {
   header: React.ReactNode;
@@ -124,6 +125,7 @@ export const NotificationSkeleton: React.FC<NotificationSkeletonProps> = ({
 
   return (
     <Layout header={header}>
+      <ResponsiveContainer>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.listContainer}>
           {Array.from({ length: itemCount }).map((_, index) => (
@@ -131,6 +133,7 @@ export const NotificationSkeleton: React.FC<NotificationSkeletonProps> = ({
           ))}
         </View>
       </View>
+      </ResponsiveContainer>
     </Layout>
   );
 };

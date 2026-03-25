@@ -1,19 +1,11 @@
-import {
-  Modal,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from "react-native";
+import { Modal, StyleProp, StyleSheet, Text, TextStyle, TouchableOpacity, View, ViewStyle } from "react-native";
 import React, { useState } from "react";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MapViewComponent } from "@/components/MapView";
+import { MapViewComponent } from "@/components/MapView/MapView";
 import { ThemeColors } from "@/constants/styles";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
+import { useIsWeb } from "@/utils/isWeb";
 
 type ThemeColor = (typeof ThemeColors)[keyof typeof ThemeColors];
 
@@ -63,6 +55,7 @@ export function LocationWithMap({
   underlineOnEnabled = true,
 }: LocationWithMapProps) {
   const [showMapModal, setShowMapModal] = useState(false);
+  const isDesktopWeb = useIsWeb();
 
   const displayLocation = locationString || "";
   const locationCoordinates = parseLocationCoordinates(displayLocation);
@@ -120,7 +113,7 @@ export function LocationWithMap({
       {locationCoordinates && (
         <Modal
           visible={showMapModal}
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           presentationStyle="fullScreen"
           onRequestClose={() => setShowMapModal(false)}
         >

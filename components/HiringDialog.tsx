@@ -1,19 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, ScrollView, Keyboard, KeyboardAvoidingView, Platform, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -46,6 +33,7 @@ export function HiringDialog({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollView>(null);
   const textInputRef = useRef<TextInput>(null);
@@ -146,7 +134,7 @@ export function HiringDialog({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
     >

@@ -19,6 +19,7 @@ import { formatTimestamp } from "@/utils/dateFormatting";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 interface NotificationDetail {
   id: string;
@@ -206,6 +207,7 @@ export default function NotificationDetailScreen() {
 
   return (
     <Layout header={header}>
+      <ResponsiveContainer>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.contentWrapper}>
           <View style={styles.notificationHeader}>
@@ -300,6 +302,7 @@ export default function NotificationDetailScreen() {
           </View>
         </View>
       </ScrollView>
+      </ResponsiveContainer>
     </Layout>
   );
 }

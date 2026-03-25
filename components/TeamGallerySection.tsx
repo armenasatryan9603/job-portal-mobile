@@ -1,20 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 
-import {
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  Image,
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { PortfolioItem, apiService } from "@/categories/api";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
@@ -41,6 +28,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
   isTeamLead,
 }) => {
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { user } = useAuth();
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -313,7 +301,7 @@ export const TeamGallerySection: React.FC<TeamGallerySectionProps> = ({
       <Modal
         visible={editingItem !== null}
         transparent
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => setEditingItem(null)}
       >
         <View style={styles.modalOverlay}>

@@ -1,13 +1,6 @@
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useState } from "react";
 
 import { IconSymbol } from "./ui/icon-symbol";
@@ -116,6 +109,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
   onSelect,
   onClose,
 }) => {
+  const isDesktopWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const [searchQuery, setSearchQuery] = useState("");
@@ -138,7 +132,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType={isDesktopWeb ? 'fade' : 'slide'}
       transparent={true}
       onRequestClose={onClose}
     >

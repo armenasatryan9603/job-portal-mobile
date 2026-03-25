@@ -1,18 +1,5 @@
 import React, { useState } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  Keyboard,
-  KeyboardAvoidingView,
-  ScrollView,
-  Platform,
-} from "react-native";
+import { View, Text, TextInput, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Platform, Modal } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";

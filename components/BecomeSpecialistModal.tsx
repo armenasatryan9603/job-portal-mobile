@@ -1,12 +1,4 @@
-import {
-  Alert,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
 import { BorderRadius, Shadows, ThemeColors } from "@/constants/styles";
 import React, { useState } from "react";
 

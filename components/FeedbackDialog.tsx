@@ -1,18 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Pressable,
-  TextInput,
-  StyleSheet,
-  Alert,
-  ScrollView,
-  ActivityIndicator,
-  Keyboard,
-} from "react-native";
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Pressable, TextInput, StyleSheet, Alert, ScrollView, ActivityIndicator, Keyboard, Modal } from "react-native";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";

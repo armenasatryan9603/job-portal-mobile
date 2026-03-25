@@ -1,12 +1,12 @@
 // IMPORTANT: Background message handler must be imported FIRST
-// This registers the handler before the app starts
-import "./background-message-handler";
+// This registers the handler before the app starts (native only; web stub in lib/)
+import "@/lib/background-message-handler";
 import "react-native-reanimated";
 
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";
 
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import {
   DarkTheme,
   DefaultTheme,
@@ -149,6 +149,10 @@ function AppContent() {
   // Handle Firebase notifications when app is opened from terminated/background state
   useEffect(() => {
     if (!messaging) return;
+
+    if (Platform.OS === 'web') {
+      return;
+    }
 
     messaging()
       .getInitialNotification()

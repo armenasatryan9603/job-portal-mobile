@@ -119,7 +119,7 @@ export const ComponentSizes = {
   // Card dimensions
   card: {
     minHeight: 80,
-    maxWidth: 600,
+    maxWidth: 900,
   },
 } as const;
 

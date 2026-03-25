@@ -1,16 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  Image,
-  ActivityIndicator,
-  Alert,
-  Modal,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Image, ActivityIndicator, Alert, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, Shadows } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -301,6 +291,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const colors = ThemeColors[colorScheme ?? "light"];
 
   // State
@@ -769,7 +760,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
       {!hideSearchAndAdd && (
         <Modal
           visible={showAddPeerModal}
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           presentationStyle="pageSheet"
           onRequestClose={() => {
             setShowAddPeerModal(false);

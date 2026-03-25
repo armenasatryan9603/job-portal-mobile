@@ -413,7 +413,7 @@ class NotificationService {
       await this.handleNotification(remoteMessage);
     });
 
-    // Note: Background message handler is registered in app/background-message-handler.ts
+    // Note: Background message handler is registered in lib/background-message-handler.native.ts
     // It must be at the top level, not inside a class
 
     // Handle notification taps when app is in background
@@ -739,7 +739,7 @@ class NotificationService {
 
   private handleNotificationTap(remoteMessage: RemoteMessage): void {
     // Navigation is handled by expo-notifications response listener in _layout.tsx
-    // When Firebase notifications are displayed via expo-notifications (in background-message-handler.ts),
+    // When Firebase notifications are displayed via expo-notifications (in lib/background-message-handler.native.ts),
     // tapping them will automatically trigger the response listener
     // This method is kept for logging purposes only
     console.log(

@@ -1,14 +1,6 @@
 import React, { memo, useCallback, useMemo, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -44,6 +36,7 @@ export const AttachOrderModal = memo(
   }: AttachOrderModalProps) => {
     const { isDark } = useTheme();
     const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
     const colors = ThemeColors[isDark ? "dark" : "light"];
     const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
     const [attachingOrders, setAttachingOrders] = useState(false);
@@ -138,7 +131,7 @@ export const AttachOrderModal = memo(
     return (
       <Modal
         visible={visible}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         presentationStyle="pageSheet"
         onRequestClose={handleClose}
         onShow={() => {

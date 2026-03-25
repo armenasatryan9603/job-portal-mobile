@@ -13,6 +13,7 @@ import React from "react";
 import { router } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useNavigation } from "@/contexts/NavigationContext";
+import { useIsWeb } from "@/utils/isWeb";
 
 interface HeaderProps {
   title?: string;
@@ -49,6 +50,11 @@ export const Header: React.FC<HeaderProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
   const bgColor = backgroundColor || colors.background;
   const { toggleSidebar } = useNavigation();
+  const isDesktopWeb = useIsWeb();
+
+  if (isDesktopWeb) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>

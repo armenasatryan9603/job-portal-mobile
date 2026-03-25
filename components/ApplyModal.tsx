@@ -1,28 +1,17 @@
-import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  Keyboard,
-  Switch,
-  Platform,
-} from "react-native";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Spacing, ThemeColors } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { ActivityIndicator, Alert, Keyboard, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { Order, apiService } from "@/categories/api";
-import { getLocationDisplay } from "@/utils/countryExtraction";
-import { useTranslation } from "@/contexts/TranslationContext";
+import React, { useEffect, useState } from "react";
+import { Spacing, ThemeColors } from "@/constants/styles";
+
+import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PeerSelector } from "./PeerSelector";
-import { useAuth } from "@/contexts/AuthContext";
 import { PriceCurrency } from "./PriceCurrency";
+import { ResponsiveContainer } from "./ResponsiveContainer";
+import { getLocationDisplay } from "@/utils/countryExtraction";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useIsWeb } from "@/utils/isWeb";
 
 interface ApplyModalProps {
   visible: boolean;
@@ -48,6 +37,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isDesktopWeb = useIsWeb();
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState("");
   const [questionAnswers, setQuestionAnswers] = useState<{
@@ -180,336 +170,338 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
 
   return (
     <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+    visible={visible}
+    animationType={isDesktopWeb ? 'fade' : 'slide'}
+    presentationStyle="pageSheet"
+    onRequestClose={handleClose}
     >
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-            <IconSymbol name="xmark" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {t("applyToOrder")}
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
+      <ResponsiveContainer>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+              <IconSymbol name="xmark" size={24} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.text }]}>
+              {t("applyToOrder")}
+            </Text>
+            <View style={styles.placeholder} />
+          </View>
 
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView
-            style={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.orderInfo}>
-              <Text style={[styles.orderTitle, { color: colors.text }]}>
-                {order.title}
-              </Text>
-              <Text
-                style={[
-                  styles.orderDescription,
-                  { color: colors.tabIconDefault },
-                ]}
-              >
-                {order.description}
-              </Text>
-              <View style={styles.orderDetails}>
-                <View style={styles.detailRow}>
-                  <IconSymbol
-                    name="dollarsign.circle.fill"
-                    size={16}
-                    color={colors.tint}
-                  />
-                  <PriceCurrency
-                    price={order.budget}
-                    currency={order.currency}
-                    rateUnit={order.rateUnit}
-                    showOriginal={false}
-                    style={{ ...styles.detailText, color: colors.text }}
-                  />
-                </View>
-                {getLocationDisplay(order.location) && (
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              style={styles.content}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.orderInfo}>
+                <Text style={[styles.orderTitle, { color: colors.text }]}>
+                  {order.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.orderDescription,
+                    { color: colors.tabIconDefault },
+                  ]}
+                >
+                  {order.description}
+                </Text>
+                <View style={styles.orderDetails}>
                   <View style={styles.detailRow}>
                     <IconSymbol
-                      name="location.fill"
+                      name="dollarsign.circle.fill"
                       size={16}
                       color={colors.tint}
                     />
-                    <Text style={[styles.detailText, { color: colors.text }]}>
-                      {getLocationDisplay(order.location)}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              {hasActiveSubscription && (
-                <View
-                  style={[
-                    styles.subscriptionBadge,
-                    { backgroundColor: colors.primary + "20" },
-                  ]}
-                >
-                  <IconSymbol
-                    name="checkmark.circle.fill"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text
-                    style={[
-                      styles.subscriptionBadgeText,
-                      { color: colors.primary },
-                    ]}
-                  >
-                    {t("unlimitedApplicationsWithSubscription") ||
-                      "Unlimited applications with your active subscription"}
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Peer Selection Section */}
-            <View style={styles.peerSection}>
-              <View style={styles.peerToggleRow}>
-                <View style={styles.peerToggleInfo}>
-                  <Text
-                    style={[styles.peerToggleLabel, { color: colors.text }]}
-                  >
-                    {t("applyWithPeers")}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.peerToggleDescription,
-                      { color: colors.tabIconDefault },
-                    ]}
-                  >
-                    {t("applyWithPeersDescription")}
-                  </Text>
-                </View>
-                <Switch
-                  value={applyWithPeers}
-                  onValueChange={setApplyWithPeers}
-                  trackColor={{
-                    false:
-                      Platform.OS === "ios" ? colors.border : colors.border,
-                    true:
-                      Platform.OS === "ios"
-                        ? colors.primary + "80"
-                        : colors.primary + "40",
-                  }}
-                  thumbColor={
-                    Platform.OS === "ios" ? "#FFFFFF" : colors.primary
-                  }
-                  ios_backgroundColor={colors.border}
-                />
-              </View>
-              {applyWithPeers && (
-                <PeerSelector
-                  selectedPeerIds={selectedPeerIds}
-                  onPeersChange={(peerIds) => {
-                    // If individual peers are selected, clear team selection
-                    if (peerIds.length > 0 && selectedTeamId) {
-                      setSelectedTeamId(undefined);
-                    }
-                    setSelectedPeerIds(peerIds);
-                  }}
-                  maxPeers={5}
-                  currentUserId={user?.id}
-                  onTeamSelect={(teamId) => {
-                    // If team is selected, clear individual peer selections
-                    if (teamId) {
-                      setSelectedPeerIds([]);
-                    }
-                    setSelectedTeamId(teamId);
-                  }}
-                  selectedTeamId={selectedTeamId}
-                  hideSearchAndAdd={true}
-                />
-              )}
-            </View>
-
-            {/* Questions Section */}
-            {order?.questions && order.questions.length > 0 && (
-              <View style={styles.questionsSection}>
-                <Text style={[styles.questionsLabel, { color: colors.text }]}>
-                  {t("pleaseAnswerQuestions") ||
-                    "Please answer the following questions"}
-                </Text>
-                {order.questions
-                  .sort((a, b) => a.order - b.order)
-                  .map((question) => (
-                    <View key={question.id} style={styles.questionItem}>
-                      <Text
-                        style={[styles.questionText, { color: colors.text }]}
-                      >
-                        {question.question}
-                      </Text>
-                      <TextInput
-                        style={[
-                          styles.questionInput,
-                          {
-                            backgroundColor: colors.background,
-                            borderColor: questionErrors[question.id]
-                              ? colors.errorVariant
-                              : colors.border,
-                            color: colors.text,
-                          },
-                        ]}
-                        placeholder={t("enterYourAnswer")}
-                        placeholderTextColor={colors.tabIconDefault}
-                        value={questionAnswers[question.id] || ""}
-                        onChangeText={(text) => {
-                          setQuestionAnswers((prev) => ({
-                            ...prev,
-                            [question.id]: text,
-                          }));
-                          // Clear error when user starts typing
-                          if (questionErrors[question.id]) {
-                            setQuestionErrors((prev) => {
-                              const newErrors = { ...prev };
-                              delete newErrors[question.id];
-                              return newErrors;
-                            });
-                          }
-                        }}
-                        multiline
-                        numberOfLines={3}
-                        textAlignVertical="top"
-                      />
-                      {questionErrors[question.id] && (
-                        <Text style={[styles.errorText, { color: colors.errorVariant }]}>
-                          {questionErrors[question.id]}
-                        </Text>
-                      )}
-                    </View>
-                  ))}
-              </View>
-            )}
-
-            <View style={styles.messageSection}>
-              <Text style={[styles.messageLabel, { color: colors.text }]}>
-                {t("messageToClient")}
-              </Text>
-              <TextInput
-                style={[
-                  styles.messageInput,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: messageError ? colors.errorVariant : colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                placeholder={t("writeMessageToClient")}
-                placeholderTextColor={colors.tabIconDefault}
-                value={message}
-                onChangeText={handleMessageChange}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-              {messageError && (
-                <Text style={[styles.errorText, { color: colors.errorVariant }]}>
-                  {messageError}
-                </Text>
-              )}
-            </View>
-
-            {!hasActiveSubscription && order.creditCost && (
-              <View style={styles.creditInfo}>
-                <View style={styles.creditRow}>
-                  <IconSymbol
-                    name="dollarsign.circle.fill"
-                    size={16}
-                    color={colors.tint}
-                  />
-                  <View style={styles.creditTextContainer}>
-                    <Text style={[styles.creditLabel, { color: colors.text }]}>
-                      {t("applicationCost")}:{" "}
-                    </Text>
                     <PriceCurrency
-                      price={order.creditCost}
+                      price={order.budget}
                       currency={order.currency}
+                      rateUnit={order.rateUnit}
                       showOriginal={false}
-                      showRateUnit={false}
-                      convertCurrency={true}
-                      style={{ ...styles.creditText, color: colors.text }}
+                      style={{ ...styles.detailText, color: colors.text }}
                     />
                   </View>
-                </View>
-                {order.refundPercentage !== null &&
-                  order.refundPercentage !== undefined &&
-                  order.creditCost && (
-                    <View style={styles.creditRow}>
+                  {getLocationDisplay(order.location) && (
+                    <View style={styles.detailRow}>
                       <IconSymbol
-                        name="arrow.counterclockwise.circle.fill"
+                        name="location.fill"
                         size={16}
                         color={colors.tint}
                       />
-                      <View style={styles.creditTextContainer}>
-                        <Text
-                          style={[styles.creditLabel, { color: colors.text }]}
-                        >
-                          {t("refundIfNotSelected")}:{" "}
-                        </Text>
-                        <PriceCurrency
-                          price={
-                            (order.creditCost * order.refundPercentage) / 100
-                          }
-                          currency={order.currency}
-                          showOriginal={false}
-                          showRateUnit={false}
-                          convertCurrency={true}
-                          style={{ ...styles.creditText, color: colors.text }}
-                        />
-                      </View>
+                      <Text style={[styles.detailText, { color: colors.text }]}>
+                        {getLocationDisplay(order.location)}
+                      </Text>
                     </View>
                   )}
-              </View>
-            )}
-
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.border }]}
-                onPress={handleClose}
-                disabled={loading}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                  {t("cancel")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  { backgroundColor: colors.tint },
-                  loading && styles.submitButtonDisabled,
-                ]}
-                onPress={handleSubmit}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
-                ) : (
-                  <>
+                </View>
+                {hasActiveSubscription && (
+                  <View
+                    style={[
+                      styles.subscriptionBadge,
+                      { backgroundColor: colors.primary + "20" },
+                    ]}
+                  >
                     <IconSymbol
-                      name="paperplane.fill"
+                      name="checkmark.circle.fill"
                       size={16}
-                      color={colors.textInverse}
+                      color={colors.primary}
                     />
                     <Text
                       style={[
-                        styles.submitButtonText,
-                        { color: colors.textInverse },
+                        styles.subscriptionBadgeText,
+                        { color: colors.primary },
                       ]}
                     >
-                      {t("submitApplication")}
+                      {t("unlimitedApplicationsWithSubscription") ||
+                        "Unlimited applications with your active subscription"}
                     </Text>
-                  </>
+                  </View>
                 )}
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </View>
+              </View>
+
+              {/* Peer Selection Section */}
+              <View style={styles.peerSection}>
+                <View style={styles.peerToggleRow}>
+                  <View style={styles.peerToggleInfo}>
+                    <Text
+                      style={[styles.peerToggleLabel, { color: colors.text }]}
+                    >
+                      {t("applyWithPeers")}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.peerToggleDescription,
+                        { color: colors.tabIconDefault },
+                      ]}
+                    >
+                      {t("applyWithPeersDescription")}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={applyWithPeers}
+                    onValueChange={setApplyWithPeers}
+                    trackColor={{
+                      false:
+                        Platform.OS === "ios" ? colors.border : colors.border,
+                      true:
+                        Platform.OS === "ios"
+                          ? colors.primary + "80"
+                          : colors.primary + "40",
+                    }}
+                    thumbColor={
+                      Platform.OS === "ios" ? "#FFFFFF" : colors.primary
+                    }
+                    ios_backgroundColor={colors.border}
+                  />
+                </View>
+                {applyWithPeers && (
+                  <PeerSelector
+                    selectedPeerIds={selectedPeerIds}
+                    onPeersChange={(peerIds) => {
+                      // If individual peers are selected, clear team selection
+                      if (peerIds.length > 0 && selectedTeamId) {
+                        setSelectedTeamId(undefined);
+                      }
+                      setSelectedPeerIds(peerIds);
+                    }}
+                    maxPeers={5}
+                    currentUserId={user?.id}
+                    onTeamSelect={(teamId) => {
+                      // If team is selected, clear individual peer selections
+                      if (teamId) {
+                        setSelectedPeerIds([]);
+                      }
+                      setSelectedTeamId(teamId);
+                    }}
+                    selectedTeamId={selectedTeamId}
+                    hideSearchAndAdd={true}
+                  />
+                )}
+              </View>
+
+              {/* Questions Section */}
+              {order?.questions && order.questions.length > 0 && (
+                <View style={styles.questionsSection}>
+                  <Text style={[styles.questionsLabel, { color: colors.text }]}>
+                    {t("pleaseAnswerQuestions") ||
+                      "Please answer the following questions"}
+                  </Text>
+                  {order.questions
+                    .sort((a, b) => a.order - b.order)
+                    .map((question) => (
+                      <View key={question.id} style={styles.questionItem}>
+                        <Text
+                          style={[styles.questionText, { color: colors.text }]}
+                        >
+                          {question.question}
+                        </Text>
+                        <TextInput
+                          style={[
+                            styles.questionInput,
+                            {
+                              backgroundColor: colors.background,
+                              borderColor: questionErrors[question.id]
+                                ? colors.errorVariant
+                                : colors.border,
+                              color: colors.text,
+                            },
+                          ]}
+                          placeholder={t("enterYourAnswer")}
+                          placeholderTextColor={colors.tabIconDefault}
+                          value={questionAnswers[question.id] || ""}
+                          onChangeText={(text) => {
+                            setQuestionAnswers((prev) => ({
+                              ...prev,
+                              [question.id]: text,
+                            }));
+                            // Clear error when user starts typing
+                            if (questionErrors[question.id]) {
+                              setQuestionErrors((prev) => {
+                                const newErrors = { ...prev };
+                                delete newErrors[question.id];
+                                return newErrors;
+                              });
+                            }
+                          }}
+                          multiline
+                          numberOfLines={3}
+                          textAlignVertical="top"
+                        />
+                        {questionErrors[question.id] && (
+                          <Text style={[styles.errorText, { color: colors.errorVariant }]}>
+                            {questionErrors[question.id]}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                </View>
+              )}
+
+              <View style={styles.messageSection}>
+                <Text style={[styles.messageLabel, { color: colors.text }]}>
+                  {t("messageToClient")}
+                </Text>
+                <TextInput
+                  style={[
+                    styles.messageInput,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: messageError ? colors.errorVariant : colors.border,
+                      color: colors.text,
+                    },
+                  ]}
+                  placeholder={t("writeMessageToClient")}
+                  placeholderTextColor={colors.tabIconDefault}
+                  value={message}
+                  onChangeText={handleMessageChange}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                {messageError && (
+                  <Text style={[styles.errorText, { color: colors.errorVariant }]}>
+                    {messageError}
+                  </Text>
+                )}
+              </View>
+
+              {!hasActiveSubscription && order.creditCost && (
+                <View style={styles.creditInfo}>
+                  <View style={styles.creditRow}>
+                    <IconSymbol
+                      name="dollarsign.circle.fill"
+                      size={16}
+                      color={colors.tint}
+                    />
+                    <View style={styles.creditTextContainer}>
+                      <Text style={[styles.creditLabel, { color: colors.text }]}>
+                        {t("applicationCost")}:{" "}
+                      </Text>
+                      <PriceCurrency
+                        price={order.creditCost}
+                        currency={order.currency}
+                        showOriginal={false}
+                        showRateUnit={false}
+                        convertCurrency={true}
+                        style={{ ...styles.creditText, color: colors.text }}
+                      />
+                    </View>
+                  </View>
+                  {order.refundPercentage !== null &&
+                    order.refundPercentage !== undefined &&
+                    order.creditCost && (
+                      <View style={styles.creditRow}>
+                        <IconSymbol
+                          name="arrow.counterclockwise.circle.fill"
+                          size={16}
+                          color={colors.tint}
+                        />
+                        <View style={styles.creditTextContainer}>
+                          <Text
+                            style={[styles.creditLabel, { color: colors.text }]}
+                          >
+                            {t("refundIfNotSelected")}:{" "}
+                          </Text>
+                          <PriceCurrency
+                            price={
+                              (order.creditCost * order.refundPercentage) / 100
+                            }
+                            currency={order.currency}
+                            showOriginal={false}
+                            showRateUnit={false}
+                            convertCurrency={true}
+                            style={{ ...styles.creditText, color: colors.text }}
+                          />
+                        </View>
+                      </View>
+                    )}
+                </View>
+              )}
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.cancelButton, { borderColor: colors.border }]}
+                  onPress={handleClose}
+                  disabled={loading}
+                >
+                  <Text style={[styles.cancelButtonText, { color: colors.text }]}>
+                    {t("cancel")}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.submitButton,
+                    { backgroundColor: colors.tint },
+                    loading && styles.submitButtonDisabled,
+                  ]}
+                  onPress={handleSubmit}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator size="small" color={colors.textInverse} />
+                  ) : (
+                    <>
+                      <IconSymbol
+                        name="paperplane.fill"
+                        size={16}
+                        color={colors.textInverse}
+                      />
+                      <Text
+                        style={[
+                          styles.submitButtonText,
+                          { color: colors.textInverse },
+                        ]}
+                      >
+                        {t("submitApplication")}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </View>
+      </ResponsiveContainer>
     </Modal>
   );
 };

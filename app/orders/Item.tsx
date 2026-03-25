@@ -1,14 +1,4 @@
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-} from "react-native";
+import { ActivityIndicator, Alert, Modal, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 import { Order, apiService } from "@/categories/api";
 import React, { useState } from "react";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
@@ -19,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CheckInModal } from "@/components/CheckInModal";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Image } from "expo-image";
-import { MapViewComponent } from "@/components/MapView";
+import { MapViewComponent } from "@/components/MapView/MapView";
 import { PriceCurrency } from "@/components/PriceCurrency";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { getLocationDisplay } from "@/utils/countryExtraction";
@@ -27,6 +17,7 @@ import { markOrderAsViewed } from "@/utils/viewedOrdersStorage";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -64,6 +55,7 @@ const OrderItem = ({
 }: OrderItemProps) => {
   const { isDark } = useTheme();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { language } = useLanguage();
   const { user } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
@@ -566,7 +558,7 @@ const OrderItem = ({
       {locationCoordinates && (
         <Modal
           visible={showMapModal}
-          animationType="slide"
+          animationType={isDesktopWeb ? 'fade' : 'slide'}
           presentationStyle="fullScreen"
           onRequestClose={() => setShowMapModal(false)}
         >

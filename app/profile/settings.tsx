@@ -1,17 +1,5 @@
-import {
-  ActivityIndicator,
-  Alert,
-  LayoutAnimation,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, LayoutAnimation, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, UIManager, View, Modal } from "react-native";
+import { useIsWeb } from "@/utils/isWeb";
 import React, { useEffect, useState } from "react";
 import {
   ResponsiveCard,
@@ -50,6 +38,7 @@ export default function ProfileSettingsScreen() {
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
+  const isDesktopWeb = useIsWeb();
   const { user, logout, isAuthenticated } = useAuth();
   const { showLoginModal } = useModal();
 
@@ -727,7 +716,7 @@ export default function ProfileSettingsScreen() {
       <Modal
         visible={showLanguageModal}
         transparent={true}
-        animationType="slide"
+        animationType={isDesktopWeb ? 'fade' : 'slide'}
         onRequestClose={() => setShowLanguageModal(false)}
       >
         <View style={styles.modalOverlay}>

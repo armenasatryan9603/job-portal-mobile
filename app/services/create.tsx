@@ -1,14 +1,4 @@
-import {
-  Alert,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {

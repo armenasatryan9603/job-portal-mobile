@@ -1,5 +1,14 @@
 import { RelativePathString, router } from "expo-router";
-import React, { createContext, ReactNode, useContext, useState } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { Platform } from "react-native";
+
+import { isWeb, useIsWeb } from "@/utils/isWeb";
 
 interface NavigationContextType {
   // Sidebar state
@@ -35,7 +44,14 @@ interface NavigationProviderProps {
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   children,
 }) => {
-  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const wideWeb = useIsWeb();
+  // Desktop-width web: sidebar column open by default. Native / narrow web: drawer closed.
+  const [sidebarVisible, setSidebarVisible] = useState(() => isWeb());
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    setSidebarVisible(wideWeb);
+  }, [wideWeb]);
 
   const openSidebar = () => {
     setSidebarVisible(true);
