@@ -1,4 +1,4 @@
-import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -19,6 +19,7 @@ import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { LOCATION_COUNTRY_SEPARATOR } from "@/utils/countryExtraction";
 import { Layout } from "@/components/Layout";
 import { MediaUploader } from "@/components/MediaUploader";
 import { Order } from "@/categories/api";
@@ -26,7 +27,6 @@ import { ServiceCreateSkeleton } from "@/components/ServiceCreateSkeleton";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
 import { apiService } from "@/categories/api";
 import { parseLocationCoordinates } from "@/utils/locationParsing";
-import { LOCATION_COUNTRY_SEPARATOR } from "@/utils/countryExtraction";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -792,7 +792,7 @@ export default function CreateMarketScreen() {
 
   return (
     <Layout header={header}>
-      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 100 }}>
+      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 85 }}>
         <ResponsiveContainer>
           {/* Basic Information */}
           <ResponsiveCard>

@@ -1,12 +1,27 @@
-import { ActivityIndicator, Alert, FlatList, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
-import { Spacing, ThemeColors, Typography } from "@/constants/styles";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Keyboard,
+  KeyboardAvoidingView,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { DaySchedule, WeeklySchedule } from "@/components/WeeklySchedulePicker";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import { Spacing, ThemeColors } from "@/constants/styles";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -28,6 +43,7 @@ import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUplo
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -140,6 +156,14 @@ export default function MarketDetailScreen() {
   };
 
   // Review handlers
+  const closeReviewModal = useCallback(() => {
+    Keyboard.dismiss();
+    setShowReviewModal(false);
+    setReviewRating(0);
+    setReviewComment("");
+    setEditingReviewId(null);
+  }, []);
+
   const handleOpenReviewModal = () => {
     if (userReview) {
       // Editing existing review
@@ -178,10 +202,7 @@ export default function MarketDetailScreen() {
       }
       queryClient.invalidateQueries({ queryKey: ["market", marketId] });
       queryClient.invalidateQueries({ queryKey: ["market-reviews", marketId] });
-      setShowReviewModal(false);
-      setReviewRating(0);
-      setReviewComment("");
-      setEditingReviewId(null);
+      closeReviewModal();
     } catch (error: any) {
       console.error("Error submitting review:", error);
       Alert.alert(t("error"), error.message || t("failedToSubmitReview"));
@@ -1026,95 +1047,104 @@ export default function MarketDetailScreen() {
         visible={showReviewModal}
         transparent
         animationType={isDesktopWeb ? 'fade' : 'slide'}
-        onRequestClose={() => setShowReviewModal(false)}
+        onRequestClose={closeReviewModal}
       >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[styles.modalContent, { backgroundColor: colors.background }]}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {editingReviewId ? `${t("edit")} ${t("reviews")?.toLowerCase() || t("submitMarketReview")}` : t("submitMarketReview")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  setShowReviewModal(false);
-                  setReviewRating(0);
-                  setReviewComment("");
-                  setEditingReviewId(null);
-                }}
+        <KeyboardAvoidingView
+          style={styles.modalKeyboardRoot}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={Keyboard.dismiss}
+            />
+            <View
+              style={[styles.modalContent, { backgroundColor: colors.background }]}
+            >
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={
+                  Platform.OS === "ios" ? "interactive" : "on-drag"
+                }
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={styles.modalScrollContent}
               >
-                <IconSymbol name="xmark" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.ratingSection}>
-              <Text style={[styles.ratingLabel, { color: colors.text }]}>
-                {t("rating")}
-              </Text>
-              <View style={styles.starsContainer}>
-                {[...Array(5)].map((_, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => setReviewRating(i + 1)}
-                  >
-                    <IconSymbol
-                      name="star.fill"
-                      size={32}
-                      color={i < reviewRating ? colors.rating : colors.border}
-                    />
+                <View style={styles.modalHeader}>
+                  <Text style={[styles.modalTitle, { color: colors.text }]}>
+                    {editingReviewId ? `${t("edit")} ${t("reviews")?.toLowerCase() || t("submitMarketReview")}` : t("submitMarketReview")}
+                  </Text>
+                  <TouchableOpacity onPress={closeReviewModal}>
+                    <IconSymbol name="xmark" size={24} color={colors.text} />
                   </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+                </View>
 
-            <View style={styles.commentSection}>
-              <Text style={[styles.commentLabel, { color: colors.text }]}>
-                {t("comment")} ({t("optional")})
-              </Text>
-              <TextInput
-                style={[
-                  styles.commentInput,
-                  {
-                    backgroundColor: colors.background,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-                value={reviewComment}
-                onChangeText={setReviewComment}
-                placeholder={t("writeYourReview")}
-                placeholderTextColor={colors.tabIconDefault}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
+                <View style={styles.ratingSection}>
+                  <Text style={[styles.ratingLabel, { color: colors.text }]}>
+                    {t("rating")}
+                  </Text>
+                  <View style={styles.starsContainer}>
+                    {[...Array(5)].map((_, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => setReviewRating(i + 1)}
+                      >
+                        <IconSymbol
+                          name="star.fill"
+                          size={32}
+                          color={i < reviewRating ? colors.rating : colors.border}
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
 
-            <View style={styles.modalActions}>
-              <Button
-                variant="outline"
-                title={t("cancel")}
-                onPress={() => {
-                  setShowReviewModal(false);
-                  setReviewRating(0);
-                  setReviewComment("");
-                  setEditingReviewId(null);
-                }}
-                backgroundColor={colors.background}
-                textColor={colors.text}
-              />
-              <Button
-                variant="primary"
-                title={t("submit")}
-                onPress={handleSubmitReview}
-                backgroundColor={colors.primary}
-                textColor={colors.textInverse}
-                disabled={reviewRating === 0}
-              />
+                <View style={styles.commentSection}>
+                  <Text style={[styles.commentLabel, { color: colors.text }]}>
+                    {t("comment")} ({t("optional")})
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.commentInput,
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                    value={reviewComment}
+                    onChangeText={setReviewComment}
+                    placeholder={t("writeYourReview")}
+                    placeholderTextColor={colors.tabIconDefault}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    returnKeyType="default"
+                  />
+                </View>
+
+                <View style={styles.modalActions}>
+                  <Button
+                    variant="outline"
+                    title={t("cancel")}
+                    onPress={closeReviewModal}
+                    backgroundColor={colors.background}
+                    textColor={'#fff'}
+                  />
+                  <Button
+                    variant="primary"
+                    title={t("submit")}
+                    onPress={handleSubmitReview}
+                    backgroundColor={colors.primary}
+                    textColor={'#fff'}
+                    disabled={reviewRating === 0}
+                  />
+                </View>
+              </ScrollView>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       
@@ -1125,7 +1155,7 @@ export default function MarketDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: 100,
+    marginBottom: 85,
   },
   errorContainer: {
     flex: 1,
@@ -1322,6 +1352,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingVertical: 24,
   },
+  modalKeyboardRoot: {
+    flex: 1,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -1330,8 +1363,12 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: "85%",
+    width: "100%",
+  },
+  modalScrollContent: {
     padding: Spacing.card,
-    maxHeight: "80%",
+    paddingBottom: Spacing.xl,
   },
   modalHeader: {
     flexDirection: "row",

@@ -10,6 +10,8 @@ import {
 import {
   Dimensions,
   FlatList,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -122,6 +124,7 @@ export function TopDataSlider({ onEmpty }: TopDataSliderProps) {
   const currentIndexRef = useRef(0);
   const scrollOffsetRef = useRef(0);
   const animationFrameRef = useRef<ReturnType<typeof requestAnimationFrame> | null>(null);
+  const isUserInteractingRef = useRef(false);
 
   const animateToIndex = useCallback((targetIndex: number) => {
     const startOffset = scrollOffsetRef.current;
@@ -235,6 +238,7 @@ export function TopDataSlider({ onEmpty }: TopDataSliderProps) {
     });
 
     const timer = setInterval(() => {
+      if (isUserInteractingRef.current) return;
       const len = loopData.length;
       if (len === 0) return;
 
@@ -253,6 +257,53 @@ export function TopDataSlider({ onEmpty }: TopDataSliderProps) {
     };
   }, [items.length, loopData.length, animateToIndex]);
 
+  const alignScrollToNearestItem = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>, animated: boolean) => {
+      const len = loopData.length;
+      if (len === 0) return;
+      const x = e.nativeEvent.contentOffset.x;
+      const idx = Math.max(0, Math.min(len - 1, Math.round(x / ITEM_WIDTH)));
+      const aligned = idx * ITEM_WIDTH;
+      const needsNudge = Math.abs(x - aligned) > 0.5;
+      if (needsNudge) {
+        flatListRef.current?.scrollToOffset({
+          offset: aligned,
+          animated,
+        });
+      }
+      scrollOffsetRef.current = aligned;
+      currentIndexRef.current = idx;
+    },
+    [loopData.length]
+  );
+
+  const onScrollBeginDrag = useCallback(() => {
+    isUserInteractingRef.current = true;
+    if (animationFrameRef.current != null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, []);
+
+  const onMomentumScrollEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      isUserInteractingRef.current = false;
+      alignScrollToNearestItem(e, true);
+    },
+    [alignScrollToNearestItem]
+  );
+
+  const onScrollEndDrag = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const vx = e.nativeEvent.velocity?.x ?? 0;
+      if (Math.abs(vx) < 0.05) {
+        isUserInteractingRef.current = false;
+        alignScrollToNearestItem(e, true);
+      }
+    },
+    [alignScrollToNearestItem]
+  );
+
   if (isLoading || items.length === 0) return null;
 
   const getItemLayout = (_: unknown, index: number) => ({
@@ -269,10 +320,11 @@ export function TopDataSlider({ onEmpty }: TopDataSliderProps) {
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.listContent}
-      snapToInterval={ITEM_WIDTH}
-      snapToAlignment="center"
       decelerationRate="fast"
       getItemLayout={getItemLayout}
+      onScrollBeginDrag={onScrollBeginDrag}
+      onScrollEndDrag={onScrollEndDrag}
+      onMomentumScrollEnd={onMomentumScrollEnd}
       onScroll={(e) => {
         scrollOffsetRef.current = e.nativeEvent.contentOffset.x;
       }}

@@ -645,8 +645,8 @@ export default function RefillCreditsScreen() {
                               ]}
                             >
                               {card.expiryMonth}/{card.expiryYear}
-                              {card.isDefault && " • " + (t("default") || "Default")}
-                              {!hasBindingId && " • " + (t("saveCardToUse") || "Save card to use")}
+                              {card.isDefault && " • " + (t("default"))}
+                              {!hasBindingId && " • " + (t("saveCardToUse"))}
                             </Text>
                           </View>
                         </View>
@@ -683,38 +683,24 @@ export default function RefillCreditsScreen() {
                 <View style={styles.noCardsHeader}>
                   <IconSymbol name="creditcard.fill" size={18} color={colors.tint} />
                   <Text style={[styles.noCardsSectionTitle, { color: colors.text }]}>
-                    {t("payWithCard") || "Pay with card"}
+                    {t("payWithCard")}
                   </Text>
                 </View>
                 <Text style={[styles.noCardsDescription, { color: colors.tabIconDefault }]}>
-                  {t("selectAmountAndProceed") || "Select an amount below, then tap Refill to enter your card details."}
+                  {t("selectAmountAndProceed")}
                 </Text>
               </View>
             )}
 
             {/* Amount Selection Section */}
             <View style={styles.section}>
-              {/* Currency Selector */}
-              <View
-                style={{
-                  marginBottom: 16,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                }}
-              ></View>
-
-              {/* Preset Amounts Grid */}
-
-              {/* Divider - Only show between preset and custom */}
-
               {/* Custom Amount Input */}
               <View style={styles.customAmountSection}>
                 <View
                   style={[
                     styles.customAmountInputContainer,
                     {
-                      backgroundColor: colors.background,
+                      backgroundColor: colors.surface,
                       borderColor: customAmount ? colors.tint : colors.border,
                     },
                   ]}

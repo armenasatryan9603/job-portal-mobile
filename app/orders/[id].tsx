@@ -1,4 +1,20 @@
-import { ActivityIndicator, Alert, Platform, ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View, useWindowDimensions, Modal } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { useIsWeb } from "@/utils/isWeb";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
@@ -552,6 +568,14 @@ export default function EditOrderScreen() {
   };
 
   // Review handlers for permanent orders
+  const closeReviewModal = useCallback(() => {
+    Keyboard.dismiss();
+    setShowReviewModal(false);
+    setReviewRating(0);
+    setReviewComment("");
+    setEditingReviewId(null);
+  }, []);
+
   const handleOpenReviewModal = () => {
     if (userReview) {
       // Editing existing review
@@ -600,10 +624,7 @@ export default function EditOrderScreen() {
       const orderData = await apiService.getOrderById(order.id);
       setOrder(orderData);
       refetchReviews();
-      setShowReviewModal(false);
-      setReviewRating(0);
-      setReviewComment("");
-      setEditingReviewId(null);
+      closeReviewModal();
     } catch (error: any) {
       console.error("Error submitting review:", error);
       Alert.alert(t("error"), error.message || t("failedToSubmitReview"));
@@ -1897,100 +1918,109 @@ export default function EditOrderScreen() {
           visible={showReviewModal}
           transparent
           animationType={isDesktopWeb ? 'fade' : 'slide'}
-          onRequestClose={() => setShowReviewModal(false)}
+          onRequestClose={closeReviewModal}
         >
-          <View style={styles.reviewModalOverlay}>
-            <View
-              style={[
-                styles.reviewModalContent,
-                { backgroundColor: colors.background },
-              ]}
-            >
-              <View style={styles.reviewModalHeader}>
-                <Text style={[styles.reviewModalTitle, { color: colors.text }]}>
-                  {editingReviewId
-                    ? `${t("edit")} ${t("reviews")?.toLowerCase() || t("submitMarketReview")}`
-                    : t("submitMarketReview")}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setShowReviewModal(false);
-                    setReviewRating(0);
-                    setReviewComment("");
-                    setEditingReviewId(null);
-                  }}
+          <KeyboardAvoidingView
+            style={styles.reviewModalKeyboardRoot}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={0}
+          >
+            <View style={styles.reviewModalOverlay}>
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={Keyboard.dismiss}
+              />
+              <View
+                style={[
+                  styles.reviewModalContent,
+                  { backgroundColor: colors.background },
+                ]}
+              >
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  keyboardDismissMode={
+                    Platform.OS === "ios" ? "interactive" : "on-drag"
+                  }
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  contentContainerStyle={styles.reviewModalScrollContent}
                 >
-                  <IconSymbol name="xmark" size={24} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.reviewRatingSection}>
-                <Text style={[styles.reviewRatingLabel, { color: colors.text }]}>
-                  {t("rating")}
-                </Text>
-                <View style={styles.reviewStarsContainer}>
-                  {[...Array(5)].map((_, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      onPress={() => setReviewRating(i + 1)}
-                    >
-                      <IconSymbol
-                        name="star.fill"
-                        size={32}
-                        color={i < reviewRating ? colors.rating : colors.border}
-                      />
+                  <View style={styles.reviewModalHeader}>
+                    <Text style={[styles.reviewModalTitle, { color: colors.text }]}>
+                      {editingReviewId
+                        ? `${t("edit")} ${t("reviews")?.toLowerCase() || t("submitMarketReview")}`
+                        : t("submitMarketReview")}
+                    </Text>
+                    <TouchableOpacity onPress={closeReviewModal}>
+                      <IconSymbol name="xmark" size={24} color={colors.text} />
                     </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+                  </View>
 
-              <View style={styles.reviewCommentSection}>
-                <Text style={[styles.reviewCommentLabel, { color: colors.text }]}>
-                  {t("comment")} ({t("optional")})
-                </Text>
-                <TextInput
-                  style={[
-                    styles.reviewCommentInput,
-                    {
-                      backgroundColor: colors.background,
-                      borderColor: colors.border,
-                      color: colors.text,
-                    },
-                  ]}
-                  value={reviewComment}
-                  onChangeText={setReviewComment}
-                  placeholder={t("writeYourReview") || t("writeYourFeedback")}
-                  placeholderTextColor={colors.tabIconDefault}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
+                  <View style={styles.reviewRatingSection}>
+                    <Text style={[styles.reviewRatingLabel, { color: colors.text }]}>
+                      {t("rating")}
+                    </Text>
+                    <View style={styles.reviewStarsContainer}>
+                      {[...Array(5)].map((_, i) => (
+                        <TouchableOpacity
+                          key={i}
+                          onPress={() => setReviewRating(i + 1)}
+                        >
+                          <IconSymbol
+                            name="star.fill"
+                            size={32}
+                            color={i < reviewRating ? colors.rating : colors.border}
+                          />
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
 
-              <View style={styles.reviewModalActions}>
-                <Button
-                  variant="outline"
-                  title={t("cancel")}
-                  onPress={() => {
-                    setShowReviewModal(false);
-                    setReviewRating(0);
-                    setReviewComment("");
-                    setEditingReviewId(null);
-                  }}
-                  backgroundColor={colors.background}
-                  textColor={colors.text}
-                />
-                <Button
-                  variant="primary"
-                  title={t("submit")}
-                  onPress={handleSubmitReview}
-                  backgroundColor={colors.primary}
-                  textColor={colors.textInverse}
-                  disabled={reviewRating === 0}
-                />
+                  <View style={styles.reviewCommentSection}>
+                    <Text style={[styles.reviewCommentLabel, { color: colors.text }]}>
+                      {t("comment")} ({t("optional")})
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.reviewCommentInput,
+                        {
+                          backgroundColor: colors.background,
+                          borderColor: colors.border,
+                          color: colors.text,
+                        },
+                      ]}
+                      value={reviewComment}
+                      onChangeText={setReviewComment}
+                      placeholder={t("writeYourReview") || t("writeYourFeedback")}
+                      placeholderTextColor={colors.tabIconDefault}
+                      multiline
+                      numberOfLines={4}
+                      textAlignVertical="top"
+                      blurOnSubmit={false}
+                    />
+                  </View>
+
+                  <View style={styles.reviewModalActions}>
+                    <Button
+                      variant="outline"
+                      title={t("cancel")}
+                      onPress={closeReviewModal}
+                      backgroundColor={colors.background}
+                      textColor={colors.text}
+                    />
+                    <Button
+                      variant="primary"
+                      title={t("submit")}
+                      onPress={handleSubmitReview}
+                      backgroundColor={colors.primary}
+                      textColor={colors.textInverse}
+                      disabled={reviewRating === 0}
+                    />
+                  </View>
+                </ScrollView>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
       )}
     </Layout>
@@ -2397,6 +2427,9 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   // Review Modal Styles
+  reviewModalKeyboardRoot: {
+    flex: 1,
+  },
   reviewModalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -2405,8 +2438,12 @@ const styles = StyleSheet.create({
   reviewModalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    maxHeight: "85%",
+    width: "100%",
+  },
+  reviewModalScrollContent: {
     padding: Spacing.card,
-    maxHeight: "80%",
+    paddingBottom: Spacing.xl,
   },
   reviewModalHeader: {
     flexDirection: "row",

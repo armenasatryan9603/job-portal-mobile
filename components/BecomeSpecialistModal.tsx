@@ -103,7 +103,7 @@ export function BecomeSpecialistModal({
             onPress={handleClose}
             activeOpacity={0.7}
           >
-            <IconSymbol name="xmark" size={18} color={colors.text} />
+            <IconSymbol name="xmark" size={18} color={'#fff'} />
           </TouchableOpacity>
 
           {/* Header with Gradient Background */}

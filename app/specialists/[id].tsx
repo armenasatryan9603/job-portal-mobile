@@ -262,7 +262,7 @@ export default function SpecialistDetailScreen() {
   return (
     <Layout header={header}>
       <ScrollView
-        style={{ flex: 1, marginBottom: 100 }}
+        style={{ flex: 1, marginBottom: 85 }}
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>
