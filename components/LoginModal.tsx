@@ -1,4 +1,4 @@
-import { Alert, InteractionManager, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { Alert, InteractionManager, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import {
   BorderRadius,
   ComponentSizes,
@@ -80,11 +80,17 @@ export function LoginModal({
   }, [visible, hasIncompleteProfile, user]);
 
   const handlePhoneSubmit = async (phone: string) => {
-    setPhoneNumber(phone);
+    // Strip country code if the user typed it in the phone field to prevent duplication
+    let normalizedPhone = phone.trim();
+    if (normalizedPhone.startsWith(countryCode)) {
+      normalizedPhone = normalizedPhone.slice(countryCode.length).trimStart();
+    }
+
+    setPhoneNumber(normalizedPhone);
     setOtpError(null); // Clear any previous errors
 
     try {
-      const success = await sendOTP(phone, countryCode);
+      const success = await sendOTP(normalizedPhone, countryCode);
       if (success) {
         setStep("otp");
       } else {
@@ -409,6 +415,7 @@ export function LoginModal({
             ) : step === "otp" ? (
               <OTPVerification
                 phoneNumber={phoneNumber}
+                countryCode={countryCode}
                 onOTPSubmit={handleOTPSubmit}
                 onResendOTP={handleResendOTP}
                 isLoading={isLoading}
@@ -588,10 +595,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderWidth: 1.5,
     borderRadius: 16,
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
     paddingHorizontal: 4,
     paddingVertical: 4,
-    backgroundColor: "rgba(0, 0, 0, 0.02)",
     minHeight: 56,
   },
   countryCodeButton: {

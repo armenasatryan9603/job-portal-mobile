@@ -15,6 +15,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 interface OTPVerificationProps {
   phoneNumber: string;
+  countryCode?: string;
   onOTPSubmit: (otp: string) => void;
   onResendOTP: () => void;
   isLoading?: boolean;
@@ -24,6 +25,7 @@ interface OTPVerificationProps {
 
 export const OTPVerification: React.FC<OTPVerificationProps> = ({
   phoneNumber,
+  countryCode,
   onOTPSubmit,
   onResendOTP,
   isLoading = false,
@@ -144,15 +146,12 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
   };
 
   const formatPhoneNumber = (phone: string): string => {
-    // Format phone number for display (e.g., +1 (555) 123-4567)
-    const cleaned = phone.replace(/\D/g, "");
-    if (cleaned.length === 11 && cleaned.startsWith("1")) {
-      return `+1 (${cleaned.slice(1, 4)}) ${cleaned.slice(
-        4,
-        7
-      )}-${cleaned.slice(7)}`;
+    if (!countryCode) return phone;
+    // If phone already contains the country code, show as-is
+    if (phone.startsWith("+") || phone.startsWith(countryCode)) {
+      return phone;
     }
-    return phone;
+    return `${countryCode} ${phone}`;
   };
 
   return (

@@ -1,10 +1,11 @@
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import React, { useState } from "react";
 
 import { IconSymbol } from "./ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
+import useTranslation from "@/hooks/useTranslation";
 
 interface Country {
   name: string;
@@ -109,6 +110,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
   onSelect,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const isDesktopWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -127,8 +129,6 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
     onClose();
   };
 
-  const selectedCountry = COUNTRIES.find((c) => c.dialCode === selectedCode);
-
   return (
     <Modal
       visible={visible}
@@ -136,12 +136,15 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
+      <KeyboardAvoidingView
+        style={styles.modalOverlay}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           {/* Header */}
           <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <Text style={[styles.headerTitle, { color: colors.text }]}>
-              Select Country
+              {t("selectCountry")}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <IconSymbol name="xmark" size={24} color={colors.text} />
@@ -217,7 +220,7 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
             })}
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
