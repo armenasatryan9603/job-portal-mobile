@@ -1,0 +1,19 @@
+{
+  "routes": [
+    {
+      "src": "^/support$",
+      "dest": "https://job-portal-iaf5g4xis-armenasatryanpersonal-gmailcoms-projects.vercel.app"
+    },
+    {
+      "src": "^/support/(.*)",
+      "dest": "https://job-portal-iaf5g4xis-armenasatryanpersonal-gmailcoms-projects.vercel.app/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
+  ]
+}

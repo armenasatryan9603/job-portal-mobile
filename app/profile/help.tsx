@@ -44,7 +44,7 @@ export default function ProfileHelpScreen() {
         Linking.openURL("tel:+37477754955");
         break;
       case "website":
-        Linking.openURL("https://www.hotwork.app");
+        Linking.openURL("https://www.hotwork.app/support/");
         break;
       default:
         Alert.alert(t("contactSupport"), t("chooseContactMethod"));
