@@ -1952,7 +1952,7 @@ export default function OrdersScreen() {
     <>
       <Layout header={header}>
         <ResponsiveContainer scrollable={false}>
-        {!isAuthenticated && !guestCountryIso && !isMyOrders && !isMyJobs && !isSavedOrders && (
+        {!isDesktopWeb && !isAuthenticated && !guestCountryIso && !isMyOrders && !isMyJobs && !isSavedOrders && (
           <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
             <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
               {t("setLocationToSeeRelevant")}

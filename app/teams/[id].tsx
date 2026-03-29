@@ -9,17 +9,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import {
-  BorderRadius,
-  Spacing,
-  ThemeColors,
-  Typography,
-} from "@/constants/styles";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ResponsiveCard,
   ResponsiveContainer,
 } from "@/components/ResponsiveContainer";
+import {
+  Spacing,
+  ThemeColors,
+  Typography,
+} from "@/constants/styles";
 import { router, useLocalSearchParams } from "expo-router";
 
 import { AddMemberModal } from "@/components/AddMemberModal";
@@ -600,24 +599,16 @@ export default function TeamDetailScreen() {
                     </View>
                   </View>
 
-                  {!isUserPartOfTeam && (
-                    <TouchableOpacity
-                      style={[
-                        styles.hireButton,
-                        { backgroundColor: colors.primary },
-                      ]}
+                  {/* {!isUserPartOfTeam && ( */}
+                    <Button
+                      variant="primary"
+                      icon="person.badge.plus"
+                      iconSize={14}
+                      title={t("hire")}
+                      style={{ width: 100, marginTop: Spacing.md }}
                       onPress={handleHireTeam}
-                    >
-                      <Text
-                        style={[
-                          styles.hireButtonText,
-                          { color: colors.textInverse },
-                        ]}
-                      >
-                        {t("hire")}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                    />
+                  {/* )} */}
                 </View>
               </View>
             </ImageBackground>
@@ -1038,20 +1029,5 @@ const styles = StyleSheet.create({
   emptyMembersDescription: {
     fontSize: 14,
     textAlign: "center",
-  },
-
-  // Hire Button
-  hireButton: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 12,
-    alignSelf: "flex-start",
-  },
-  hireButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

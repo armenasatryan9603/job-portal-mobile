@@ -24,6 +24,7 @@ import { FloatingSkeleton } from "@/components/FloatingSkeleton";
 import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
 import { Layout } from "@/components/Layout";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { SpecialistItem } from "./specialist-item";
 import { TopTabs } from "@/components/TopTabs";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -31,11 +32,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useInfinitePagination } from "@/hooks/useInfinitePagination";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 export default function SpecialistsScreen() {
   useAnalytics("Specialists");
@@ -50,6 +51,7 @@ export default function SpecialistsScreen() {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { showLoginModal } = useModal();
   const params = useLocalSearchParams<{ tab?: string }>();
+  const isDesktopWeb = useIsWeb();
 
   // Tab state - initialize from URL params
   const [activeTab, setActiveTab] = useState<"individuals" | "teams">(
@@ -574,7 +576,7 @@ export default function SpecialistsScreen() {
   return (
     <Layout header={header}>
       <ResponsiveContainer scrollable={false}>
-      {!isAuthenticated && !guestCountryIso && (
+      {!isDesktopWeb && !isAuthenticated && !guestCountryIso && (
         <View style={[styles.locationBanner, { backgroundColor: colors.tint + "20" }]}>
           <Text style={[styles.locationBannerText, { color: colors.text }]} numberOfLines={2}>
             {t("setLocationToSeeRelevant")}
