@@ -18,25 +18,36 @@ interface WorkSamplesSectionProps {
   colors: ThemeColorsType["light"] | ThemeColorsType["dark"];
   isOwnProfile: boolean;
   portfolio?: PortfolioItem[];
+  /** Override the section heading (defaults to t("workSamples")) */
+  sectionTitle?: string;
+  /** Custom fetcher — when provided, userId-based fetch is skipped */
+  onFetchItems?: () => Promise<PortfolioItem[]>;
+  /** Custom upload handler — receives the picked asset */
+  onUploadItem?: (asset: { uri: string; type: string; name: string }) => Promise<void>;
+  /** Custom delete handler */
+  onDeleteItem?: (item: PortfolioItem) => Promise<void>;
+  /** Custom update handler */
+  onUpdateItem?: (id: number, title?: string, description?: string) => Promise<void>;
 }
 
 const { height } = Dimensions.get("window");
 const GRID_GAP = 8;
-const NUM_COLUMNS = 3;
+const HALF_GAP = GRID_GAP / 2; // 4px — padding on each side of a cell
 
 export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   userId,
   colors,
   isOwnProfile,
   portfolio,
+  sectionTitle,
+  onFetchItems,
+  onUploadItem,
+  onDeleteItem,
+  onUpdateItem,
 }) => {
   const { t } = useTranslation();
   const isDesktopWeb = useIsWeb();
   const { user } = useAuth();
-  const [containerWidth, setContainerWidth] = useState(0);
-  const itemSize = containerWidth > 0
-    ? (containerWidth - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
-    : 0;
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolio || []);
   const [loading, setLoading] = useState(!portfolio);
   const [uploading, setUploading] = useState(false);
@@ -46,21 +57,22 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   const [selectedImage, setSelectedImage] = useState<PortfolioItem | null>(null);
 
   useEffect(() => {
-    // If portfolio is provided as prop, use it directly
     if (portfolio !== undefined) {
       setPortfolioItems(portfolio);
       setLoading(false);
-    } else if (userId) {
-      // Fallback: fetch portfolio if not provided
+    } else if (onFetchItems || userId) {
       loadPortfolio();
     }
   }, [userId, portfolio]);
 
   const loadPortfolio = async () => {
-    if (!userId) return;
     try {
       setLoading(true);
-      const items = await apiService.getPortfolio(userId);
+      const items = onFetchItems
+        ? await onFetchItems()
+        : userId
+          ? await apiService.getPortfolio(userId)
+          : [];
       setPortfolioItems(items);
     } catch (error) {
       console.error("Error loading portfolio:", error);
@@ -111,29 +123,16 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
         setUploading(true);
 
         try {
-          const mediaFile = {
-            uri: asset.uri,
-            fileName: `portfolio_${Date.now()}.jpg`,
-            type: "image" as const,
-            mimeType: "image/jpeg",
-            fileSize: asset.fileSize || 0,
-          };
+          const fileName = `portfolio_${Date.now()}.jpg`;
+          const assetPayload = { uri: asset.uri, type: "image/jpeg", name: fileName };
 
-          await apiService.uploadPortfolioItem(
-            {
-              uri: asset.uri,
-              type: "image/jpeg",
-              name: mediaFile.fileName,
-            },
-            undefined,
-            undefined
-          );
-
-          // Reload portfolio after upload
-          if (userId) {
-            const items = await apiService.getPortfolio(userId);
-            setPortfolioItems(items);
+          if (onUploadItem) {
+            await onUploadItem(assetPayload);
+          } else {
+            await apiService.uploadPortfolioItem(assetPayload, undefined, undefined);
           }
+
+          await loadPortfolio();
         } catch (error: any) {
           console.error("Error uploading portfolio item:", error);
           Alert.alert(t("error"), error.message || t("uploadFailed"));
@@ -157,12 +156,12 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
         style: "destructive",
         onPress: async () => {
           try {
-            await apiService.deletePortfolioItem(item.id);
-            // Reload portfolio after delete
-            if (userId) {
-              const items = await apiService.getPortfolio(userId);
-              setPortfolioItems(items);
+            if (onDeleteItem) {
+              await onDeleteItem(item);
+            } else {
+              await apiService.deletePortfolioItem(item.id);
             }
+            await loadPortfolio();
           } catch (error: any) {
             console.error("Error deleting portfolio item:", error);
             Alert.alert(t("error"), error.message || t("deleteFailed"));
@@ -182,17 +181,17 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
     if (!editingItem) return;
 
     try {
-      await apiService.updatePortfolioItem(
-        editingItem.id,
-        editTitle || undefined,
-        editDescription || undefined
-      );
-      setEditingItem(null);
-      // Reload portfolio after update
-      if (userId) {
-        const items = await apiService.getPortfolio(userId);
-        setPortfolioItems(items);
+      if (onUpdateItem) {
+        await onUpdateItem(editingItem.id, editTitle || undefined, editDescription || undefined);
+      } else {
+        await apiService.updatePortfolioItem(
+          editingItem.id,
+          editTitle || undefined,
+          editDescription || undefined
+        );
       }
+      setEditingItem(null);
+      await loadPortfolio();
     } catch (error: any) {
       console.error("Error updating portfolio item:", error);
       Alert.alert(t("error"), error.message || t("updateFailed"));
@@ -214,7 +213,7 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>
-          {t("workSamples")}
+          {sectionTitle ?? t("workSamples")}
         </Text>
         {isOwnProfile && (
           <TouchableOpacity
@@ -246,19 +245,16 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
           )}
         </View>
       ) : (
-        <View
-          style={styles.grid}
-          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
-        >
+        <View style={styles.grid}>
           {portfolioItems.map((item) => (
-            <View key={item.id} style={[styles.itemContainer, { width: itemSize }]}>
+            <View key={item.id} style={styles.itemContainer}>
               <TouchableOpacity
                 onPress={() => setSelectedImage(item)}
                 activeOpacity={0.8}
               >
                 <Image
                   source={{ uri: item.fileUrl }}
-                  style={[styles.itemImage, { width: itemSize, height: itemSize, backgroundColor: colors.border }]}
+                  style={[styles.itemImage, { backgroundColor: colors.border }]}
                   resizeMode="cover"
                 />
               </TouchableOpacity>
@@ -460,10 +456,18 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: GRID_GAP,
+    marginHorizontal: -HALF_GAP,
   },
-  itemContainer: {},
+  itemContainer: {
+    width: "33.333%",
+    paddingHorizontal: HALF_GAP,
+    paddingBottom: GRID_GAP,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   itemImage: {
+    width: "100%",
+    aspectRatio: 1,
     borderRadius: 8,
     marginBottom: 4,
   },

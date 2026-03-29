@@ -28,8 +28,8 @@ import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
-import { TeamGallerySection } from "@/components/TeamGallerySection";
 import { TeamMemberItem } from "@/components/TeamMemberItem";
+import { WorkSamplesSection } from "@/components/WorkSamplesSection";
 import { apiService } from "@/categories/api";
 import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -802,10 +802,20 @@ export default function TeamDetailScreen() {
           {/* Gallery Section */}
           {teamId && (
             <ResponsiveCard>
-              <TeamGallerySection
-                teamId={teamId}
+              <WorkSamplesSection
                 colors={colors}
-                isTeamLead={isTeamLead}
+                isOwnProfile={isTeamLead}
+                sectionTitle={t("gallery")}
+                onFetchItems={() => apiService.getTeamGallery(teamId)}
+                onUploadItem={async (asset) => {
+                  await apiService.uploadTeamGalleryItem(teamId, asset, undefined, undefined);
+                }}
+                onDeleteItem={async (item) => {
+                  await apiService.deleteTeamGalleryItem(teamId, item.id);
+                }}
+                onUpdateItem={async (id, title, description) => {
+                  await apiService.updateTeamGalleryItem(teamId, id, title, description);
+                }}
               />
             </ResponsiveCard>
           )}
