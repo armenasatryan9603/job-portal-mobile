@@ -833,7 +833,7 @@ export default function ProfileScreen() {
       <ScrollView
         style={{
           flex: 1,
-          marginBottom: 4 * Spacing.xxl,
+          marginBottom: isDesktopWeb ? 0 : 4 * Spacing.xxl,
         }}
         showsVerticalScrollIndicator={false}
       >

@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { Conversation, chatService } from "@/categories/chatService";
 import React, { useEffect, useRef, useState } from "react";
+import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { Spacing, ThemeColors } from "@/constants/styles";
 
 import AnalyticsService from "@/categories/AnalyticsService";
@@ -18,7 +19,6 @@ import { ChatListSkeleton } from "@/components/ChatListSkeleton";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
-import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { formatTimestamp } from "@/utils/dateFormatting";
 import { pusherService } from "@/categories/pusherService";
 import { router } from "expo-router";
@@ -26,6 +26,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useConversations } from "@/contexts/ConversationsContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ChatScreen() {
@@ -198,6 +199,8 @@ export default function ChatScreen() {
         return null;
     }
   };
+
+  const isDesktopWeb = useIsWeb();
 
   const renderConversation = ({ item }: { item: Conversation }) => {
     // Filter out current user from participants
@@ -463,7 +466,7 @@ export default function ChatScreen() {
 
         {/* Conversations List */}
         <FlatList
-          style={{ flex: 1, marginBottom: 80 }}
+          style={{ flex: 1, marginBottom:  isDesktopWeb ? 0 : 80 }}
           data={filteredConversations}
           renderItem={renderConversation}
           keyExtractor={(item) => item.id.toString()}

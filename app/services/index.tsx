@@ -362,122 +362,122 @@ export default function ServicesScreen() {
   return (
     <Layout header={header}>
       <ResponsiveContainer scrollable={false}>
-      <View style={{ backgroundColor: colors.background }}>
-        <Filter
-          searchPlaceholder={t("searchServices")}
-          initialSearchValue={searchQuery}
-          onSearchChange={handleSearchChange}
-          filterSections={filterSections}
-          selectedFilters={selectedFilters}
-          onFilterChange={handleFilterChange}
-          loading={filterLoading}
-          hideModalForLocation={filterModalHiddenForLocation}
-        />
-      </View>
-      {isPaginationInitialLoading ? (
-          <View style={{ flex: 1 }}>
-            <FloatingSkeleton
-              count={6}
-              variant="grid2"
-            />
-          </View>
-      ) : sortedMarkets.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <IconSymbol
-            name="building.2"
-            size={64}
-            color={colors.tabIconDefault}
+        <View style={{ backgroundColor: colors.background }}>
+          <Filter
+            searchPlaceholder={t("searchServices")}
+            initialSearchValue={searchQuery}
+            onSearchChange={handleSearchChange}
+            filterSections={filterSections}
+            selectedFilters={selectedFilters}
+            onFilterChange={handleFilterChange}
+            loading={filterLoading}
+            hideModalForLocation={filterModalHiddenForLocation}
           />
-          <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
-            {t("noMarketsFound")}
-          </Text>
-          {!searchQuery.trim() && !selectedFilters.location && (
-            <TouchableOpacity
-              style={[styles.createButton, { backgroundColor: colors.tint }]}
-              onPress={() => router.push("/services/create")}
-            >
-              <Text style={[styles.createButtonText, { color: colors.background }]}>
-                {t("createMarket")}
-              </Text>
-            </TouchableOpacity>
-          )}
         </View>
-      ) : (
-        <FlatList
-          style={{ top: -8, flex: 1 }}
-          data={sortedMarkets}
-          renderItem={renderMarketItem}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          numColumns={2}
-          contentContainerStyle={styles.listContainer}
-          columnWrapperStyle={styles.row}
-          refreshControl={
-            <RefreshControl
-              refreshing={isLoading && currentPage === 1}
-              onRefresh={handlePaginationRefresh}
-              tintColor={colors.tint}
+        {isPaginationInitialLoading ? (
+            <View style={{ flex: 1 }}>
+              <FloatingSkeleton
+                count={6}
+                variant="grid2"
+              />
+            </View>
+        ) : sortedMarkets.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <IconSymbol
+              name="building.2"
+              size={64}
+              color={colors.tabIconDefault}
             />
-          }
-          {...paginationFlatListProps}
-          ListFooterComponent={
-            isPaginationLoadingMore ? (
-              <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={colors.tint} />
-              </View>
-            ) : null
+            <Text style={[styles.emptyText, { color: colors.tabIconDefault }]}>
+              {t("noMarketsFound")}
+            </Text>
+            {!searchQuery.trim() && !selectedFilters.location && (
+              <TouchableOpacity
+                style={[styles.createButton, { backgroundColor: colors.tint }]}
+                onPress={() => router.push("/services/create")}
+              >
+                <Text style={[styles.createButtonText, { color: colors.background }]}>
+                  {t("createMarket")}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          <FlatList
+            style={{ top: -8, flex: 1 }}
+            data={sortedMarkets}
+            renderItem={renderMarketItem}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            numColumns={2}
+            contentContainerStyle={styles.listContainer}
+            columnWrapperStyle={styles.row}
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading && currentPage === 1}
+                onRefresh={handlePaginationRefresh}
+                tintColor={colors.tint}
+              />
+            }
+            {...paginationFlatListProps}
+            ListFooterComponent={
+              isPaginationLoadingMore ? (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color={colors.tint} />
+                </View>
+              ) : null
+            }
+          />
+        )}
+
+        {/* Floating Action Button - Only show for authenticated users */}
+        {isAuthenticated && (
+          <Button
+            style={[styles.fab, { bottom: 70 + insets.bottom }]}
+            onPress={() => router.push("/services/create")}
+            icon="plus"
+            iconSize={24}
+            title={t("createMarket")}
+            variant="primary"
+          />  
+        )}
+
+        <LocationFilterModal
+          visible={locationFilterVisible}
+          onClose={() => {
+            setLocationFilterVisible(false);
+            // Show filter modal again when location modal closes
+            setFilterModalHiddenForLocation(false);
+          }}
+          onConfirm={(locationData: {
+            latitude: number;
+            longitude: number;
+            address: string;
+            radius: number;
+          }) => {
+            setSelectedFilters((prev) => ({
+              ...prev,
+              location: locationData,
+            }));
+            setLocationFilterVisible(false);
+            // Show filter modal again when location is confirmed
+            setFilterModalHiddenForLocation(false);
+          }}
+          initialLocation={
+            selectedFilters.location &&
+            typeof selectedFilters.location === "object" &&
+            "latitude" in selectedFilters.location &&
+            "longitude" in selectedFilters.location &&
+            "address" in selectedFilters.location &&
+            "radius" in selectedFilters.location
+              ? (selectedFilters.location as {
+                  latitude: number;
+                  longitude: number;
+                  address: string;
+                  radius: number;
+                })
+              : undefined
           }
         />
-      )}
-
-      {/* Floating Action Button - Only show for authenticated users */}
-      {isAuthenticated && (
-        <Button
-          style={[styles.fab, { bottom: 70 + insets.bottom }]}
-          onPress={() => router.push("/services/create")}
-          icon="plus"
-          iconSize={24}
-          title={t("createMarket")}
-          variant="primary"
-        />  
-      )}
-
-      <LocationFilterModal
-        visible={locationFilterVisible}
-        onClose={() => {
-          setLocationFilterVisible(false);
-          // Show filter modal again when location modal closes
-          setFilterModalHiddenForLocation(false);
-        }}
-        onConfirm={(locationData: {
-          latitude: number;
-          longitude: number;
-          address: string;
-          radius: number;
-        }) => {
-          setSelectedFilters((prev) => ({
-            ...prev,
-            location: locationData,
-          }));
-          setLocationFilterVisible(false);
-          // Show filter modal again when location is confirmed
-          setFilterModalHiddenForLocation(false);
-        }}
-        initialLocation={
-          selectedFilters.location &&
-          typeof selectedFilters.location === "object" &&
-          "latitude" in selectedFilters.location &&
-          "longitude" in selectedFilters.location &&
-          "address" in selectedFilters.location &&
-          "radius" in selectedFilters.location
-            ? (selectedFilters.location as {
-                latitude: number;
-                longitude: number;
-                address: string;
-                radius: number;
-              })
-            : undefined
-        }
-      />
       </ResponsiveContainer>
     </Layout>
   );

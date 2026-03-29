@@ -15,7 +15,6 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -52,6 +51,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { useApplyToOrder } from "@/hooks/useApi";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTranslation } from "@/contexts/TranslationContext";
@@ -1811,7 +1811,7 @@ export default function EditOrderScreen() {
   return (
     <Layout header={header}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { marginBottom:  isDesktopWeb ? 0 : 80 }]}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -2030,7 +2030,6 @@ export default function EditOrderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: 80
   },
   scrollContent: {
     paddingBottom: 20,

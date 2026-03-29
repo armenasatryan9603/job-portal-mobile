@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     borderTopWidth: 1,
-    paddingBottom: Platform.OS === "ios" ? 20 : 30,
+    paddingBottom: Platform.OS === "ios" ? 20 : Platform.OS === "web" ? 0 : 30,
   },
   nativeTabsRow: {
     flex: 1,

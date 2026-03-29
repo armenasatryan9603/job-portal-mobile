@@ -392,14 +392,14 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
                 title={t("cancel")}
                 onPress={() => setEditingItem(null)}
                 backgroundColor={colors.background}
-                textColor={colors.text}
+                textColor={'#fff'}
               />
               <Button
                 variant="primary"
                 title={t("save")}
                 onPress={handleSaveEdit}
                 backgroundColor={colors.primary}
-                textColor={colors.textInverse}
+                textColor={'#fff'}
               />
             </View>
           </View>

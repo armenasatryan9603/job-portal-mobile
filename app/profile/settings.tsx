@@ -1,5 +1,4 @@
-import { ActivityIndicator, Alert, LayoutAnimation, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, UIManager, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
+import { ActivityIndicator, Alert, LayoutAnimation, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, UIManager, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import {
   ResponsiveCard,
@@ -20,6 +19,7 @@ import { apiService } from "@/categories/api";
 import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -272,7 +272,7 @@ export default function ProfileSettingsScreen() {
   return (
     <Layout header={header}>
       <ScrollView
-        style={{ marginBottom: 4 * Spacing.xxl }}
+        style={{ marginBottom: isDesktopWeb ? 0 : 4 * Spacing.xxl }}
         showsVerticalScrollIndicator={false}
       >
         <ResponsiveContainer>

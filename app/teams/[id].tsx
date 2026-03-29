@@ -34,6 +34,7 @@ import { apiService } from "@/categories/api";
 import { handleBannerUpload as handleBannerUploadUtil } from "@/utils/bannerUpload";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useModal } from "@/contexts/ModalContext";
 import { useMyOrders } from "@/hooks/useApi";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
@@ -448,6 +449,8 @@ export default function TeamDetailScreen() {
     [team?.name, t, user, unreadNotificationsCount, unreadMessagesCount]
   );
 
+  const isDesktopWeb = useIsWeb();
+
   if (loading) {
     return (
       <Layout header={header}>
@@ -488,7 +491,7 @@ export default function TeamDetailScreen() {
       <ScrollView
         style={{
           flex: 1,
-          marginBottom: 4 * Spacing.xxl,
+          marginBottom:  isDesktopWeb ? 0 : 80,
         }}
         showsVerticalScrollIndicator={false}
       >

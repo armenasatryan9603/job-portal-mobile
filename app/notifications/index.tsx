@@ -21,11 +21,12 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { NotificationSkeleton } from "@/components/NotificationSkeleton";
 import React from "react";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { formatTimestamp } from "@/utils/dateFormatting";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -218,6 +219,8 @@ export default function NotificationsScreen() {
     );
   };
 
+  const isDesktopWeb = useIsWeb();
+
   // Show loading state with skeleton loaders
   if (loading) {
     return <NotificationSkeleton header={header} />;
@@ -275,7 +278,7 @@ export default function NotificationsScreen() {
       )}
 
       <FlatList
-        style={{ flex: 1, marginBottom: 80 }}
+        style={{ flex: 1, marginBottom:  isDesktopWeb ? 0 : 80 }}
         data={notifications}
         renderItem={renderNotification}
         keyExtractor={(item) => item.id}

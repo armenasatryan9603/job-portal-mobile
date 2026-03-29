@@ -1,8 +1,10 @@
+import { Animated, StyleSheet, View } from "react-native";
 import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+
+import { ResponsiveCard } from "@/components/ResponsiveContainer";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { useIsWeb } from "@/utils/isWeb";
 
 interface ChatListSkeletonProps {
   itemCount?: number;
@@ -64,6 +66,8 @@ export const ChatListSkeleton: React.FC<ChatListSkeletonProps> = ({
     />
   );
 
+  const isDesktopWeb = useIsWeb();
+
   // Conversation item skeleton
   const ConversationItemSkeleton = () => (
     <View
@@ -107,7 +111,7 @@ export const ChatListSkeleton: React.FC<ChatListSkeletonProps> = ({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, marginBottom:  isDesktopWeb ? 0 : 80 }]}>
       {/* Search Section Skeleton */}
       <ResponsiveCard padding={0}>
         <View style={styles.searchContainer}>
@@ -134,7 +138,6 @@ export const ChatListSkeleton: React.FC<ChatListSkeletonProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginBottom: 80,
   },
   searchContainer: {
     flexDirection: "row",

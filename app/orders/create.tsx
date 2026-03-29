@@ -1,5 +1,4 @@
-import { ActivityIndicator, Alert, Image, Keyboard, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
+import { ActivityIndicator, Alert, Image, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Category, apiService } from "@/categories/api";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +22,7 @@ import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
 import { BreakOverlapModal } from "@/components/BreakOverlapModal";
 import { Button } from "@/components/ui/button";
 import { CategorySelector } from "@/components/ServiceSelector";
+import { CurrencySelector } from "@/components/CurrencySelector";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { LOCATION_COUNTRY_SEPARATOR } from "@/utils/countryExtraction";
@@ -34,12 +34,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCategories } from "@/hooks/useApi";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useFormPersistence } from "@/hooks/useFormPersistence";
+import { useIsWeb } from "@/utils/isWeb";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { CurrencySelector } from "@/components/CurrencySelector";
 
 // Note: Slot generation removed - clients now book custom time ranges within work hours
 
@@ -2124,7 +2124,7 @@ export default function CreateOrderScreen() {
     <Layout header={header}>
       <ScrollView 
         ref={scrollViewRef} 
-        style={{ flex: 1, marginBottom: 86 }}
+        style={{ flex: 1, marginBottom:  isDesktopWeb ? 0 : 86 }}
         contentContainerStyle={{ 
           paddingBottom: keyboardHeight > 0 ? keyboardHeight + 50 : 0 
         }}

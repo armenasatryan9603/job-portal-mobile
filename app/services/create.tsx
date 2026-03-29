@@ -30,6 +30,7 @@ import { parseLocationCoordinates } from "@/utils/locationParsing";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSpecialistSearch } from "@/hooks/useSpecialistSearch";
@@ -790,9 +791,11 @@ export default function CreateMarketScreen() {
     />
   );
 
+  const isDesktopWeb = useIsWeb();
+
   return (
     <Layout header={header}>
-      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom: 85 }}>
+      <ScrollView ref={scrollViewRef} style={{ flex: 1, marginBottom:  isDesktopWeb ? 0 : 85 }}>
         <ResponsiveContainer>
           {/* Basic Information */}
           <ResponsiveCard>
