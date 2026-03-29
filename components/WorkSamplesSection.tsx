@@ -1,7 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 
-import { ActivityIndicator, Alert, Dimensions, Image, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
+import { ActivityIndicator, Alert, Dimensions, Image, Linking, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { PortfolioItem, apiService } from "@/categories/api";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
@@ -9,6 +8,7 @@ import { ThemeColors, Typography } from "@/constants/styles";
 import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 type ThemeColorsType = typeof ThemeColors;
@@ -20,8 +20,9 @@ interface WorkSamplesSectionProps {
   portfolio?: PortfolioItem[];
 }
 
-const { width, height } = Dimensions.get("window");
-const ITEM_SIZE = (width - 60) / 3; // 3 items per row with padding
+const { height } = Dimensions.get("window");
+const GRID_GAP = 8;
+const NUM_COLUMNS = 3;
 
 export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   userId,
@@ -32,6 +33,10 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
   const { t } = useTranslation();
   const isDesktopWeb = useIsWeb();
   const { user } = useAuth();
+  const [containerWidth, setContainerWidth] = useState(0);
+  const itemSize = containerWidth > 0
+    ? (containerWidth - GRID_GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
+    : 0;
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>(portfolio || []);
   const [loading, setLoading] = useState(!portfolio);
   const [uploading, setUploading] = useState(false);
@@ -241,20 +246,19 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
           )}
         </View>
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.grid}
+        <View
+          style={styles.grid}
+          onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}
         >
           {portfolioItems.map((item) => (
-            <View key={item.id} style={styles.itemContainer}>
+            <View key={item.id} style={[styles.itemContainer, { width: itemSize }]}>
               <TouchableOpacity
                 onPress={() => setSelectedImage(item)}
                 activeOpacity={0.8}
               >
                 <Image
                   source={{ uri: item.fileUrl }}
-                  style={[styles.itemImage, { backgroundColor: colors.border }]}
+                  style={[styles.itemImage, { width: itemSize, height: itemSize, backgroundColor: colors.border }]}
                   resizeMode="cover"
                 />
               </TouchableOpacity>
@@ -290,7 +294,7 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
               )}
             </View>
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {/* Image Zoom Modal */}
@@ -455,17 +459,13 @@ const styles = StyleSheet.create({
   },
   grid: {
     flexDirection: "row",
-    gap: 12,
-    paddingRight: 20,
+    flexWrap: "wrap",
+    gap: GRID_GAP,
   },
-  itemContainer: {
-    width: ITEM_SIZE,
-  },
+  itemContainer: {},
   itemImage: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   itemActions: {
     position: "absolute",

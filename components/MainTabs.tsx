@@ -7,9 +7,9 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
 import { ThemeColors } from "@/constants/styles";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigation } from "@/contexts/NavigationContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useIsWeb } from "@/utils/isWeb";
+import { useNavigation } from "@/contexts/NavigationContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
@@ -122,7 +122,7 @@ export const MainTabs: React.FC<MainTabsProps> = ({
   const actionIconSize = isWeb ? WEB_ACTION_ICON_SIZE : 22;
 
   const rightActions = isAuthenticated && (
-    <View style={[styles.rightActions, isWeb && styles.rightActionsWeb]}>
+    <View style={styles.rightActions}>
       <Pressable style={styles.iconButton} onPress={goNotifications}>
         <IconSymbol name="bell" size={actionIconSize} color={colors.text} />
         {unreadNotificationsCount > 0 && (
@@ -388,11 +388,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexShrink: 0,
     marginLeft: 4,
-  },
-  rightActionsWeb: {
-    alignSelf: "center",
-    marginLeft: 8,
-    gap: 4,
   },
   iconButton: {
     position: "relative",

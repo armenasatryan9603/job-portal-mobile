@@ -10,6 +10,7 @@ import {
 import {
   Dimensions,
   FlatList,
+  Platform,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   StyleSheet,
@@ -27,6 +28,7 @@ import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useModal } from "@/contexts/ModalContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTopData } from "@/hooks/useApi";
+import { useIsWeb } from "@/utils/isWeb";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 // Slot width is less than screen so previous and next cards peek equally on the sides
@@ -59,6 +61,7 @@ function TopDataSliderItem({
   isDark,
 }: TopDataSliderItemProps) {
   const colors = ThemeColors[isDark ? "dark" : "light"];
+  const isWeb = useIsWeb();
 
   return (
     <TouchableOpacity
@@ -76,11 +79,11 @@ function TopDataSliderItem({
       {item.image ? (
         <Image
           source={{ uri: item.image }}
-          style={styles.image}
+          style={[styles.image, { height: Platform.OS === "web" ? 340 : 140 }]}
           contentFit="cover"
         />
       ) : (
-        <View style={[styles.imagePlaceholder, { backgroundColor: colors.backgroundSecondary }]} />
+        <View style={[styles.imagePlaceholder, { backgroundColor: colors.backgroundSecondary, height: Platform.OS === "web" ? 320 : 120 }]} />
       )}
       <View style={styles.cardContent}>
         <View style={styles.titleRow}>
@@ -360,11 +363,9 @@ const styles = StyleSheet.create({
   },
   image: {
     width: "100%",
-    height: 140,
   },
   imagePlaceholder: {
     width: "100%",
-    height: 120,
   },
   cardContent: {
     padding: Spacing.md,

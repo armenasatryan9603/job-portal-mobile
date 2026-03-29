@@ -101,6 +101,20 @@ const MAPPING = {
   // Info icons
   "info.circle.fill": "info",
   "envelope.fill": "email",
+  // Calendar actions
+  "calendar.badge.plus": "event-available",
+  // Tools / categories
+  "wrench.and.screwdriver": "handyman",
+  // Repeat / recurring
+  "repeat.circle.fill": "repeat",
+  // Warning / alert
+  "exclamationmark.circle": "error-outline",
+  "exclamationmark.circle.fill": "error-outline",
+  // Directional circle
+  "arrow.down.circle": "arrow-downward",
+  "arrow.down.circle.fill": "arrow-downward",
+  // People (without .fill)
+  "person.2": "group",
 } as IconMapping;
 
 /**

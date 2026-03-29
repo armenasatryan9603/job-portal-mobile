@@ -17,6 +17,7 @@ import {
 } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ResponsiveCard, ResponsiveContainer, ResponsiveGrid } from "@/components/ResponsiveContainer";
 import { useMyOrders, useProposalsByUser } from "@/hooks/useApi";
 
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +35,8 @@ import { router } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { ResponsiveContainer, ResponsiveGrid } from "@/components/ResponsiveContainer";
 
 interface Application {
   id: number;
@@ -115,6 +116,7 @@ export default function CalendarScreen() {
   useAnalytics("Calendar");
   const { user } = useAuth();
   const { t } = useTranslation();
+  const isWeb = useIsWeb();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
@@ -689,18 +691,8 @@ export default function CalendarScreen() {
             // Data will be refetched automatically via useEffect when dateRange changes
           }}
         />
-
-        {/* Legend */}
-        <View
-          style={[
-            styles.legend,
-            {
-              backgroundColor: (colors as any).surface || colors.background,
-              borderTopColor: colors.border,
-              ...Shadows.sm,
-            },
-          ]}
-        >
+       
+        <ResponsiveCard>
           <Text style={[styles.legendTitle, { color: colors.text }]}>
             {t("status")}
           </Text>
@@ -775,7 +767,7 @@ export default function CalendarScreen() {
               ))
             )}
           </View>
-        </View>
+        </ResponsiveCard>
       </View>
     );
   };
@@ -1471,111 +1463,98 @@ export default function CalendarScreen() {
             }
           }}
           rightComponent={
-            <View style={styles.headerControls}>
+            <View style={styles.viewToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  viewMode === "calendar" && { backgroundColor: colors.tint, ...Shadows.sm },
+                  { borderColor: viewMode === "calendar" ? colors.tint : colors.border, borderWidth: viewMode === "calendar" ? 0 : 1 },
+                ]}
+                onPress={() => { setViewMode("calendar"); setSelectedDate(null); }}
+                activeOpacity={0.7}
+              >
+                <IconSymbol name="calendar" size={18} color={viewMode === "calendar" ? colors.background : colors.tabIconDefault} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.toggleButton,
+                  viewMode === "list" && { backgroundColor: colors.tint, ...Shadows.sm },
+                  { borderColor: viewMode === "list" ? colors.tint : colors.border, borderWidth: viewMode === "list" ? 0 : 1 },
+                ]}
+                onPress={() => setViewMode("list")}
+                activeOpacity={0.7}
+              >
+                <IconSymbol name="list.bullet" size={18} color={viewMode === "list" ? colors.background : colors.tabIconDefault} />
+              </TouchableOpacity>
+            </View>
+          }
+        />
+        <ResponsiveCard marginHorizontal={Spacing.md}>
+          <View style={styles.filterRow}>
+            <View style={styles.dateFilterToggle}>
+              <Button
+                variant={dateFilterMode === "applied" ? "primary" : "outline"}
+                icon="checkmark.circle"
+                iconSize={14}
+                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm }}
+                iconPosition="left"
+                title={t("applied")}
+                onPress={() => { setDateFilterMode("applied"); setSelectedDate(null); }}
+              />
+              <Button
+                variant={dateFilterMode === "scheduled" ? "primary" : "outline"}
+                icon="clock.fill"
+                iconSize={14}
+                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm }}
+                iconPosition="left"
+                title={t("scheduledDate")}
+                onPress={() => { setDateFilterMode("scheduled"); setSelectedDate(null); }}
+              />
+              <Button
+                variant={dateFilterMode === "checkIns" ? "primary" : "outline"}
+                icon="calendar"
+                iconSize={14}
+                textStyle={{ fontSize: 12 }}
+                style={{ paddingHorizontal: Spacing.sm }}
+                iconPosition="left"
+                title={t("checkIns")}
+                onPress={() => { setDateFilterMode("checkIns"); setSelectedDate(null); }}
+              />
+            </View>
+
+            {isWeb && (
               <View style={styles.viewToggle}>
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
-                    viewMode === "calendar" && {
-                      backgroundColor: colors.tint,
-                      ...Shadows.sm,
-                    },
-                    {
-                      borderColor:
-                        viewMode === "calendar" ? colors.tint : colors.border,
-                      borderWidth: viewMode === "calendar" ? 0 : 1,
-                    },
+                    viewMode === "calendar" && { backgroundColor: colors.tint, ...Shadows.sm },
+                    { borderColor: viewMode === "calendar" ? colors.tint : colors.border, borderWidth: viewMode === "calendar" ? 0 : 1 },
                   ]}
-                  onPress={() => {
-                    setViewMode("calendar");
-                    setSelectedDate(null);
-                  }}
+                  onPress={() => { setViewMode("calendar"); setSelectedDate(null); }}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="calendar"
-                    size={18}
-                    color={
-                      viewMode === "calendar"
-                        ? colors.background
-                        : colors.tabIconDefault
-                    }
-                  />
+                  <IconSymbol name="calendar" size={18} color={viewMode === "calendar" ? colors.background : colors.tabIconDefault} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
-                    viewMode === "list" && {
-                      backgroundColor: colors.tint,
-                      ...Shadows.sm,
-                    },
-                    {
-                      borderColor:
-                        viewMode === "list" ? colors.tint : colors.border,
-                      borderWidth: viewMode === "list" ? 0 : 1,
-                    },
+                    viewMode === "list" && { backgroundColor: colors.tint, ...Shadows.sm },
+                    { borderColor: viewMode === "list" ? colors.tint : colors.border, borderWidth: viewMode === "list" ? 0 : 1 },
                   ]}
                   onPress={() => setViewMode("list")}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="list.bullet"
-                    size={18}
-                    color={
-                      viewMode === "list"
-                        ? colors.background
-                        : colors.tabIconDefault
-                    }
-                  />
+                  <IconSymbol name="list.bullet" size={18} color={viewMode === "list" ? colors.background : colors.tabIconDefault} />
                 </TouchableOpacity>
               </View>
-            </View>
-          }
-        />
-        <View style={styles.dateFilterToggle}>
-          <Button
-            variant={dateFilterMode === "applied" ? "primary" : "outline"}
-            icon="checkmark.circle"
-            iconSize={14}
-            textStyle={{ fontSize: 12 }}
-            style={{ paddingHorizontal: Spacing.sm }}
-            iconPosition="left"
-            title={t("applied")}
-            onPress={() => {
-              setDateFilterMode("applied");
-              setSelectedDate(null);
-            }}
-          />
-          <Button
-            variant={dateFilterMode === "scheduled" ? "primary" : "outline"}
-            icon="clock.fill"
-            iconSize={14}
-            textStyle={{ fontSize: 12 }}
-            style={{ paddingHorizontal: Spacing.sm }}
-            iconPosition="left"
-            title={t("scheduledDate")}
-            onPress={() => {
-              setDateFilterMode("scheduled");
-              setSelectedDate(null);
-            }}
-          />
-          <Button
-            variant={dateFilterMode === "checkIns" ? "primary" : "outline"}
-            icon="calendar"
-            iconSize={14}
-            textStyle={{ fontSize: 12 }}
-            style={{ paddingHorizontal: Spacing.sm }}
-            iconPosition="left"
-            title={t("checkIns")}
-            onPress={() => {
-              setDateFilterMode("checkIns");
-              setSelectedDate(null);
-            }}
-          />
-        </View>
+            )}
+          </View>
+        </ResponsiveCard>
       </View>
       {viewMode === "calendar" ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: Spacing.xl }}>
           {renderCalendarView()}
         </ScrollView>
       ) : (
@@ -1593,7 +1572,7 @@ export default function CalendarScreen() {
         onSubmit={handleSubmitEditBooking}
         loading={editingBooking}
       />
-      </ResponsiveContainer>
+    </ResponsiveContainer>
     </Layout>
   );
 }
@@ -1603,18 +1582,16 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 2 * Spacing.xxxl,
   },
-  content: {
-    padding: Spacing.md,
-  },
-  headerControls: {
-    flexDirection: "column",
+  filterRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     gap: 8,
-    alignItems: "flex-end",
   },
   viewToggle: {
     flexDirection: "row",
     gap: 8,
-    backgroundColor: "transparent",
+    flexShrink: 0,
   },
   toggleButton: {
     width: 40,
@@ -1624,10 +1601,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dateFilterToggle: {
-    justifyContent: "center",
-    marginTop: Spacing.lg,
     flexDirection: "row",
     gap: 6,
+    flex: 1,
+    flexWrap: "wrap",
   },
   dateFilterButton: {
     flexDirection: "row",
@@ -1644,13 +1621,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 0.2,
   },
-  legend: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.lg,
-    marginTop: Spacing.md,
-    borderTopWidth: 0,
-  },
+  // legend: {
+  //   paddingVertical: Spacing.sm,
+  //   paddingHorizontal: Spacing.sm,
+  //   borderRadius: BorderRadius.lg,
+  //   marginTop: Spacing.md,
+  //   borderTopWidth: 0,
+  // },
   legendTitle: {
     fontSize: 13,
     fontWeight: "700",
