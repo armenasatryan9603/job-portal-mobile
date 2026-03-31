@@ -394,9 +394,10 @@ export default function WelcomeScreen() {
                 ))}
               </View>
             </View>
-            <View style={styles.adSlotPlaceholder}>
+            {Platform.OS !== "web" &&
+            (<View style={styles.adSlotPlaceholder}>
               <AdBanner />
-            </View>
+            </View>)}
 
             {/* Features */}
             <View style={styles.sectionContainer}>
@@ -727,7 +728,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   featureCard: {
-    width: "48%",
+    width: "49.2%",
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     alignItems: "center",

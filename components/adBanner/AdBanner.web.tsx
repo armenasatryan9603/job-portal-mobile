@@ -3,22 +3,35 @@ import React, { useEffect, useRef } from "react";
 const AD_CLIENT = process.env.EXPO_PUBLIC_ADSENSE_CLIENT;
 const AD_SLOT = process.env.EXPO_PUBLIC_ADSENSE_SLOT || "";
 
-let scriptReady = false;
-const scriptReadyCallbacks: Array<() => void> = [];
+let scriptLoaded = false;
+const pendingCallbacks: Array<() => void> = [];
 
 function ensureAdSenseScript(client: string, onReady: () => void) {
-  if (scriptReady) {
+  if (scriptLoaded) {
     onReady();
     return;
   }
 
-  scriptReadyCallbacks.push(onReady);
+  pendingCallbacks.push(onReady);
 
   if (typeof document === "undefined") return;
-  if (document.querySelector(`script[src*="adsbygoogle"]`)) {
-    scriptReady = true;
-    scriptReadyCallbacks.forEach((cb) => cb());
-    scriptReadyCallbacks.length = 0;
+
+  const existing = document.querySelector(
+    `script[src*="adsbygoogle"]`
+  ) as HTMLScriptElement | null;
+
+  const flushCallbacks = () => {
+    scriptLoaded = true;
+    pendingCallbacks.forEach((cb) => cb());
+    pendingCallbacks.length = 0;
+  };
+
+  if (existing) {
+    if (existing.dataset.loaded === "true") {
+      flushCallbacks();
+    } else {
+      existing.addEventListener("load", flushCallbacks, { once: true });
+    }
     return;
   }
 
@@ -27,9 +40,11 @@ function ensureAdSenseScript(client: string, onReady: () => void) {
   script.async = true;
   script.crossOrigin = "anonymous";
   script.onload = () => {
-    scriptReady = true;
-    scriptReadyCallbacks.forEach((cb) => cb());
-    scriptReadyCallbacks.length = 0;
+    script.dataset.loaded = "true";
+    flushCallbacks();
+  };
+  script.onerror = () => {
+    console.warn("[AdBanner] AdSense script failed to load (ad-blocker?)");
   };
   document.head.appendChild(script);
 }
@@ -39,7 +54,12 @@ export function AdBanner() {
   const pushed = useRef(false);
 
   useEffect(() => {
-    if (!AD_CLIENT) return;
+    if (!AD_CLIENT) {
+      console.warn(
+        "[AdBanner] EXPO_PUBLIC_ADSENSE_CLIENT is not set — ad will not render."
+      );
+      return;
+    }
 
     let ro: ResizeObserver | null = null;
 
@@ -53,8 +73,8 @@ export function AdBanner() {
         (w.adsbygoogle = w.adsbygoogle || []).push({});
         pushed.current = true;
         ro?.disconnect();
-      } catch {
-        // ad-blocker or transient failure
+      } catch (e) {
+        console.warn("[AdBanner] adsbygoogle.push failed:", e);
       }
     };
 
