@@ -76,13 +76,11 @@ export function AdBanner() {
     <ins
       ref={insRef}
       className="adsbygoogle"
-      style={{
-        display: "block",
-        width: 300,
-        height: 250,
-      }}
+      style={{ display: "block" }}
       data-ad-client={AD_CLIENT}
       data-ad-slot={AD_SLOT}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
     />
   );
 }
