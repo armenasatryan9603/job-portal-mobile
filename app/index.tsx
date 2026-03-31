@@ -26,6 +26,7 @@ import { TopDataSlider } from "@/components/TopDataSlider";
 import { UserAvatar } from "@/components/UserAvatar";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useModal } from "@/contexts/ModalContext";
 import { usePlatformStats } from "@/hooks/useApi";
 import { useState } from "react";
@@ -151,6 +152,8 @@ export default function WelcomeScreen() {
     },
   ];
 
+  const isDesktopWeb = useIsWeb();
+
   const header = (
     <Header
       title={t("welcome")}
@@ -172,7 +175,7 @@ export default function WelcomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {
-            Platform.OS !== "web" && (
+            !isDesktopWeb && (
               <View style={styles.adSlotPlaceholder}>
                 <AdBanner/>
               </View>
@@ -394,7 +397,7 @@ export default function WelcomeScreen() {
                 ))}
               </View>
             </View>
-            {Platform.OS !== "web" &&
+            {!isDesktopWeb &&
             (<View style={styles.adSlotPlaceholder}>
               <AdBanner />
             </View>)}
