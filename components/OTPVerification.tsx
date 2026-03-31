@@ -3,6 +3,7 @@ import {
   Animated,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 }
@@ -35,7 +36,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(0);
-  const inputRefs = useRef<AppTextInput[]>([]);
+  const inputRefs = useRef<TextInput[]>([]);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
   const colorScheme = useColorScheme();

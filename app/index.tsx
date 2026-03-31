@@ -166,14 +166,18 @@ export default function WelcomeScreen() {
 
   return (
     <Layout header={header} onLogout={handleLogout}>
-      <ResponsiveContainer>
+        <ResponsiveContainer>
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.adSlotPlaceholder}>
-            <AdBanner/>
-          </View>
+          {
+            Platform.OS !== "web" && (
+              <View style={styles.adSlotPlaceholder}>
+                <AdBanner/>
+              </View>
+            )
+          }
           <View style={styles.topDataSliderContainer}>
             <TopDataSlider onEmpty={() => setHasTopData(false)} />
           </View>
@@ -513,7 +517,7 @@ export default function WelcomeScreen() {
             </View>
           </View>
         </ScrollView>
-      </ResponsiveContainer>
+        </ResponsiveContainer>
     </Layout>
   );
 }

@@ -1,6 +1,10 @@
 {
   "routes": [
     {
+      "src": "^/app-ads\\.txt$",
+      "dest": "/app-ads.txt"
+    },
+    {
       "src": "^/support$",
       "dest": "https://job-portal-iaf5g4xis-armenasatryanpersonal-gmailcoms-projects.vercel.app"
     },

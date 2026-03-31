@@ -1,6 +1,5 @@
 import { Alert, InteractionManager, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import {
   BorderRadius,
   ComponentSizes,
@@ -9,9 +8,10 @@ import {
   ThemeColors,
   Typography,
 } from "@/constants/styles";
+import { COUNTRIES, CountryCodePicker } from "./CountryCodePicker";
 import React, { useEffect, useState } from "react";
 
-import { COUNTRIES, CountryCodePicker } from "./CountryCodePicker";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "./ui/icon-symbol";
 import { Logo } from "./Logo";
 import { OTPVerification } from "@/components/OTPVerification";
@@ -366,7 +366,7 @@ export function LoginModal({
                 <View
                   style={[
                     styles.unifiedPhoneInput,
-                    { borderColor: "transparent" },
+                    { borderColor: colors.border },
                   ]}
                 >
                   {/* Country Code Picker Button */}
@@ -386,19 +386,19 @@ export function LoginModal({
                   </TouchableOpacity>
                   {/* Divider */}
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                  {/* Phone Number Input */}
-                  <AppTextInput
-                    style={[styles.phoneInput, { color: colors.text }]}
-                    placeholder={t("phoneNumber")}
-                    placeholderTextColor={colors.tabIconDefault}
-                    value={phoneNumber}
-                    onChangeText={setPhoneNumber}
-                    keyboardType="phone-pad"
-                    autoComplete="tel"
-                    textContentType="telephoneNumber"
-                    editable={!isLoading}
-                    autoFocus
-                  />
+                    {/* Phone Number Input */}
+                    <AppTextInput
+                      style={[styles.phoneInput, { color: colors.text }]}
+                      placeholder={t("phoneNumber")}
+                      placeholderTextColor={colors.tabIconDefault}
+                      value={phoneNumber}
+                      onChangeText={setPhoneNumber}
+                      keyboardType="phone-pad"
+                      autoComplete="tel"
+                      textContentType="telephoneNumber"
+                      editable={!isLoading}
+                      autoFocus
+                    />
                 </View>
                 {/* Country Code Picker Modal */}
                 <CountryCodePicker
@@ -492,7 +492,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: "100%",
     maxWidth: 420,
-    height: 420,
     borderRadius: BorderRadius.xxl,
     ...Shadows.xl,
     overflow: "hidden",

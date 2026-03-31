@@ -9,12 +9,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Spacing, ThemeColors } from "@/constants/styles";
 
+import { AdBanner } from "@/components/adBanner/AdBanner";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Logo } from "./Logo";
 import { MainTabs } from "@/components/MainTabs";
 import React from "react";
-import { ThemeColors } from "@/constants/styles";
 import { WEB_MAIN_CONTENT_MAX_WIDTH } from "@/constants/layout";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -164,7 +165,10 @@ export const Layout: React.FC<LayoutProps> = ({
       }
     : { width: "100%" as const };
   /** Main column + flex so body fills remaining height. */
-  const webBodyInnerStyle = [webMainColumnStyle, { flex: 1 }];
+  const webBodyInnerStyle = [
+    webMainColumnStyle,
+    { flex: 1, alignSelf: "stretch" as const },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
@@ -576,9 +580,20 @@ export const Layout: React.FC<LayoutProps> = ({
             padding,
             paddingLeft: webMainInsetLeft,
           },
+          isWeb && styles.bodyWeb,
         ]}
       >
+        {isWeb && (
+          <View style={styles.sideAdColumn}>
+            <AdBanner />
+          </View>
+        )}
         <View style={webBodyInnerStyle}>{children}</View>
+        {isWeb && (
+          <View style={styles.sideAdColumn}>
+            <AdBanner />
+          </View>
+        )}
       </View>
 
       {/* Footer */}
@@ -607,7 +622,15 @@ const styles = StyleSheet.create({
   },
   body: {
     flex: 1,
-    minHeight: height * 0.6, // Ensure body takes at least 60% of screen height
+    minHeight: height * 0.6,
+  },
+  bodyWeb: {
+    flexDirection: "row" as const,
+  },
+  sideAdColumn: {
+    width: 180,
+    paddingTop: Spacing.xl,
+    alignItems: "center" as const,
   },
   footer: {
     paddingTop: 10,
