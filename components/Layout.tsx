@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { Spacing, ThemeColors } from "@/constants/styles";
 
@@ -40,6 +41,7 @@ interface LayoutProps {
 }
 
 const { height } = Dimensions.get("window");
+const SIDE_ADS_MIN_VIEWPORT_WIDTH = 1400;
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
@@ -146,6 +148,8 @@ export const Layout: React.FC<LayoutProps> = ({
   const sidebarWidth = 280;
   const sidebarCollapsedWidthWeb = 72;
   const isWeb = useIsWeb();
+  const { width: viewportWidth } = useWindowDimensions();
+  const showSideAds = isWeb && viewportWidth >= SIDE_ADS_MIN_VIEWPORT_WIDTH;
   /** Web: collapsed = icon rail; expanded = full drawer. Native: boolean is open/closed overlay. */
   const webSidebarCollapsed = isWeb && showSidebar && !sidebarVisible;
   const webMainInsetLeft =
@@ -583,14 +587,24 @@ export const Layout: React.FC<LayoutProps> = ({
           isWeb && styles.bodyWeb,
         ]}
       >
-        {isWeb && (
-          <View style={styles.sideAdColumn}>
+        {showSideAds && (
+          <View
+            style={[
+              styles.sideAdColumn,
+              { position: "sticky" as any, top: 80 },
+            ]}
+          >
             <AdBanner />
           </View>
         )}
         <View style={webBodyInnerStyle}>{children}</View>
-        {isWeb && (
-          <View style={styles.sideAdColumn}>
+        {showSideAds && (
+          <View
+            style={[
+              styles.sideAdColumn,
+              { position: "sticky" as any, top: 80 },
+            ]}
+          >
             <AdBanner />
           </View>
         )}
@@ -628,7 +642,7 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
   },
   sideAdColumn: {
-    width: 180,
+    width: 300,
     paddingTop: Spacing.xl,
     alignItems: "center" as const,
   },

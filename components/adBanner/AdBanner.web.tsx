@@ -1,16 +1,24 @@
 import React, { useEffect, useRef } from "react";
 
-const AD_CLIENT =
-  process.env.EXPO_PUBLIC_ADSENSE_CLIENT || "ca-pub-7411351649298687";
+const AD_CLIENT = process.env.EXPO_PUBLIC_ADSENSE_CLIENT;
 const AD_SLOT = process.env.EXPO_PUBLIC_ADSENSE_SLOT || "";
 
-let scriptLoaded = false;
+let scriptReady = false;
+const scriptReadyCallbacks: Array<() => void> = [];
 
-function loadAdSenseScript(client: string) {
-  if (scriptLoaded) return;
+function ensureAdSenseScript(client: string, onReady: () => void) {
+  if (scriptReady) {
+    onReady();
+    return;
+  }
+
+  scriptReadyCallbacks.push(onReady);
+
   if (typeof document === "undefined") return;
   if (document.querySelector(`script[src*="adsbygoogle"]`)) {
-    scriptLoaded = true;
+    scriptReady = true;
+    scriptReadyCallbacks.forEach((cb) => cb());
+    scriptReadyCallbacks.length = 0;
     return;
   }
 
@@ -18,62 +26,63 @@ function loadAdSenseScript(client: string) {
   script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${client}`;
   script.async = true;
   script.crossOrigin = "anonymous";
+  script.onload = () => {
+    scriptReady = true;
+    scriptReadyCallbacks.forEach((cb) => cb());
+    scriptReadyCallbacks.length = 0;
+  };
   document.head.appendChild(script);
-  scriptLoaded = true;
 }
 
 export function AdBanner() {
-  const adRef = useRef<HTMLDivElement>(null);
+  const insRef = useRef<HTMLModElement>(null);
   const pushed = useRef(false);
 
   useEffect(() => {
     if (!AD_CLIENT) return;
-    loadAdSenseScript(AD_CLIENT);
-  }, []);
 
-  useEffect(() => {
-    if (pushed.current) return;
-    if (!AD_CLIENT || !adRef.current) return;
+    let ro: ResizeObserver | null = null;
 
-    const timer = setTimeout(() => {
+    const tryPush = () => {
+      if (pushed.current) return;
+      const ins = insRef.current;
+      if (!ins || ins.offsetWidth === 0) return;
+
       try {
         const w = window as any;
         (w.adsbygoogle = w.adsbygoogle || []).push({});
         pushed.current = true;
+        ro?.disconnect();
       } catch {
-        // AdSense not ready yet or ad-blocker present
+        // ad-blocker or transient failure
       }
-    }, 300);
+    };
 
-    return () => clearTimeout(timer);
+    ensureAdSenseScript(AD_CLIENT, () => {
+      tryPush();
+
+      if (!pushed.current && insRef.current) {
+        ro = new ResizeObserver(() => tryPush());
+        ro.observe(insRef.current);
+      }
+    });
+
+    return () => ro?.disconnect();
   }, []);
 
   if (!AD_CLIENT) return null;
 
   return (
-    <div
-      ref={adRef}
+    <ins
+      ref={insRef}
+      className="adsbygoogle"
       style={{
-        width: "100%",
-        minHeight: 250,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
+        display: "block",
+        width: 300,
+        height: 250,
       }}
-    >
-      <ins
-        className="adsbygoogle"
-        style={{
-          display: "block",
-          width: "100%",
-          height: "auto",
-        }}
-        data-ad-client={AD_CLIENT}
-        data-ad-slot={AD_SLOT}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
-    </div>
+      data-ad-client={AD_CLIENT}
+      data-ad-slot={AD_SLOT}
+    />
   );
 }
