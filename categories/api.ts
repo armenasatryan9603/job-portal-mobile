@@ -1327,6 +1327,62 @@ class ApiService {
     return this.request<OrderListResponse>(`/orders/search?${params}`);
   }
 
+  async semanticSearchOrders(
+    query: string,
+    page: number = 1,
+    limit: number = 10,
+    categoryIds?: number[],
+    orderType?: "one_time" | "permanent",
+    country?: string,
+    budgetMin?: number,
+    budgetMax?: number,
+    budgetCurrency?: string
+  ): Promise<OrderListResponse> {
+    const params = new URLSearchParams({
+      q: query,
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (categoryIds && categoryIds.length > 0) {
+      params.append("categoryIds", categoryIds.join(","));
+    }
+    if (orderType) params.append("orderType", orderType);
+    if (country) params.append("country", country);
+    if (budgetMin != null && Number.isFinite(budgetMin))
+      params.append("budgetMin", budgetMin.toString());
+    if (budgetMax != null && Number.isFinite(budgetMax))
+      params.append("budgetMax", budgetMax.toString());
+    if (budgetCurrency?.trim()) params.append("budgetCurrency", budgetCurrency.trim());
+
+    return this.request<OrderListResponse>(`/orders/search/ai?${params}`);
+  }
+
+  async semanticSearchSpecialists(
+    query: string,
+    page: number = 1,
+    limit: number = 10,
+    categoryId?: number,
+    country?: string,
+    priceMin?: number,
+    priceMax?: number
+  ): Promise<{ specialists: SpecialistProfile[]; pagination: SpecialistListResponse["pagination"] }> {
+    const params = new URLSearchParams({
+      q: query,
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+
+    if (categoryId) params.append("categoryId", categoryId.toString());
+    if (country) params.append("country", country);
+    if (priceMin != null && Number.isFinite(priceMin))
+      params.append("priceMin", priceMin.toString());
+    if (priceMax != null && Number.isFinite(priceMax))
+      params.append("priceMax", priceMax.toString());
+
+    return this.request<{ specialists: SpecialistProfile[]; pagination: SpecialistListResponse["pagination"] }>(`/users/specialists/search/ai?${params}`);
+  }
+
   // Media Files API methods
   async uploadMediaFile(mediaData: {
     orderId: number;

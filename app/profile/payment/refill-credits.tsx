@@ -1,4 +1,6 @@
-import { ActivityIndicator, Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { ActivityIndicator, Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import {
   BorderRadius,
@@ -524,7 +526,7 @@ export default function RefillCreditsScreen() {
                 <View
                   style={[
                     styles.cardSelectionContainer,
-                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    { backgroundColor: colors.surface, borderColor: "transparent" },
                   ]}
                 >
                   {/* New Card Option */}
@@ -677,7 +679,7 @@ export default function RefillCreditsScreen() {
                 style={[
                   styles.section,
                   styles.noCardsSection,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  { backgroundColor: colors.surface, borderColor: "transparent" },
                 ]}
               >
                 <View style={styles.noCardsHeader}>
@@ -710,7 +712,7 @@ export default function RefillCreditsScreen() {
                     size={16}
                     color={colors.tabIconDefault}
                   />
-                  <TextInput
+                  <AppTextInput
                     style={[styles.customAmountInput, { color: colors.text }]}
                     placeholder={t("enterAmount")}
                     placeholderTextColor={colors.tabIconDefault}
@@ -859,7 +861,7 @@ export default function RefillCreditsScreen() {
                 styles.infoCard,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                 },
               ]}
             >

@@ -1,6 +1,8 @@
 import * as Location from "expo-location";
 
-import { Alert, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useState } from "react";
 
 import { Button } from "./ui/button";
@@ -160,12 +162,12 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         <View
           style={[styles.inputContainer, { backgroundColor: colors.surface }]}
         >
-          <TextInput
+          <AppTextInput
             style={[
               styles.addressInput,
               {
                 backgroundColor: colors.background,
-                borderColor: colors.border,
+                borderColor: "transparent",
                 color: colors.text,
               },
             ]}
@@ -189,7 +191,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
           <TouchableOpacity
             style={[
               styles.currentLocationButton,
-              { borderColor: colors.border },
+              { borderColor: "transparent" },
             ]}
             onPress={requestLocationPermission}
             disabled={loading}
@@ -206,7 +208,7 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({
         {/* Show Map Button */}
         <View style={styles.mapButtonContainer}>
           <TouchableOpacity
-            style={[styles.mapButton, { borderColor: colors.border }]}
+            style={[styles.mapButton, { borderColor: "transparent" }]}
             onPress={() => setShowMap(true)}
           >
             <IconSymbol name="map" size={20} color={colors.primary} />

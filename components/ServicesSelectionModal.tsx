@@ -1,5 +1,7 @@
-import { Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
 
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import { Button } from "./ui/button";
 import { Category } from "@/categories/api";
@@ -71,7 +73,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
             size={16}
             color={colors.textSecondary}
           />
-          <TextInput
+          <AppTextInput
             style={[styles.searchInput, { color: colors.text }]}
             placeholder={t("searchCategories")}
             placeholderTextColor={colors.textSecondary}

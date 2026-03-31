@@ -306,6 +306,60 @@ export const useSpecialistsWithAuth = (
   });
 };
 
+export const useSemanticOrdersFeed = (
+  page: number = 1,
+  limit: number = 10,
+  options: {
+    searchQuery: string;
+    categoryIds?: number[];
+    orderType?: "one_time" | "permanent";
+    country?: string;
+    budgetMin?: number;
+    budgetMax?: number;
+    budgetCurrency?: string;
+    enabled?: boolean;
+  }
+) => {
+  const { isOnline } = useNetworkStatus();
+  const { searchQuery, categoryIds, orderType, country, budgetMin, budgetMax, budgetCurrency, enabled = true } = options;
+  const trimmed = searchQuery.trim();
+
+  return useQuery({
+    queryKey: ["orders", "semantic", trimmed, page, limit, categoryIds, orderType, country, budgetMin, budgetMax, budgetCurrency],
+    queryFn: () =>
+      apiService.semanticSearchOrders(trimmed, page, limit, categoryIds, orderType, country, budgetMin, budgetMax, budgetCurrency),
+    staleTime: CACHE_TTL.DYNAMIC,
+    enabled: enabled && trimmed.length > 0,
+    retry: isOnline,
+  });
+};
+
+export const useSemanticSpecialistsFeed = (
+  page: number = 1,
+  limit: number = 10,
+  options: {
+    searchQuery: string;
+    categoryId?: number;
+    country?: string;
+    priceMin?: number;
+    priceMax?: number;
+    enabled?: boolean;
+  }
+) => {
+  const { isOnline } = useNetworkStatus();
+  const { searchQuery, categoryId, country, priceMin, priceMax, enabled = true } = options;
+  const trimmed = searchQuery.trim();
+
+  return useQuery<{ specialists: any[]; pagination: any }>({
+    queryKey: ["specialists", "semantic", trimmed, page, limit, categoryId, country, priceMin, priceMax],
+    queryFn: () =>
+      apiService.semanticSearchSpecialists(trimmed, page, limit, categoryId, country, priceMin, priceMax),
+    staleTime: CACHE_TTL.DYNAMIC,
+    enabled: enabled && trimmed.length > 0,
+    retry: isOnline,
+  });
+};
+
 export const useSpecialistById = (id: number) => {
   return useQuery({
     queryKey: ["specialists", id],

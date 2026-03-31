@@ -6,6 +6,7 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
@@ -32,6 +33,7 @@ import {
   useMyOrders,
   useOrdersFeed,
   useSavedOrders,
+  useSemanticOrdersFeed,
 } from "@/hooks/useApi";
 
 import AnalyticsService from "@/categories/AnalyticsService";
@@ -139,6 +141,7 @@ export default function OrdersScreen() {
   );
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
+  const [searchMode, setSearchMode] = useState<"basic" | "ai">("basic");
   const [selectedFilters, setSelectedFilters] = useState<
     Record<
       string,
@@ -258,13 +261,23 @@ export default function OrdersScreen() {
 
   // Single orders feed: uses getPublicOrders when no search, searchOrders when searching (price range handled by backend)
   const ordersFeedQuery = useOrdersFeed(tempCurrentPage, limit, {
-    searchQuery: searchQuery.trim() || undefined,
+    searchQuery: searchMode === "basic" ? (searchQuery.trim() || undefined) : undefined,
     status: status && status !== "all" ? status : undefined,
     categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
     orderType: activeOrderTab,
     country: userCountryIso ?? undefined,
     ...feedBudgetParams,
     enabled: tabLoaded,
+  });
+
+  // AI semantic search feed (only when mode is "ai" and there is a query)
+  const semanticOrdersFeedQuery = useSemanticOrdersFeed(tempCurrentPage, limit, {
+    searchQuery: searchQuery.trim(),
+    categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    orderType: activeOrderTab,
+    country: userCountryIso ?? undefined,
+    ...feedBudgetParams,
+    enabled: tabLoaded && searchMode === "ai" && isAuthenticated,
   });
 
   const { data: categoriesData } = useCategories(1, 100, undefined, language);
@@ -277,6 +290,7 @@ export default function OrdersScreen() {
     if (isMyOrders) return myOrdersQuery;
     if (isMyJobs) return myJobsQuery;
     if (isSavedOrders) return savedOrdersQuery;
+    if (searchMode === "ai" && searchQuery.trim()) return semanticOrdersFeedQuery;
     return ordersFeedQuery;
   }, [
     isMyOrders,
@@ -286,6 +300,9 @@ export default function OrdersScreen() {
     myJobsQuery,
     savedOrdersQuery,
     ordersFeedQuery,
+    semanticOrdersFeedQuery,
+    searchMode,
+    searchQuery,
   ]);
 
   // Load saved filters/search from local storage (per-tab keys using loadedTab)
@@ -1800,6 +1817,42 @@ export default function OrdersScreen() {
     [isMyOrders, isMyJobs, isSavedOrders]
   );
 
+  const handleSearchModeToggle = useCallback(
+    (mode: "basic" | "ai") => {
+      if (mode === "ai") {
+        if (!isAuthenticated) {
+          showLoginModal();
+          return;
+        }
+      }
+      setSearchMode(mode);
+    },
+    [isAuthenticated, showLoginModal]
+  );
+
+  // Handle AI search errors (e.g. insufficient credits)
+  const semanticOrdersError = semanticOrdersFeedQuery.error as any;
+  useEffect(() => {
+    if (
+      semanticOrdersError &&
+      (semanticOrdersError?.message?.includes("Insufficient credit balance") ||
+        semanticOrdersError?.message?.includes("insufficient credit"))
+    ) {
+      Alert.alert(
+        t("insufficientCredits") || "Insufficient Credits",
+        t("notEnoughCreditsForSearch") ||
+          "You don't have enough credits for AI search. Refill your credits or use Basic Search.",
+        [
+          { text: t("useBasicSearch") || "Use Basic Search", onPress: () => setSearchMode("basic") },
+          {
+            text: t("refillCredits") || "Refill Credits",
+            onPress: () => router.push("/profile/payment/refill-credits"),
+          },
+        ]
+      );
+    }
+  }, [semanticOrdersError]);
+
   const header = (
     <Header
       title={
@@ -1981,6 +2034,8 @@ export default function OrdersScreen() {
             loading={filterLoading}
             hideModalForLocation={filterModalHiddenForLocation}
             priceRangeCurrency={priceFilterCurrency}
+            aiMode={searchMode === "ai" && !isMyOrders && !isMyJobs && !isSavedOrders}
+            onAiModeToggle={!isMyOrders && !isMyJobs && !isSavedOrders && isAuthenticated ? () => handleSearchModeToggle(searchMode === "ai" ? "basic" : "ai") : undefined}
           />
 
           {/* Show skeleton loading during initial load */}
@@ -2015,7 +2070,7 @@ export default function OrdersScreen() {
               keyExtractor={(item) => item.id.toString()}
               ListFooterComponent={renderFooter}
               numColumns={isDesktopWeb ? 4 : 2}
-              columnWrapperStyle={{ marginRight: -Spacing.sm }}
+              columnWrapperStyle={{ paddingHorizontal: Spacing.xs, gap: Spacing.sm}}
               ListEmptyComponent={renderEmptyComponent}
               {...(isMyOrders || isMyJobs || isSavedOrders
                 ? {}

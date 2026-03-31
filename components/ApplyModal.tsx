@@ -1,4 +1,6 @@
-import { ActivityIndicator, Alert, Keyboard, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { ActivityIndicator, Alert, Keyboard, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, TouchableWithoutFeedback, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Order, apiService } from "@/categories/api";
 import React, { useEffect, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
@@ -334,7 +336,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                         >
                           {question.question}
                         </Text>
-                        <TextInput
+                        <AppTextInput
                           style={[
                             styles.questionInput,
                             {
@@ -380,7 +382,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 <Text style={[styles.messageLabel, { color: colors.text }]}>
                   {t("messageToClient")}
                 </Text>
-                <TextInput
+                <AppTextInput
                   style={[
                     styles.messageInput,
                     {
@@ -459,7 +461,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
 
               <View style={styles.actions}>
                 <TouchableOpacity
-                  style={[styles.cancelButton, { borderColor: colors.border }]}
+                  style={[styles.cancelButton, { borderColor: "transparent" }]}
                   onPress={handleClose}
                   disabled={loading}
                 >

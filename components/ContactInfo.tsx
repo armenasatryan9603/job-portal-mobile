@@ -1,4 +1,6 @@
-import { Alert, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Text, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { UserProfile, apiService } from "@/categories/api";
@@ -142,12 +144,12 @@ export function ContactInfo({
             <Text style={[styles.inputLabel, { color: colors.text }]}>
               {t("email")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}
@@ -166,12 +168,12 @@ export function ContactInfo({
             <Text style={[styles.inputLabel, { color: colors.text }]}>
               {t("phoneNumber")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

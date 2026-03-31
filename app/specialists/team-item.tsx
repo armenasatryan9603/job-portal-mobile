@@ -1,5 +1,5 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { ThemeColors } from "@/constants/styles";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";

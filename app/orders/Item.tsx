@@ -589,7 +589,7 @@ const OrderItem = ({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    marginRight: Spacing.sm,
+    gap: 12
   },
   touchable: {
     flex: 1,

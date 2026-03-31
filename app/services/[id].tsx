@@ -11,10 +11,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { DaySchedule, WeeklySchedule } from "@/components/WeeklySchedulePicker";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -1104,12 +1105,12 @@ export default function MarketDetailScreen() {
                   <Text style={[styles.commentLabel, { color: colors.text }]}>
                     {t("comment")} ({t("optional")})
                   </Text>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.commentInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}

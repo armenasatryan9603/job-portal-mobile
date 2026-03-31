@@ -3,10 +3,11 @@ import {
   Animated,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useRef, useState } from "react";
 
 import { ThemeColors } from "@/constants/styles";
@@ -34,7 +35,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
 }) => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(0);
-  const inputRefs = useRef<TextInput[]>([]);
+  const inputRefs = useRef<AppTextInput[]>([]);
   const shakeAnimation = useRef(new Animated.Value(0)).current;
   const { t } = useTranslation();
   const colorScheme = useColorScheme();
@@ -189,7 +190,7 @@ export const OTPVerification: React.FC<OTPVerificationProps> = ({
         ]}
       >
         {otp.map((digit, index) => (
-          <TextInput
+          <AppTextInput
             key={index}
             ref={(ref) => {
               if (ref) inputRefs.current[index] = ref;
@@ -290,6 +291,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   otpInput: {
+    textAlign: 'center',
     width: 44,
     height: 60,
     borderWidth: 2,

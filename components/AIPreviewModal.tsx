@@ -1,4 +1,6 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import React, { useEffect, useState } from "react";
 
@@ -240,7 +242,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
           {/* Compact Comparison */}
           <View style={styles.comparisonContainer}>
             {/* Original / Editable */}
-            <View style={[styles.compactCard, { borderColor: colors.border }]}>
+            <View style={[styles.compactCard, { borderColor: "transparent" }]}>
               <View style={styles.compactHeader}>
                 <IconSymbol
                   name="doc.text"
@@ -272,10 +274,10 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
               </View>
               {isEditing ? (
                 <View style={styles.editContainer}>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.textInput,
-                      { color: colors.text, borderColor: colors.border },
+                      { color: colors.text, borderColor: "transparent" },
                     ]}
                     value={editedTitle}
                     onChangeText={setEditedTitle}
@@ -283,11 +285,11 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                     placeholderTextColor={colors.textSecondary}
                     multiline={false}
                   />
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.textInput,
                       styles.textInputMultiline,
-                      { color: colors.text, borderColor: colors.border },
+                      { color: colors.text, borderColor: "transparent" },
                     ]}
                     value={editedDescription}
                     onChangeText={setEditedDescription}
@@ -306,7 +308,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                       }}
                       style={[
                         styles.cancelEditButton,
-                        { borderColor: colors.border },
+                        { borderColor: "transparent" },
                       ]}
                     >
                       <Text
@@ -384,10 +386,10 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                 </Text>
               </View>
               <View style={styles.editContainer}>
-                <TextInput
+                <AppTextInput
                   style={[
                     styles.textInput,
-                    { color: colors.text, borderColor: colors.border },
+                    { color: colors.text, borderColor: "transparent" },
                   ]}
                   value={getTitle(selectedLanguage, currentEnhanced)}
                   onChangeText={(text) =>
@@ -399,11 +401,11 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                   contextMenuHidden
                   selectTextOnFocus={false}
                 />
-                <TextInput
+                <AppTextInput
                   style={[
                     styles.textInput,
                     styles.textInputMultiline,
-                    { color: colors.text, borderColor: colors.border },
+                    { color: colors.text, borderColor: "transparent" },
                   ]}
                   value={getDescription(selectedLanguage, currentEnhanced)}
                   onChangeText={(text) =>

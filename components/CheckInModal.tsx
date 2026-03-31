@@ -1,4 +1,6 @@
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
@@ -10,7 +12,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Image } from "react-native";
+import { Image }
+from "react-native";
 import { ResponsiveCard } from "./ResponsiveContainer";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -851,13 +854,13 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                             />
                           </TouchableOpacity>
                         </View>
-                        <TextInput
+                        <AppTextInput
                           style={[
                             styles.slotMessageInput,
                             {
                               color: colors.text,
                               backgroundColor: colorScheme === "dark" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)",
-                              borderColor: colors.border,
+                              borderColor: "transparent",
                             },
                           ]}
                           placeholder={t("bookingMessagePlaceholder")}

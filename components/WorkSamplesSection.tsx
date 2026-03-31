@@ -1,6 +1,8 @@
 import * as ImagePicker from "expo-image-picker";
 
-import { ActivityIndicator, Alert, Dimensions, Image, Linking, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Image, Linking, Modal, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { PortfolioItem, apiService } from "@/categories/api";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
@@ -352,12 +354,12 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
               {t("editPortfolioItem")}
             </Text>
 
-            <TextInput
+            <AppTextInput
               style={[
                 styles.modalInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}
@@ -367,13 +369,13 @@ export const WorkSamplesSection: React.FC<WorkSamplesSectionProps> = ({
               onChangeText={setEditTitle}
             />
 
-            <TextInput
+            <AppTextInput
               style={[
                 styles.modalInput,
                 styles.modalTextArea,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

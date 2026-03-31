@@ -1,4 +1,6 @@
-import { ActivityIndicator, Alert, Image, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Category, apiService } from "@/categories/api";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -2191,12 +2193,12 @@ export default function CreateOrderScreen() {
                   {t("workDurationPerClient")}
                 </Text>
                 <View style={styles.durationInputWrapper}>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.durationInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}
@@ -2476,12 +2478,12 @@ export default function CreateOrderScreen() {
                       <Text style={[styles.fieldLabel, { color: colors.text }]}>
                         {t("requiredSpecialistsCount")}
                       </Text>
-                      <TextInput
+                      <AppTextInput
                         style={[
                           styles.durationInput,
                           {
                             backgroundColor: colors.background,
-                            borderColor: colors.border + "40",
+                            borderColor: "transparent" + "40",
                             color: colors.text,
                           },
                         ]}
@@ -2591,12 +2593,12 @@ export default function CreateOrderScreen() {
               <View style={styles.priceInputRow}>
                 {/* Price Amount Input */}
                 <View style={styles.priceAmountContainer}>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.priceInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: errors.budget ? colors.error : colors.border,
+                        borderColor: errors.budget ? colors.error : "transparent",
                         borderTopColor: errors.budget
                           ? colors.error
                           : colors.border,
@@ -2639,7 +2641,7 @@ export default function CreateOrderScreen() {
                   containerStyle={styles.currencyContainer}
                   buttonStyle={{
                     backgroundColor: colors.background,
-                    borderColor: errors.budget ? colors.error : colors.border,
+                    borderColor: errors.budget ? colors.error : "transparent",
                     borderTopColor: errors.budget
                       ? colors.error
                       : colors.border,
@@ -2665,7 +2667,7 @@ export default function CreateOrderScreen() {
                       styles.rateUnitSelectorButton,
                       {
                         backgroundColor: colors.background,
-                        borderColor: errors.budget ? colors.error : colors.border,
+                        borderColor: errors.budget ? colors.error : "transparent",
                         borderTopColor: errors.budget
                           ? colors.error
                           : colors.border,
@@ -2773,12 +2775,12 @@ export default function CreateOrderScreen() {
 
             {questions.map((question, index) => (
               <View key={index} style={styles.questionItem}>
-                <TextInput
+                <AppTextInput
                   style={[
                     styles.questionInput,
                     {
                       backgroundColor: colors.background,
-                      borderColor: colors.border,
+                      borderColor: "transparent",
                       color: colors.text,
                     },
                   ]}
@@ -2805,7 +2807,7 @@ export default function CreateOrderScreen() {
                     styles.deleteQuestionButton,
                     {
                       backgroundColor: colors.background,
-                      borderColor: colors.border,
+                      borderColor: "transparent",
                       borderWidth: 1,
                     },
                   ]}
@@ -2827,7 +2829,7 @@ export default function CreateOrderScreen() {
                   position: "absolute",
                   right: 11,
                   top: 3,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   backgroundColor: colors.background,
                   opacity: canAddAnotherQuestion() ? 1 : 0.5,
                 },
@@ -3036,12 +3038,12 @@ export default function CreateOrderScreen() {
               {/* Add Custom Option */}
               {showAddCustomRateUnit ? (
                 <View style={styles.addCustomContainer}>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.addCustomInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}

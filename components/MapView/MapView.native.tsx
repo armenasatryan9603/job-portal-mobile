@@ -6,10 +6,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import MapView, { LatLng, Marker, Region } from "react-native-maps";
 import React, { useEffect, useRef, useState } from "react";
 
@@ -359,7 +360,7 @@ export const MapViewComponent: React.FC<MapViewComponentProps> = ({
               color={isFocused ? colors.primary : colors.textSecondary}
             />
           </View>
-          <TextInput
+          <AppTextInput
             style={[styles.searchInput, { color: colors.text }]}
             placeholder={t("searchLocation") || "Search location..."}
             placeholderTextColor={colors.textSecondary}

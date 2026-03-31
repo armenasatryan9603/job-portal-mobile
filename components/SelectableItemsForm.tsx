@@ -1,4 +1,6 @@
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
@@ -551,7 +553,7 @@ export const SelectableItemsForm: React.FC<SelectableItemsFormProps> = ({
                 size={16}
                 color={colors.textSecondary}
               />
-              <TextInput
+              <AppTextInput
                 style={[styles.searchInput, { color: colors.text }]}
                 placeholder={placeholder || t("search") || "Search..."}
                 placeholderTextColor={colors.textSecondary}

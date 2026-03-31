@@ -1,5 +1,7 @@
 import React, { memo, useCallback, useMemo, useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Modal } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors } from "@/constants/styles";
@@ -172,12 +174,12 @@ export const AttachOrderModal = memo(
             )}
           </View>
 
-          <TextInput
+          <AppTextInput
             style={[
               styles.searchInput,
               {
                 backgroundColor: colors.background,
-                borderColor: colors.border,
+                borderColor: "transparent",
                 color: colors.text,
               },
             ]}

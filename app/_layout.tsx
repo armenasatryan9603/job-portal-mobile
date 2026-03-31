@@ -1,7 +1,6 @@
 // IMPORTANT: Background message handler must be imported FIRST
 // This registers the handler before the app starts (native only; web stub in lib/)
 import "@/lib/background-message-handler";
-import "react-native-reanimated";
 
 import * as Linking from "expo-linking";
 import * as Notifications from "expo-notifications";

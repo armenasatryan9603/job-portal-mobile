@@ -4,10 +4,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
 import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
 import React, { useMemo, useState } from "react";
@@ -106,7 +107,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
         <View
           style={[
             styles.searchInputWrapper,
-            { backgroundColor: colors.background, borderColor: colors.border },
+            { backgroundColor: colors.background, borderColor: "transparent" },
           ]}
         >
           <IconSymbol
@@ -114,7 +115,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
             size={20}
             color={colors.tabIconDefault}
           />
-          <TextInput
+          <AppTextInput
             style={[styles.searchInput, { color: colors.text }]}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -179,7 +180,7 @@ export const CategorySelectorComponent: React.FC<CategorySelectorProps> = ({
               style={[
                 styles.retryButton,
                 {
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   backgroundColor: colors.background,
                 },
               ]}

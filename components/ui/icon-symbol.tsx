@@ -29,6 +29,7 @@ const MAPPING = {
   "building.2.fill": "business",
   "checkmark.seal.fill": "check-circle",
   "bookmark.fill": "bookmark",
+  "bookmark": "bookmark-outline",
   "checkmark.seal": "check-circle-outline",
   "gear.circle.fill": "settings",
   "list.bullet": "list",

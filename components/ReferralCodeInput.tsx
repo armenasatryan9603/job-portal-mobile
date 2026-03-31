@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import {
   clearReferralCode,
   getReferralCode,
@@ -78,7 +79,7 @@ export function ReferralCodeInput({
   if (!isExpanded && !storedCode) {
     return (
       <TouchableOpacity
-        style={[styles.toggleButton, { borderColor: colors.border }]}
+        style={[styles.toggleButton, { borderColor: "transparent" }]}
         onPress={handleToggle}
       >
         <IconSymbol name="gift.fill" size={16} color={colors.primary} />
@@ -101,14 +102,14 @@ export function ReferralCodeInput({
       )}
 
       <View style={styles.inputRow}>
-        <View style={[styles.inputContainer, { borderColor: colors.border }]}>
+        <View style={[styles.inputContainer, { borderColor: "transparent" }]}>
           <IconSymbol
             name="gift.fill"
             size={18}
             color={colors.tabIconDefault}
             style={styles.icon}
           />
-          <TextInput
+          <AppTextInput
             style={[styles.input, { color: colors.text }]}
             placeholder={t("enterReferralCode")}
             placeholderTextColor={colors.tabIconDefault}

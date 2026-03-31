@@ -3,10 +3,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { CalendarComponent, MarkedDate } from "@/components/CalendarComponent";
 import React, { useEffect, useMemo, useState } from "react";
@@ -461,12 +462,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
             <Text style={[styles.timeLabel, { color: colors.text }]}>
               {t("startTime")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.timeInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}
@@ -489,12 +490,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
             <Text style={[styles.timeLabel, { color: colors.text }]}>
               {t("endTime")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.timeInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}
@@ -581,12 +582,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
               {isEnabled && daySchedule?.workHours && (
                 <>
                   <View style={styles.dayTimeRow}>
-                    <TextInput
+                    <AppTextInput
                       style={[
                         styles.dayTimeInput,
                         {
                           backgroundColor: colors.background,
-                          borderColor: colors.border,
+                          borderColor: "transparent",
                           color: colors.text,
                         },
                       ]}
@@ -615,12 +616,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                       —
                     </Text>
 
-                    <TextInput
+                    <AppTextInput
                       style={[
                         styles.dayTimeInput,
                         {
                           backgroundColor: colors.background,
-                          borderColor: colors.border,
+                          borderColor: "transparent",
                           color: colors.text,
                         },
                       ]}
@@ -674,17 +675,17 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                               styles.breakItem,
                               {
                                 backgroundColor: colors.background,
-                                borderColor: colors.border,
+                                borderColor: "transparent",
                               },
                             ]}
                           >
                             <View style={styles.breakTimeRow}>
-                              <TextInput
+                              <AppTextInput
                                 style={[
                                   styles.breakTimeInput,
                                   {
                                     backgroundColor: colors.background,
-                                    borderColor: colors.border,
+                                    borderColor: "transparent",
                                     color: colors.text,
                                   },
                                 ]}
@@ -706,12 +707,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
                                 —
                               </Text>
 
-                              <TextInput
+                              <AppTextInput
                                 style={[
                                   styles.breakTimeInput,
                                   {
                                     backgroundColor: colors.background,
-                                    borderColor: colors.border,
+                                    borderColor: "transparent",
                                     color: colors.text,
                                   },
                                 ]}
@@ -759,12 +760,12 @@ export const WeeklySchedulePicker: React.FC<WeeklySchedulePickerProps> = ({
           {t("subscribeAheadDaysDesc")}
         </Text>
         <View style={styles.subscribeAheadRow}>
-          <TextInput
+          <AppTextInput
             style={[
               styles.subscribeAheadInput,
               {
                 backgroundColor: colors.background,
-                borderColor: colors.border,
+                borderColor: "transparent",
                 color: colors.text,
               },
             ]}

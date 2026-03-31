@@ -1,4 +1,6 @@
-import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import React, { useCallback, useState } from "react";
 import { Spacing, ThemeColors, Typography } from "@/constants/styles";
@@ -544,12 +546,12 @@ export default function PeersScreen() {
             )}
           </View>
 
-          <TextInput
+          <AppTextInput
             style={[
               styles.searchInput,
               {
                 backgroundColor: colors.background,
-                borderColor: colors.border,
+                borderColor: "transparent",
                 color: colors.text,
               },
             ]}
@@ -702,12 +704,12 @@ export default function PeersScreen() {
             <Text style={[styles.label, { color: colors.text }]}>
               {t("teamName")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

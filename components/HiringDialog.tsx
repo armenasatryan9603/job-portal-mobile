@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, ScrollView, Keyboard, KeyboardAvoidingView, Platform, Modal } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, ScrollView, Keyboard, KeyboardAvoidingView, Platform, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -342,13 +344,13 @@ export function HiringDialog({
                 )}
 
               <View style={styles.messageSection}>
-                <TextInput
+                <AppTextInput
                   ref={textInputRef}
                   style={[
                     styles.messageInput,
                     {
                       backgroundColor: colors.background,
-                      borderColor: colors.border,
+                      borderColor: "transparent",
                       color: colors.text,
                     },
                   ]}

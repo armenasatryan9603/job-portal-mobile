@@ -5,10 +5,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ResponsiveCard,
@@ -647,12 +648,12 @@ export default function TeamDetailScreen() {
                   <Text style={[styles.editFieldLabel, { color: colors.text }]}>
                     {t("teamName")}
                   </Text>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.teamNameTextInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}
@@ -667,12 +668,12 @@ export default function TeamDetailScreen() {
                   <Text style={[styles.editFieldLabel, { color: colors.text }]}>
                     {t("description")}
                   </Text>
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.descriptionTextInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}

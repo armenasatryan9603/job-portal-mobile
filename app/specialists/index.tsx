@@ -6,16 +6,17 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { Filter, FilterSection } from "@/components/FilterComponent";
 import { RateUnit, useRateUnits } from "@/hooks/useRateUnits";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Spacing, ThemeColors } from "@/constants/styles";
+import { BorderRadius, Spacing, ThemeColors } from "@/constants/styles";
 import { SpecialistProfile, apiService } from "@/categories/api";
 import { Team, TeamItem } from "./team-item";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCategories, useMyOrders, useSpecialists } from "@/hooks/useApi";
+import { useCategories, useMyOrders, useSemanticSpecialistsFeed, useSpecialists } from "@/hooks/useApi";
 
 import AnalyticsService from "@/categories/AnalyticsService";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,7 @@ export default function SpecialistsScreen() {
   }, [params.tab]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<"basic" | "ai">("basic");
   type SpecialistFilterValue =
     | string
     | string[]
@@ -110,6 +112,27 @@ export default function SpecialistsScreen() {
     error,
     refetch,
   } = useSpecialists(tempCurrentPage, 20, countryFilter);
+  // AI semantic search query
+  const selectedCategoryId = useMemo(() => {
+    const cats = selectedFilters.categories;
+    if (Array.isArray(cats) && cats.length > 0) return parseInt(cats[0]);
+    return undefined;
+  }, [selectedFilters.categories]);
+
+  const priceFilter = selectedFilters.priceRange as { min: number; max: number } | null;
+
+  const {
+    data: semanticSpecialistsData,
+    error: semanticError,
+  } = useSemanticSpecialistsFeed(1, 20, {
+    searchQuery,
+    categoryId: selectedCategoryId,
+    country: countryFilter,
+    priceMin: priceFilter?.min,
+    priceMax: priceFilter?.max,
+    enabled: searchMode === "ai" && isAuthenticated && activeTab === "individuals",
+  });
+
   const { data: categoriesData } = useCategories(1, 100, undefined, language); // Get all categories for filtering with correct language
   const { data: ordersData } = useMyOrders();
 
@@ -233,10 +256,48 @@ export default function SpecialistsScreen() {
     }
   }, []);
 
-  // Filter specialists based on search and filters
-  const filteredSpecialists = useMemo(
-    () =>
-      specialists.filter((specialist) => {
+  const handleSearchModeToggle = useCallback(
+    (mode: "basic" | "ai") => {
+      if (mode === "ai") {
+        if (!isAuthenticated) {
+          showLoginModal();
+          return;
+        }
+      }
+      setSearchMode(mode);
+    },
+    [isAuthenticated, showLoginModal]
+  );
+
+  // Handle AI search credit errors
+  const semanticErrorAny = semanticError as any;
+  useEffect(() => {
+    if (
+      semanticErrorAny &&
+      (semanticErrorAny?.message?.includes("Insufficient credit balance") ||
+        semanticErrorAny?.message?.includes("insufficient credit"))
+    ) {
+      Alert.alert(
+        t("insufficientCredits") || "Insufficient Credits",
+        t("notEnoughCreditsForSearch") ||
+          "You don't have enough credits for AI search. Refill your credits or use Basic Search.",
+        [
+          { text: t("useBasicSearch") || "Use Basic Search", onPress: () => setSearchMode("basic") },
+          {
+            text: t("refillCredits") || "Refill Credits",
+            onPress: () => router.push("/profile/payment/refill-credits"),
+          },
+        ]
+      );
+    }
+  }, [semanticErrorAny]);
+
+  // When in AI mode with a query, use semantic results; otherwise use basic client-side filter
+  const filteredSpecialists = useMemo(() => {
+    if (searchMode === "ai" && searchQuery.trim() && semanticSpecialistsData?.specialists) {
+      return semanticSpecialistsData.specialists as any[];
+    }
+    return specialists.filter((specialist) => {
         // Search filter
         const matchesSearch =
           !searchQuery ||
@@ -256,19 +317,18 @@ export default function SpecialistsScreen() {
             categoryFilter.includes(specialistCategoryId));
 
         // Price filter
-        const priceFilter = selectedFilters.priceRange;
+        const priceFilterVal = selectedFilters.priceRange;
         const matchesPrice =
-          typeof priceFilter === "object" &&
-          priceFilter !== null &&
-          "min" in priceFilter
-            ? (specialist.priceMin || 0) >= priceFilter.min &&
-              (specialist.priceMin || 0) <= priceFilter.max
+          typeof priceFilterVal === "object" &&
+          priceFilterVal !== null &&
+          "min" in priceFilterVal
+            ? (specialist.priceMin || 0) >= priceFilterVal.min &&
+              (specialist.priceMin || 0) <= priceFilterVal.max
             : true;
 
         return matchesSearch && matchesCategory && matchesPrice;
-      }),
-    [specialists, searchQuery, selectedFilters]
-  );
+      });
+  }, [specialists, searchQuery, selectedFilters, searchMode, semanticSpecialistsData]);
 
   // Filter teams based on search
   const filteredTeams = useMemo(() => {
@@ -601,6 +661,8 @@ export default function SpecialistsScreen() {
           selectedFilters={selectedFilters}
           onFilterChange={handleFilterChange}
           priceRangeCurrency={user?.currency ?? "USD"}
+          aiMode={searchMode === "ai" && activeTab === "individuals"}
+          onAiModeToggle={activeTab === "individuals" && isAuthenticated ? () => handleSearchModeToggle(searchMode === "ai" ? "basic" : "ai") : undefined}
         />
 
         {/* Show content based on active tab */}

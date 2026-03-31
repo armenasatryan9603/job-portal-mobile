@@ -1,6 +1,8 @@
 import * as ImagePicker from "expo-image-picker";
 
-import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import {
   BorderRadius,
   Spacing,
@@ -1018,12 +1020,12 @@ export default function ProfileScreen() {
                   <View style={styles.nameAndEditContainer}>
                     {isEditingName ? (
                       <View style={styles.nameEditRow}>
-                        <TextInput
+                        <AppTextInput
                           style={[
                             styles.nameEditInput,
                             {
                               backgroundColor: colors.background,
-                              borderColor: colors.border,
+                              borderColor: "transparent",
                               color: colors.text,
                             },
                           ]}
@@ -1038,7 +1040,7 @@ export default function ProfileScreen() {
                             styles.nameEditIconBtn,
                             {
                               backgroundColor: colors.background,
-                              borderColor: colors.border,
+                              borderColor: "transparent",
                             },
                           ]}
                           onPress={handleCancelEditName}
@@ -1151,12 +1153,12 @@ export default function ProfileScreen() {
 
             {isEditingBio ? (
               <View style={styles.bioEditContainer}>
-                <TextInput
+                <AppTextInput
                   style={[
                     styles.bioTextInput,
                     {
                       backgroundColor: colors.background,
-                      borderColor: colors.border,
+                      borderColor: "transparent",
                       color: colors.text,
                     },
                   ]}
@@ -1300,7 +1302,7 @@ export default function ProfileScreen() {
                           key={team.id}
                           style={[
                             styles.teamItem,
-                            { borderColor: colors.border },
+                            { borderColor: "transparent" },
                           ]}
                           onPress={() => router.push(`/teams/${team.id}`)}
                         >
@@ -1531,7 +1533,7 @@ export default function ProfileScreen() {
                       <View
                         style={[
                           styles.priceInputContainer,
-                          { borderColor: colors.border },
+                          { borderColor: "transparent" },
                         ]}
                       >
                         <Text
@@ -1542,7 +1544,7 @@ export default function ProfileScreen() {
                         >
                           $
                         </Text>
-                        <TextInput
+                        <AppTextInput
                           style={[styles.priceInput, { color: colors.text }]}
                           value={priceMin}
                           onChangeText={setPriceMin}
@@ -1560,7 +1562,7 @@ export default function ProfileScreen() {
                       <View
                         style={[
                           styles.priceInputContainer,
-                          { borderColor: colors.border },
+                          { borderColor: "transparent" },
                         ]}
                       >
                         <Text
@@ -1571,7 +1573,7 @@ export default function ProfileScreen() {
                         >
                           $
                         </Text>
-                        <TextInput
+                        <AppTextInput
                           style={[styles.priceInput, { color: colors.text }]}
                           value={priceMax}
                           onChangeText={setPriceMax}
@@ -1669,12 +1671,12 @@ export default function ProfileScreen() {
               {isEditingLocation ? (
                 <View style={styles.locationEditContainer}>
                   <View style={styles.locationInputContainer}>
-                    <TextInput
+                    <AppTextInput
                       style={[
                         styles.locationInput,
                         {
                           backgroundColor: colors.background,
-                          borderColor: colors.border,
+                          borderColor: "transparent",
                           color: colors.text,
                         },
                       ]}

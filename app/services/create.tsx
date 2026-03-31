@@ -1,4 +1,6 @@
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -843,14 +845,14 @@ export default function CreateMarketScreen() {
               phoneNumbers.map((phone, index) => (
                 <View
                   key={index}
-                  style={[styles.phoneNumberInputRow, { borderColor: colors.border }]}
+                  style={[styles.phoneNumberInputRow, { borderColor: "transparent" }]}
                 >
-                  <TextInput
+                  <AppTextInput
                     style={[
                       styles.phoneNumberInput,
                       {
                         backgroundColor: colors.background,
-                        borderColor: colors.border,
+                        borderColor: "transparent",
                         color: colors.text,
                       },
                     ]}
@@ -963,7 +965,7 @@ export default function CreateMarketScreen() {
                     key={marketOrder.id}
                     style={[
                       styles.orderCard,
-                      { borderColor: colors.border, backgroundColor: colors.background },
+                      { borderColor: "transparent", backgroundColor: colors.background },
                     ]}
                   >
                     <TouchableOpacity

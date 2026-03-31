@@ -2,10 +2,11 @@ import {
   Alert,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { UserProfile, apiService } from "@/categories/api";
@@ -194,12 +195,12 @@ export function AccountInfo({
             <Text style={[styles.inputLabel, { color: colors.text }]}>
               {t("yearsOfExperience")}
             </Text>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

@@ -1,4 +1,6 @@
-import { Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Modal, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
@@ -77,12 +79,12 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
           <Text style={[styles.inputLabel, { color: colors.text }]}>
             {titleLabel || t("jobTitle")} *
           </Text>
-          <TextInput
+          <AppTextInput
             style={[
               styles.textInput,
               {
                 backgroundColor: colors.background,
-                borderColor: (errors.title || errors.name) ? colors.error : colors.border,
+                borderColor: (errors.title || errors.name) ? colors.error : "transparent",
                 color: colors.text,
               },
             ]}
@@ -103,12 +105,12 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
         <Text style={[styles.inputLabel, { color: colors.text }]}>
           {t("description")} *
         </Text>
-        <TextInput
+        <AppTextInput
           style={[
             styles.textArea,
             {
               backgroundColor: colors.background,
-              borderColor: errors.description ? colors.error : colors.border,
+              borderColor: errors.description ? colors.error : "transparent",
               color: colors.text,
             },
           ]}
@@ -135,12 +137,12 @@ export const BasicInformationForm: React.FC<BasicInformationFormProps> = ({
         {/* Manual Location Input with Map Shortcut */}
         <View>
           <View style={styles.manualLocationInputWrapper}>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.textInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: errors.location ? colors.error : colors.border,
+                  borderColor: errors.location ? colors.error : "transparent",
                   color: colors.text,
                   paddingRight: 48,
                 },

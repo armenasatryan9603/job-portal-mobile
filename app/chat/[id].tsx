@@ -7,10 +7,11 @@ import {
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Conversation, Message, chatService } from "@/categories/chatService";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
@@ -118,7 +119,7 @@ const TypingIndicator = ({
           styles.typingBubble,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
+            borderColor: "transparent",
           },
         ]}
       >
@@ -1223,7 +1224,7 @@ export default function ChatDetailScreen() {
               styles.systemMessageBubble,
               {
                 backgroundColor: colors.background,
-                borderColor: colors.border,
+                borderColor: "transparent",
               },
             ]}
           >
@@ -1277,7 +1278,7 @@ export default function ChatDetailScreen() {
               backgroundColor: isFromCurrentUser
                 ? colors.primary
                 : colors.surface,
-              borderColor: colors.border,
+              borderColor: "transparent",
             },
           ]}
         >
@@ -1381,7 +1382,7 @@ export default function ChatDetailScreen() {
                 styles.orderCard,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                 },
               ]}
             >
@@ -1655,7 +1656,7 @@ export default function ChatDetailScreen() {
               <View
                 style={[
                   styles.inputWrapper,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  { backgroundColor: colors.surface, borderColor: "transparent" },
                 ]}
               >
                 <TouchableOpacity
@@ -1667,7 +1668,7 @@ export default function ChatDetailScreen() {
                 >
                   <Text style={styles.emojiIcon}>😊</Text>
                 </TouchableOpacity>
-                <TextInput
+                <AppTextInput
                   style={[styles.textInput, { color: colors.text }]}
                   placeholder={t("typeMessage")}
                   placeholderTextColor={colors.tabIconDefault}

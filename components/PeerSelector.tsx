@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, FlatList, Image, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Image, ActivityIndicator, Alert, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { useIsWeb } from "@/utils/isWeb";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Spacing, ThemeColors, Shadows } from "@/constants/styles";
@@ -180,7 +182,7 @@ const CollapsibleSection: React.FC<{
     <TouchableOpacity
       style={[
         styles.collapsibleHeader,
-        { backgroundColor: colors.background, borderColor: colors.border },
+        { backgroundColor: colors.background, borderColor: "transparent" },
       ]}
       onPress={onToggle}
     >
@@ -741,7 +743,7 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
             </View>
             {!hideSearchAndAdd && (
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: colors.border }]}
+                style={[styles.secondaryButton, { borderColor: "transparent" }]}
                 onPress={() => setShowAddPeerModal(true)}
               >
                 <IconSymbol name="plus.circle" size={20} color={colors.tint} />
@@ -819,12 +821,12 @@ export const PeerSelector: React.FC<PeerSelectorProps> = ({
               )}
             </View>
 
-            <TextInput
+            <AppTextInput
               style={[
                 styles.modalSearchInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

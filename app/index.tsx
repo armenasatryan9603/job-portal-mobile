@@ -1,5 +1,6 @@
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -64,6 +65,11 @@ export default function WelcomeScreen() {
       : platformStats?.supportAvailability || "24/7";
 
   const handleLogout = () => {
+    if (Platform.OS === "web") {
+      logout();
+      return;
+    }
+
     Alert.alert(t("logout"), t("areYouSure"), [
       { text: t("cancel"), style: "cancel" },
       {

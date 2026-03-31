@@ -10,11 +10,12 @@ import {
   Share,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
   useWindowDimensions,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -1141,7 +1142,7 @@ export default function EditOrderScreen() {
                 styles.rejectionReasonContainer,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                 },
               ]}
             >
@@ -1342,7 +1343,7 @@ export default function EditOrderScreen() {
                   styles.skillTag,
                   {
                     backgroundColor: colors.background,
-                    borderColor: colors.border,
+                    borderColor: "transparent",
                   },
                 ]}
                 onPress={() => {
@@ -1980,12 +1981,12 @@ export default function EditOrderScreen() {
                     <Text style={[styles.reviewCommentLabel, { color: colors.text }]}>
                       {t("comment")} ({t("optional")})
                     </Text>
-                    <TextInput
+                    <AppTextInput
                       style={[
                         styles.reviewCommentInput,
                         {
                           backgroundColor: colors.background,
-                          borderColor: colors.border,
+                          borderColor: "transparent",
                           color: colors.text,
                         },
                       ]}

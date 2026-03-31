@@ -1,5 +1,7 @@
 import { BorderRadius, Spacing, ThemeColors, Typography } from "@/constants/styles";
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useState } from "react";
 
 import { IconSymbol } from "./ui/icon-symbol";
@@ -15,7 +17,7 @@ interface Country {
 }
 
 // List of countries mostly from Europe and Asia
-const COUNTRIES: Country[] = [
+export const COUNTRIES: Country[] = [
   // Europe
   { name: "Armenia", code: "AM", dialCode: "+374", flag: "🇦🇲" },
   { name: "Austria", code: "AT", dialCode: "+43", flag: "🇦🇹" },
@@ -153,12 +155,12 @@ export const CountryCodePicker: React.FC<CountryCodePickerProps> = ({
 
           {/* Search Input */}
           <View style={styles.searchContainer}>
-            <TextInput
+            <AppTextInput
               style={[
                 styles.searchInput,
                 {
                   backgroundColor: colors.background,
-                  borderColor: colors.border,
+                  borderColor: "transparent",
                   color: colors.text,
                 },
               ]}

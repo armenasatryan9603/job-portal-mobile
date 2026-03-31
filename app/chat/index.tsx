@@ -5,10 +5,11 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-} from "react-native";
+}
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Conversation, chatService } from "@/categories/chatService";
 import React, { useEffect, useRef, useState } from "react";
 import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
@@ -445,7 +446,7 @@ export default function ChatScreen() {
               size={20}
               color={colors.tabIconDefault}
             />
-            <TextInput
+            <AppTextInput
               style={[styles.searchInput, { color: colors.text }]}
               placeholder={t("searchConversations")}
               placeholderTextColor={colors.tabIconDefault}

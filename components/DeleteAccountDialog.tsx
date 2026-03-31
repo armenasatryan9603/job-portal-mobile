@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Platform, Modal } from "react-native";
+import { View, Text, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Platform, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -181,7 +183,7 @@ export default function DeleteAccountDialog({
                       >
                         {t("typeDeleteToConfirm")}:
                       </Text>
-                      <TextInput
+                      <AppTextInput
                         style={[
                           styles.confirmationInput,
                           {

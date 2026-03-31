@@ -1,4 +1,6 @@
-import { Alert, InteractionManager, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Alert, InteractionManager, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import {
   BorderRadius,
   ComponentSizes,
@@ -9,7 +11,7 @@ import {
 } from "@/constants/styles";
 import React, { useEffect, useState } from "react";
 
-import { CountryCodePicker } from "./CountryCodePicker";
+import { COUNTRIES, CountryCodePicker } from "./CountryCodePicker";
 import { IconSymbol } from "./ui/icon-symbol";
 import { Logo } from "./Logo";
 import { OTPVerification } from "@/components/OTPVerification";
@@ -17,6 +19,7 @@ import { ReferralCodeInput } from "./ReferralCodeInput";
 import { apiService } from "@/categories/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useGuestCountry } from "@/contexts/GuestLocationContext";
 import { useKeyboardAwarePress } from "@/hooks/useKeyboardAwarePress";
 import { useTranslation } from "@/hooks/useTranslation";
 
@@ -31,9 +34,13 @@ export function LoginModal({
   onClose,
   onSuccess,
 }: LoginModalProps) {
+  const { guestCountryIso } = useGuestCountry();
+  const defaultCountryCode =
+    COUNTRIES.find((c) => c.code === guestCountryIso)?.dialCode ?? "+374";
+
   const [step, setStep] = useState<"phone" | "otp" | "name">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [countryCode, setCountryCode] = useState("+374");
+  const [countryCode, setCountryCode] = useState(defaultCountryCode);
   const [userName, setUserName] = useState("");
   const [otpError, setOtpError] = useState<string | null>(null);
   const [showCountryPicker, setShowCountryPicker] = useState(false);
@@ -51,6 +58,13 @@ export function LoginModal({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { isKeyboardVisible } = useKeyboardAwarePress();
+
+  // Sync country code with location if the user hasn't manually changed it
+  useEffect(() => {
+    if (step === "phone") {
+      setCountryCode(defaultCountryCode);
+    }
+  }, [defaultCountryCode]);
 
   // Watch for user state changes after login
   useEffect(() => {
@@ -245,7 +259,7 @@ export function LoginModal({
   const handleBackToPhone = () => {
     setStep("phone");
     setPhoneNumber("");
-    setCountryCode("+374");
+    setCountryCode(defaultCountryCode);
     setUserName("");
     setOtpError(null); // Clear error when going back
   };
@@ -262,7 +276,7 @@ export function LoginModal({
 
     setStep("phone");
     setPhoneNumber("");
-    setCountryCode("+374");
+    setCountryCode(defaultCountryCode);
     setUserName("");
     setOtpError(null);
     setHasIncompleteProfile(false);
@@ -276,7 +290,7 @@ export function LoginModal({
 
     setStep("phone");
     setPhoneNumber("");
-    setCountryCode("+374");
+    setCountryCode(defaultCountryCode);
     setUserName("");
     setOtpError(null); // Clear error on close
     onClose();
@@ -352,7 +366,7 @@ export function LoginModal({
                 <View
                   style={[
                     styles.unifiedPhoneInput,
-                    { borderColor: colors.border },
+                    { borderColor: "transparent" },
                   ]}
                 >
                   {/* Country Code Picker Button */}
@@ -373,7 +387,7 @@ export function LoginModal({
                   {/* Divider */}
                   <View style={[styles.divider, { backgroundColor: colors.border }]} />
                   {/* Phone Number Input */}
-                  <TextInput
+                  <AppTextInput
                     style={[styles.phoneInput, { color: colors.text }]}
                     placeholder={t("phoneNumber")}
                     placeholderTextColor={colors.tabIconDefault}
@@ -428,10 +442,10 @@ export function LoginModal({
                 <View
                   style={[
                     styles.inputContainer,
-                    { borderColor: colors.border },
+                    { borderColor: "transparent" },
                   ]}
                 >
-                  <TextInput
+                  <AppTextInput
                     style={[styles.input, { color: colors.text }]}
                     placeholder={t("name")}
                     placeholderTextColor={colors.tabIconDefault}

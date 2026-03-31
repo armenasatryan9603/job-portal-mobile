@@ -1,5 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Pressable, TextInput, StyleSheet, Alert, ScrollView, ActivityIndicator, Keyboard, Modal } from "react-native";
+import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Pressable, StyleSheet, Alert, ScrollView, ActivityIndicator, Keyboard, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { ThemeColors } from "@/constants/styles";
@@ -256,13 +258,13 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     >
                       {t("feedback")} ({t("optional")})
                     </Text>
-                    <TextInput
+                    <AppTextInput
                       style={[
                         styles.feedbackInput,
                         {
                           backgroundColor: colors.backgroundSecondary,
                           color: colors.text,
-                          borderColor: colors.border,
+                          borderColor: "transparent",
                         },
                       ]}
                       placeholder={t("writeYourFeedback")}
@@ -281,7 +283,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     style={[
                       styles.button,
                       styles.cancelButton,
-                      { borderColor: colors.border },
+                      { borderColor: "transparent" },
                     ]}
                     onPress={handleClose}
                     disabled={loading}

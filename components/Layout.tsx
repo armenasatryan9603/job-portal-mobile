@@ -226,28 +226,28 @@ export const Layout: React.FC<LayoutProps> = ({
             ]}
           >
             {webSidebarCollapsed ? (
-              <View style={styles.webCollapsedLogoColumn}>
-                <Logo
-                  size={40}
-                  type="short"
-                  variant="small"
-                  onPress={() => {
-                    openSidebar();
-                    router.push("/");
-                  }}
-                  style={{ alignSelf: "center" }}
-                />
-              </View>
-            ) : (
               <Logo
-                size={44}
-                type="full"
+                size={40}
+                type="short"
+                variant="small"
                 onPress={() => {
-                  closeSidebar();
+                  openSidebar();
                   router.push("/");
                 }}
-                style={styles.sidebarLogo}
+                style={{ alignSelf: "center", height: 44 }}
               />
+            ) : (
+              <View style={{ backgroundColor: '#fff', borderRadius: 4 }}>
+                <Logo
+                  size={44}
+                  type="full"
+                  onPress={() => {
+                    closeSidebar();
+                    router.push("/");
+                  }}
+                  style={styles.sidebarLogo}
+                />
+              </View>
             )}
           </View>
 
@@ -705,11 +705,6 @@ const styles = StyleSheet.create({
   logoSectionCollapsedWeb: {
     alignItems: "center",
     paddingHorizontal: 4,
-    paddingBottom: 8,
-  },
-  webCollapsedLogoColumn: {
-    alignItems: "center",
-    gap: 6,
   },
   userSectionCollapsedWeb: {
     paddingHorizontal: 8,

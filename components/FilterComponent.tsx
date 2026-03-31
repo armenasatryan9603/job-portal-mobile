@@ -1,4 +1,6 @@
-import { ActivityIndicator, Animated, Dimensions, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal } from "react-native";
+import { ActivityIndicator, Animated, Dimensions, Easing, PanResponder, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Modal }
+from "react-native";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useRef, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
 
@@ -55,6 +57,10 @@ export interface FilterProps {
   hideModalForLocation?: boolean; // Hide filter modal when location modal is open
   /** Currency code for price range label (e.g. USD, EUR, AMD). Default USD. */
   priceRangeCurrency?: string;
+  /** Renders the search bar in AI-prompt style (purple border + sparkle icon). */
+  aiMode?: boolean;
+  /** Called when the user taps the ✦ AI badge to toggle mode. */
+  onAiModeToggle?: () => void;
 }
 
 /** Returns symbol or code for price range prefix (e.g. USD → $, EUR → €, AMD → AMD). */
@@ -84,6 +90,8 @@ export const Filter: React.FC<FilterProps> = ({
   loading = false,
   hideModalForLocation = false,
   priceRangeCurrency = "USD",
+  aiMode = false,
+  onAiModeToggle,
 }) => {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
@@ -102,6 +110,25 @@ export const Filter: React.FC<FilterProps> = ({
   const slideAnim = useRef(new Animated.Value(0)).current;
   const panY = useRef(new Animated.Value(0)).current;
   const lastGestureY = useRef(0);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [searchBarWidth, setSearchBarWidth] = useState(300);
+
+  useEffect(() => {
+    if (aiMode && loading) {
+      progressAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(progressAnim, {
+          toValue: 1,
+          duration: 1000,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      progressAnim.stopAnimation();
+      progressAnim.setValue(0);
+    }
+  }, [aiMode, loading]);
 
   const priceRangeSection = filterSections.find(
     (s) => (s.key || s.title) === "priceRange"
@@ -413,40 +440,90 @@ export const Filter: React.FC<FilterProps> = ({
       {/* Compact Search Bar with Filter Button */}
       <View style={styles.searchRow}>
         <View
-          style={[
-            styles.searchContainer,
-            { borderColor: colors.border, flex: 1 },
-          ]}
+          style={{ flex: 1 }}
+          onLayout={(e) => setSearchBarWidth(e.nativeEvent.layout.width)}
         >
-          <IconSymbol
-            name="magnifyingglass"
-            size={18}
-            color={colors.tabIconDefault}
-          />
-          <TextInput
-            ref={textInputRef}
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder={searchPlaceholder}
-            placeholderTextColor={colors.tabIconDefault}
-            value={searchQuery}
-            onChangeText={handleSearchChange}
-            returnKeyType="search"
-            blurOnSubmit={false}
-          />
-          {loading ? (
-            <ActivityIndicator size="small" color={colors.tint} />
-          ) : searchQuery.length > 0 ? (
-            <TouchableOpacity
-              onPress={() => handleSearchChange("")}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <IconSymbol
-                name="xmark.circle.fill"
-                size={16}
-                color={colors.tabIconDefault}
+          <View
+            style={[
+              styles.searchContainer,
+              {
+                borderColor: aiMode ? "rgba(124,58,237,0.4)" : colors.border,
+                backgroundColor: aiMode ? "rgba(124,58,237,0.04)" : undefined,
+              },
+            ]}
+          >
+            {aiMode ? (
+              <IconSymbol name="sparkles" size={18} color="#7C3AED" />
+            ) : (
+              <IconSymbol name="magnifyingglass" size={18} color={colors.tabIconDefault} />
+            )}
+            <AppTextInput
+              ref={textInputRef}
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder={aiMode ? "Ask AI: describe what you need..." : searchPlaceholder}
+              placeholderTextColor={aiMode ? "rgba(124,58,237,0.4)" : colors.tabIconDefault}
+              value={searchQuery}
+              onChangeText={handleSearchChange}
+              returnKeyType="search"
+              blurOnSubmit={false}
+            />
+            {loading && !aiMode ? (
+              <ActivityIndicator size="small" color={colors.tint} />
+            ) : !loading && searchQuery.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => handleSearchChange("")}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <IconSymbol
+                  name="xmark.circle.fill"
+                  size={16}
+                  color={aiMode ? "rgba(124,58,237,0.5)" : colors.tabIconDefault}
+                />
+              </TouchableOpacity>
+            ) : null}
+            {onAiModeToggle && (
+              <>
+                <View style={[styles.searchAiDivider, { backgroundColor: aiMode ? "rgba(124,58,237,0.25)" : colors.borderSecondary }]} />
+                <TouchableOpacity
+                  onPress={onAiModeToggle}
+                  style={[
+                    styles.searchAiBadge,
+                    aiMode
+                      ? { backgroundColor: "#7C3AED" }
+                      : { backgroundColor: colors.backgroundSecondary, borderWidth: 1, borderColor: colors.borderSecondary },
+                  ]}
+                  hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+                  activeOpacity={0.75}
+                >
+                  <IconSymbol name="sparkles" size={11} color={aiMode ? "#fff" : colors.textTertiary} />
+                  <Text style={[styles.searchAiBadgeText, { color: aiMode ? "#fff" : colors.textTertiary }]}>
+                    AI
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+
+          {/* Sweeping progress bar — visible only while AI search is in flight */}
+          <View style={styles.aiProgressTrack}>
+            {aiMode && loading && (
+              <Animated.View
+                style={[
+                  styles.aiProgressBar,
+                  {
+                    transform: [
+                      {
+                        translateX: progressAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-searchBarWidth * 0.45, searchBarWidth * 1.1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
               />
-            </TouchableOpacity>
-          ) : null}
+            )}
+          </View>
         </View>
         <TouchableOpacity
           style={[
@@ -455,7 +532,7 @@ export const Filter: React.FC<FilterProps> = ({
               backgroundColor: hasActiveFilters()
                 ? colors.tint
                 : colors.background,
-              borderColor: colors.border,
+              borderColor: "transparent",
             },
           ]}
           onPress={() => setFilterModalVisible(true)}
@@ -493,6 +570,7 @@ export const Filter: React.FC<FilterProps> = ({
           )}
         </TouchableOpacity>
       </View>
+
 
       {/* Filter Modal */}
       <Modal
@@ -676,7 +754,7 @@ export const Filter: React.FC<FilterProps> = ({
                                     style={[
                                       styles.priceInputContainer,
                                       {
-                                        borderColor: colors.border,
+                                        borderColor: "transparent",
                                         backgroundColor: colors.background,
                                       },
                                     ]}
@@ -711,7 +789,7 @@ export const Filter: React.FC<FilterProps> = ({
                                         ⭐
                                       </Text>
                                     )}
-                                    <TextInput
+                                    <AppTextInput
                                       style={[
                                         styles.priceInput,
                                         { color: colors.text },
@@ -815,7 +893,7 @@ export const Filter: React.FC<FilterProps> = ({
                                     style={[
                                       styles.priceInputContainer,
                                       {
-                                        borderColor: colors.border,
+                                        borderColor: "transparent",
                                         backgroundColor: colors.background,
                                       },
                                     ]}
@@ -850,7 +928,7 @@ export const Filter: React.FC<FilterProps> = ({
                                         ⭐
                                       </Text>
                                     )}
-                                    <TextInput
+                                    <AppTextInput
                                       style={[
                                         styles.priceInput,
                                         { color: colors.text },
@@ -1358,11 +1436,11 @@ export const Filter: React.FC<FilterProps> = ({
                           </View>
                           {isExpanded && (
                             <View style={styles.textInputContainer}>
-                              <TextInput
+                              <AppTextInput
                                 style={[
                                   styles.textInput,
                                   {
-                                    borderColor: colors.border,
+                                    borderColor: "transparent",
                                     backgroundColor: colors.background,
                                     color: colors.text,
                                   },
@@ -1568,6 +1646,39 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 20,
     paddingVertical: 0,
+  },
+  searchAiDivider: {
+    width: 1,
+    height: 18,
+    marginHorizontal: 4,
+  },
+  searchAiBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 50,
+  },
+  searchAiBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+  },
+  aiProgressTrack: {
+    height: 2,
+    overflow: "hidden",
+    borderRadius: 1,
+    marginTop: 3,
+  },
+  aiProgressBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "45%",
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#7C3AED",
   },
   filterButton: {
     width: 44,
