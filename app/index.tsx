@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   featureCard: {
-    width: "49.2%",
+    width: "48%",
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
     alignItems: "center",
