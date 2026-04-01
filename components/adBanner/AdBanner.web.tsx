@@ -65,8 +65,7 @@ export function AdBanner() {
 
     const tryPush = () => {
       if (pushed.current) return;
-      const ins = insRef.current;
-      if (!ins || ins.offsetWidth === 0) return;
+      if (!insRef.current) return;
 
       try {
         const w = window as any;
@@ -96,7 +95,7 @@ export function AdBanner() {
     <ins
       ref={insRef}
       className="adsbygoogle"
-      style={{ display: "block" }}
+      style={{ display: "block", width: "100%" }}
       data-ad-client={AD_CLIENT}
       data-ad-slot={AD_SLOT}
       data-ad-format="auto"

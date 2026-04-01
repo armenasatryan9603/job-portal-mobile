@@ -41,7 +41,7 @@ interface LayoutProps {
 }
 
 const { height } = Dimensions.get("window");
-const SIDE_ADS_MIN_VIEWPORT_WIDTH = 1400;
+const SIDE_ADS_MIN_VIEWPORT_WIDTH = 1024;
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
