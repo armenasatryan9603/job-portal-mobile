@@ -175,7 +175,7 @@ export default function WelcomeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {
-            !isDesktopWeb && (
+            Platform.OS !== 'web' && (
               <View style={styles.adSlotPlaceholder}>
                 <AdBanner/>
               </View>
