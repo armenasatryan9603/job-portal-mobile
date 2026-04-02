@@ -245,7 +245,6 @@ export const MainTabs: React.FC<MainTabsProps> = ({
         { backgroundColor: colors.surface },
       ]}
     >
-      <AppDownloadBanner />
       <View
         style={[
           styles.nativeTabBar,
@@ -334,6 +333,7 @@ export const MainTabs: React.FC<MainTabsProps> = ({
           })}
         </View>
       </View>
+      <AppDownloadBanner />
     </View>
   );
 };
