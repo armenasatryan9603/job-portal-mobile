@@ -1,14 +1,14 @@
-import { RelativePathString, router } from "expo-router";
 import React, {
-  createContext,
   ReactNode,
+  createContext,
   useContext,
   useEffect,
   useState,
 } from "react";
-import { Platform } from "react-native";
-
+import { RelativePathString, router } from "expo-router";
 import { isWeb, useIsWeb } from "@/utils/isWeb";
+
+import { Platform } from "react-native";
 
 interface NavigationContextType {
   // Sidebar state
@@ -23,14 +23,6 @@ interface NavigationContextType {
 
   // Navigation helpers
   navigateTo: (route: string) => void;
-  navigateToProfile: () => void;
-  navigateToSettings: () => void;
-  navigateToMyOrders: () => void;
-  navigateToMyJobs: () => void;
-  navigateToCalendar: () => void;
-  navigateToSavedOrders: () => void;
-  navigateToHelp: () => void;
-  navigateToServices: () => void;
 }
 
 const NavigationContext = createContext<NavigationContextType | undefined>(
@@ -74,48 +66,10 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
   const canGoBack = router.canGoBack();
 
   const navigateTo = (route: string) => {
-    closeSidebar();
+    if (!wideWeb) {
+      closeSidebar();
+    }
     router.push(route as RelativePathString);
-  };
-
-  const navigateToProfile = () => {
-    closeSidebar();
-    router.push("/profile/profile");
-  };
-
-  const navigateToSettings = () => {
-    closeSidebar();
-    router.push("/profile/settings");
-  };
-
-  const navigateToMyOrders = () => {
-    closeSidebar();
-    router.push("/orders?myOrders=true");
-  };
-
-  const navigateToMyJobs = () => {
-    closeSidebar();
-    router.push("/orders?myJobs=true");
-  };
-
-  const navigateToCalendar = () => {
-    closeSidebar();
-    router.push("/calendar");
-  };
-
-  const navigateToSavedOrders = () => {
-    closeSidebar();
-    router.push("/orders?saved=true");
-  };
-
-  const navigateToHelp = () => {
-    closeSidebar();
-    router.push("/profile/help");
-  };
-
-  const navigateToServices = () => {
-    closeSidebar();
-    router.push("/services?myServices=true");
   };
 
   const value: NavigationContextType = {
@@ -126,14 +80,6 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({
     goBack,
     canGoBack,
     navigateTo,
-    navigateToProfile,
-    navigateToSettings,
-    navigateToMyOrders,
-    navigateToMyJobs,
-    navigateToCalendar,
-    navigateToSavedOrders,
-    navigateToHelp,
-    navigateToServices,
   };
 
   return (

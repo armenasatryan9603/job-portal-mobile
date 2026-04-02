@@ -66,14 +66,7 @@ export const Layout: React.FC<LayoutProps> = ({
     sidebarVisible,
     openSidebar,
     closeSidebar,
-    navigateToProfile,
-    navigateToSettings,
-    navigateToMyOrders,
-    navigateToMyJobs,
-    navigateToCalendar,
-    navigateToSavedOrders,
-    navigateToHelp,
-    navigateToServices,
+    navigateTo,
   } = useNavigation();
   const sidebarAnimation = React.useState(new Animated.Value(-280))[0];
   const sidebarOpacity = React.useState(new Animated.Value(0))[0];
@@ -266,7 +259,7 @@ export const Layout: React.FC<LayoutProps> = ({
               { borderBottomColor: colors.border },
               webSidebarCollapsed && styles.userSectionCollapsedWeb,
             ]}
-            onPress={isAuthenticated ? navigateToProfile : showLoginModal}
+            onPress={isAuthenticated ? () => navigateTo("/profile/profile") : showLoginModal}
           >
             <View
               style={[
@@ -383,7 +376,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToCalendar}
+                  onPress={() => navigateTo("/calendar")}
                 >
                   <IconSymbol
                     name="calendar"
@@ -402,7 +395,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToServices}
+                  onPress={() => navigateTo("/services?myServices=true")}
                 >
                   <IconSymbol
                     name="building.2.fill"
@@ -421,7 +414,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToMyOrders}
+                  onPress={() => navigateTo("/orders?myOrders=true")}
                 >
                   <IconSymbol
                     name="doc.text.fill"
@@ -440,7 +433,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToMyJobs}
+                  onPress={() => navigateTo("/orders?myJobs=true")}
                 >
                   <IconSymbol
                     name="briefcase.fill"
@@ -459,7 +452,7 @@ export const Layout: React.FC<LayoutProps> = ({
                     webSidebarCollapsed && styles.menuItemCollapsedWeb,
                     { borderBottomColor: colors.border },
                   ]}
-                  onPress={navigateToSavedOrders}
+                  onPress={() => navigateTo("/orders?saved=true")}
                 >
                   <IconSymbol
                     name="bookmark.fill"
@@ -503,7 +496,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 webSidebarCollapsed && styles.menuItemCollapsedWeb,
                 { borderBottomColor: colors.border },
               ]}
-              onPress={navigateToSettings}
+              onPress={() => navigateTo("/profile/settings")}
             >
               <IconSymbol
                 name="gearshape.fill"
@@ -522,7 +515,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 webSidebarCollapsed && styles.menuItemCollapsedWeb,
                 { borderBottomColor: colors.border },
               ]}
-              onPress={navigateToHelp}
+              onPress={() => navigateTo("/profile/help")}
             >
               <IconSymbol
                 name="questionmark.circle.fill"
