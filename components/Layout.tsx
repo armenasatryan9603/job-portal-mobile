@@ -13,6 +13,7 @@ import {
 import { Spacing, ThemeColors } from "@/constants/styles";
 
 import { AdBanner } from "@/components/adBanner/AdBanner";
+import { AppDownloadBanner } from "@/components/AppDownloadBanner";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Logo } from "./Logo";
 import { MainTabs } from "@/components/MainTabs";
@@ -619,6 +620,7 @@ export const Layout: React.FC<LayoutProps> = ({
       )}
 
       {/* Footer Tabs */}
+      <AppDownloadBanner />
     </View>
   );
 };
