@@ -109,10 +109,6 @@ export const AppDownloadBanner: React.FC = () => {
 
 const styles = StyleSheet.create({
   banner: {
-    position: "fixed" as any,
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
@@ -122,7 +118,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 8,
-    zIndex: 9999,
     gap: 10,
   },
   left: {

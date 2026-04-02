@@ -3,6 +3,8 @@ import * as Haptics from "expo-haptics";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
 
+import { AppDownloadBanner } from "@/components/AppDownloadBanner";
+
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
 import { ThemeColors } from "@/constants/styles";
@@ -243,6 +245,7 @@ export const MainTabs: React.FC<MainTabsProps> = ({
         { backgroundColor: colors.surface },
       ]}
     >
+      <AppDownloadBanner />
       <View
         style={[
           styles.nativeTabBar,

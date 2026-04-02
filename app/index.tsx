@@ -397,10 +397,10 @@ export default function WelcomeScreen() {
                 ))}
               </View>
             </View>
-            {!isDesktopWeb &&
-            (<View style={styles.adSlotPlaceholder}>
+            {Platform.OS !== 'web' && (<View style={styles.adSlotPlaceholder}>
               <AdBanner />
-            </View>)}
+            </View>
+            )}
 
             {/* Features */}
             <View style={styles.sectionContainer}>
