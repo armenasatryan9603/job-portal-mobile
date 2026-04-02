@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Account & Profile - HopWork Support</title>
+    <meta
+      name="description"
+      content="Manage your HopWork account settings, profile, privacy, security, and data export options."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='20'%20fill='%236366f1'/%3E%3Ctext%20x='50'%20y='64'%20font-size='44'%20text-anchor='middle'%20fill='white'%20font-family='Arial'%20font-weight='700'%3EHW%3C/text%3E%3C/svg%3E"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #8b5cf6;
+        --text: #1f2937;
+        --text-light: #6b7280;
+        --bg: #ffffff;
+        --bg-alt: #f9fafb;
+        --border: #e5e7eb;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      /* Header */
+      header {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow);
+      }
+
+      .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      nav a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: var(--primary);
+      }
+
+      .lang-selector {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+
+      .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text);
+        padding: 0.5rem;
+        z-index: 1001;
+      }
+
+      .mobile-menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1;
+      }
+
+      .mobile-menu-overlay.active {
+        display: block;
+      }
+
+      /* Breadcrumbs */
+      .breadcrumbs {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--text-light);
+      }
+
+      .breadcrumbs a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      .breadcrumbs a:hover {
+        text-decoration: underline;
+      }
+
+      /* Section Hero */
+      .section-hero {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        color: white;
+        padding: 3rem 1.5rem;
+      }
+
+      .section-hero-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .section-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .section-hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .section-hero p {
+        font-size: 1.125rem;
+        opacity: 0.95;
+      }
+
+      /* Container */
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      /* Articles Grid */
+      .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 4rem;
+      }
+
+      .article-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+      }
+
+      .article-card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+        transform: translateY(-4px);
+      }
+
+      .article-card.warning {
+        border-left: 4px solid var(--warning);
+      }
+
+      .article-card.danger {
+        border-left: 4px solid var(--danger);
+      }
+
+      .article-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+      }
+
+      .article-card p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+      }
+
+      .article-steps {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .article-steps li {
+        padding: 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: start;
+        gap: 0.5rem;
+      }
+
+      .article-steps li::before {
+        content: "•";
+        color: var(--primary);
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .read-more {
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      .warning-badge {
+        display: inline-block;
+        background: var(--warning);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      /* Footer */
+      footer {
+        background: var(--text);
+        color: white;
+        padding: 3rem 1.5rem 1.5rem;
+        margin-top: 4rem;
+      }
+
+      .footer-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-section h4 {
+        margin-bottom: 1rem;
+        color: white;
+      }
+
+      .footer-section a {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+      }
+
+      .footer-section a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.875rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        nav {
+          display: none;
+          position: fixed;
+          top: 0;
+          right: -100%;
+          width: 280px;
+          height: 100vh;
+          background: var(--bg);
+          flex-direction: column;
+          padding: 4rem 1.5rem 1.5rem;
+          box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+          z-index: 1001;
+          transition: right 0.3s ease;
+          overflow-y: auto;
+        }
+
+        nav.active {
+          display: flex;
+          right: 0;
+        }
+
+        nav a {
+          padding: 1rem 0;
+          border-bottom: 1px solid var(--border);
+          width: 100%;
+        }
+
+        nav a:last-child {
+          border-bottom: none;
+        }
+
+        .mobile-menu-btn {
+          display: block;
+          position: relative;
+          z-index: 1001;
+        }
+
+        .header-content {
+          position: relative;
+        }
+
+        .section-hero-content {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .section-hero h1 {
+          font-size: 2rem;
+        }
+
+        .articles-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="header-content">
+        <a href="index.html" class="logo">
+          <svg
+            width="32"
+            height="32"
+            viewBox="-4 -10 122 74"
+            xmlns="http://www.w3.org/2000/svg"
+            style="display: block;"
+          >
+            <rect x="-4" y="-10" width="122" height="74" rx="6" fill="#fff"/>
+            <g transform="matrix(1.001381758918136,0,0,1.001381758918136,6.9309046529046965,-19.59593903758497)" fill="#0a7ea4">
+              <g>
+                <path d="M99.859,25.475l-17.184,5.448l0.148,0.955l-7.432,2.154l0.812,4.357l-9.449-0.511l-11.467-6.13c0,0-3.842-1.529-12.662-1.374l-1.535,1.887l-17.486,1.95l0.317-2.498l-7.546-1.716l0.094-0.962L0.069,24.562v36.621l13.14,1.196l0.136-1.39l6.896-0.201l0.354-2.796l1.54,0.058c0.569,3.421,4.459,3.065,4.459,3.065s0.591-0.329,1.25-0.774l0.665,0.512l-1.581,1.176c-0.066,1.234,0.116,3.255,1.46,4.268c1.574,1.186,4.031,1.012,4.629,0.378c0.204-0.217,0.753-0.702,1.342-1.318l0.725,0.558l-2.119,2.507c1.86,3.947,6.757,2.983,6.757,2.983l0.922-1.212l0.712,0.549l-0.701,0.944c0.928,2.465,3.733,2.511,5.033,2.39l0.983,0.757l0.167,0.064c1.094,0.422,2.177,0.566,3.166,0.537c2.346-0.084,4.178-1.047,5.043-1.589c0.748,0.19,1.459,0.268,2.121,0.248c2.152-0.059,3.703-1.147,4.625-2.153c0.469-0.506,0.805-0.996,1.025-1.371c2.914-0.391,4.689-1.554,5.635-2.846c0.529-0.722,0.791-1.431,0.918-1.997c2.148-0.406,3.617-1.679,4.465-2.863c0.996-1.375,1.301-2.646,1.326-2.739l0.148-0.614l-1.449-1.69l5.67-1.608l1.236,6.631l6.896-0.201l0.217,1.38l12.051-1.903L99.859,25.475z M18.336,58.689l-4.494,0.131l3.6-26.371l4.098,0.932L18.336,58.689z M71.562,61.768c-0.66,0.747-1.543,1.392-2.941,1.575l-9.303-11.425l-1.91,1.555l9.555,11.733c-0.068,0.293-0.205,0.672-0.49,1.052c-0.525,0.696-1.572,1.551-4.07,1.878l-6.531-8.495l-1.953,1.5l6.555,8.525c-0.186,0.266-0.432,0.57-0.736,0.853c-0.639,0.588-1.463,1.075-2.639,1.112c-0.445,0.014-0.957-0.046-1.537-0.204l-3.377-4.3l-1.937,1.521l2.759,3.512c-0.773,0.378-1.877,0.786-3.074,0.813c-0.657,0.019-1.343-0.065-2.048-0.313l-0.562-0.433l2.062-3.772c-0.427-4.093-4.288-2.748-4.288-2.748l-2.271,3.058l-0.693-0.532l2.532-3.333c0.851-5.978-4.854-4.579-4.854-4.579l-3.136,3.711l-0.824-0.635c0.392-0.742,0.555-1.497,0.189-2.146c-1.262-2.234-3.842-2.017-5.205-1.715l-1.219-0.938c0.207-0.971-0.987-3.193-3.402-3.524c-1.037-0.141-1.933,0.165-2.626,0.567l-2.682-0.099l2.384-18.816l15.585-1.736L38.864,35c0,0,3.246,7.052,9.17,1.842l8.158,4.155l16.383,19.104C72.391,60.549,72.064,61.191,71.562,61.768z M82.547,60.635l-4.678-25.078l4.037-1.169l5.133,26.116L82.547,60.635z"/>
+              </g>
+            </g>
+          </svg>
+          HopWork
+        </a>
+        <nav>
+          <a href="index.html">Help Center</a>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <select class="lang-selector">
+          <option value="en">English</option>
+          <option value="hy">Հայերեն</option>
+          <option value="ru">Русский</option>
+        </select>
+        <button class="mobile-menu-btn">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      <span>Account & Profile</span>
+    </div>
+
+    <!-- Section Hero -->
+    <section class="section-hero">
+      <div class="section-hero-content">
+        <div class="section-icon">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div>
+          <h1>Account & Profile</h1>
+          <p>Manage your account settings and profile</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+      <div class="articles-grid">
+        <!-- Article 1: Updating Your Profile -->
+        <a href="#" class="article-card">
+          <h3>Updating Your Profile</h3>
+          <p>Keep your information current and up-to-date</p>
+          <ul class="article-steps">
+            <li>Go to your Profile tab</li>
+            <li>Tap on 'Edit' button</li>
+            <li>Update any information you want to change</li>
+            <li>Add or change your profile photo</li>
+            <li>Update your bio, location, or contact information</li>
+            <li>Tap 'Save' to apply changes</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+
+        <!-- Article 2: Role Requirements for Specialists -->
+        <a href="#" class="article-card warning">
+          <h3>Role Requirements for Specialists</h3>
+          <p>
+            To be visible and searchable in the specialists list, your role must
+            be set to 'Specialist', not 'Client'
+          </p>
+          <ul class="article-steps">
+            <li>Go to your Profile tab</li>
+            <li>Open the Account Information section</li>
+            <li>Tap on 'Edit' button</li>
+            <li>Select 'Specialist' as your role</li>
+            <li>Tap 'Save' to apply changes</li>
+            <li>Your profile will now appear in the specialists list</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+
+        <!-- Article 3: Privacy Settings -->
+        <a href="#" class="article-card">
+          <h3>Privacy Settings</h3>
+          <p>Control who can see your information</p>
+          <ul class="article-steps">
+            <li>Manage who can see your profile information</li>
+            <li>Control visibility of your orders</li>
+            <li>Adjust notification preferences</li>
+            <li>Manage data sharing settings</li>
+            <li>Review connected apps and services</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+
+        <!-- Article 3: Account Security -->
+        <a href="#" class="article-card warning">
+          <h3>Account Security</h3>
+          <p>Keep your account safe and secure</p>
+          <ul class="article-steps">
+            <li>Use a strong, unique password</li>
+            <li>Enable two-factor authentication if available</li>
+            <li>Keep your phone number updated</li>
+            <li>Don't share your OTP codes with anyone</li>
+            <li>Log out from shared devices</li>
+            <li>Report suspicious activity immediately</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+
+        <!-- Article 4: Data Export -->
+        <a href="#" class="article-card">
+          <h3>Data Export</h3>
+          <p>Download a copy of your personal data</p>
+          <ul class="article-steps">
+            <li>Go to Settings > Privacy</li>
+            <li>Tap on 'Export Data'</li>
+            <li>Request your data export</li>
+            <li>You'll receive a download link via email</li>
+            <li>Download and save your data</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+
+        <!-- Article 5: Account Deletion -->
+        <a href="#" class="article-card danger">
+          <span class="warning-badge">⚠️ Permanent Action</span>
+          <h3>Account Deletion</h3>
+          <p>Permanently delete your account and all data</p>
+          <ul class="article-steps">
+            <li>Go to Settings > Account > Delete Account</li>
+            <li>Type 'DELETE' to confirm</li>
+            <li>This action is permanent and cannot be undone</li>
+            <li>All your data will be deleted</li>
+            <li>You cannot delete accounts with active orders</li>
+            <li>Export your data before deletion if needed</li>
+          </ul>
+          <span class="read-more">Read more →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Help Center</h4>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="contact.html">Contact Support</a>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <a href="index.html">FAQ</a>
+          <a href="tutorials.html">Tutorials</a>
+          <a href="status.html">System Status</a>
+          <a href="community.html">Community</a>
+        </div>
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="terms-of-service.html">Terms of Service</a>
+          <a href="cookie-policy.html">Cookie Policy</a>
+          <a href="gdpr.html">GDPR Compliance</a>
+        </div>
+        <div class="footer-section">
+          <h4>Contact</h4>
+          <a href="mailto:support@hotwork.app">support@hotwork.app</a>
+          <a href="tel:+37477754955">+374 77 754 955</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 HopWork. All rights reserved.</p>
+        <p style="margin-top: 0.25rem;">Address: 16 A Arshakunyats Ave, Yerevan</p>
+      </div>
+    </footer>
+
+    <script>
+      // Mobile Menu Toggle
+      const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+      const nav = document.querySelector("nav");
+      const overlay = document.createElement("div");
+      overlay.className = "mobile-menu-overlay";
+      document.body.appendChild(overlay);
+
+      mobileMenuBtn.addEventListener("click", () => {
+        nav.classList.toggle("active");
+        overlay.classList.toggle("active");
+      });
+
+      overlay.addEventListener("click", () => {
+        nav.classList.remove("active");
+        overlay.classList.remove("active");
+      });
+
+      // Close menu when clicking on a nav link
+      nav.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          nav.classList.remove("active");
+          overlay.classList.remove("active");
+        });
+      });
+
+      // Translations
+      const translations = {
+        en: {
+          accountProfile: "Account & Profile",
+          accountProfileDesc: "Manage your account settings and profile",
+          helpCenter: "Help Center",
+          gettingStarted: "Getting Started",
+          ordersPayments: "Orders & Payments",
+          contact: "Contact",
+          home: "Home",
+          // Article 1
+          updatingProfile: "Updating Your Profile",
+          updatingProfileDesc: "Keep your information current and up-to-date",
+          goToProfile: "Go to your Profile tab",
+          tapEdit: "Tap on 'Edit' button",
+          updateInfo: "Update any information you want to change",
+          changePhoto: "Add or change your profile photo",
+          updateBio: "Update your bio, location, or contact information",
+          tapSave: "Tap 'Save' to apply changes",
+          // Article 2
+          roleRequirementsForSpecialists: "Role Requirements for Specialists",
+          roleRequirementsForSpecialistsDesc:
+            "To be visible and searchable in the specialists list, your role must be set to 'Specialist', not 'Client'",
+          goToProfileRole: "Go to your Profile tab",
+          openAccountInfo: "Open the Account Information section",
+          tapEditRole: "Tap on 'Edit' button",
+          selectSpecialist: "Select 'Specialist' as your role",
+          tapSaveRole: "Tap 'Save' to apply changes",
+          profileAppearsInList:
+            "Your profile will now appear in the specialists list",
+          // Article 3
+          privacySettings: "Privacy Settings",
+          privacySettingsDesc: "Control who can see your information",
+          manageProfileVisibility:
+            "Manage who can see your profile information",
+          controlOrderVisibility: "Control visibility of your orders",
+          adjustNotifications: "Adjust notification preferences",
+          manageDataSharing: "Manage data sharing settings",
+          reviewConnectedApps: "Review connected apps and services",
+          // Article 4
+          accountSecurity: "Account Security",
+          accountSecurityDesc: "Keep your account safe and secure",
+          strongPassword: "Use a strong, unique password",
+          twoFactor: "Enable two-factor authentication if available",
+          keepPhoneUpdated: "Keep your phone number updated",
+          dontShareOTP: "Don't share your OTP codes with anyone",
+          logoutShared: "Log out from shared devices",
+          reportSuspicious: "Report suspicious activity immediately",
+          // Article 5
+          dataExport: "Data Export",
+          dataExportDesc: "Download a copy of your personal data",
+          goToSettingsPrivacy: "Go to Settings > Privacy",
+          tapExportData: "Tap on 'Export Data'",
+          requestExport: "Request your data export",
+          receiveLink: "You'll receive a download link via email",
+          downloadSave: "Download and save your data",
+          // Article 6
+          accountDeletion: "Account Deletion",
+          accountDeletionDesc: "Permanently delete your account and all data",
+          permanentAction: "⚠️ Permanent Action",
+          goToDeleteAccount: "Go to Settings > Account > Delete Account",
+          typeDelete: "Type 'DELETE' to confirm",
+          permanentCannotUndo: "This action is permanent and cannot be undone",
+          allDataDeleted: "All your data will be deleted",
+          cannotDeleteActive: "You cannot delete accounts with active orders",
+          exportBeforeDeletion: "Export your data before deletion if needed",
+          readMore: "Read more →",
+          readLess: "Read less ↑",
+        },
+        hy: {
+          accountProfile: "Հաշիվ և Պրոֆիլ",
+          accountProfileDesc: "Կառավարեք ձեր հաշվի կարգավորումները և պրոֆիլը",
+          helpCenter: "Օգնության Կենտրոն",
+          gettingStarted: "Սկսելով",
+          ordersPayments: "Պատվերներ և Վճարումներ",
+          contact: "Կապ",
+          home: "Գլխավոր",
+          // Article 1
+          updatingProfile: "Պրոֆիլի Թարմացում",
+          updatingProfileDesc: "Պահեք ձեր տեղեկությունները թարմ և արդիական",
+          goToProfile: "Գնացեք ձեր Պրոֆիլ ներդիր",
+          tapEdit: "Սեղմեք 'Խմբագրել' կոճակը",
+          updateInfo: "Թարմացրեք ցանկացած տեղեկություն, որը ցանկանում եք փոխել",
+          changePhoto: "Ավելացրեք կամ փոխեք ձեր պրոֆիլի լուսանկարը",
+          updateBio:
+            "Թարմացրեք ձեր կենսագրությունը, գտնվելու վայրը կամ կոնտակտային տեղեկությունները",
+          tapSave: "Սեղմեք 'Պահպանել'՝ փոփոխությունները կիրառելու համար",
+          // Article 2
+          roleRequirementsForSpecialists: "Մասնագետների Դերի Պահանջներ",
+          roleRequirementsForSpecialistsDesc:
+            "Մասնագետների ցուցակում տեսանելի և որոնելի լինելու համար ձեր դերը պետք է լինի 'Մասնագետ', ոչ թե 'Հաճախորդ'",
+          goToProfileRole: "Գնացեք ձեր Պրոֆիլ ներդիր",
+          openAccountInfo: "Բացեք Հաշվի Տեղեկությունների բաժինը",
+          tapEditRole: "Սեղմեք 'Խմբագրել' կոճակը",
+          selectSpecialist: "Ընտրեք 'Մասնագետ' որպես ձեր դեր",
+          tapSaveRole: "Սեղմեք 'Պահպանել'՝ փոփոխությունները կիրառելու համար",
+          profileAppearsInList:
+            "Ձեր պրոֆիլը այժմ կհայտնվի մասնագետների ցուցակում",
+          // Article 3
+          privacySettings: "Գաղտնիության Կարգավորումներ",
+          privacySettingsDesc:
+            "Վերահսկեք, թե ով կարող է տեսնել ձեր տեղեկությունները",
+          manageProfileVisibility:
+            "Կառավարեք, թե ով կարող է տեսնել ձեր պրոֆիլի տեղեկությունները",
+          controlOrderVisibility: "Վերահսկեք ձեր պատվերների տեսանելիությունը",
+          adjustNotifications: "Կարգավորեք ծանուցումների նախապատվությունները",
+          manageDataSharing: "Կառավարեք տվյալների կիսման կարգավորումները",
+          reviewConnectedApps:
+            "Վերանայեք միացված հավելվածները և ծառայությունները",
+          // Article 3
+          accountSecurity: "Հաշվի Անվտանգություն",
+          accountSecurityDesc: "Պահպանեք ձեր հաշիվը անվտանգ",
+          strongPassword: "Օգտագործեք ամուր, եզակի գաղտնաբառ",
+          twoFactor: "Միացրեք երկգործոն նույնականացում, եթե հասանելի է",
+          keepPhoneUpdated: "Պահեք ձեր հեռախոսահամարը թարմացված",
+          dontShareOTP: "Մի կիսվեք ձեր OTP կոդերով ոչ ոքի հետ",
+          logoutShared: "Դուրս եկեք համօգտագործվող սարքերից",
+          reportSuspicious:
+            "Անմիջապես հաղորդեք կասկածելի գործողությունների մասին",
+          // Article 4
+          dataExport: "Տվյալների Էքսպորտ",
+          dataExportDesc: "Ներբեռնեք ձեր անձնական տվյալների պատճենը",
+          goToSettingsPrivacy: "Գնացեք Կարգավորումներ > Գաղտնիություն",
+          tapExportData: "Սեղմեք 'Էքսպորտել Տվյալներ'",
+          requestExport: "Պահանջեք ձեր տվյալների էքսպորտ",
+          receiveLink: "Դուք կստանաք ներբեռնման հղում էլ. փոստով",
+          downloadSave: "Ներբեռնեք և պահեք ձեր տվյալները",
+          // Article 5
+          accountDeletion: "Հաշվի Ջնջում",
+          accountDeletionDesc: "Մշտապես ջնջեք ձեր հաշիվը և բոլոր տվյալները",
+          permanentAction: "⚠️ Մշտական Գործողություն",
+          goToDeleteAccount: "Գնացեք Կարգավորումներ > Հաշիվ > Ջնջել Հաշիվ",
+          typeDelete: "Գրեք 'DELETE' հաստատելու համար",
+          permanentCannotUndo:
+            "Այս գործողությունը մշտական է և չի կարող հետադարձվել",
+          allDataDeleted: "Ձեր բոլոր տվյալները կջնջվեն",
+          cannotDeleteActive: "Դուք չեք կարող ջնջել հաշիվներ ակտիվ պատվերներով",
+          exportBeforeDeletion:
+            "Էքսպորտեք ձեր տվյալները ջնջումից առաջ, եթե անհրաժեշտ է",
+          readMore: "Կարդալ ավելին →",
+          readLess: "Կարդալ պակաս ↑",
+        },
+        ru: {
+          accountProfile: "Аккаунт и Профиль",
+          accountProfileDesc: "Управляйте настройками аккаунта и профилем",
+          helpCenter: "Центр Помощи",
+          gettingStarted: "Начало Работы",
+          ordersPayments: "Заказы и Платежи",
+          contact: "Контакт",
+          home: "Главная",
+          // Article 1
+          updatingProfile: "Обновление Вашего Профиля",
+          updatingProfileDesc: "Держите вашу информацию актуальной",
+          goToProfile: "Перейдите на вкладку Профиль",
+          tapEdit: "Нажмите кнопку 'Редактировать'",
+          updateInfo: "Обновите любую информацию, которую хотите изменить",
+          changePhoto: "Добавьте или измените фото профиля",
+          updateBio:
+            "Обновите биографию, местоположение или контактную информацию",
+          tapSave: "Нажмите 'Сохранить', чтобы применить изменения",
+          // Article 2
+          roleRequirementsForSpecialists: "Требования к роли для специалистов",
+          roleRequirementsForSpecialistsDesc:
+            "Чтобы быть видимым и находимым в списке специалистов, ваша роль должна быть установлена как 'Специалист', а не 'Клиент'",
+          goToProfileRole: "Перейдите на вкладку Профиль",
+          openAccountInfo: "Откройте раздел Информация об аккаунте",
+          tapEditRole: "Нажмите кнопку 'Редактировать'",
+          selectSpecialist: "Выберите 'Специалист' в качестве вашей роли",
+          tapSaveRole: "Нажмите 'Сохранить', чтобы применить изменения",
+          profileAppearsInList:
+            "Ваш профиль теперь появится в списке специалистов",
+          // Article 3
+          privacySettings: "Настройки Конфиденциальности",
+          privacySettingsDesc:
+            "Контролируйте, кто может видеть вашу информацию",
+          manageProfileVisibility:
+            "Управляйте тем, кто может видеть информацию вашего профиля",
+          controlOrderVisibility: "Контролируйте видимость ваших заказов",
+          adjustNotifications: "Настройте предпочтения уведомлений",
+          manageDataSharing: "Управляйте настройками обмена данными",
+          reviewConnectedApps:
+            "Просматривайте подключенные приложения и сервисы",
+          // Article 3
+          accountSecurity: "Безопасность Аккаунта",
+          accountSecurityDesc: "Сохраняйте аккаунт в безопасности",
+          strongPassword: "Используйте надежный уникальный пароль",
+          twoFactor: "Включите двухфакторную аутентификацию, если доступна",
+          keepPhoneUpdated: "Держите номер телефона обновленным",
+          dontShareOTP: "Не делитесь кодами OTP ни с кем",
+          logoutShared: "Выходите из общих устройств",
+          reportSuspicious: "Немедленно сообщайте о подозрительной активности",
+          // Article 4
+          dataExport: "Экспорт Данных",
+          dataExportDesc: "Скачайте копию ваших личных данных",
+          goToSettingsPrivacy: "Перейдите в Настройки > Конфиденциальность",
+          tapExportData: "Нажмите 'Экспорт данных'",
+          requestExport: "Запросите экспорт данных",
+          receiveLink: "Вы получите ссылку для скачивания по электронной почте",
+          downloadSave: "Скачайте и сохраните ваши данные",
+          // Article 5
+          accountDeletion: "Удаление Аккаунта",
+          accountDeletionDesc: "Навсегда удалите ваш аккаунт и все данные",
+          permanentAction: "⚠️ Необратимое Действие",
+          goToDeleteAccount:
+            "Перейдите в Настройки > Аккаунт > Удалить аккаунт",
+          typeDelete: "Введите 'DELETE' для подтверждения",
+          permanentCannotUndo:
+            "Это действие необратимо и не может быть отменено",
+          allDataDeleted: "Все ваши данные будут удалены",
+          cannotDeleteActive:
+            "Вы не можете удалить аккаунты с активными заказами",
+          exportBeforeDeletion:
+            "Обязательно экспортируйте данные перед удалением, если необходимо",
+          readMore: "Читать далее →",
+          readLess: "Читать меньше ↑",
+        },
+      };
+
+      let currentLang = "en";
+
+      // Update content based on language
+      function updateLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        if (!t) return;
+
+        // Update hero section
+        const heroH1 = document.querySelector(".section-hero h1");
+        const heroP = document.querySelector(".section-hero p");
+        if (heroH1) heroH1.textContent = t.accountProfile;
+        if (heroP) heroP.textContent = t.accountProfileDesc;
+
+        // Update navigation
+        const navLinks = document.querySelectorAll("nav a");
+        if (navLinks.length >= 5) {
+          navLinks[0].textContent = t.helpCenter;
+          navLinks[1].textContent = t.gettingStarted;
+          navLinks[2].textContent = t.accountProfile;
+          navLinks[3].textContent = t.ordersPayments;
+          navLinks[4].textContent = t.contact;
+        }
+
+        // Update breadcrumbs
+        const breadcrumbHome = document.querySelector(".breadcrumbs a");
+        const breadcrumbCurrent = document.querySelector(
+          ".breadcrumbs span:last-child"
+        );
+        if (breadcrumbHome) breadcrumbHome.textContent = t.home;
+        if (breadcrumbCurrent) breadcrumbCurrent.textContent = t.accountProfile;
+
+        // Update Article 1: Updating Your Profile
+        const article1 = document.querySelectorAll(".article-card")[0];
+        if (article1) {
+          const h3 = article1.querySelector("h3");
+          const p = article1.querySelector("p");
+          const steps = article1.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.updatingProfile;
+          if (p) p.textContent = t.updatingProfileDesc;
+          if (steps.length >= 6) {
+            steps[0].textContent = t.goToProfile;
+            steps[1].textContent = t.tapEdit;
+            steps[2].textContent = t.updateInfo;
+            steps[3].textContent = t.changePhoto;
+            steps[4].textContent = t.updateBio;
+            steps[5].textContent = t.tapSave;
+          }
+          const readMore = article1.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update Article 2: Role Requirements for Specialists
+        const article2 = document.querySelectorAll(".article-card")[1];
+        if (article2) {
+          const h3 = article2.querySelector("h3");
+          const p = article2.querySelector("p");
+          const steps = article2.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.roleRequirementsForSpecialists;
+          if (p) p.textContent = t.roleRequirementsForSpecialistsDesc;
+          if (steps.length >= 6) {
+            steps[0].textContent = t.goToProfileRole;
+            steps[1].textContent = t.openAccountInfo;
+            steps[2].textContent = t.tapEditRole;
+            steps[3].textContent = t.selectSpecialist;
+            steps[4].textContent = t.tapSaveRole;
+            steps[5].textContent = t.profileAppearsInList;
+          }
+          const readMore = article2.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update Article 3: Privacy Settings
+        const article3 = document.querySelectorAll(".article-card")[2];
+        if (article3) {
+          const h3 = article3.querySelector("h3");
+          const p = article3.querySelector("p");
+          const steps = article3.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.privacySettings;
+          if (p) p.textContent = t.privacySettingsDesc;
+          if (steps.length >= 5) {
+            steps[0].textContent = t.manageProfileVisibility;
+            steps[1].textContent = t.controlOrderVisibility;
+            steps[2].textContent = t.adjustNotifications;
+            steps[3].textContent = t.manageDataSharing;
+            steps[4].textContent = t.reviewConnectedApps;
+          }
+          const readMore = article3.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update Article 4: Account Security
+        const article4 = document.querySelectorAll(".article-card")[3];
+        if (article4) {
+          const h3 = article4.querySelector("h3");
+          const p = article4.querySelector("p");
+          const steps = article4.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.accountSecurity;
+          if (p) p.textContent = t.accountSecurityDesc;
+          if (steps.length >= 6) {
+            steps[0].textContent = t.strongPassword;
+            steps[1].textContent = t.twoFactor;
+            steps[2].textContent = t.keepPhoneUpdated;
+            steps[3].textContent = t.dontShareOTP;
+            steps[4].textContent = t.logoutShared;
+            steps[5].textContent = t.reportSuspicious;
+          }
+          const readMore = article4.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update Article 5: Data Export
+        const article5 = document.querySelectorAll(".article-card")[4];
+        if (article5) {
+          const h3 = article5.querySelector("h3");
+          const p = article5.querySelector("p");
+          const steps = article5.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.dataExport;
+          if (p) p.textContent = t.dataExportDesc;
+          if (steps.length >= 5) {
+            steps[0].textContent = t.goToSettingsPrivacy;
+            steps[1].textContent = t.tapExportData;
+            steps[2].textContent = t.requestExport;
+            steps[3].textContent = t.receiveLink;
+            steps[4].textContent = t.downloadSave;
+          }
+          const readMore = article5.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update Article 6: Account Deletion
+        const article6 = document.querySelectorAll(".article-card")[5];
+        if (article6) {
+          const badge = article6.querySelector(".warning-badge");
+          const h3 = article6.querySelector("h3");
+          const p = article6.querySelector("p");
+          const steps = article6.querySelectorAll(".article-steps li");
+          if (badge) badge.textContent = t.permanentAction;
+          if (h3) h3.textContent = t.accountDeletion;
+          if (p) p.textContent = t.accountDeletionDesc;
+          if (steps.length >= 6) {
+            steps[0].textContent = t.goToDeleteAccount;
+            steps[1].textContent = t.typeDelete;
+            steps[2].textContent = t.permanentCannotUndo;
+            steps[3].textContent = t.allDataDeleted;
+            steps[4].textContent = t.cannotDeleteActive;
+            steps[5].textContent = t.exportBeforeDeletion;
+          }
+          const readMore = article6.querySelector(".read-more");
+          if (readMore) readMore.textContent = t.readMore;
+        }
+
+        // Update all read more buttons
+        document.querySelectorAll(".read-more").forEach((btn) => {
+          btn.textContent = t.readMore;
+        });
+
+        // Store language preference
+        localStorage.setItem("preferredLanguage", lang);
+      }
+
+      // Language Selector
+      document
+        .querySelector(".lang-selector")
+        .addEventListener("change", (e) => {
+          updateLanguage(e.target.value);
+        });
+
+      // Load saved language preference
+      const savedLang = localStorage.getItem("preferredLanguage") || "en";
+      document.querySelector(".lang-selector").value = savedLang;
+      if (savedLang !== "en") {
+        updateLanguage(savedLang);
+      }
+    </script>
+  </body>
+</html>

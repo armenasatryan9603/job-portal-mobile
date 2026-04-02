@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Getting Started - HopWork Support</title>
+    <meta
+      name="description"
+      content="Learn the basics of using HopWork. Create an account, find services, make your first order, and understand app permissions."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='20'%20fill='%236366f1'/%3E%3Ctext%20x='50'%20y='64'%20font-size='44'%20text-anchor='middle'%20fill='white'%20font-family='Arial'%20font-weight='700'%3EHW%3C/text%3E%3C/svg%3E"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #8b5cf6;
+        --text: #1f2937;
+        --text-light: #6b7280;
+        --bg: #ffffff;
+        --bg-alt: #f9fafb;
+        --border: #e5e7eb;
+        --success: #10b981;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      /* Header */
+      header {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow);
+      }
+
+      .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      nav a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: var(--primary);
+      }
+
+      .lang-selector {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+
+      .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text);
+        padding: 0.5rem;
+        z-index: 1001;
+      }
+
+      .mobile-menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1;
+      }
+
+      .mobile-menu-overlay.active {
+        display: block;
+      }
+
+      /* Breadcrumbs */
+      .breadcrumbs {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        font-size: 0.875rem;
+        color: var(--text-light);
+      }
+
+      .breadcrumbs a {
+        color: var(--primary);
+        text-decoration: none;
+      }
+
+      .breadcrumbs a:hover {
+        text-decoration: underline;
+      }
+
+      /* Section Header */
+      .section-hero {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        color: white;
+        padding: 3rem 1.5rem;
+      }
+
+      .section-hero-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .section-icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .section-hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .section-hero p {
+        font-size: 1.125rem;
+        opacity: 0.95;
+      }
+
+      /* Container */
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      /* Articles Grid */
+      .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 4rem;
+      }
+
+      .article-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+      }
+
+      .article-card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+      }
+
+      .article-card.expanded {
+        transform: none;
+      }
+
+      .article-card.expanded:hover {
+        transform: none;
+      }
+
+      .article-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+      }
+
+      .article-card p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+      }
+
+      .article-steps {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .article-steps li {
+        padding: 0.5rem 0;
+        color: var(--text-light);
+        font-size: 0.875rem;
+        display: flex;
+        align-items: start;
+        gap: 0.5rem;
+      }
+
+      .article-steps li::before {
+        content: "•";
+        color: var(--primary);
+        font-weight: bold;
+        flex-shrink: 0;
+      }
+
+      .read-more {
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        transition: color 0.2s;
+      }
+
+      .read-more:hover {
+        color: var(--primary-dark);
+      }
+
+      .article-details {
+        display: none;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+      }
+
+      .article-card.expanded .article-details {
+        display: block;
+      }
+
+      .article-card.expanded .read-more::after {
+        content: " Read less";
+      }
+
+      .article-details h4 {
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+        color: var(--text);
+      }
+
+      .article-details p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+      }
+
+      /* Footer */
+      footer {
+        background: var(--text);
+        color: white;
+        padding: 3rem 1.5rem 1.5rem;
+        margin-top: 4rem;
+      }
+
+      .footer-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-section h4 {
+        margin-bottom: 1rem;
+        color: white;
+      }
+
+      .footer-section a {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+      }
+
+      .footer-section a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.875rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        nav {
+          display: none;
+          position: fixed;
+          top: 0;
+          right: -100%;
+          width: 280px;
+          height: 100vh;
+          background: var(--bg);
+          flex-direction: column;
+          padding: 4rem 1.5rem 1.5rem;
+          box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+          z-index: 1001;
+          transition: right 0.3s ease;
+          overflow-y: auto;
+        }
+
+        nav.active {
+          display: flex;
+          right: 0;
+        }
+
+        nav a {
+          padding: 1rem 0;
+          border-bottom: 1px solid var(--border);
+          width: 100%;
+        }
+
+        nav a:last-child {
+          border-bottom: none;
+        }
+
+        .mobile-menu-btn {
+          display: block;
+          position: relative;
+          z-index: 1001;
+        }
+
+        .header-content {
+          position: relative;
+        }
+
+        .section-hero-content {
+          flex-direction: column;
+          text-align: center;
+        }
+
+        .section-hero h1 {
+          font-size: 2rem;
+        }
+
+        .articles-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="header-content">
+        <a href="index.html" class="logo">
+          <svg
+            width="32"
+            height="32"
+            viewBox="-4 -10 122 74"
+            xmlns="http://www.w3.org/2000/svg"
+            style="display: block;"
+          >
+            <rect x="-4" y="-10" width="122" height="74" rx="6" fill="#fff"/>
+            <g transform="matrix(1.001381758918136,0,0,1.001381758918136,6.9309046529046965,-19.59593903758497)" fill="#0a7ea4">
+              <g>
+                <path d="M99.859,25.475l-17.184,5.448l0.148,0.955l-7.432,2.154l0.812,4.357l-9.449-0.511l-11.467-6.13c0,0-3.842-1.529-12.662-1.374l-1.535,1.887l-17.486,1.95l0.317-2.498l-7.546-1.716l0.094-0.962L0.069,24.562v36.621l13.14,1.196l0.136-1.39l6.896-0.201l0.354-2.796l1.54,0.058c0.569,3.421,4.459,3.065,4.459,3.065s0.591-0.329,1.25-0.774l0.665,0.512l-1.581,1.176c-0.066,1.234,0.116,3.255,1.46,4.268c1.574,1.186,4.031,1.012,4.629,0.378c0.204-0.217,0.753-0.702,1.342-1.318l0.725,0.558l-2.119,2.507c1.86,3.947,6.757,2.983,6.757,2.983l0.922-1.212l0.712,0.549l-0.701,0.944c0.928,2.465,3.733,2.511,5.033,2.39l0.983,0.757l0.167,0.064c1.094,0.422,2.177,0.566,3.166,0.537c2.346-0.084,4.178-1.047,5.043-1.589c0.748,0.19,1.459,0.268,2.121,0.248c2.152-0.059,3.703-1.147,4.625-2.153c0.469-0.506,0.805-0.996,1.025-1.371c2.914-0.391,4.689-1.554,5.635-2.846c0.529-0.722,0.791-1.431,0.918-1.997c2.148-0.406,3.617-1.679,4.465-2.863c0.996-1.375,1.301-2.646,1.326-2.739l0.148-0.614l-1.449-1.69l5.67-1.608l1.236,6.631l6.896-0.201l0.217,1.38l12.051-1.903L99.859,25.475z M18.336,58.689l-4.494,0.131l3.6-26.371l4.098,0.932L18.336,58.689z M71.562,61.768c-0.66,0.747-1.543,1.392-2.941,1.575l-9.303-11.425l-1.91,1.555l9.555,11.733c-0.068,0.293-0.205,0.672-0.49,1.052c-0.525,0.696-1.572,1.551-4.07,1.878l-6.531-8.495l-1.953,1.5l6.555,8.525c-0.186,0.266-0.432,0.57-0.736,0.853c-0.639,0.588-1.463,1.075-2.639,1.112c-0.445,0.014-0.957-0.046-1.537-0.204l-3.377-4.3l-1.937,1.521l2.759,3.512c-0.773,0.378-1.877,0.786-3.074,0.813c-0.657,0.019-1.343-0.065-2.048-0.313l-0.562-0.433l2.062-3.772c-0.427-4.093-4.288-2.748-4.288-2.748l-2.271,3.058l-0.693-0.532l2.532-3.333c0.851-5.978-4.854-4.579-4.854-4.579l-3.136,3.711l-0.824-0.635c0.392-0.742,0.555-1.497,0.189-2.146c-1.262-2.234-3.842-2.017-5.205-1.715l-1.219-0.938c0.207-0.971-0.987-3.193-3.402-3.524c-1.037-0.141-1.933,0.165-2.626,0.567l-2.682-0.099l2.384-18.816l15.585-1.736L38.864,35c0,0,3.246,7.052,9.17,1.842l8.158,4.155l16.383,19.104C72.391,60.549,72.064,61.191,71.562,61.768z M82.547,60.635l-4.678-25.078l4.037-1.169l5.133,26.116L82.547,60.635z"/>
+              </g>
+            </g>
+          </svg>
+          HopWork
+        </a>
+        <nav>
+          <a href="index.html">Help Center</a>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <select class="lang-selector">
+          <option value="en">English</option>
+          <option value="hy">Հայերեն</option>
+          <option value="ru">Русский</option>
+        </select>
+        <button class="mobile-menu-btn">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      <span>Getting Started</span>
+    </div>
+
+    <!-- Section Hero -->
+    <section class="section-hero">
+      <div class="section-hero-content">
+        <div class="section-icon">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h1>Getting Started</h1>
+          <p>Learn the basics of using HopWork</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container">
+      <div class="articles-grid">
+        <!-- Article 1: How to Create an Account -->
+        <div class="article-card">
+          <h3>How to Create an Account</h3>
+          <p>Learn how to set up your profile and get started with HopWork</p>
+          <ul class="article-steps">
+            <li>Download and open the app</li>
+            <li>Tap on 'Sign Up' or 'Get Started'</li>
+            <li>Enter your phone number and name</li>
+            <li>Verify your phone number with OTP</li>
+            <li>Complete your profile</li>
+            <li>Start exploring services!</li>
+          </ul>
+          <div class="article-details">
+            <h4>Detailed Instructions</h4>
+            <p>
+              Creating an account on HopWork is quick and easy. Follow these
+              steps to get started:
+            </p>
+            <ol style="padding-left: 1.5rem; margin-top: 0.5rem">
+              <li style="margin-bottom: 0.5rem">
+                <strong>Download the App:</strong> Get HopWork from the App
+                Store (iOS) or Google Play Store (Android).
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Open and Sign Up:</strong> Launch the app and tap on
+                'Sign Up' or 'Get Started' button on the welcome screen.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Enter Your Information:</strong> Provide your phone
+                number and full name. Make sure your phone number is correct as
+                you'll need it for verification.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Verify Your Phone:</strong> You'll receive an OTP
+                (One-Time Password) via SMS. Enter the code to verify your phone
+                number.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Complete Your Profile:</strong> Add additional
+                information like your bio, location, and profile photo to help
+                specialists find you.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Start Using HopWork:</strong> Once your profile is set
+                up, you can start browsing services, placing orders, and
+                connecting with specialists!
+              </li>
+            </ol>
+            <p style="margin-top: 1rem">
+              <strong>Need Help?</strong> If you encounter any issues during
+              account creation, check our FAQ or contact our support team.
+            </p>
+          </div>
+          <span class="read-more" onclick="toggleArticle(this)"
+            >Read more →</span
+          >
+        </div>
+
+        <!-- Article 2: Finding Services -->
+        <div class="article-card">
+          <h3>Finding Services</h3>
+          <p>Discover available services and specialists on HopWork</p>
+          <ul class="article-steps">
+            <li>Browse services by category</li>
+            <li>Use the search bar to find specific services</li>
+            <li>Filter by location, price, or ratings</li>
+            <li>View specialist profiles and reviews</li>
+            <li>Save favorite services for later</li>
+          </ul>
+          <div class="article-details">
+            <h4>How to Find the Right Service</h4>
+            <p>
+              HopWork offers multiple ways to discover services that match
+              your needs:
+            </p>
+            <ul style="padding-left: 1.5rem; margin-top: 0.5rem">
+              <li style="margin-bottom: 0.5rem">
+                <strong>Browse by Category:</strong> Navigate through different
+                service categories like Web Development, Mobile Apps, Design,
+                etc. to see all available options.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Search Functionality:</strong> Use the search bar at the
+                top to type specific keywords related to the service you need.
+                The search will show relevant results instantly.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Advanced Filters:</strong> Refine your search using
+                filters for location (to find local specialists), price range,
+                and ratings to find the best match for your budget and quality
+                expectations.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Specialist Profiles:</strong> Click on any service to
+                view detailed information, see specialist profiles, read reviews
+                from previous clients, and check their portfolio.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Save Favorites:</strong> Found a service you like? Save
+                it to your favorites for easy access later. This helps you
+                compare options before making a decision.
+              </li>
+            </ul>
+            <p style="margin-top: 1rem">
+              <strong>Tip:</strong> Read reviews and check specialist ratings to
+              ensure you're choosing a reliable professional for your project.
+            </p>
+          </div>
+          <span class="read-more" onclick="toggleArticle(this)"
+            >Read more →</span
+          >
+        </div>
+
+        <!-- Article 3: Making Your First Order -->
+        <div class="article-card">
+          <h3>Making Your First Order</h3>
+          <p>Step-by-step guide to placing an order</p>
+          <ul class="article-steps">
+            <li>Find a service you need</li>
+            <li>Tap on the service to view details</li>
+            <li>Click 'Order' or 'Hire' button</li>
+            <li>Fill in the order details</li>
+            <li>Review and confirm your order</li>
+            <li>Wait for specialist proposals</li>
+            <li>Choose a specialist and communicate</li>
+          </ul>
+          <div class="article-details">
+            <h4>Complete Order Process</h4>
+            <p>
+              Placing your first order on HopWork is straightforward. Here's
+              what to expect:
+            </p>
+            <ol style="padding-left: 1.5rem; margin-top: 0.5rem">
+              <li style="margin-bottom: 0.5rem">
+                <strong>Find a Service:</strong> Browse or search for the
+                service you need. Make sure to read the service description and
+                check specialist profiles.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>View Details:</strong> Tap on the service card to see
+                full details, pricing, specialist information, and reviews from
+                other clients.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Start Order:</strong> Click the 'Order' or 'Hire' button
+                to begin the ordering process.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Provide Order Details:</strong> Fill in all required
+                information including:
+                <ul style="margin-top: 0.25rem; padding-left: 1.5rem">
+                  <li>Date and time preferences</li>
+                  <li>Location (if applicable)</li>
+                  <li>Specific requirements or instructions</li>
+                  <li>Budget range</li>
+                </ul>
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Review and Confirm:</strong> Double-check all your order
+                details before confirming. Once confirmed, your order will be
+                posted and visible to specialists.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Receive Proposals:</strong> Specialists will review your
+                order and submit proposals. You'll receive notifications when
+                new proposals arrive.
+              </li>
+              <li style="margin-bottom: 0.5rem">
+                <strong>Choose and Communicate:</strong> Review all proposals,
+                compare specialists, and select the best match. Once selected,
+                you can communicate directly through the in-app chat feature.
+              </li>
+            </ol>
+            <p style="margin-top: 1rem">
+              <strong>Important:</strong> Make sure you have sufficient credits
+              in your account before placing an order. Credits are required to
+              hire specialists.
+            </p>
+          </div>
+          <span class="read-more" onclick="toggleArticle(this)"
+            >Read more →</span
+          >
+        </div>
+
+        <!-- Article 4: App Permissions -->
+        <div class="article-card">
+          <h3>App Permissions</h3>
+          <p>Understand what permissions our app needs</p>
+          <ul class="article-steps">
+            <li>Camera - for taking photos for orders</li>
+            <li>Photo Library - for uploading images</li>
+            <li>Location - for setting your profile location</li>
+            <li>Notifications - for order updates and messages</li>
+            <li>Manage permissions in device settings</li>
+          </ul>
+          <div class="article-details">
+            <h4>Why We Need These Permissions</h4>
+            <p>
+              HopWork requires certain permissions to provide you with the
+              best experience. Here's why each permission is needed:
+            </p>
+            <ul style="padding-left: 1.5rem; margin-top: 0.5rem">
+              <li style="margin-bottom: 0.75rem">
+                <strong>Camera Access:</strong> Allows you to take photos
+                directly within the app when creating orders or updating your
+                profile. This is essential for adding visual context to your
+                service requests.
+              </li>
+              <li style="margin-bottom: 0.75rem">
+                <strong>Photo Library Access:</strong> Enables you to upload
+                existing photos from your device. Useful for sharing reference
+                images, examples, or profile pictures.
+              </li>
+              <li style="margin-bottom: 0.75rem">
+                <strong>Location Access:</strong> Helps set your profile
+                location and find local specialists. This improves matching
+                accuracy and allows you to discover nearby service providers.
+                Your exact location is never shared without your permission.
+              </li>
+              <li style="margin-bottom: 0.75rem">
+                <strong>Notifications:</strong> Keeps you informed about
+                important updates including:
+                <ul style="margin-top: 0.25rem; padding-left: 1.5rem">
+                  <li>New proposals on your orders</li>
+                  <li>Messages from specialists</li>
+                  <li>Order status changes</li>
+                  <li>Payment confirmations</li>
+                </ul>
+              </li>
+            </ul>
+            <p style="margin-top: 1rem">
+              <strong>Managing Permissions:</strong> You can change these
+              permissions at any time in your device settings. Go to Settings >
+              HopWork > Permissions to modify access. Note that some features
+              may not work properly if permissions are denied.
+            </p>
+            <p style="margin-top: 0.5rem">
+              <strong>Privacy:</strong> We respect your privacy. Permissions are
+              only used for the stated purposes and we never access your data
+              without your explicit action.
+            </p>
+          </div>
+          <span class="read-more" onclick="toggleArticle(this)"
+            >Read more →</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Help Center</h4>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="contact.html">Contact Support</a>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <a href="index.html">FAQ</a>
+          <a href="tutorials.html">Tutorials</a>
+          <a href="status.html">System Status</a>
+          <a href="community.html">Community</a>
+        </div>
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="terms-of-service.html">Terms of Service</a>
+          <a href="cookie-policy.html">Cookie Policy</a>
+          <a href="gdpr.html">GDPR Compliance</a>
+        </div>
+        <div class="footer-section">
+          <h4>Contact</h4>
+          <a href="mailto:support@hotwork.app">support@hotwork.app</a>
+          <a href="tel:+37477754955">+374 77 754 955</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 HopWork. All rights reserved.</p>
+        <p style="margin-top: 0.25rem;">Address: 16 A Arshakunyats Ave, Yerevan</p>
+      </div>
+    </footer>
+
+    <script>
+      // Mobile Menu Toggle
+      const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+      const nav = document.querySelector("nav");
+      const overlay = document.createElement("div");
+      overlay.className = "mobile-menu-overlay";
+      document.body.appendChild(overlay);
+
+      mobileMenuBtn.addEventListener("click", () => {
+        nav.classList.toggle("active");
+        overlay.classList.toggle("active");
+      });
+
+      overlay.addEventListener("click", () => {
+        nav.classList.remove("active");
+        overlay.classList.remove("active");
+      });
+
+      // Close menu when clicking on a nav link
+      nav.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          nav.classList.remove("active");
+          overlay.classList.remove("active");
+        });
+      });
+
+      // Translations
+      const translations = {
+        en: {
+          gettingStarted: "Getting Started",
+          gettingStartedDesc: "Learn the basics of using HopWork",
+          helpCenter: "Help Center",
+          accountProfile: "Account & Profile",
+          ordersPayments: "Orders & Payments",
+          contact: "Contact",
+          home: "Home",
+          // Article 1
+          howToCreateAccount: "How to Create an Account",
+          howToCreateAccountDesc:
+            "Learn how to set up your profile and get started with HopWork",
+          step1Download: "Download and open the app",
+          step2SignUp: "Tap on 'Sign Up' or 'Get Started'",
+          step3EnterPhone: "Enter your phone number and name",
+          step4VerifyOTP: "Verify your phone number with OTP",
+          step5CompleteProfile: "Complete your profile",
+          step6StartExploring: "Start exploring services!",
+          detailedInstructions: "Detailed Instructions",
+          createAccountIntro:
+            "Creating an account on HopWork is quick and easy. Follow these steps to get started:",
+          downloadApp: "Download the App:",
+          downloadAppDesc:
+            "Get HopWork from the App Store (iOS) or Google Play Store (Android).",
+          openSignUp: "Open and Sign Up:",
+          openSignUpDesc:
+            "Launch the app and tap on 'Sign Up' or 'Get Started' button on the welcome screen.",
+          enterInfo: "Enter Your Information:",
+          enterInfoDesc:
+            "Provide your phone number and full name. Make sure your phone number is correct as you'll need it for verification.",
+          verifyPhone: "Verify Your Phone:",
+          verifyPhoneDesc:
+            "You'll receive an OTP (One-Time Password) via SMS. Enter the code to verify your phone number.",
+          completeProfile: "Complete Your Profile:",
+          completeProfileDesc:
+            "Add additional information like your bio, location, and profile photo to help specialists find you.",
+          startUsing: "Start Using HopWork:",
+          startUsingDesc:
+            "Once your profile is set up, you can start browsing services, placing orders, and connecting with specialists!",
+          needHelp: "Need Help?",
+          needHelpDesc:
+            "If you encounter any issues during account creation, check our FAQ or contact our support team.",
+          // Article 2
+          findingServices: "Finding Services",
+          findingServicesDesc:
+            "Discover available services and specialists on HopWork",
+          browseByCategory: "Browse services by category",
+          useSearchBar: "Use the search bar to find specific services",
+          filterServices: "Filter by location, price, or ratings",
+          viewProfiles: "View specialist profiles and reviews",
+          saveFavorites: "Save favorite services for later",
+          howToFindService: "How to Find the Right Service",
+          findServiceIntro:
+            "HopWork offers multiple ways to discover services that match your needs:",
+          browseCategory: "Browse by Category:",
+          browseCategoryDesc:
+            "Navigate through different service categories like Web Development, Mobile Apps, Design, etc. to see all available options.",
+          searchFunctionality: "Search Functionality:",
+          searchFunctionalityDesc:
+            "Use the search bar at the top to type specific keywords related to the service you need. The search will show relevant results instantly.",
+          advancedFilters: "Advanced Filters:",
+          advancedFiltersDesc:
+            "Refine your search using filters for location (to find local specialists), price range, and ratings to find the best match for your budget and quality expectations.",
+          specialistProfiles: "Specialist Profiles:",
+          specialistProfilesDesc:
+            "Click on any service to view detailed information, see specialist profiles, read reviews from previous clients, and check their portfolio.",
+          saveFavoritesDesc:
+            "Found a service you like? Save it to your favorites for easy access later. This helps you compare options before making a decision.",
+          tip: "Tip:",
+          tipDesc:
+            "Read reviews and check specialist ratings to ensure you're choosing a reliable professional for your project.",
+          // Article 3
+          makingFirstOrder: "Making Your First Order",
+          makingFirstOrderDesc: "Step-by-step guide to placing an order",
+          findService: "Find a service you need",
+          viewDetails: "Tap on the service to view details",
+          clickOrder: "Click 'Order' or 'Hire' button",
+          fillOrder: "Fill in the order details",
+          reviewOrder: "Review and confirm your order",
+          waitProposals: "Wait for specialist proposals",
+          chooseSpecialist: "Choose a specialist and communicate",
+          completeOrderProcess: "Complete Order Process",
+          orderProcessIntro:
+            "Placing your first order on HopWork is straightforward. Here's what to expect:",
+          findServiceStep: "Find a Service:",
+          findServiceStepDesc:
+            "Browse or search for the service you need. Make sure to read the service description and check specialist profiles.",
+          viewDetailsStep: "View Details:",
+          viewDetailsStepDesc:
+            "Tap on the service card to see full details, pricing, specialist information, and reviews from other clients.",
+          startOrder: "Start Order:",
+          startOrderDesc:
+            "Click the 'Order' or 'Hire' button to begin the ordering process.",
+          provideDetails: "Provide Order Details:",
+          provideDetailsDesc: "Fill in all required information including:",
+          dateTime: "Date and time preferences",
+          location: "Location (if applicable)",
+          requirements: "Specific requirements or instructions",
+          budget: "Budget range",
+          reviewConfirm: "Review and Confirm:",
+          reviewConfirmDesc:
+            "Double-check all your order details before confirming. Once confirmed, your order will be posted and visible to specialists.",
+          receiveProposals: "Receive Proposals:",
+          receiveProposalsDesc:
+            "Specialists will review your order and submit proposals. You'll receive notifications when new proposals arrive.",
+          chooseCommunicate: "Choose and Communicate:",
+          chooseCommunicateDesc:
+            "Review all proposals, compare specialists, and select the best match. Once selected, you can communicate directly through the in-app chat feature.",
+          important: "Important:",
+          importantDesc:
+            "Make sure you have sufficient credits in your account before placing an order. Credits are required to hire specialists.",
+          // Article 4
+          appPermissions: "App Permissions",
+          appPermissionsDesc: "Understand what permissions our app needs",
+          cameraPermission: "Camera - for taking photos for orders",
+          photoLibraryPermission: "Photo Library - for uploading images",
+          locationPermission: "Location - for setting your profile location",
+          notificationsPermission:
+            "Notifications - for order updates and messages",
+          managePermissions: "Manage permissions in device settings",
+          whyWeNeedPermissions: "Why We Need These Permissions",
+          permissionsIntro:
+            "HopWork requires certain permissions to provide you with the best experience. Here's why each permission is needed:",
+          cameraAccess: "Camera Access:",
+          cameraAccessDesc:
+            "Allows you to take photos directly within the app when creating orders or updating your profile. This is essential for adding visual context to your service requests.",
+          photoLibraryAccess: "Photo Library Access:",
+          photoLibraryAccessDesc:
+            "Enables you to upload existing photos from your device. Useful for sharing reference images, examples, or profile pictures.",
+          locationAccess: "Location Access:",
+          locationAccessDesc:
+            "Helps set your profile location and find local specialists. This improves matching accuracy and allows you to discover nearby service providers. Your exact location is never shared without your permission.",
+          notificationsAccess: "Notifications:",
+          notificationsAccessDesc:
+            "Keeps you informed about important updates including:",
+          newProposals: "New proposals on your orders",
+          messages: "Messages from specialists",
+          statusChanges: "Order status changes",
+          paymentConfirmations: "Payment confirmations",
+          managingPermissions: "Managing Permissions:",
+          managingPermissionsDesc:
+            "You can change these permissions at any time in your device settings. Go to Settings > HopWork > Permissions to modify access. Note that some features may not work properly if permissions are denied.",
+          privacy: "Privacy:",
+          privacyDesc:
+            "We respect your privacy. Permissions are only used for the stated purposes and we never access your data without your explicit action.",
+          readMore: "Read more →",
+          readLess: "Read less ↑",
+        },
+        hy: {
+          gettingStarted: "Սկսելով",
+          gettingStartedDesc: "Սովորեք HopWork-ի օգտագործման հիմունքները",
+          helpCenter: "Օգնության Կենտրոն",
+          accountProfile: "Հաշիվ և Պրոֆիլ",
+          ordersPayments: "Պատվերներ և Վճարումներ",
+          contact: "Կապ",
+          home: "Գլխավոր",
+          // Article 1
+          howToCreateAccount: "Ինչպես ստեղծել հաշիվ",
+          howToCreateAccountDesc:
+            "Սովորեք, թե ինչպես կարգավորել ձեր պրոֆիլը և սկսել HopWork-ով",
+          step1Download: "Ներբեռնեք և բացեք հավելվածը",
+          step2SignUp: "Սեղմեք 'Գրանցվել' կամ 'Սկսել'",
+          step3EnterPhone: "Մուտքագրեք ձեր հեռախոսահամարը և անունը",
+          step4VerifyOTP: "Հաստատեք ձեր հեռախոսահամարը OTP-ով",
+          step5CompleteProfile: "Լրացրեք ձեր պրոֆիլը",
+          step6StartExploring: "Սկսեք ուսումնասիրել ծառայությունները:",
+          detailedInstructions: "Մանրամասն Հրահանգներ",
+          createAccountIntro:
+            "HopWork-ում հաշիվ ստեղծելը արագ և հեշտ է: Հետևեք այս քայլերին՝ սկսելու համար:",
+          downloadApp: "Ներբեռնեք Հավելվածը:",
+          downloadAppDesc:
+            "Ստացեք HopWork-ը App Store-ից (iOS) կամ Google Play Store-ից (Android):",
+          openSignUp: "Բացեք և Գրանցվեք:",
+          openSignUpDesc:
+            "Բացեք հավելվածը և սեղմեք 'Գրանցվել' կամ 'Սկսել' կոճակը ողջույնի էկրանին:",
+          enterInfo: "Մուտքագրեք Ձեր Տեղեկությունները:",
+          enterInfoDesc:
+            "Տրամադրեք ձեր հեռախոսահամարը և ամբողջական անունը: Համոզվեք, որ ձեր հեռախոսահամարը ճիշտ է, քանի որ այն ձեզ անհրաժեշտ կլինի հաստատման համար:",
+          verifyPhone: "Հաստատեք Ձեր Հեռախոսահամարը:",
+          verifyPhoneDesc:
+            "Դուք կստանաք OTP (Միանգամյա Գաղտնաբառ) SMS-ով: Մուտքագրեք կոդը՝ ձեր հեռախոսահամարը հաստատելու համար:",
+          completeProfile: "Լրացրեք Ձեր Պրոֆիլը:",
+          completeProfileDesc:
+            "Ավելացրեք լրացուցիչ տեղեկություններ, ինչպիսիք են ձեր կենսագրությունը, գտնվելու վայրը և պրոֆիլի լուսանկարը՝ մասնագետներին օգնելու համար:",
+          startUsing: "Սկսեք Օգտագործել HopWork-ը:",
+          startUsingDesc:
+            "Պրոֆիլը կարգավորելուց հետո կարող եք սկսել զննել ծառայությունները, կատարել պատվերներ և կապ հաստատել մասնագետների հետ:",
+          needHelp: "Օգնության Կարիք:",
+          needHelpDesc:
+            "Եթե հաշիվ ստեղծելիս խնդիրներ եք հանդիպում, ստուգեք մեր ՀՏՀ-ն կամ կապ հաստատեք մեր աջակցության թիմի հետ:",
+          // Article 2
+          findingServices: "Ծառայությունների Որոնում",
+          findingServicesDesc:
+            "Բացահայտեք հասանելի ծառայությունները և մասնագետները HopWork-ում",
+          browseByCategory: "Զննեք ծառայությունները ըստ կատեգորիայի",
+          useSearchBar:
+            "Օգտագործեք որոնման տողը՝ կոնկրետ ծառայություններ գտնելու համար",
+          filterServices: "Ֆիլտրեք ըստ գտնվելու վայրի, գնի կամ գնահատականների",
+          viewProfiles: "Դիտեք մասնագետների պրոֆիլները և ակնարկները",
+          saveFavorites:
+            "Պահեք սիրած ծառայությունները հետագա օգտագործման համար",
+          howToFindService: "Ինչպես Գտնել Ճիշտ Ծառայությունը",
+          findServiceIntro:
+            "HopWork-ը առաջարկում է բազմաթիվ եղանակներ՝ ձեր կարիքներին համապատասխան ծառայություններ բացահայտելու համար:",
+          browseCategory: "Զննել ըստ Կատեգորիայի:",
+          browseCategoryDesc:
+            "Նավարկեք տարբեր ծառայությունների կատեգորիաներով, ինչպիսիք են Վեբ Զարգացում, Բջջային Հավելվածներ, Դիզայն և այլն, բոլոր հասանելի տարբերակները տեսնելու համար:",
+          searchFunctionality: "Որոնման Ֆունկցիոնալություն:",
+          searchFunctionalityDesc:
+            "Օգտագործեք վերևի որոնման տողը՝ մուտքագրելու համար կոնկրետ բանալի բառեր, որոնք կապված են ձեզ անհրաժեշտ ծառայության հետ: Որոնումը ակնթարթորեն ցույց կտա համապատասխան արդյունքներ:",
+          advancedFilters: "Ընդլայնված Ֆիլտրեր:",
+          advancedFiltersDesc:
+            "Նրբացրեք ձեր որոնումը՝ օգտագործելով գտնվելու վայրի (տեղական մասնագետներ գտնելու համար), գնային միջակայքի և գնահատականների ֆիլտրեր՝ ձեր բյուջեին և որակի ակնկալիքներին համապատասխան լավագույն համընկնումը գտնելու համար:",
+          specialistProfiles: "Մասնագետների Պրոֆիլներ:",
+          specialistProfilesDesc:
+            "Սեղմեք ցանկացած ծառայության վրա՝ մանրամասն տեղեկություններ, մասնագետների պրոֆիլներ, նախկին հաճախորդների ակնարկներ և նրանց պորտֆոլիո դիտելու համար:",
+          saveFavoritesDesc:
+            "Գտե՞լ եք ձեզ դուր եկած ծառայություն: Պահեք այն ձեր սիրածներում՝ հետագա հեշտ մուտքի համար: Սա օգնում է համեմատել տարբերակները որոշում կայացնելուց առաջ:",
+          tip: "Հուշում:",
+          tipDesc:
+            "Կարդացեք ակնարկներ և ստուգեք մասնագետների գնահատականները՝ համոզվելու համար, որ ընտրում եք ձեր նախագծի համար հուսալի մասնագետ:",
+          // Article 3
+          makingFirstOrder: "Առաջին Պատվերի Ստեղծում",
+          makingFirstOrderDesc: "Պատվեր տեղադրելու քայլ առ քայլ ուղեցույց",
+          findService: "Գտեք ձեզ անհրաժեշտ ծառայություն",
+          viewDetails: "Սեղմեք ծառայության վրա՝ մանրամասները դիտելու համար",
+          clickOrder: "Սեղմեք 'Պատվիրել' կամ 'Վարձել' կոճակը",
+          fillOrder: "Լրացրեք պատվերի մանրամասները",
+          reviewOrder: "Վերանայեք և հաստատեք ձեր պատվերը",
+          waitProposals: "Սպասեք մասնագետների առաջարկություններին",
+          chooseSpecialist: "Ընտրեք մասնագետ և հաղորդակցվեք",
+          completeOrderProcess: "Ամբողջական Պատվերի Գործընթաց",
+          orderProcessIntro:
+            "HopWork-ում առաջին պատվերը տեղադրելը պարզ է: Ահա թե ինչին պետք է ակնկալել:",
+          findServiceStep: "Գտեք Ծառայություն:",
+          findServiceStepDesc:
+            "Զննեք կամ որոնեք ձեզ անհրաժեշտ ծառայությունը: Համոզվեք, որ կարդացել եք ծառայության նկարագրությունը և ստուգել մասնագետների պրոֆիլները:",
+          viewDetailsStep: "Դիտեք Մանրամասները:",
+          viewDetailsStepDesc:
+            "Սեղմեք ծառայության քարտի վրա՝ ամբողջական մանրամասներ, գնագոյացում, մասնագետի տեղեկություններ և այլ հաճախորդների ակնարկներ տեսնելու համար:",
+          startOrder: "Սկսեք Պատվերը:",
+          startOrderDesc:
+            "Սեղմեք 'Պատվիրել' կամ 'Վարձել' կոճակը՝ պատվերի գործընթացը սկսելու համար:",
+          provideDetails: "Տրամադրեք Պատվերի Մանրամասները:",
+          provideDetailsDesc:
+            "Լրացրեք բոլոր պահանջվող տեղեկությունները, ներառյալ:",
+          dateTime: "Ամսաթվի և ժամի նախապատվություններ",
+          location: "Գտնվելու վայր (եթե կիրառելի է)",
+          requirements: "Կոնկրետ պահանջներ կամ հրահանգներ",
+          budget: "Բյուջեի միջակայք",
+          reviewConfirm: "Վերանայեք և Հաստատեք:",
+          reviewConfirmDesc:
+            "Կրկնակի ստուգեք ձեր պատվերի բոլոր մանրամասները հաստատելուց առաջ: Հաստատելուց հետո ձեր պատվերը կտեղադրվի և տեսանելի կլինի մասնագետների համար:",
+          receiveProposals: "Ստացեք Առաջարկություններ:",
+          receiveProposalsDesc:
+            "Մասնագետները կվերանայեն ձեր պատվերը և կներկայացնեն առաջարկություններ: Դուք կստանաք ծանուցումներ, երբ նոր առաջարկություններ են ժամանում:",
+          chooseCommunicate: "Ընտրեք և Հաղորդակցվեք:",
+          chooseCommunicateDesc:
+            "Վերանայեք բոլոր առաջարկությունները, համեմատեք մասնագետներին և ընտրեք լավագույն համընկնումը: Ընտրվելուց հետո կարող եք ուղղակիորեն հաղորդակցվել հավելվածի ներսի զրույցի հատկության միջոցով:",
+          important: "Կարևոր:",
+          importantDesc:
+            "Համոզվեք, որ ձեր հաշվում բավարար կրեդիտներ ունեք պատվեր տեղադրելուց առաջ: Կրեդիտներ են պահանջվում մասնագետներ վարձելու համար:",
+          // Article 4
+          appPermissions: "Հավելվածի Թույլտվություններ",
+          appPermissionsDesc:
+            "Հասկացեք, թե ինչ թույլտվություններ է պահանջում մեր հավելվածը",
+          cameraPermission:
+            "Տեսախցիկ - պատվերների համար լուսանկարներ անելու համար",
+          photoLibraryPermission:
+            "Լուսանկարների գրադարան - պատկերներ վերբեռնելու համար",
+          locationPermission:
+            "Գտնվելու վայր - ձեր պրոֆիլի գտնվելու վայրը սահմանելու համար",
+          notificationsPermission:
+            "Ծանուցումներ - պատվերների թարմացումների և հաղորդագրությունների համար",
+          managePermissions:
+            "Կառավարեք թույլտվությունները սարքի կարգավորումներում",
+          whyWeNeedPermissions:
+            "Ինչու ենք Մեզ Անհրաժեշտ Այս Թույլտվությունները",
+          permissionsIntro:
+            "HopWork-ը պահանջում է որոշակի թույլտվություններ՝ ձեզ լավագույն փորձ ապահովելու համար: Ահա թե ինչու է յուրաքանչյուր թույլտվություն անհրաժեշտ:",
+          cameraAccess: "Տեսախցիկի Մատչում:",
+          cameraAccessDesc:
+            "Թույլ է տալիս լուսանկարներ անել ուղղակիորեն հավելվածի ներսում՝ պատվերներ ստեղծելիս կամ պրոֆիլը թարմացնելիս: Սա անհրաժեշտ է ձեր ծառայության հարցումներին տեսողական համատեքստ ավելացնելու համար:",
+          photoLibraryAccess: "Լուսանկարների Գրադարանի Մատչում:",
+          photoLibraryAccessDesc:
+            "Թույլ է տալիս վերբեռնել գոյություն ունեցող լուսանկարներ ձեր սարքից: Օգտակար է հղումային պատկերներ, օրինակներ կամ պրոֆիլի լուսանկարներ կիսելու համար:",
+          locationAccess: "Գտնվելու Վայրի Մատչում:",
+          locationAccessDesc:
+            "Օգնում է սահմանել ձեր պրոֆիլի գտնվելու վայրը և գտնել տեղական մասնագետներ: Սա բարելավում է համապատասխանության ճշգրտությունը և թույլ է տալիս բացահայտել մոտակա ծառայությունների մատուցողներին: Ձեր ճշգրիտ գտնվելու վայրը երբեք չի կիսվում ձեր թույլտվությունից առանց:",
+          notificationsAccess: "Ծանուցումներ:",
+          notificationsAccessDesc:
+            "Պահպանում է ձեզ տեղեկացված կարևոր թարմացումների մասին, ներառյալ:",
+          newProposals: "Ձեր պատվերների նոր առաջարկություններ",
+          messages: "Մասնագետներից հաղորդագրություններ",
+          statusChanges: "Պատվերի կարգավիճակի փոփոխություններ",
+          paymentConfirmations: "Վճարման հաստատումներ",
+          managingPermissions: "Թույլտվությունների Կառավարում:",
+          managingPermissionsDesc:
+            "Դուք կարող եք փոխել այս թույլտվությունները ցանկացած ժամանակ ձեր սարքի կարգավորումներում: Գնացեք Կարգավորումներ > HopWork > Թույլտվություններ՝ մուտքը փոփոխելու համար: Նշում, որ որոշ հատկություններ կարող են ճիշտ չաշխատել, եթե թույլտվությունները մերժված են:",
+          privacy: "Գաղտնիություն:",
+          privacyDesc:
+            "Մենք հարգում ենք ձեր գաղտնիությունը: Թույլտվությունները օգտագործվում են միայն նշված նպատակների համար, և մենք երբեք չենք մուտք գործում ձեր տվյալներին ձեր բացահայտ գործողությունից առանց:",
+          readMore: "Կարդալ ավելին →",
+          readLess: "Կարդալ պակաս ↑",
+        },
+        ru: {
+          gettingStarted: "Начало Работы",
+          gettingStartedDesc: "Изучите основы использования HopWork",
+          helpCenter: "Центр Помощи",
+          accountProfile: "Аккаунт и Профиль",
+          ordersPayments: "Заказы и Платежи",
+          contact: "Контакт",
+          home: "Главная",
+          // Article 1
+          howToCreateAccount: "Как создать аккаунт",
+          howToCreateAccountDesc:
+            "Узнайте, как настроить свой профиль и начать работу с HopWork",
+          step1Download: "Скачайте и откройте приложение",
+          step2SignUp: "Нажмите 'Зарегистрироваться' или 'Начать'",
+          step3EnterPhone: "Введите номер телефона и имя",
+          step4VerifyOTP: "Подтвердите номер телефона кодом OTP",
+          step5CompleteProfile: "Заполните профиль",
+          step6StartExploring: "Начните изучать услуги:",
+          detailedInstructions: "Подробные Инструкции",
+          createAccountIntro:
+            "Создание аккаунта в HopWork быстро и просто. Следуйте этим шагам, чтобы начать:",
+          downloadApp: "Скачайте Приложение:",
+          downloadAppDesc:
+            "Получите HopWork из App Store (iOS) или Google Play Store (Android).",
+          openSignUp: "Откройте и Зарегистрируйтесь:",
+          openSignUpDesc:
+            "Запустите приложение и нажмите кнопку 'Зарегистрироваться' или 'Начать' на экране приветствия.",
+          enterInfo: "Введите Вашу Информацию:",
+          enterInfoDesc:
+            "Укажите номер телефона и полное имя. Убедитесь, что номер телефона правильный, так как он понадобится для верификации.",
+          verifyPhone: "Подтвердите Ваш Телефон:",
+          verifyPhoneDesc:
+            "Вы получите OTP (Одноразовый Пароль) по SMS. Введите код для подтверждения номера телефона.",
+          completeProfile: "Заполните Ваш Профиль:",
+          completeProfileDesc:
+            "Добавьте дополнительную информацию, такую как биография, местоположение и фото профиля, чтобы помочь специалистам найти вас.",
+          startUsing: "Начните Использовать HopWork:",
+          startUsingDesc:
+            "После настройки профиля вы можете начать просматривать услуги, размещать заказы и связываться со специалистами:",
+          needHelp: "Нужна Помощь?",
+          needHelpDesc:
+            "Если у вас возникли проблемы при создании аккаунта, проверьте наш FAQ или свяжитесь с нашей службой поддержки.",
+          // Article 2
+          findingServices: "Поиск Услуг",
+          findingServicesDesc:
+            "Откройте для себя доступные услуги и специалистов на HopWork",
+          browseByCategory: "Просматривайте услуги по категориям",
+          useSearchBar: "Используйте строку поиска для поиска конкретных услуг",
+          filterServices: "Фильтруйте по местоположению, цене или рейтингу",
+          viewProfiles: "Просматривайте профили специалистов и отзывы",
+          saveFavorites: "Сохраняйте избранные услуги на потом",
+          howToFindService: "Как Найти Подходящую Услугу",
+          findServiceIntro:
+            "HopWork предлагает несколько способов найти услуги, соответствующие вашим потребностям:",
+          browseCategory: "Просмотр по Категориям:",
+          browseCategoryDesc:
+            "Навигация по различным категориям услуг, таким как Веб-разработка, Мобильные приложения, Дизайн и т.д., чтобы увидеть все доступные варианты.",
+          searchFunctionality: "Функция Поиска:",
+          searchFunctionalityDesc:
+            "Используйте строку поиска вверху, чтобы ввести конкретные ключевые слова, связанные с нужной вам услугой. Поиск мгновенно покажет релевантные результаты.",
+          advancedFilters: "Расширенные Фильтры:",
+          advancedFiltersDesc:
+            "Уточните поиск, используя фильтры по местоположению (для поиска местных специалистов), ценовому диапазону и рейтингам, чтобы найти лучший вариант для вашего бюджета и ожиданий качества.",
+          specialistProfiles: "Профили Специалистов:",
+          specialistProfilesDesc:
+            "Нажмите на любую услугу, чтобы просмотреть подробную информацию, увидеть профили специалистов, прочитать отзывы предыдущих клиентов и проверить их портфолио.",
+          saveFavoritesDesc:
+            "Нашли услугу, которая вам нравится? Сохраните ее в избранное для удобного доступа позже. Это поможет вам сравнить варианты перед принятием решения.",
+          tip: "Совет:",
+          tipDesc:
+            "Читайте отзывы и проверяйте рейтинги специалистов, чтобы убедиться, что вы выбираете надежного профессионала для своего проекта.",
+          // Article 3
+          makingFirstOrder: "Создание Первого Заказа",
+          makingFirstOrderDesc: "Пошаговое руководство по размещению заказа",
+          findService: "Найдите нужную услугу",
+          viewDetails: "Нажмите на услугу, чтобы просмотреть детали",
+          clickOrder: "Нажмите кнопку 'Заказать' или 'Нанять'",
+          fillOrder: "Заполните детали заказа",
+          reviewOrder: "Просмотрите и подтвердите заказ",
+          waitProposals: "Дождитесь предложений от специалистов",
+          chooseSpecialist: "Выберите специалиста и общайтесь",
+          completeOrderProcess: "Полный Процесс Заказа",
+          orderProcessIntro:
+            "Размещение первого заказа в HopWork просто. Вот чего ожидать:",
+          findServiceStep: "Найдите Услугу:",
+          findServiceStepDesc:
+            "Просматривайте или ищите нужную услугу. Обязательно прочитайте описание услуги и проверьте профили специалистов.",
+          viewDetailsStep: "Просмотрите Детали:",
+          viewDetailsStepDesc:
+            "Нажмите на карточку услуги, чтобы увидеть полную информацию, цены, информацию о специалисте и отзывы других клиентов.",
+          startOrder: "Начните Заказ:",
+          startOrderDesc:
+            "Нажмите кнопку 'Заказать' или 'Нанять', чтобы начать процесс заказа.",
+          provideDetails: "Укажите Детали Заказа:",
+          provideDetailsDesc: "Заполните всю необходимую информацию, включая:",
+          dateTime: "Предпочтения по дате и времени",
+          location: "Местоположение (если применимо)",
+          requirements: "Конкретные требования или инструкции",
+          budget: "Диапазон бюджета",
+          reviewConfirm: "Просмотрите и Подтвердите:",
+          reviewConfirmDesc:
+            "Дважды проверьте все детали заказа перед подтверждением. После подтверждения ваш заказ будет размещен и станет видимым для специалистов.",
+          receiveProposals: "Получите Предложения:",
+          receiveProposalsDesc:
+            "Специалисты рассмотрят ваш заказ и отправят предложения. Вы будете получать уведомления при поступлении новых предложений.",
+          chooseCommunicate: "Выберите и Общайтесь:",
+          chooseCommunicateDesc:
+            "Просмотрите все предложения, сравните специалистов и выберите лучший вариант. После выбора вы можете общаться напрямую через функцию чата в приложении.",
+          important: "Важно:",
+          importantDesc:
+            "Убедитесь, что на вашем счете достаточно кредитов перед размещением заказа. Кредиты необходимы для найма специалистов.",
+          // Article 4
+          appPermissions: "Разрешения Приложения",
+          appPermissionsDesc:
+            "Поймите, какие разрешения нужно нашему приложению",
+          cameraPermission: "Камера - для фотографирования заказов",
+          photoLibraryPermission: "Фототека - для загрузки изображений",
+          locationPermission:
+            "Местоположение - для установки местоположения профиля",
+          notificationsPermission:
+            "Уведомления - для обновлений заказов и сообщений",
+          managePermissions: "Управляйте разрешениями в настройках устройства",
+          whyWeNeedPermissions: "Почему Нам Нужны Эти Разрешения",
+          permissionsIntro:
+            "HopWork требует определенных разрешений для обеспечения наилучшего опыта. Вот почему каждое разрешение необходимо:",
+          cameraAccess: "Доступ к Камере:",
+          cameraAccessDesc:
+            "Позволяет делать фотографии непосредственно в приложении при создании заказов или обновлении профиля. Это необходимо для добавления визуального контекста к вашим запросам на услуги.",
+          photoLibraryAccess: "Доступ к Фототеке:",
+          photoLibraryAccessDesc:
+            "Позволяет загружать существующие фотографии с вашего устройства. Полезно для обмена справочными изображениями, примерами или фотографиями профиля.",
+          locationAccess: "Доступ к Местоположению:",
+          locationAccessDesc:
+            "Помогает установить местоположение вашего профиля и найти местных специалистов. Это улучшает точность сопоставления и позволяет находить ближайших поставщиков услуг. Ваше точное местоположение никогда не передается без вашего разрешения.",
+          notificationsAccess: "Уведомления:",
+          notificationsAccessDesc:
+            "Информирует вас о важных обновлениях, включая:",
+          newProposals: "Новые предложения по вашим заказам",
+          messages: "Сообщения от специалистов",
+          statusChanges: "Изменения статуса заказа",
+          paymentConfirmations: "Подтверждения платежей",
+          managingPermissions: "Управление Разрешениями:",
+          managingPermissionsDesc:
+            "Вы можете изменить эти разрешения в любое время в настройках устройства. Перейдите в Настройки > HopWork > Разрешения, чтобы изменить доступ. Обратите внимание, что некоторые функции могут работать неправильно, если разрешения отклонены.",
+          privacy: "Конфиденциальность:",
+          privacyDesc:
+            "Мы уважаем вашу конфиденциальность. Разрешения используются только для заявленных целей, и мы никогда не получаем доступ к вашим данным без вашего явного действия.",
+          readMore: "Читать далее →",
+          readLess: "Читать меньше ↑",
+        },
+      };
+
+      let currentLang = "en";
+
+      // Update content based on language
+      function updateLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        if (!t) return;
+
+        // Update hero section
+        const heroH1 = document.querySelector(".section-hero h1");
+        const heroP = document.querySelector(".section-hero p");
+        if (heroH1) heroH1.textContent = t.gettingStarted;
+        if (heroP) heroP.textContent = t.gettingStartedDesc;
+
+        // Update navigation
+        const navLinks = document.querySelectorAll("nav a");
+        if (navLinks.length >= 5) {
+          navLinks[0].textContent = t.helpCenter;
+          navLinks[1].textContent = t.gettingStarted;
+          navLinks[2].textContent = t.accountProfile;
+          navLinks[3].textContent = t.ordersPayments;
+          navLinks[4].textContent = t.contact;
+        }
+
+        // Update breadcrumbs
+        const breadcrumbHome = document.querySelector(".breadcrumbs a");
+        const breadcrumbCurrent = document.querySelector(
+          ".breadcrumbs span:last-child"
+        );
+        if (breadcrumbHome) breadcrumbHome.textContent = t.home;
+        if (breadcrumbCurrent) breadcrumbCurrent.textContent = t.gettingStarted;
+
+        // Update Article 1: How to Create an Account
+        const article1 = document.querySelectorAll(".article-card")[0];
+        if (article1) {
+          const h3 = article1.querySelector("h3");
+          const p = article1.querySelector("p");
+          const steps = article1.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.howToCreateAccount;
+          if (p) p.textContent = t.howToCreateAccountDesc;
+          if (steps.length >= 6) {
+            steps[0].textContent = t.step1Download;
+            steps[1].textContent = t.step2SignUp;
+            steps[2].textContent = t.step3EnterPhone;
+            steps[3].textContent = t.step4VerifyOTP;
+            steps[4].textContent = t.step5CompleteProfile;
+            steps[5].textContent = t.step6StartExploring;
+          }
+          const details = article1.querySelector(".article-details");
+          if (details) {
+            const detailH4 = details.querySelector("h4");
+            const detailP = details.querySelector("p");
+            const detailOl = details.querySelectorAll("ol li");
+            const needHelpP = details.querySelector("p:last-of-type");
+            if (detailH4) detailH4.textContent = t.detailedInstructions;
+            if (detailP) detailP.textContent = t.createAccountIntro;
+            if (detailOl.length >= 6) {
+              detailOl[0].innerHTML = `<strong>${t.downloadApp}</strong> ${t.downloadAppDesc}`;
+              detailOl[1].innerHTML = `<strong>${t.openSignUp}</strong> ${t.openSignUpDesc}`;
+              detailOl[2].innerHTML = `<strong>${t.enterInfo}</strong> ${t.enterInfoDesc}`;
+              detailOl[3].innerHTML = `<strong>${t.verifyPhone}</strong> ${t.verifyPhoneDesc}`;
+              detailOl[4].innerHTML = `<strong>${t.completeProfile}</strong> ${t.completeProfileDesc}`;
+              detailOl[5].innerHTML = `<strong>${t.startUsing}</strong> ${t.startUsingDesc}`;
+            }
+            if (needHelpP)
+              needHelpP.innerHTML = `<strong>${t.needHelp}</strong> ${t.needHelpDesc}`;
+          }
+          const readMore = article1.querySelector(".read-more");
+          if (readMore && !article1.classList.contains("expanded")) {
+            readMore.textContent = t.readMore;
+          }
+        }
+
+        // Update Article 2: Finding Services
+        const article2 = document.querySelectorAll(".article-card")[1];
+        if (article2) {
+          const h3 = article2.querySelector("h3");
+          const p = article2.querySelector("p");
+          const steps = article2.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.findingServices;
+          if (p) p.textContent = t.findingServicesDesc;
+          if (steps.length >= 5) {
+            steps[0].textContent = t.browseByCategory;
+            steps[1].textContent = t.useSearchBar;
+            steps[2].textContent = t.filterServices;
+            steps[3].textContent = t.viewProfiles;
+            steps[4].textContent = t.saveFavorites;
+          }
+          const details = article2.querySelector(".article-details");
+          if (details) {
+            const detailH4 = details.querySelector("h4");
+            const detailP = details.querySelector("p");
+            const detailUl = details.querySelectorAll("ul li");
+            const tipP = details.querySelector("p:last-of-type");
+            if (detailH4) detailH4.textContent = t.howToFindService;
+            if (detailP) detailP.textContent = t.findServiceIntro;
+            if (detailUl.length >= 5) {
+              detailUl[0].innerHTML = `<strong>${t.browseCategory}</strong> ${t.browseCategoryDesc}`;
+              detailUl[1].innerHTML = `<strong>${t.searchFunctionality}</strong> ${t.searchFunctionalityDesc}`;
+              detailUl[2].innerHTML = `<strong>${t.advancedFilters}</strong> ${t.advancedFiltersDesc}`;
+              detailUl[3].innerHTML = `<strong>${t.specialistProfiles}</strong> ${t.specialistProfilesDesc}`;
+              detailUl[4].innerHTML = t.saveFavoritesDesc;
+            }
+            if (tipP) tipP.innerHTML = `<strong>${t.tip}</strong> ${t.tipDesc}`;
+          }
+          const readMore = article2.querySelector(".read-more");
+          if (readMore && !article2.classList.contains("expanded")) {
+            readMore.textContent = t.readMore;
+          }
+        }
+
+        // Update Article 3: Making Your First Order
+        const article3 = document.querySelectorAll(".article-card")[2];
+        if (article3) {
+          const h3 = article3.querySelector("h3");
+          const p = article3.querySelector("p");
+          const steps = article3.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.makingFirstOrder;
+          if (p) p.textContent = t.makingFirstOrderDesc;
+          if (steps.length >= 7) {
+            steps[0].textContent = t.findService;
+            steps[1].textContent = t.viewDetails;
+            steps[2].textContent = t.clickOrder;
+            steps[3].textContent = t.fillOrder;
+            steps[4].textContent = t.reviewOrder;
+            steps[5].textContent = t.waitProposals;
+            steps[6].textContent = t.chooseSpecialist;
+          }
+          const details = article3.querySelector(".article-details");
+          if (details) {
+            const detailH4 = details.querySelector("h4");
+            const detailP = details.querySelector("p");
+            const detailOl = details.querySelectorAll("ol li");
+            const importantP = details.querySelector("p:last-of-type");
+            if (detailH4) detailH4.textContent = t.completeOrderProcess;
+            if (detailP) detailP.textContent = t.orderProcessIntro;
+            if (detailOl.length >= 7) {
+              detailOl[0].innerHTML = `<strong>${t.findServiceStep}</strong> ${t.findServiceStepDesc}`;
+              detailOl[1].innerHTML = `<strong>${t.viewDetailsStep}</strong> ${t.viewDetailsStepDesc}`;
+              detailOl[2].innerHTML = `<strong>${t.startOrder}</strong> ${t.startOrderDesc}`;
+              detailOl[3].innerHTML = `<strong>${t.provideDetails}</strong> ${t.provideDetailsDesc}<ul style="margin-top: 0.25rem; padding-left: 1.5rem;"><li>${t.dateTime}</li><li>${t.location}</li><li>${t.requirements}</li><li>${t.budget}</li></ul>`;
+              detailOl[4].innerHTML = `<strong>${t.reviewConfirm}</strong> ${t.reviewConfirmDesc}`;
+              detailOl[5].innerHTML = `<strong>${t.receiveProposals}</strong> ${t.receiveProposalsDesc}`;
+              detailOl[6].innerHTML = `<strong>${t.chooseCommunicate}</strong> ${t.chooseCommunicateDesc}`;
+            }
+            if (importantP)
+              importantP.innerHTML = `<strong>${t.important}</strong> ${t.importantDesc}`;
+          }
+          const readMore = article3.querySelector(".read-more");
+          if (readMore && !article3.classList.contains("expanded")) {
+            readMore.textContent = t.readMore;
+          }
+        }
+
+        // Update Article 4: App Permissions
+        const article4 = document.querySelectorAll(".article-card")[3];
+        if (article4) {
+          const h3 = article4.querySelector("h3");
+          const p = article4.querySelector("p");
+          const steps = article4.querySelectorAll(".article-steps li");
+          if (h3) h3.textContent = t.appPermissions;
+          if (p) p.textContent = t.appPermissionsDesc;
+          if (steps.length >= 5) {
+            steps[0].textContent = t.cameraPermission;
+            steps[1].textContent = t.photoLibraryPermission;
+            steps[2].textContent = t.locationPermission;
+            steps[3].textContent = t.notificationsPermission;
+            steps[4].textContent = t.managePermissions;
+          }
+          const details = article4.querySelector(".article-details");
+          if (details) {
+            const detailH4 = details.querySelector("h4");
+            const detailP = details.querySelector("p");
+            const detailUl = details.querySelectorAll("ul li");
+            const managingP = details.querySelector("p:nth-of-type(2)");
+            const privacyP = details.querySelector("p:last-of-type");
+            if (detailH4) detailH4.textContent = t.whyWeNeedPermissions;
+            if (detailP) detailP.textContent = t.permissionsIntro;
+            if (detailUl.length >= 4) {
+              detailUl[0].innerHTML = `<strong>${t.cameraAccess}</strong> ${t.cameraAccessDesc}`;
+              detailUl[1].innerHTML = `<strong>${t.photoLibraryAccess}</strong> ${t.photoLibraryAccessDesc}`;
+              detailUl[2].innerHTML = `<strong>${t.locationAccess}</strong> ${t.locationAccessDesc}`;
+              detailUl[3].innerHTML = `<strong>${t.notificationsAccess}</strong> ${t.notificationsAccessDesc}<ul style="margin-top: 0.25rem; padding-left: 1.5rem;"><li>${t.newProposals}</li><li>${t.messages}</li><li>${t.statusChanges}</li><li>${t.paymentConfirmations}</li></ul>`;
+            }
+            if (managingP)
+              managingP.innerHTML = `<strong>${t.managingPermissions}</strong> ${t.managingPermissionsDesc}`;
+            if (privacyP)
+              privacyP.innerHTML = `<strong>${t.privacy}</strong> ${t.privacyDesc}`;
+          }
+          const readMore = article4.querySelector(".read-more");
+          if (readMore && !article4.classList.contains("expanded")) {
+            readMore.textContent = t.readMore;
+          }
+        }
+
+        // Update all read more buttons
+        document.querySelectorAll(".read-more").forEach((btn) => {
+          const card = btn.closest(".article-card");
+          if (card && card.classList.contains("expanded")) {
+            btn.textContent = t.readLess;
+          } else {
+            btn.textContent = t.readMore;
+          }
+        });
+
+        // Store language preference
+        localStorage.setItem("preferredLanguage", lang);
+      }
+
+      // Language Selector
+      document
+        .querySelector(".lang-selector")
+        .addEventListener("change", (e) => {
+          updateLanguage(e.target.value);
+        });
+
+      // Load saved language preference
+      const savedLang = localStorage.getItem("preferredLanguage") || "en";
+      document.querySelector(".lang-selector").value = savedLang;
+      if (savedLang !== "en") {
+        updateLanguage(savedLang);
+      }
+
+      // Toggle article expansion
+      function toggleArticle(element) {
+        const articleCard = element.closest(".article-card");
+        articleCard.classList.toggle("expanded");
+
+        // Update read more text based on current language
+        const t = translations[currentLang];
+        if (articleCard.classList.contains("expanded")) {
+          element.innerHTML = t.readLess;
+        } else {
+          element.innerHTML = t.readMore;
+        }
+      }
+    </script>
+  </body>
+</html>

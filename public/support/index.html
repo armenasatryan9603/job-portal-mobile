@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HopWork Support - Help Center</title>
+    <meta
+      name="description"
+      content="Get help with HopWork. Find answers, tutorials, and contact support."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='20'%20fill='%236366f1'/%3E%3Ctext%20x='50'%20y='64'%20font-size='44'%20text-anchor='middle'%20fill='white'%20font-family='Arial'%20font-weight='700'%3EHW%3C/text%3E%3C/svg%3E"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/umd/lucide.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --primary: #6366f1;
+        --primary-dark: #4f46e5;
+        --secondary: #8b5cf6;
+        --text: #1f2937;
+        --text-light: #6b7280;
+        --bg: #ffffff;
+        --bg-alt: #f9fafb;
+        --border: #e5e7eb;
+        --success: #10b981;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        line-height: 1.6;
+        color: var(--text);
+        background: var(--bg);
+      }
+
+      /* Header */
+      header {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: var(--shadow);
+      }
+
+      .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      nav {
+        display: flex;
+        gap: 2rem;
+        align-items: center;
+      }
+
+      nav a {
+        color: var(--text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+      }
+
+      nav a:hover {
+        color: var(--primary);
+      }
+
+      .lang-selector {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        background: var(--bg);
+        color: var(--text);
+        cursor: pointer;
+        font-size: 0.875rem;
+      }
+
+      .mobile-menu-btn {
+        display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text);
+        padding: 0.5rem;
+        z-index: 1001;
+      }
+
+      .mobile-menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1;
+      }
+
+      .mobile-menu-overlay.active {
+        display: block;
+      }
+
+      /* Hero Section */
+      .hero {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        color: white;
+        padding: 4rem 1.5rem;
+        text-align: center;
+      }
+
+      .hero-content {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .hero h1 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        font-weight: 700;
+      }
+
+      .hero p {
+        font-size: 1.125rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+      }
+
+      /* Search Bar */
+      .search-container {
+        position: relative;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .search-input {
+        width: 100%;
+        padding: 1rem 3rem 1rem 1.5rem;
+        font-size: 1rem;
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow-lg);
+      }
+
+      .search-icon {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-light);
+      }
+
+      /* Container */
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 3rem 1.5rem;
+      }
+
+      /* Quick Links */
+      .quick-links {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 4rem;
+      }
+
+      .quick-link-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: var(--text);
+        transition: all 0.3s;
+        box-shadow: var(--shadow);
+      }
+
+      .quick-link-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+      }
+
+      .quick-link-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+        color: white;
+      }
+
+      .quick-link-card h3 {
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      .quick-link-card p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+      }
+
+      /* Section Headers */
+      .section-header {
+        text-align: center;
+        margin-bottom: 3rem;
+      }
+
+      .section-header h2 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      .section-header p {
+        color: var(--text-light);
+        font-size: 1.125rem;
+      }
+
+      /* Popular Articles */
+      .articles-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 4rem;
+      }
+
+      .article-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        transition: all 0.3s;
+        cursor: pointer;
+      }
+
+      .article-card:hover {
+        box-shadow: var(--shadow-lg);
+        border-color: var(--primary);
+      }
+
+      .article-category {
+        display: inline-block;
+        background: var(--bg-alt);
+        color: var(--primary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+      }
+
+      .article-card h3 {
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+        color: var(--text);
+      }
+
+      .article-card p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+      }
+
+      .article-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-light);
+        font-size: 0.75rem;
+      }
+
+      /* FAQ Section */
+      .faq-section {
+        background: var(--bg-alt);
+        padding: 4rem 1.5rem;
+      }
+
+      .faq-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .faq-item {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        overflow: hidden;
+      }
+
+      .faq-question {
+        padding: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        transition: background 0.2s;
+      }
+
+      .faq-question:hover {
+        background: var(--bg-alt);
+      }
+
+      .faq-answer {
+        padding: 0 1.25rem 1.25rem;
+        color: var(--text-light);
+        display: none;
+      }
+
+      .faq-item.active .faq-answer {
+        display: block;
+      }
+
+      .faq-icon {
+        transition: transform 0.3s;
+      }
+
+      .faq-item.active .faq-icon {
+        transform: rotate(180deg);
+      }
+
+      /* Contact Section */
+      .contact-section {
+        padding: 4rem 1.5rem;
+      }
+
+      .contact-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 3rem;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .contact-info {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .contact-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--bg-alt);
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+        flex-shrink: 0;
+      }
+
+      .contact-item h3 {
+        font-size: 1rem;
+        margin-bottom: 0.25rem;
+      }
+
+      .contact-item p {
+        color: var(--text-light);
+        font-size: 0.875rem;
+      }
+
+      /* Contact Form */
+      .contact-form {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        padding: 2rem;
+      }
+
+      .form-group {
+        margin-bottom: 1.5rem;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-family: inherit;
+      }
+
+      .form-group textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+
+      .submit-btn {
+        background: linear-gradient(
+          135deg,
+          var(--primary) 0%,
+          var(--secondary) 100%
+        );
+        color: white;
+        padding: 0.875rem 2rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+        width: 100%;
+      }
+
+      .submit-btn:hover {
+        transform: translateY(-2px);
+      }
+
+      /* Footer */
+      footer {
+        background: var(--text);
+        color: white;
+        padding: 3rem 1.5rem 1.5rem;
+      }
+
+      .footer-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .footer-section h4 {
+        margin-bottom: 1rem;
+        color: white;
+      }
+
+      .footer-section a {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+      }
+
+      .footer-section a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.875rem;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        nav {
+          display: none;
+          position: fixed;
+          top: 0;
+          right: -100%;
+          width: 280px;
+          height: 100vh;
+          background: var(--bg);
+          flex-direction: column;
+          padding: 4rem 1.5rem 1.5rem;
+          box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+          z-index: 1001;
+          transition: right 0.3s ease;
+          overflow-y: auto;
+        }
+
+        nav.active {
+          display: flex;
+          right: 0;
+        }
+
+        nav.active {
+          display: flex;
+          right: 0;
+        }
+
+        nav a {
+          padding: 1rem 0;
+          border-bottom: 1px solid var(--border);
+          width: 100%;
+        }
+
+        nav a:last-child {
+          border-bottom: none;
+        }
+
+        .mobile-menu-btn {
+          display: block;
+          position: relative;
+          z-index: 1001;
+        }
+
+        .header-content {
+          position: relative;
+        }
+
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .quick-links {
+          grid-template-columns: 1fr;
+        }
+
+        .contact-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .articles-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .footer-content {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.6s ease-out;
+      }
+
+      .search-highlight {
+        border-color: var(--primary) !important;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header>
+      <div class="header-content">
+        <a href="/" class="logo">
+          <svg
+            width="32"
+            height="32"
+            viewBox="-4 -10 122 74"
+            xmlns="http://www.w3.org/2000/svg"
+            style="display: block;"
+          >
+            <rect x="-4" y="-10" width="122" height="74" rx="6" fill="#fff"/>
+            <g transform="matrix(1.001381758918136,0,0,1.001381758918136,6.9309046529046965,-19.59593903758497)" fill="#0a7ea4">
+              <g>
+                <path d="M99.859,25.475l-17.184,5.448l0.148,0.955l-7.432,2.154l0.812,4.357l-9.449-0.511l-11.467-6.13c0,0-3.842-1.529-12.662-1.374l-1.535,1.887l-17.486,1.95l0.317-2.498l-7.546-1.716l0.094-0.962L0.069,24.562v36.621l13.14,1.196l0.136-1.39l6.896-0.201l0.354-2.796l1.54,0.058c0.569,3.421,4.459,3.065,4.459,3.065s0.591-0.329,1.25-0.774l0.665,0.512l-1.581,1.176c-0.066,1.234,0.116,3.255,1.46,4.268c1.574,1.186,4.031,1.012,4.629,0.378c0.204-0.217,0.753-0.702,1.342-1.318l0.725,0.558l-2.119,2.507c1.86,3.947,6.757,2.983,6.757,2.983l0.922-1.212l0.712,0.549l-0.701,0.944c0.928,2.465,3.733,2.511,5.033,2.39l0.983,0.757l0.167,0.064c1.094,0.422,2.177,0.566,3.166,0.537c2.346-0.084,4.178-1.047,5.043-1.589c0.748,0.19,1.459,0.268,2.121,0.248c2.152-0.059,3.703-1.147,4.625-2.153c0.469-0.506,0.805-0.996,1.025-1.371c2.914-0.391,4.689-1.554,5.635-2.846c0.529-0.722,0.791-1.431,0.918-1.997c2.148-0.406,3.617-1.679,4.465-2.863c0.996-1.375,1.301-2.646,1.326-2.739l0.148-0.614l-1.449-1.69l5.67-1.608l1.236,6.631l6.896-0.201l0.217,1.38l12.051-1.903L99.859,25.475z M18.336,58.689l-4.494,0.131l3.6-26.371l4.098,0.932L18.336,58.689z M71.562,61.768c-0.66,0.747-1.543,1.392-2.941,1.575l-9.303-11.425l-1.91,1.555l9.555,11.733c-0.068,0.293-0.205,0.672-0.49,1.052c-0.525,0.696-1.572,1.551-4.07,1.878l-6.531-8.495l-1.953,1.5l6.555,8.525c-0.186,0.266-0.432,0.57-0.736,0.853c-0.639,0.588-1.463,1.075-2.639,1.112c-0.445,0.014-0.957-0.046-1.537-0.204l-3.377-4.3l-1.937,1.521l2.759,3.512c-0.773,0.378-1.877,0.786-3.074,0.813c-0.657,0.019-1.343-0.065-2.048-0.313l-0.562-0.433l2.062-3.772c-0.427-4.093-4.288-2.748-4.288-2.748l-2.271,3.058l-0.693-0.532l2.532-3.333c0.851-5.978-4.854-4.579-4.854-4.579l-3.136,3.711l-0.824-0.635c0.392-0.742,0.555-1.497,0.189-2.146c-1.262-2.234-3.842-2.017-5.205-1.715l-1.219-0.938c0.207-0.971-0.987-3.193-3.402-3.524c-1.037-0.141-1.933,0.165-2.626,0.567l-2.682-0.099l2.384-18.816l15.585-1.736L38.864,35c0,0,3.246,7.052,9.17,1.842l8.158,4.155l16.383,19.104C72.391,60.549,72.064,61.191,71.562,61.768z M82.547,60.635l-4.678-25.078l4.037-1.169l5.133,26.116L82.547,60.635z"/>
+              </g>
+            </g>
+          </svg>
+          HopWork
+        </a>
+        <nav>
+          <a href="index.html">Help Center</a>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <select class="lang-selector">
+          <option value="en">English</option>
+          <option value="hy">Հայերեն</option>
+          <option value="ru">Русский</option>
+        </select>
+        <button class="mobile-menu-btn">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content fade-in">
+        <h1>How can we help you today?</h1>
+        <p>Search our knowledge base or browse categories below</p>
+        <div class="search-container">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search for answers..."
+          />
+          <svg
+            class="search-icon"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Links -->
+    <div class="container">
+      <div class="quick-links">
+        <a href="getting-started.html" class="quick-link-card fade-in">
+          <div class="quick-link-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <h3>Getting Started</h3>
+          <p>Learn the basics of using HopWork</p>
+        </a>
+
+        <a href="account-profile.html" class="quick-link-card fade-in">
+          <div class="quick-link-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <h3>Account & Profile</h3>
+          <p>Manage your account settings and profile</p>
+        </a>
+
+        <a href="orders-payments.html" class="quick-link-card fade-in">
+          <div class="quick-link-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"
+              ></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+          </div>
+          <h3>Orders & Payments</h3>
+          <p>Track orders and manage payments</p>
+        </a>
+
+        <a href="contact.html" class="quick-link-card fade-in">
+          <div class="quick-link-icon">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+              ></path>
+            </svg>
+          </div>
+          <h3>Contact Support</h3>
+          <p>Get in touch with our support team</p>
+        </a>
+      </div>
+
+      <!-- Popular Articles -->
+      <div class="section-header">
+        <h2>Popular Articles</h2>
+        <p>Most viewed help articles this week</p>
+      </div>
+
+      <div class="articles-grid">
+        <div class="article-card">
+          <span class="article-category">Getting Started</span>
+          <h3>How to Create an Account</h3>
+          <p>
+            Step-by-step guide to creating your HopWork account and getting
+            started.
+          </p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>5 min read</span>
+          </div>
+        </div>
+
+        <div class="article-card">
+          <span class="article-category">Orders</span>
+          <h3>Making Your First Order</h3>
+          <p>
+            Learn how to find services, compare specialists, and place your
+            first order.
+          </p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>7 min read</span>
+          </div>
+        </div>
+
+        <div class="article-card">
+          <span class="article-category">Payments</span>
+          <h3>Understanding Credits</h3>
+          <p>
+            How the credit system works, purchasing credits, and payment
+            methods.
+          </p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>4 min read</span>
+          </div>
+        </div>
+
+        <div class="article-card">
+          <span class="article-category">Account</span>
+          <h3>Privacy & Security Settings</h3>
+          <p>Keep your account secure and manage your privacy preferences.</p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>6 min read</span>
+          </div>
+        </div>
+
+        <div class="article-card">
+          <span class="article-category">Technical</span>
+          <h3>App Permissions Explained</h3>
+          <p>Understanding what permissions the app needs and why.</p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>5 min read</span>
+          </div>
+        </div>
+
+        <div class="article-card">
+          <span class="article-category">Account</span>
+          <h3>How to Delete Your Account</h3>
+          <p>Steps to permanently delete your HopWork account and data.</p>
+          <div class="article-meta">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>3 min read</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+      <div class="faq-container">
+        <div class="section-header">
+          <h2>Frequently Asked Questions</h2>
+          <p>Quick answers to common questions</p>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do I update my profile information?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Go to your profile settings in the app, tap "Edit Profile," and
+            update your information. Changes are saved automatically.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>What payment methods do you accept?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            We accept credit cards (Visa, Mastercard), debit cards, and digital
+            wallets. All payments are processed securely through our payment
+            partners.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How can I cancel an order?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Orders can be cancelled before they're accepted by a specialist. Go
+            to "My Orders," select the order, and tap "Cancel Order." Refunds
+            are processed within 3-5 business days.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Is my personal information secure?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Yes, we use industry-standard encryption and security measures. Your
+            data is protected and we never share personal information with third
+            parties without your consent. See our Privacy Policy for details.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>How do credits work?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Credits are our internal currency. Purchase credits at various
+            package rates, then use them to pay for services. Credits don't
+            expire and can be used for any service on the platform.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Why does the app need certain permissions?</span>
+            <svg
+              class="faq-icon"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="faq-answer">
+            Location helps find nearby specialists, camera is for profile
+            photos, and notifications keep you updated on orders. All
+            permissions are optional and can be managed in your device settings.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+      <div class="container">
+        <div class="section-header">
+          <h2>Contact Support</h2>
+          <p>We're here to help you</p>
+        </div>
+
+        <div class="contact-grid">
+          <div class="contact-info">
+            <div class="contact-item">
+              <div class="contact-icon">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                  ></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3>Email</h3>
+                <p>support@hotwork.app</p>
+                <p style="margin-top: 0.25rem; font-size: 0.75rem">
+                  Response within 24 hours
+                </p>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+                  ></path>
+                </svg>
+              </div>
+              <div>
+                <h3>Phone</h3>
+                <p>+374 77 754 955</p>
+                <p style="margin-top: 0.25rem; font-size: 0.75rem">
+                  Mon-Fri, 9:00 AM - 6:00 PM
+                </p>
+              </div>
+            </div>
+
+            <div class="contact-item">
+              <div class="contact-icon">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+              </div>
+              <div>
+                <h3>Business Hours</h3>
+                <p>Monday - Friday</p>
+                <p style="margin-top: 0.25rem; font-size: 0.75rem">
+                  9:00 AM - 6:00 PM (GMT+4)
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form class="contact-form">
+            <div class="form-group">
+              <label for="name">Name *</label>
+              <input type="text" id="name" required />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input type="email" id="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Phone (Optional)</label>
+              <input type="tel" id="phone" />
+            </div>
+
+            <div class="form-group">
+              <label for="category">Category *</label>
+              <select id="category" required>
+                <option value="">Select a category</option>
+                <option value="account">Account & Profile</option>
+                <option value="orders">Orders & Payments</option>
+                <option value="technical">Technical Issue</option>
+                <option value="billing">Billing Question</option>
+                <option value="feedback">Feedback</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="message">Message *</label>
+              <textarea id="message" required></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">Send Message</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div class="footer-content">
+        <div class="footer-section">
+          <h4>Help Center</h4>
+          <a href="getting-started.html">Getting Started</a>
+          <a href="account-profile.html">Account & Profile</a>
+          <a href="orders-payments.html">Orders & Payments</a>
+          <a href="tutorials.html">Tutorials</a>
+        </div>
+
+        <div class="footer-section">
+          <h4>Legal</h4>
+          <a href="privacy-policy.html">Privacy Policy</a>
+          <a href="terms-of-service.html">Terms of Service</a>
+          <a href="cookie-policy.html">Cookie Policy</a>
+          <a href="gdpr.html">GDPR Compliance</a>
+        </div>
+
+        <div class="footer-section">
+          <h4>Support</h4>
+          <a href="#faq">FAQ</a>
+          <a href="#contact">Contact Us</a>
+          <a href="status.html">System Status</a>
+          <a href="feedback.html">Send Feedback</a>
+        </div>
+
+        <div class="footer-section">
+          <h4>Company</h4>
+          <a href="about.html">About Us</a>
+          <a href="blog.html">Blog</a>
+          <a href="careers.html">Careers</a>
+          <a href="press.html">Press Kit</a>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2024 HopWork. All rights reserved.</p>
+        <p style="margin-top: 0.25rem;">Address: 16 A Arshakunyats Ave, Yerevan</p>
+      </div>
+    </footer>
+
+    <script>
+      // Translations
+      const translations = {
+        en: {
+          heroTitle: "How can we help you today?",
+          heroSubtitle: "Search our knowledge base or browse categories below",
+          searchPlaceholder: "Search for answers...",
+          gettingStarted: "Getting Started",
+          gettingStartedDesc: "Learn the basics of using HopWork",
+          accountProfile: "Account & Profile",
+          accountProfileDesc: "Manage your account settings and profile",
+          ordersPayments: "Orders & Payments",
+          ordersPaymentsDesc: "Track orders and manage payments",
+          contactSupport: "Contact Support",
+          contactSupportDesc: "Get in touch with our support team",
+          popularArticles: "Popular Articles",
+          popularArticlesDesc: "Most viewed help articles this week",
+          faqTitle: "Frequently Asked Questions",
+          faqDesc: "Quick answers to common questions",
+          contactTitle: "Contact Support",
+          contactDesc: "We're here to help you",
+          email: "Email",
+          phone: "Phone",
+          businessHours: "Business Hours",
+          mondayFriday: "Monday - Friday",
+          name: "Name",
+          message: "Message",
+          category: "Category",
+          selectCategory: "Select a category",
+          sendMessage: "Send Message",
+          helpCenter: "Help Center",
+          faq: "FAQ",
+          contact: "Contact",
+          tutorials: "Tutorials",
+        },
+        hy: {
+          heroTitle: "Ինչպե՞ս կարող ենք օգնել ձեզ այսօր:",
+          heroSubtitle:
+            "Փնտրեք մեր գիտելիքների բազայում կամ դիտեք կատեգորիաները ստորև",
+          searchPlaceholder: "Փնտրել պատասխաններ...",
+          gettingStarted: "Սկսելով",
+          gettingStartedDesc: "Սովորեք HopWork-ի օգտագործման հիմունքները",
+          accountProfile: "Հաշիվ և Պրոֆիլ",
+          accountProfileDesc: "Կառավարեք ձեր հաշվի կարգավորումները և պրոֆիլը",
+          ordersPayments: "Պատվերներ և Վճարումներ",
+          ordersPaymentsDesc: "Հետևեք պատվերներին և կառավարեք վճարումները",
+          contactSupport: "Կապ Աջակցության Հետ",
+          contactSupportDesc: "Կապվեք մեր աջակցության թիմի հետ",
+          popularArticles: "Հայտնի Հոդվածներ",
+          popularArticlesDesc: "Այս շաբաթ ամենաշատ դիտված հոդվածները",
+          faqTitle: "Հաճախ Տրվող Հարցեր",
+          faqDesc: "Արագ պատասխաններ սովորական հարցերի",
+          contactTitle: "Կապ Աջակցության Հետ",
+          contactDesc: "Մենք այստեղ ենք՝ օգնելու ձեզ",
+          email: "Էլ. փոստ",
+          phone: "Հեռախոս",
+          businessHours: "Աշխատանքային Ժամեր",
+          mondayFriday: "Երկուշաբթի - Ուրբաթ",
+          name: "Անուն",
+          message: "Հաղորդագրություն",
+          category: "Կատեգորիա",
+          selectCategory: "Ընտրեք կատեգորիա",
+          sendMessage: "Ուղարկել Հաղորդագրությունը",
+          helpCenter: "Օգնության Կենտրոն",
+          faq: "ՀՏՀ",
+          contact: "Կապ",
+          tutorials: "Ուսուցումներ",
+        },
+        ru: {
+          heroTitle: "Как мы можем помочь вам сегодня?",
+          heroSubtitle:
+            "Поищите в нашей базе знаний или просмотрите категории ниже",
+          searchPlaceholder: "Поиск ответов...",
+          gettingStarted: "Начало Работы",
+          gettingStartedDesc: "Изучите основы использования HopWork",
+          accountProfile: "Аккаунт и Профиль",
+          accountProfileDesc: "Управляйте настройками аккаунта и профилем",
+          ordersPayments: "Заказы и Платежи",
+          ordersPaymentsDesc: "Отслеживайте заказы и управляйте платежами",
+          contactSupport: "Связаться с Поддержкой",
+          contactSupportDesc: "Свяжитесь с нашей командой поддержки",
+          popularArticles: "Популярные Статьи",
+          popularArticlesDesc: "Самые просматриваемые статьи на этой неделе",
+          faqTitle: "Часто Задаваемые Вопросы",
+          faqDesc: "Быстрые ответы на распространенные вопросы",
+          contactTitle: "Связаться с Поддержкой",
+          contactDesc: "Мы здесь, чтобы помочь вам",
+          email: "Эл. почта",
+          phone: "Телефон",
+          businessHours: "Рабочие Часы",
+          mondayFriday: "Понедельник - Пятница",
+          name: "Имя",
+          message: "Сообщение",
+          category: "Категория",
+          selectCategory: "Выберите категорию",
+          sendMessage: "Отправить Сообщение",
+          helpCenter: "Центр Помощи",
+          faq: "ЧЗВ",
+          contact: "Контакт",
+          tutorials: "Руководства",
+        },
+      };
+
+      let currentLang = "en";
+
+      // Update content based on language
+      function updateLanguage(lang) {
+        currentLang = lang;
+        const t = translations[lang];
+        if (!t) return; // Safety check
+
+        // Update hero section
+        const heroH1 = document.querySelector(".hero h1");
+        const heroP = document.querySelector(".hero p");
+        const searchInput = document.querySelector(".search-input");
+        if (heroH1) heroH1.textContent = t.heroTitle;
+        if (heroP) heroP.textContent = t.heroSubtitle;
+        if (searchInput) searchInput.placeholder = t.searchPlaceholder;
+
+        // Update navigation
+        const navLinks = document.querySelectorAll("nav a");
+        if (navLinks.length >= 4) {
+          navLinks[0].textContent = t.helpCenter;
+          navLinks[1].textContent = t.gettingStarted || t.helpCenter;
+          navLinks[2].textContent = t.accountProfile || t.helpCenter;
+          navLinks[3].textContent = t.ordersPayments || t.helpCenter;
+          if (navLinks[4]) navLinks[4].textContent = t.contact;
+        }
+
+        // Update quick links
+        const quickLinks = document.querySelectorAll(".quick-link-card");
+        if (quickLinks.length >= 4) {
+          if (quickLinks[0].querySelector("h3"))
+            quickLinks[0].querySelector("h3").textContent = t.gettingStarted;
+          if (quickLinks[0].querySelector("p"))
+            quickLinks[0].querySelector("p").textContent = t.gettingStartedDesc;
+          if (quickLinks[1].querySelector("h3"))
+            quickLinks[1].querySelector("h3").textContent = t.accountProfile;
+          if (quickLinks[1].querySelector("p"))
+            quickLinks[1].querySelector("p").textContent = t.accountProfileDesc;
+          if (quickLinks[2].querySelector("h3"))
+            quickLinks[2].querySelector("h3").textContent = t.ordersPayments;
+          if (quickLinks[2].querySelector("p"))
+            quickLinks[2].querySelector("p").textContent = t.ordersPaymentsDesc;
+          if (quickLinks[3].querySelector("h3"))
+            quickLinks[3].querySelector("h3").textContent = t.contactSupport;
+          if (quickLinks[3].querySelector("p"))
+            quickLinks[3].querySelector("p").textContent = t.contactSupportDesc;
+        }
+
+        // Update section headers
+        const sectionHeaders = document.querySelectorAll(".section-header");
+        if (sectionHeaders.length > 0) {
+          if (sectionHeaders[0].querySelector("h2"))
+            sectionHeaders[0].querySelector("h2").textContent =
+              t.popularArticles;
+          if (sectionHeaders[0].querySelector("p"))
+            sectionHeaders[0].querySelector("p").textContent =
+              t.popularArticlesDesc;
+        }
+        if (sectionHeaders.length > 1) {
+          if (sectionHeaders[1].querySelector("h2"))
+            sectionHeaders[1].querySelector("h2").textContent = t.faqTitle;
+          if (sectionHeaders[1].querySelector("p"))
+            sectionHeaders[1].querySelector("p").textContent = t.faqDesc;
+        }
+        if (sectionHeaders.length > 2) {
+          if (sectionHeaders[2].querySelector("h2"))
+            sectionHeaders[2].querySelector("h2").textContent = t.contactTitle;
+          if (sectionHeaders[2].querySelector("p"))
+            sectionHeaders[2].querySelector("p").textContent = t.contactDesc;
+        }
+
+        // Update contact section
+        const contactItems = document.querySelectorAll(".contact-item h3");
+        if (contactItems.length >= 3) {
+          contactItems[0].textContent = t.email;
+          contactItems[1].textContent = t.phone;
+          contactItems[2].textContent = t.businessHours;
+        }
+        const lastContactP = document.querySelector(
+          ".contact-item:last-child p"
+        );
+        if (lastContactP) lastContactP.textContent = t.mondayFriday;
+
+        // Update form labels
+        const nameLabel = document.querySelector('label[for="name"]');
+        const emailLabel = document.querySelector('label[for="email"]');
+        const phoneLabel = document.querySelector('label[for="phone"]');
+        const categoryLabel = document.querySelector('label[for="category"]');
+        const messageLabel = document.querySelector('label[for="message"]');
+        const categorySelect = document.querySelector(
+          '#category option[value=""]'
+        );
+        const submitBtn = document.querySelector(".submit-btn");
+
+        if (nameLabel) nameLabel.textContent = t.name + " *";
+        if (emailLabel) emailLabel.textContent = t.email + " *";
+        if (phoneLabel) phoneLabel.textContent = t.phone + " (Optional)";
+        if (categoryLabel) categoryLabel.textContent = t.category + " *";
+        if (messageLabel) messageLabel.textContent = t.message + " *";
+        if (categorySelect) categorySelect.textContent = t.selectCategory;
+        if (submitBtn) submitBtn.textContent = t.sendMessage;
+
+        // Store language preference
+        localStorage.setItem("preferredLanguage", lang);
+      }
+
+      // Load saved language preference
+      const savedLang = localStorage.getItem("preferredLanguage") || "en";
+      document.querySelector(".lang-selector").value = savedLang;
+      if (savedLang !== "en") {
+        updateLanguage(savedLang);
+      }
+
+      // FAQ Accordion
+      document.querySelectorAll(".faq-question").forEach((question) => {
+        question.addEventListener("click", () => {
+          const faqItem = question.parentElement;
+          const isActive = faqItem.classList.contains("active");
+
+          // Close all FAQ items
+          document.querySelectorAll(".faq-item").forEach((item) => {
+            item.classList.remove("active");
+          });
+
+          // Open clicked item if it wasn't active
+          if (!isActive) {
+            faqItem.classList.add("active");
+          }
+        });
+      });
+
+      // Form Submission
+      document
+        .querySelector(".contact-form")
+        .addEventListener("submit", (e) => {
+          e.preventDefault();
+          const messages = {
+            en: "Thank you for contacting us! We will respond within 24 hours.",
+            hy: "Շնորհակալություն կապվելու համար։ Մենք կպատասխանենք 24 ժամվա ընթացքում։",
+            ru: "Спасибо за обращение! Мы ответим в течение 24 часов.",
+          };
+          alert(messages[currentLang]);
+          e.target.reset();
+        });
+
+      // Search Functionality
+      const searchInput = document.querySelector(".search-input");
+      const searchContainer = document.querySelector(".search-container");
+      let searchResultsContainer = null;
+
+      // Create search results container
+      function createSearchResults() {
+        if (!searchResultsContainer) {
+          searchResultsContainer = document.createElement("div");
+          searchResultsContainer.className = "search-results";
+          searchResultsContainer.style.cssText = `
+            max-width: 1280px;
+            margin: 2rem auto;
+            padding: 0 1.5rem;
+            display: none;
+          `;
+          searchContainer.parentElement.insertBefore(
+            searchResultsContainer,
+            searchContainer.nextSibling
+          );
+        }
+        return searchResultsContainer;
+      }
+
+      function performSearch(searchTerm) {
+        if (searchTerm.length < 2) {
+          // Hide results and show all content
+          if (searchResultsContainer) {
+            searchResultsContainer.style.display = "none";
+          }
+          document
+            .querySelectorAll(".quick-link-card, .article-card, .faq-item")
+            .forEach((el) => {
+              el.style.display = "";
+              el.classList.remove("search-highlight");
+            });
+          return;
+        }
+
+        const term = searchTerm.toLowerCase();
+        const results = [];
+        let matchCount = 0;
+
+        // Search in quick links
+        document.querySelectorAll(".quick-link-card").forEach((card) => {
+          const title = card.querySelector("h3")?.textContent || "";
+          const desc = card.querySelector("p")?.textContent || "";
+          const text = (title + " " + desc).toLowerCase();
+
+          if (text.includes(term)) {
+            results.push({
+              type: "quick-link",
+              element: card,
+              title: title,
+              description: desc,
+              relevance: (text.match(new RegExp(term, "g")) || []).length,
+            });
+            matchCount++;
+            card.style.display = "";
+            card.classList.add("search-highlight");
+          } else {
+            card.style.display = "none";
+            card.classList.remove("search-highlight");
+          }
+        });
+
+        // Search in article cards
+        document.querySelectorAll(".article-card").forEach((card) => {
+          const title = card.querySelector("h3")?.textContent || "";
+          const desc = card.querySelector("p")?.textContent || "";
+          const text = (title + " " + desc).toLowerCase();
+
+          if (text.includes(term)) {
+            results.push({
+              type: "article",
+              element: card,
+              title: title,
+              description: desc,
+              relevance: (text.match(new RegExp(term, "g")) || []).length,
+            });
+            matchCount++;
+            card.style.display = "";
+            card.classList.add("search-highlight");
+          } else {
+            card.style.display = "none";
+            card.classList.remove("search-highlight");
+          }
+        });
+
+        // Search in FAQ items
+        document.querySelectorAll(".faq-item").forEach((item) => {
+          const question =
+            item.querySelector(".faq-question")?.textContent || "";
+          const answer = item.querySelector(".faq-answer")?.textContent || "";
+          const text = (question + " " + answer).toLowerCase();
+
+          if (text.includes(term)) {
+            // Auto-expand matching FAQ items
+            item.classList.add("active");
+            results.push({
+              type: "faq",
+              element: item,
+              title: question,
+              description: answer.substring(0, 100) + "...",
+              relevance: (text.match(new RegExp(term, "g")) || []).length,
+            });
+            matchCount++;
+            item.style.display = "";
+            item.classList.add("search-highlight");
+          } else {
+            item.style.display = "none";
+            item.classList.remove("search-highlight");
+          }
+        });
+
+        // Show search results summary
+        const resultsContainer = createSearchResults();
+        if (matchCount > 0) {
+          resultsContainer.innerHTML = `
+            <div style="
+              background: var(--bg);
+              border: 1px solid var(--border);
+              border-radius: 0.75rem;
+              padding: 1.5rem;
+              margin-bottom: 2rem;
+            ">
+              <h3 style="margin-bottom: 0.5rem; color: var(--text);">
+                Found ${matchCount} result${
+            matchCount !== 1 ? "s" : ""
+          } for "${searchTerm}"
+              </h3>
+              <p style="color: var(--text-light); font-size: 0.875rem;">
+                Showing matching content below
+              </p>
+            </div>
+          `;
+          resultsContainer.style.display = "block";
+        } else {
+          resultsContainer.innerHTML = `
+            <div style="
+              background: var(--bg);
+              border: 1px solid var(--border);
+              border-radius: 0.75rem;
+              padding: 2rem;
+              text-align: center;
+            ">
+              <p style="color: var(--text-light); margin-bottom: 1rem;">
+                No results found for "${searchTerm}"
+              </p>
+              <p style="color: var(--text-light); font-size: 0.875rem;">
+                Try different keywords or browse the categories below
+              </p>
+            </div>
+          `;
+          resultsContainer.style.display = "block";
+        }
+
+        // Scroll to search results
+        resultsContainer.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      searchInput.addEventListener("input", (e) => {
+        performSearch(e.target.value);
+      });
+
+      // Clear search on Escape key
+      searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          searchInput.value = "";
+          performSearch("");
+        }
+      });
+
+      // Smooth Scrolling
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+      // Mobile Menu Toggle
+      const mobileMenuBtn = document.querySelector(".mobile-menu-btn");
+      const nav = document.querySelector("nav");
+      const overlay = document.createElement("div");
+      overlay.className = "mobile-menu-overlay";
+      document.body.appendChild(overlay);
+
+      mobileMenuBtn.addEventListener("click", () => {
+        nav.classList.toggle("active");
+        overlay.classList.toggle("active");
+      });
+
+      overlay.addEventListener("click", () => {
+        nav.classList.remove("active");
+        overlay.classList.remove("active");
+      });
+
+      // Close menu when clicking on a nav link
+      nav.querySelectorAll("a").forEach((link) => {
+        link.addEventListener("click", () => {
+          nav.classList.remove("active");
+          overlay.classList.remove("active");
+        });
+      });
+
+      // Language Selector
+      document
+        .querySelector(".lang-selector")
+        .addEventListener("change", (e) => {
+          updateLanguage(e.target.value);
+        });
+
+      // Fade-in animation on scroll
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = "1";
+            entry.target.style.transform = "translateY(0)";
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll(".fade-in").forEach((el) => {
+        el.style.opacity = "0";
+        el.style.transform = "translateY(20px)";
+        el.style.transition = "opacity 0.6s ease-out, transform 0.6s ease-out";
+        observer.observe(el);
+      });
+    </script>
+  </body>
+</html>
