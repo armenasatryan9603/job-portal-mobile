@@ -5,6 +5,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Logo } from "@/components/Logo";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const STORAGE_KEY = "hotwork_app_banner_dismissed";
 const PLAY_STORE_URL =
@@ -29,11 +30,10 @@ export const AppDownloadBanner: React.FC = () => {
   const [os, setOs] = useState<MobileOS | null>(null);
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
+  const { t } = useTranslation();
 
   useEffect(() => {
     const detected = detectMobileOS();
-    console.log('zzzzzzzzz', detected);
-    
     if (!detected) return;
     try {
       if (localStorage.getItem(STORAGE_KEY)) return;
@@ -75,7 +75,9 @@ export const AppDownloadBanner: React.FC = () => {
         <View style={styles.textWrap}>
           <Text style={[styles.title, { color: colors.text }]}>HotWork</Text>
           <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {isIos ? "Download on the App Store" : "Get it on Google Play"}
+            {isIos
+              ? t("downloadOnAppStore", "Download on the App Store")
+              : t("getItOnGooglePlay", "Get it on Google Play")}
           </Text>
         </View>
       </View>
@@ -88,10 +90,10 @@ export const AppDownloadBanner: React.FC = () => {
         <IconSymbol
           name={isIos ? "apple.logo" : "arrow.down.circle.fill"}
           size={14}
-          color="#fff"
+          color={colors.textInverse}
         />
-        <Text style={styles.downloadBtnText}>
-          {isIos ? "App Store" : "Play Store"}
+        <Text style={[styles.downloadBtnText, { color: colors.textInverse }]}>
+          {isIos ? t("appStore", "App Store") : t("playStore", "Play Store")}
         </Text>
       </TouchableOpacity>
 
@@ -159,7 +161,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   downloadBtnText: {
-    color: "#fff",
     fontSize: 13,
     fontWeight: "600",
   },
