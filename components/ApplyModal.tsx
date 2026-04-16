@@ -1,10 +1,10 @@
 import { ActivityIndicator, Alert, Keyboard, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, TouchableWithoutFeedback, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import { Order, apiService } from "@/categories/api";
 import React, { useEffect, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
 
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { PeerSelector } from "./PeerSelector";
 import { PriceCurrency } from "./PriceCurrency";
@@ -12,8 +12,8 @@ import { ResponsiveContainer } from "./ResponsiveContainer";
 import { getLocationDisplay } from "@/utils/countryExtraction";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useTranslation } from "@/contexts/TranslationContext";
 import { useIsWeb } from "@/utils/isWeb";
+import { useTranslation } from "@/contexts/TranslationContext";
 
 interface ApplyModalProps {
   visible: boolean;
@@ -38,7 +38,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, paymentEnabled } = useAuth();
   const isDesktopWeb = useIsWeb();
   const [message, setMessage] = useState("");
   const [messageError, setMessageError] = useState("");
@@ -235,7 +235,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                     </View>
                   )}
                 </View>
-                {hasActiveSubscription && (
+                {paymentEnabled && hasActiveSubscription && (
                   <View
                     style={[
                       styles.subscriptionBadge,
@@ -253,8 +253,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                         { color: colors.primary },
                       ]}
                     >
-                      {t("unlimitedApplicationsWithSubscription") ||
-                        "Unlimited applications with your active subscription"}
+                      {t("unlimitedApplicationsWithSubscription")}
                     </Text>
                   </View>
                 )}
@@ -324,8 +323,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
               {order?.questions && order.questions.length > 0 && (
                 <View style={styles.questionsSection}>
                   <Text style={[styles.questionsLabel, { color: colors.text }]}>
-                    {t("pleaseAnswerQuestions") ||
-                      "Please answer the following questions"}
+                    {t("pleaseAnswerQuestions")}
                   </Text>
                   {order.questions
                     .sort((a, b) => a.order - b.order)
@@ -406,7 +404,7 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                 )}
               </View>
 
-              {!hasActiveSubscription && order.creditCost && (
+              {paymentEnabled && !hasActiveSubscription && order.creditCost && (
                 <View style={styles.creditInfo}>
                   <View style={styles.creditRow}>
                     <IconSymbol

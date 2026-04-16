@@ -12,6 +12,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { Button } from "./ui/button";
 import { useMySubscription } from "@/hooks/useApi";
 import { PriceCurrency } from "./PriceCurrency";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HiringDialogProps {
   visible: boolean;
@@ -45,6 +46,7 @@ export function HiringDialog({
   const [hiringStatusMessage, setHiringStatusMessage] = useState("");
   const [checkingStatus, setCheckingStatus] = useState(false);
   const { data: subscription } = useMySubscription();
+  const { paymentEnabled } = useAuth();
 
   // Check if user has active subscription
   const hasActiveSubscription =
@@ -279,8 +281,8 @@ export function HiringDialog({
                 </View>
               )}
 
-              {/* Credit Info Section */}
-              {!hasActiveSubscription &&
+              {/* Credit Info Section — hidden when payment is disabled */}
+              {paymentEnabled && !hasActiveSubscription &&
                 selectedOrder &&
                 selectedOrder.creditCost && (
                   <View style={styles.creditInfo}>

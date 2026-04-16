@@ -30,7 +30,7 @@ export default function MySubscriptionScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, paymentEnabled } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const {
     data: subscriptionData,
@@ -43,6 +43,10 @@ export default function MySubscriptionScreen() {
   const subscription = subscriptionData as UserSubscription | null | undefined;
 
   useEffect(() => {
+    if (!paymentEnabled) {
+      router.replace("/profile" as any);
+      return;
+    }
     if (
       subscriptionError &&
       (subscriptionError as any)?.message &&
@@ -53,7 +57,7 @@ export default function MySubscriptionScreen() {
         (subscriptionError as any)?.message || t("failedToLoadSubscription")
       );
     }
-  }, [subscriptionError]);
+  }, [paymentEnabled, subscriptionError]);
 
   const handleCancel = () => {
     if (!subscription) return;

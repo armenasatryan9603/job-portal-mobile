@@ -52,7 +52,7 @@ import { useTranslation } from "@/contexts/TranslationContext";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, paymentEnabled } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const isDesktopWeb = useIsWeb();
@@ -1412,8 +1412,8 @@ export default function ProfileScreen() {
               </ResponsiveCard>
           )}
 
-          {/* Payments entry point */}
-          {!userId && (
+          {/* Payments entry point — hidden when payment is disabled */}
+          {!userId && paymentEnabled && (
             <>
               <ResponsiveCard>
                 <View style={styles.paymentsPreview}>

@@ -1,26 +1,27 @@
-import React, { useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BorderRadius, ThemeColors } from "@/constants/styles";
+import React, { useEffect } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { Header } from "@/components/Header";
-import { Layout } from "@/components/Layout";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useTranslation } from "@/contexts/TranslationContext";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, BorderRadius } from "@/constants/styles";
-import { useAuth } from "@/contexts/AuthContext";
-import { useUnreadCount } from "@/contexts/UnreadCountContext";
-import { useAnalytics } from "@/hooks/useAnalytics";
+import { usePurchaseSubscription, useSubscriptionPlan } from "@/hooks/useApi";
+
 import { Button } from "@/components/ui/button";
-import { useSubscriptionPlan, usePurchaseSubscription } from "@/hooks/useApi";
+import { Header } from "@/components/Header";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Layout } from "@/components/Layout";
 import type { SubscriptionPlan } from "@/categories/api";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useUnreadCount } from "@/contexts/UnreadCountContext";
 
 export default function SubscriptionDetailScreen() {
   useAnalytics("SubscriptionDetail");
@@ -29,7 +30,7 @@ export default function SubscriptionDetailScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, paymentEnabled } = useAuth();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const planId = id ? parseInt(id as string, 10) : null;
   const {
@@ -40,6 +41,10 @@ export default function SubscriptionDetailScreen() {
   const purchaseMutation = usePurchaseSubscription();
 
   useEffect(() => {
+    if (!paymentEnabled) {
+      router.replace("/profile" as any);
+      return;
+    }
     if (planError) {
       Alert.alert(
         t("error"),
@@ -47,7 +52,7 @@ export default function SubscriptionDetailScreen() {
       );
       router.back();
     }
-  }, [planError]);
+  }, [paymentEnabled, planError]);
 
   const handlePurchase = async () => {
     if (!planData) return;
@@ -62,7 +67,7 @@ export default function SubscriptionDetailScreen() {
       if (result.success) {
         Alert.alert(
           t("success"),
-          t("subscriptionActivated") || "Subscription activated successfully",
+          t("subscriptionActivated"),
           [
             {
               text: t("ok"),
@@ -81,12 +86,12 @@ export default function SubscriptionDetailScreen() {
       ) {
         Alert.alert(t("insufficientCredits"), t("pleaseRefillCredits"), [
           {
-            text: t("cancel") || "Cancel",
+            text: t("cancel"),
             style: "cancel",
           },
           {
-            text: t("refill") || "Refill Credits",
-            onPress: () => router.push("/profile/refill-credits"),
+            text: t("refill"),
+            onPress: () => router.push("/profile/payment/refill-credits"),
           },
         ]);
       } else {

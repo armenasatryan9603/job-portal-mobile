@@ -12,6 +12,7 @@ import type { SubscriptionPlan, UserSubscription } from "@/categories/api";
 import { useMySubscription, useSubscriptionPlans } from "@/hooks/useApi";
 
 import { Header } from "@/components/Header";
+import { useAuth } from "@/contexts/AuthContext";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { SubscriptionPlanSkeleton } from "@/components/SubscriptionPlanSkeleton";
@@ -27,6 +28,7 @@ export default function SubscriptionsScreen() {
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const insets = useSafeAreaInsets();
+  const { paymentEnabled } = useAuth();
   const {
     data: plansData,
     isLoading: plansLoading,
@@ -39,6 +41,10 @@ export default function SubscriptionsScreen() {
   const subscription = mySubscription as UserSubscription | null | undefined;
 
   useEffect(() => {
+    if (!paymentEnabled) {
+      router.replace("/profile" as any);
+      return;
+    }
     if (plansError) {
       Alert.alert(
         t("error"),

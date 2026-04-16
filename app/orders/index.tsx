@@ -117,7 +117,7 @@ export default function OrdersScreen() {
   const { language } = useLanguage();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const isDesktopWeb = useIsWeb();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, paymentEnabled } = useAuth();
   const { guestCountryIso, requestLocationAndStore } = useGuestCountry();
   const { showLoginModal } = useModal();
   const isMyOrders = myOrders === "true";
@@ -1525,28 +1525,30 @@ export default function OrdersScreen() {
 
   const handlePublishOrder = async (order: Order) => {
     try {
-      // Check subscription first
-      const subscription = await apiService.getMySubscription();
-      if (
-        !subscription ||
-        subscription.status !== "active" ||
-        new Date(subscription.endDate) < new Date()
-      ) {
-        Alert.alert(
-          t("subscriptionRequiredForPermanent") || "Subscription Required",
-          t("subscriptionRequiredForPermanentDesc") ||
-            "An active subscription is required to publish permanent orders.",
-          [
-            { text: t("cancel"), style: "cancel" },
-            {
-              text: t("viewSubscriptions") || "View Subscriptions",
-              onPress: () => {
-                router.push("/subscriptions" as any);
+      // Check subscription first (skipped when payment is disabled)
+      if (paymentEnabled) {
+        const subscription = await apiService.getMySubscription();
+        if (
+          !subscription ||
+          subscription.status !== "active" ||
+          new Date(subscription.endDate) < new Date()
+        ) {
+          Alert.alert(
+            t("subscriptionRequiredForPermanent") || "Subscription Required",
+            t("subscriptionRequiredForPermanentDesc") ||
+              "An active subscription is required to publish permanent orders.",
+            [
+              { text: t("cancel"), style: "cancel" },
+              {
+                text: t("viewSubscriptions") || "View Subscriptions",
+                onPress: () => {
+                  router.push("/subscriptions" as any);
+                },
               },
-            },
-          ]
-        );
-        return;
+            ]
+          );
+          return;
+        }
       }
 
       // Confirm publishing
@@ -1572,19 +1574,23 @@ export default function OrdersScreen() {
                 queryClient.invalidateQueries({ queryKey: ["orders"] });
               } catch (error: any) {
                 console.error("Error publishing order:", error);
-                Alert.alert(
-                  "",
-                  t("subscriptionRequiredToPublishOrder"),
-                  [
-                    { text: t("cancel"), style: "cancel" },
-                    {
-                      text: t("viewSubscriptions"),
-                      onPress: () => {
-                        router.push("/subscriptions");
+                if (paymentEnabled) {
+                  Alert.alert(
+                    "",
+                    t("subscriptionRequiredToPublishOrder"),
+                    [
+                      { text: t("cancel"), style: "cancel" },
+                      {
+                        text: t("viewSubscriptions"),
+                        onPress: () => {
+                          router.push("/subscriptions");
+                        },
                       },
-                    },
-                  ]
-                );
+                    ]
+                  );
+                } else {
+                  Alert.alert(t("error"), error?.message || t("failedToPublishOrder") || "Failed to publish order");
+                }
               } finally {
                 setApplyLoading(false);
               }

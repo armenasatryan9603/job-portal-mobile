@@ -5,8 +5,10 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
+import { Platform } from "react-native";
 import { UserProfile, apiService } from "@/categories/api";
 import { clearGuestLocation, getGuestCountryIso, getGuestLocationAddress, setGuestCountryIso } from "@/utils/guestLocationStorage";
 
@@ -26,6 +28,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   hasIncompleteProfile: boolean;
   justSignedUp: boolean;
+  paymentEnabled: boolean;
   setUser: (user: UserProfile | null) => void;
   updateUser: (userData: Partial<UserProfile>) => Promise<void>;
   setHasIncompleteProfile: (incomplete: boolean) => void;
@@ -440,12 +443,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const paymentEnabled = useMemo(() => {
+    const cfg = user?.paymentConfig;
+    if (!cfg) return true;
+    if (Platform.OS === "ios") return cfg.ios;
+    if (Platform.OS === "android") return cfg.android;
+    return cfg.web;
+  }, [user?.paymentConfig]);
+
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated,
     hasIncompleteProfile,
     justSignedUp,
+    paymentEnabled,
     setUser,
     updateUser,
     setHasIncompleteProfile,

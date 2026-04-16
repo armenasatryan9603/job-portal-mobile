@@ -1,4 +1,4 @@
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Shadows, ThemeColors } from "@/constants/styles";
 import React, { useState } from "react";
 
@@ -116,7 +116,7 @@ export function BecomeSpecialistModal({
             ]}
           >
             <View style={styles.iconContainer}>
-              <IconSymbol name="person.2.fill" size={28} color={colors.textInverse} />
+              <IconSymbol name="person.2.fill" size={28} color={'#fff'} />
             </View>
             <Text style={styles.title}>{t("becomeASpecialist")}</Text>
           </View>
@@ -272,7 +272,7 @@ export function BecomeSpecialistModal({
               title={t("becomeSpecialist")}
               onPress={handleBecomeSpecialist}
               backgroundColor={colors.primary}
-              textColor={colors.textInverse}
+              textColor={'#fff'}
               disabled={isUpdating}
               style={styles.primaryActionButton}
             />
@@ -328,8 +328,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
-    // Note: Should use colors.textInverse dynamically - consider inline style
-    color: "white",
+    color: "#fff",
   },
   scrollView: {
     flex: 1,

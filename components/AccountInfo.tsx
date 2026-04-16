@@ -6,11 +6,11 @@ import {
   View,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 import { UserProfile, apiService } from "@/categories/api";
 
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
@@ -32,7 +32,7 @@ export function AccountInfo({
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const colors = ThemeColors[isDark ? "dark" : "light"];
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, paymentEnabled } = useAuth();
 
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -255,7 +255,7 @@ export function AccountInfo({
               {t("joined")}: {new Date(profile.createdAt).toLocaleDateString()}
             </Text>
           </View>
-          {!userId && (
+          {!userId && paymentEnabled && (
             <View style={styles.accountItem}>
               <IconSymbol
                 name="dollarsign.circle.fill"

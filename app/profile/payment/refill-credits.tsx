@@ -34,7 +34,7 @@ export default function RefillCreditsScreen() {
   const isDesktopWeb = useIsWeb();
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { creditCards, isLoadingCards, syncCardsFromBank, refreshCards } = useCreditCard();
-  const { updateUser } = useAuth();
+  const { updateUser, paymentEnabled } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -70,6 +70,13 @@ export default function RefillCreditsScreen() {
       onBackPress={() => router.back()}
     />
   );
+
+  // Redirect away if payment is disabled for this platform
+  useEffect(() => {
+    if (!paymentEnabled) {
+      router.replace("/profile" as any);
+    }
+  }, [paymentEnabled]);
 
   // Refresh cards when screen comes into focus (e.g., after payment callback)
   useFocusEffect(

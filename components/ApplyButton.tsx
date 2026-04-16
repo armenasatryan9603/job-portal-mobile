@@ -26,7 +26,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
   variant = "primary",
 }) => {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, paymentEnabled } = useAuth();
   const colorScheme = useColorScheme();
   const colors = ThemeColors[colorScheme ?? "light"];
   const { data: subscription } = useMySubscription();
@@ -101,7 +101,7 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
         >
           {t("apply")}
         </Text>
-        {!hasActiveSubscription && order.creditCost && (
+        {paymentEnabled && !hasActiveSubscription && order.creditCost && (
           <PriceCurrency
             price={order.creditCost}
             currency={order.currency}

@@ -1,4 +1,5 @@
 // API Configuration and Service Layer
+import { Platform } from "react-native";
 import { getApiBaseUrl } from "@/config/api";
 
 const API_BASE_URL = getApiBaseUrl();
@@ -202,6 +203,11 @@ export interface UserProfile {
   currency?: string;
   rateUnit?: string;
   portfolio?: PortfolioItem[];
+  paymentConfig?: {
+    web: boolean;
+    android: boolean;
+    ios: boolean;
+  };
 }
 
 export interface UpdateUserProfileData {
@@ -542,6 +548,7 @@ class ApiService {
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
+      "X-Platform": Platform.OS,
     };
 
     if (token) {

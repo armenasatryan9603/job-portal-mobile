@@ -14,6 +14,10 @@ npx expo prebuild --platform android
 
 cd android && ./gradlew assembleRelease
 
+# Build the AAB
+
+cd android && ./gradlew bundleRelease
+
 
 # Or for debug build (easier, no signing required)
 

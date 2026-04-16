@@ -59,7 +59,7 @@ export default function PaymentsScreen() {
   const { unreadNotificationsCount, unreadMessagesCount } = useUnreadCount();
   const { creditCards, removeCreditCard, setDefaultCard, isLoading } =
     useCreditCard();
-  const { user } = useAuth();
+  const { user, paymentEnabled } = useAuth();
   const colors = ThemeColors[isDark ? "dark" : "light"];
 
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryItem[]>(
@@ -69,8 +69,12 @@ export default function PaymentsScreen() {
   const [historyError, setHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!paymentEnabled) {
+      router.replace("/profile" as any);
+      return;
+    }
     fetchPaymentHistory();
-  }, []);
+  }, [paymentEnabled]);
 
   const fetchPaymentHistory = async () => {
     try {

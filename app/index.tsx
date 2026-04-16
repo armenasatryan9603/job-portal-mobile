@@ -26,7 +26,6 @@ import { TopDataSlider } from "@/components/TopDataSlider";
 import { UserAvatar } from "@/components/UserAvatar";
 import { router } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { useIsWeb } from "@/utils/isWeb";
 import { useModal } from "@/contexts/ModalContext";
 import { usePlatformStats } from "@/hooks/useApi";
 import { useState } from "react";
@@ -38,7 +37,7 @@ export default function WelcomeScreen() {
   // Track screen view
   useAnalytics("Welcome");
   const analytics = useAnalyticsService();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, paymentEnabled } = useAuth();
   const { isDark } = useTheme();
   const { t } = useTranslation();
   const { showLoginModal } = useModal();
@@ -152,8 +151,6 @@ export default function WelcomeScreen() {
     },
   ];
 
-  const isDesktopWeb = useIsWeb();
-
   const header = (
     <Header
       title={t("welcome")}
@@ -243,7 +240,7 @@ export default function WelcomeScreen() {
                       >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </ThemedText>
-                      {user.creditBalance !== undefined && (
+                      {paymentEnabled && user.creditBalance !== undefined && (
                         <>
                           <View style={[styles.divider, { backgroundColor: colors.border }]} />
                           <View style={styles.creditContainer}>

@@ -2,7 +2,7 @@
   "expo": {
     "name": "HotWork",
     "slug": "job-portal-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "jobportalmobile",
@@ -28,7 +28,7 @@
           "applinks:job-portal-backend-eight-sand.vercel.app"
         ]
       },
-      "version": "1.0.0",
+      "version": "1.0.1",
       "config": {
         "googleMapsApiKey": "YOUR_IOS_GOOGLE_MAPS_API_KEY"
       },
@@ -42,6 +42,7 @@
       }
     },
     "android": {
+      "versionCode": 2,
       "package": "com.jobportalmobile.app",
       "googleServicesFile": "./google-services.json",
       "config": {
