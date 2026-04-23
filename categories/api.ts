@@ -891,6 +891,8 @@ class ApiService {
       priceMax?: number;
       location?: string;
       country?: string;
+      currency?: string;
+      rateUnit?: string;
     }
   ): Promise<any> {
     return this.request<any>(

@@ -49,6 +49,9 @@ import { useIsWeb } from "@/utils/isWeb";
 import { useSkills } from "@/hooks/useSkills";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { CurrencySelector } from "@/components/CurrencySelector";
+import { getCurrencySymbol } from "@/utils/currencySymbols";
 
 export default function ProfileScreen() {
   useAnalytics("Profile");
@@ -96,6 +99,10 @@ export default function ProfileScreen() {
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [savingPrices, setSavingPrices] = useState(false);
+  /** Resolved: profile → auth user → settings (AsyncStorage) → AMD */
+  const [priceCurrencyCode, setPriceCurrencyCode] = useState("AMD");
+  /** Currency for the price row while editing (saved with min/max) */
+  const [pendingPriceCurrency, setPendingPriceCurrency] = useState("AMD");
 
   // Location editing state management
   const [isEditingLocation, setIsEditingLocation] = useState(false);
@@ -116,6 +123,32 @@ export default function ProfileScreen() {
 
   // Skills/Services management
   const skills = useSkills(userId ? targetUserId : user?.id);
+
+  const refreshPriceCurrencyFromSources = useCallback(async () => {
+    try {
+      const stored = await AsyncStorage.getItem("preferredCurrency");
+      const profileAny = profile as any;
+      const code = (
+        (profileAny?.currency as string) ||
+        user?.currency ||
+        stored ||
+        "AMD"
+      ).toUpperCase();
+      setPriceCurrencyCode(code);
+    } catch {
+      setPriceCurrencyCode((user?.currency || "AMD").toUpperCase());
+    }
+  }, [profile, user?.currency]);
+
+  useEffect(() => {
+    refreshPriceCurrencyFromSources();
+  }, [refreshPriceCurrencyFromSources]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshPriceCurrencyFromSources();
+    }, [refreshPriceCurrencyFromSources])
+  );
 
   // Fetch user profile from API
   useEffect(() => {
@@ -610,6 +643,13 @@ export default function ProfileScreen() {
     const profileAny = profile as any;
     setPriceMin(profileAny.priceMin?.toString() || "");
     setPriceMax(profileAny.priceMax?.toString() || "");
+    const initialCurrency = (
+      (profileAny?.currency as string) ||
+      user?.currency ||
+      priceCurrencyCode ||
+      "AMD"
+    ).toUpperCase();
+    setPendingPriceCurrency(initialCurrency);
     setIsEditingPrices(true);
   };
 
@@ -617,6 +657,7 @@ export default function ProfileScreen() {
     const profileAny = profile as any;
     setPriceMin(profileAny.priceMin?.toString() || "");
     setPriceMax(profileAny.priceMax?.toString() || "");
+    setPendingPriceCurrency(priceCurrencyCode);
     setIsEditingPrices(false);
   };
 
@@ -645,10 +686,11 @@ export default function ProfileScreen() {
     try {
       setSavingPrices(true);
 
-      // Update specialist profile on backend
+      // Update specialist profile on backend (persist currency with rates)
       await apiService.updateSpecialistProfile(profile.id, {
         priceMin: min,
         priceMax: max,
+        currency: pendingPriceCurrency,
       });
 
       // Track profile update
@@ -662,7 +704,10 @@ export default function ProfileScreen() {
         ...profile,
         ...(min !== undefined && { priceMin: min }),
         ...(max !== undefined && { priceMax: max }),
+        currency: pendingPriceCurrency,
       });
+      setPriceCurrencyCode(pendingPriceCurrency);
+      await updateUser({ currency: pendingPriceCurrency });
 
       setIsEditingPrices(false);
     } catch (error: any) {
@@ -1528,12 +1573,12 @@ export default function ProfileScreen() {
                   <View style={styles.priceInputRow}>
                     <View style={styles.priceInputGroup}>
                       <Text style={[styles.priceLabel, { color: colors.text }]}>
-                        {t("minimumPrice")} (USD)
+                        {t("minimumPrice")} ({pendingPriceCurrency})
                       </Text>
                       <View
                         style={[
                           styles.priceInputContainer,
-                          { borderColor: "transparent" },
+                          { borderColor: colors.border },
                         ]}
                       >
                         <Text
@@ -1542,7 +1587,7 @@ export default function ProfileScreen() {
                             { color: colors.textSecondary },
                           ]}
                         >
-                          $
+                          {getCurrencySymbol(pendingPriceCurrency)}
                         </Text>
                         <AppTextInput
                           style={[styles.priceInput, { color: colors.text }]}
@@ -1557,12 +1602,12 @@ export default function ProfileScreen() {
 
                     <View style={styles.priceInputGroup}>
                       <Text style={[styles.priceLabel, { color: colors.text }]}>
-                        {t("maximumPrice")} (USD)
+                        {t("maximumPrice")} ({pendingPriceCurrency})
                       </Text>
                       <View
                         style={[
                           styles.priceInputContainer,
-                          { borderColor: "transparent" },
+                          { borderColor: colors.border },
                         ]}
                       >
                         <Text
@@ -1571,7 +1616,7 @@ export default function ProfileScreen() {
                             { color: colors.textSecondary },
                           ]}
                         >
-                          $
+                          {getCurrencySymbol(pendingPriceCurrency)}
                         </Text>
                         <AppTextInput
                           style={[styles.priceInput, { color: colors.text }]}
@@ -1584,6 +1629,12 @@ export default function ProfileScreen() {
                       </View>
                     </View>
                   </View>
+                  <CurrencySelector
+                    value={pendingPriceCurrency}
+                    onChange={(code) => setPendingPriceCurrency(code.toUpperCase())}
+                    modalTitle={t("currency")}
+                    containerStyle={{ marginTop: Spacing.md }}
+                  />
                   <View style={styles.priceEditActions}>
                     <Button
                       variant="outline"
@@ -1614,13 +1665,24 @@ export default function ProfileScreen() {
                     const profileAny = profile as any;
                     const min = profileAny.priceMin;
                     const max = profileAny.priceMax;
+                    const cur = (
+                      (profileAny.currency as string) ||
+                      priceCurrencyCode ||
+                      "AMD"
+                    ).toUpperCase();
+                    const sym = getCurrencySymbol(cur);
                     if (min || max) {
                       return (
                         <Text
                           style={[styles.priceDisplay, { color: colors.text }]}
                         >
-                          {min ? `$${min}` : t("notSet")} -{" "}
-                          {max ? `$${max}` : t("notSet")}
+                          {min
+                            ? `${sym}${Number(min).toLocaleString()}`
+                            : t("notSet")}{" "}
+                          -{" "}
+                          {max
+                            ? `${sym}${Number(max).toLocaleString()}`
+                            : t("notSet")}
                         </Text>
                       );
                     } else {
@@ -2440,6 +2502,7 @@ const styles = StyleSheet.create({
   // Price range styles
   priceEditContainer: {
     gap: 16,
+    marginTop: Spacing.md,
   },
   priceInputRow: {
     flexDirection: "row",
