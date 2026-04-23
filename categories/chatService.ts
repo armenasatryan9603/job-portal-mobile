@@ -14,6 +14,8 @@ export interface Conversation {
     title: string;
     status: string;
     clientId: number;
+    /** Pending proposals for this order (from GET conversation). Used to show Choose/Reject only when relevant. */
+    Proposals?: { id: number }[];
   };
   _count?: {
     Messages: number;

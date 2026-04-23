@@ -11,18 +11,20 @@ import {
   View,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import { Conversation, Message, chatService } from "@/categories/chatService";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { ChatSkeleton } from "@/components/ChatSkeleton";
 import { EmojiPicker } from "@/components/EmojiPicker";
 import { FeedbackDialog } from "@/components/FeedbackDialog";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
+import RatingService from "@/categories/RatingService";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { Review } from "@/categories/api";
 import { ThemeColors } from "@/constants/styles";
 import { formatTimestamp } from "@/utils/dateFormatting";
@@ -34,8 +36,6 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useConversations } from "@/contexts/ConversationsContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "@/contexts/TranslationContext";
-import RatingService from "@/categories/RatingService";
-import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 // Typing Indicator Component
 const TypingIndicator = ({
@@ -1286,7 +1286,7 @@ export default function ChatDetailScreen() {
             style={[
               styles.messageText,
               {
-                color: isFromCurrentUser ? colors.textInverse : colors.text,
+                color: isFromCurrentUser ? '#fff' : colors.text,
               },
             ]}
           >
@@ -1439,8 +1439,9 @@ export default function ChatDetailScreen() {
                       },
                     ]}
                   >
-                    {/* Show Reject/Choose buttons for open orders */}
-                    {conversation?.Order?.status === "open" && (
+                    {/* Show Reject/Choose only when order is open and there are pending applications */}
+                    {conversation?.Order?.status === "open" &&
+                      (conversation.Order.Proposals?.length ?? 0) > 0 && (
                       <>
                         <TouchableOpacity
                           style={[
@@ -1473,11 +1474,11 @@ export default function ChatDetailScreen() {
                           onPress={handleChoose}
                           disabled={actionLoading}
                         >
-                          <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
+                          <IconSymbol name="checkmark" size={14} color={'#fff'} />
                           <Text
                             style={[
                               styles.orderActionButtonText,
-                              { color: colors.textInverse },
+                              { color: '#fff' },
                             ]}
                           >
                             {t("choose")}
@@ -1523,12 +1524,12 @@ export default function ChatDetailScreen() {
                           <IconSymbol
                             name="checkmark.circle"
                             size={14}
-                            color={colors.textInverse}
+                            color={'#fff'}
                           />
                           <Text
                             style={[
                               styles.orderActionButtonText,
-                              { color: colors.textInverse },
+                              { color: '#fff' },
                             ]}
                           >
                             {t("complete")}
@@ -1644,7 +1645,7 @@ export default function ChatDetailScreen() {
                     setFeedbackDialogVisible(true);
                   }}
                 >
-                  <IconSymbol name="star.fill" size={20} color={colors.textInverse} />
+                  <IconSymbol name="star.fill" size={20} color={'#fff'} />
                   <Text style={styles.reviewButtonText}>{t("leaveReview")}</Text>
                 </TouchableOpacity>
               </View>
@@ -1696,7 +1697,7 @@ export default function ChatDetailScreen() {
                   <IconSymbol
                     name="arrow.up"
                     size={20}
-                    color={newMessage.trim() ? colors.textInverse : colors.tabIconDefault}
+                    color={newMessage.trim() ? '#fff' : colors.tabIconDefault}
                   />
                 </TouchableOpacity>
               </View>
@@ -2014,7 +2015,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",
@@ -2051,7 +2051,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   reviewButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 14,
     fontWeight: "600",

@@ -311,7 +311,7 @@ export default function ProfileSettingsScreen() {
                 }}
                 thumbColor={
                   Platform.OS === "ios"
-                    ? colors.textInverse
+                    ? '#fff'
                     : isDark
                     ? colors.primary
                     : colors.textSecondary
@@ -516,7 +516,7 @@ export default function ProfileSettingsScreen() {
                   }}
                   thumbColor={
                     Platform.OS === "ios"
-                      ? colors.textInverse
+                      ? '#fff'
                       : pushNotificationsEnabled
                       ? colors.primary
                       : colors.textSecondary
@@ -564,7 +564,7 @@ export default function ProfileSettingsScreen() {
                   }}
                   thumbColor={
                     Platform.OS === "ios"
-                      ? colors.textInverse
+                      ? '#fff'
                       : emailNotificationsEnabled
                       ? colors.primary
                       : colors.textSecondary

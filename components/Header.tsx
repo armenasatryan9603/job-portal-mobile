@@ -12,8 +12,8 @@ import { Logo } from "./Logo";
 import React from "react";
 import { router } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useNavigation } from "@/contexts/NavigationContext";
 import { useIsWeb } from "@/utils/isWeb";
+import { useNavigation } from "@/contexts/NavigationContext";
 
 interface HeaderProps {
   title?: string;
@@ -222,7 +222,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
   },
   badgeText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 10,
     fontWeight: "600",

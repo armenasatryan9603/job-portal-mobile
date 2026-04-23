@@ -9,7 +9,6 @@ import {
   View,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ResponsiveCard,
@@ -24,6 +23,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import { AddMemberModal } from "@/components/AddMemberModal";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { HiringDialog } from "@/components/HiringDialog";
@@ -477,7 +477,7 @@ export default function TeamDetailScreen() {
             onPress={() => reloadTeam()}
           >
             <Text
-              style={[styles.retryButtonText, { color: colors.textInverse }]}
+              style={[styles.retryButtonText, { color: '#fff' }]}
             >
               {t("retry")}
             </Text>

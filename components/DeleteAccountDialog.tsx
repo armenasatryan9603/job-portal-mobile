@@ -1,12 +1,13 @@
-import React, { useState } from "react";
-import { View, Text, TouchableWithoutFeedback, StyleSheet, Alert, ActivityIndicator, Keyboard, KeyboardAvoidingView, ScrollView, Platform, Modal }
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableWithoutFeedback, View }
 from "react-native";
+import React, { useState } from "react";
+
 import { AppTextInput } from "@/components/ui/app-text-input";
+import { Button } from "./ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/hooks/useTranslation";
-import { Button } from "./ui/button";
 
 interface DeleteAccountDialogProps {
   visible: boolean;
@@ -237,7 +238,7 @@ export default function DeleteAccountDialog({
                       backgroundColor={
                         isConfirmationValid ? colors.errorVariant : colors.border
                       }
-                      textColor={colors.textInverse}
+                      textColor={'#fff'}
                       onPress={handleConfirm}
                       style={styles.actionButton}
                     />

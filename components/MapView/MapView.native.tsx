@@ -10,10 +10,10 @@ import {
   View,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import MapView, { LatLng, Marker, Region } from "react-native-maps";
 import React, { useEffect, useRef, useState } from "react";
 
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -691,7 +691,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   confirmButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

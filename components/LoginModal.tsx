@@ -541,14 +541,14 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
     marginBottom: Spacing.xs,
     textAlign: "center",
-    color: ThemeColors.light.textInverse,
+    color: '#fff',
   },
   headerSubtitle: {
     fontSize: Typography.lg,
     textAlign: "center",
     opacity: 0.9,
     lineHeight: Typography.lineHeightNormal * Typography.lg,
-    color: ThemeColors.light.textInverse,
+    color: '#fff',
   },
   contentScrollView: {
     flex: 1,

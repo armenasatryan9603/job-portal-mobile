@@ -1,13 +1,14 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, TouchableWithoutFeedback, Pressable, StyleSheet, Alert, ScrollView, ActivityIndicator, Keyboard, Modal }
+import { ActivityIndicator, Alert, Keyboard, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, View }
 from "react-native";
+import React, { useState } from "react";
+
 import { AppTextInput } from "@/components/ui/app-text-input";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors } from "@/constants/styles";
 import { Reason } from "@/categories/api";
-import { useReasons } from "@/hooks/useApi";
+import { ThemeColors } from "@/constants/styles";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useReasons } from "@/hooks/useApi";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface FeedbackDialogProps {
@@ -302,7 +303,7 @@ export const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
                     onPress={handleSubmit}
                     disabled={loading}
                   >
-                    <Text style={[styles.buttonText, { color: colors.textInverse }]}>
+                    <Text style={[styles.buttonText, { color: '#fff' }]}>
                       {loading ? t("submitting") : t("submit")}
                     </Text>
                   </TouchableOpacity>

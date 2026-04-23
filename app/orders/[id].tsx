@@ -15,7 +15,6 @@ import {
   useWindowDimensions,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import { Footer, FooterButton } from "@/components/Footer";
 import { Order, OrderChangeHistory, apiService } from "@/categories/api";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +28,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ActionButtons } from "@/components/ActionButtons";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { ApplyButton } from "@/components/ApplyButton";
 import { ApplyModal } from "@/components/ApplyModal";
 import { Badge } from "@/components/ui/badge";
@@ -1015,7 +1015,7 @@ export default function EditOrderScreen() {
                   <Badge
                     text={formatFieldName(item.fieldChanged)}
                     backgroundColor={getFieldColor(item.fieldChanged, item.newValue)}
-                    textColor={colors.textInverse}
+                    textColor={'#fff'}
                     size="sm"
                     style={{ minWidth: 80 }}
                   />
@@ -2014,7 +2014,7 @@ export default function EditOrderScreen() {
                       title={t("submit")}
                       onPress={handleSubmitReview}
                       backgroundColor={colors.primary}
-                      textColor={colors.textInverse}
+                      textColor={'#fff'}
                       disabled={reviewRating === 0}
                     />
                   </View>
@@ -2065,7 +2065,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   sectionTitle: {
@@ -2111,7 +2110,6 @@ const styles = StyleSheet.create({
   appliedButtonText: {
     fontSize: 12,
     fontWeight: "600",
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   cancelButton: {

@@ -1,13 +1,13 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
 
 import { AppTextInput } from "@/components/ui/app-text-input";
-import { useIsWeb } from "@/utils/isWeb";
 import { Button } from "./ui/button";
 import { Category } from "@/categories/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
 import { ThemeColors } from "@/constants/styles";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/contexts/TranslationContext";
 
 type ThemeColorsType = typeof ThemeColors;
@@ -140,7 +140,7 @@ export const ServicesSelectionModal: React.FC<ServicesSelectionModalProps> = ({
                   ]}
                 >
                   {isSelected && (
-                    <IconSymbol name="checkmark" size={12} color={colors.textInverse} />
+                    <IconSymbol name="checkmark" size={12} color={'#fff'} />
                   )}
                 </View>
               </TouchableOpacity>

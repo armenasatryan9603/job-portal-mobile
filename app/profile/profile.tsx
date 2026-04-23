@@ -2,7 +2,6 @@ import * as ImagePicker from "expo-image-picker";
 
 import { ActivityIndicator, Alert, Linking, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import {
   BorderRadius,
   Spacing,
@@ -24,6 +23,7 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import { AccountInfo } from "@/components/AccountInfo";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Button } from "@/components/ui/button";
 import { CircularProgress } from "@/components/CircularProgress";
 import { ContactInfo } from "@/components/ContactInfo";
@@ -793,7 +793,7 @@ export default function ProfileScreen() {
             onPress={fetchProfile}
           >
             <Text
-              style={[styles.retryButtonText, { color: colors.textInverse }]}
+              style={[styles.retryButtonText, { color: '#fff' }]}
             >
               {t("retry")}
             </Text>
@@ -820,7 +820,7 @@ export default function ProfileScreen() {
             onPress={fetchProfile}
           >
             <Text
-              style={[styles.retryButtonText, { color: colors.textInverse }]}
+              style={[styles.retryButtonText, { color: '#fff' }]}
             >
               {t("retry")}
             </Text>
@@ -951,7 +951,7 @@ export default function ProfileScreen() {
                             )}
                             {uploadingPicture && (
                               <View style={styles.uploadingOverlay}>
-                                <ActivityIndicator size="small" color={colors.textInverse} />
+                                <ActivityIndicator size="small" color={'#fff'} />
                               </View>
                             )}
                           </TouchableOpacity>
@@ -1001,7 +1001,7 @@ export default function ProfileScreen() {
                               style={[
                                 styles.completionBadgeText,
                                 {
-                                  color: colors.textInverse,
+                                  color: '#fff',
                                   fontSize:
                                     completionPercentage === 100 ? 9 : 11,
                                 },
@@ -1818,7 +1818,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[
                       styles.reviewsRetryButtonText,
-                      { color: colors.textInverse },
+                      { color: '#fff' },
                     ]}
                   >
                     {t("retry")}

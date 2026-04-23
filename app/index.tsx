@@ -214,7 +214,7 @@ export default function WelcomeScreen() {
                         <IconSymbol
                           name="checkmark.seal.fill"
                           size={12}
-                          color={colors.textInverse}
+                          color={'#fff'}
                         />
                       </View>
                     )}
@@ -367,7 +367,7 @@ export default function WelcomeScreen() {
                       <IconSymbol
                         name={action.icon as any}
                         size={24}
-                        color={colors.textInverse}
+                        color={'#fff'}
                       />
                     </View>
                     <View style={styles.actionContent}>
@@ -562,7 +562,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    // Note: Should use colors.surface or colors.textInverse dynamically - consider inline style
     borderColor: "white",
   },
   userInfo: {
@@ -664,7 +663,6 @@ const styles = StyleSheet.create({
   loginButtonText: {
     fontSize: 14,
     fontWeight: "700",
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
   },
   signupButton: {

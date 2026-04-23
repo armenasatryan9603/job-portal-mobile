@@ -1,7 +1,8 @@
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { useTranslation } from "../hooks/useTranslation";
 import TranslationService from "../categories/TranslationService";
+import { useTranslation } from "../hooks/useTranslation";
 
 /**
  * Example component showing how to use the new translation system
@@ -66,7 +67,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   button: {
-    // Note: Should use colors.link dynamically - consider inline style
     backgroundColor: "#007AFF",
     paddingHorizontal: 20,
     paddingVertical: 12,
@@ -74,7 +74,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   buttonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

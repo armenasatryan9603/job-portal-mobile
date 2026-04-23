@@ -1,6 +1,5 @@
 import { ActivityIndicator, Alert, Image, Keyboard, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import { Category, apiService } from "@/categories/api";
 import { MediaFile, fileUploadService } from "@/categories/fileUpload";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -19,6 +18,7 @@ import { AIPreviewModal } from "@/components/AIPreviewModal";
 import { API_CONFIG } from "@/config/api";
 import { ActionButtons } from "@/components/ActionButtons";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { BasicInformationForm } from "@/components/BasicInformationForm";
 import { BecomeSpecialistModal } from "@/components/BecomeSpecialistModal";
 import { BreakOverlapModal } from "@/components/BreakOverlapModal";
@@ -2244,7 +2244,7 @@ export default function CreateOrderScreen() {
                     ]}
                   >
                     {checkinRequiresApproval && (
-                      <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
+                      <IconSymbol name="checkmark" size={14} color={'#fff'} />
                     )}
                   </View>
                   <View style={styles.checkboxLabelContainer}>
@@ -2346,7 +2346,7 @@ export default function CreateOrderScreen() {
                             <View
                               style={[
                                 styles.radioButtonDot,
-                                { backgroundColor: colors.textInverse },
+                                { backgroundColor: '#fff' },
                               ]}
                             />
                           )}
@@ -2399,7 +2399,7 @@ export default function CreateOrderScreen() {
                             <View
                               style={[
                                 styles.radioButtonDot,
-                                { backgroundColor: colors.textInverse },
+                                { backgroundColor: '#fff' },
                               ]}
                             />
                           )}
@@ -2452,7 +2452,7 @@ export default function CreateOrderScreen() {
                             <View
                               style={[
                                 styles.radioButtonDot,
-                                { backgroundColor: colors.textInverse },
+                                { backgroundColor: '#fff' },
                               ]}
                             />
                           )}
@@ -2862,7 +2862,7 @@ export default function CreateOrderScreen() {
                   ]}
                 >
                   {useAIEnhancement && (
-                    <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
+                    <IconSymbol name="checkmark" size={14} color={'#fff'} />
                   )}
                 </View>
                 <Text style={[styles.checkboxLabel, { color: colors.text }]}>
@@ -3104,7 +3104,7 @@ export default function CreateOrderScreen() {
                       }}
                     >
                       <Text
-                        style={[styles.addCustomButtonText, { color: colors.textInverse }]}
+                        style={[styles.addCustomButtonText, { color: '#fff' }]}
                       >
                         {t("add")}
                       </Text>

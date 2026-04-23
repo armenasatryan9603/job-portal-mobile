@@ -687,7 +687,6 @@ const styles = StyleSheet.create({
     bottom: Spacing.xs / 2,
     left: Spacing.xs,
     zIndex: 1,
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },

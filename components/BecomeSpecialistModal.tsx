@@ -247,7 +247,7 @@ export function BecomeSpecialistModal({
                 ]}
               >
                 {dontShowAgain && (
-                  <IconSymbol name="checkmark" size={14} color={colors.textInverse} />
+                  <IconSymbol name="checkmark" size={14} color={'#fff'} />
                 )}
               </View>
               <Text style={[styles.checkboxLabel, { color: colors.text }]}>

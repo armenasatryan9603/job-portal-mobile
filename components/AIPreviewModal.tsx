@@ -1,13 +1,13 @@
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
-import { useIsWeb } from "@/utils/isWeb";
 import React, { useEffect, useState } from "react";
 
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Button } from "@/components/ui/button";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 
@@ -174,7 +174,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
             <View
               style={[styles.iconBadge, { backgroundColor: colors.primary }]}
             >
-              <IconSymbol name="sparkles" size={18} color={colors.textInverse} />
+              <IconSymbol name="sparkles" size={18} color={'#fff'} />
             </View>
             <Text style={[styles.headerTitle, { color: colors.text }]}>
               {t("aiPreview")}
@@ -213,7 +213,7 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                   style={[
                     styles.languageText,
                     {
-                      color: selectedLanguage === lang ? colors.textInverse : colors.text,
+                      color: selectedLanguage === lang ? '#fff' : colors.text,
                       fontWeight: selectedLanguage === lang ? "600" : "400",
                     },
                   ]}
@@ -330,13 +330,13 @@ export const AIPreviewModal: React.FC<AIPreviewModalProps> = ({
                       }
                     >
                       {isRetrying ? (
-                        <ActivityIndicator size="small" color={colors.textInverse} />
+                        <ActivityIndicator size="small" color={'#fff'} />
                       ) : (
                         <>
                           <IconSymbol
                             name="arrow.clockwise"
                             size={14}
-                            color={colors.textInverse}
+                            color={'#fff'}
                           />
                           <Text style={styles.retryButtonText}>
                             {t("retryAI")}
@@ -638,7 +638,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   retryButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 14,
     fontWeight: "600",

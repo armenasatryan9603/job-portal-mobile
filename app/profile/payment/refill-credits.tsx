@@ -1,7 +1,5 @@
-import { ActivityIndicator, Alert, Animated, Dimensions, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View, Modal }
+import { ActivityIndicator, Alert, Animated, Dimensions, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
-import { useIsWeb } from "@/utils/isWeb";
 import {
   BorderRadius,
   Shadows,
@@ -10,19 +8,21 @@ import {
   Typography,
 } from "@/constants/styles";
 import React, { useCallback, useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
 
 import { API_CONFIG } from "@/config/api";
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { PaymentWebView } from "@/components/PaymentWebView";
 import { apiService } from "@/categories/api";
-import { router, useFocusEffect } from "expo-router";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCreditCard } from "@/contexts/CreditCardContext";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
 import { useUnreadCount } from "@/contexts/UnreadCountContext";
@@ -1169,7 +1169,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   refillButtonBadgeText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 10,
     fontWeight: "700",

@@ -9,13 +9,13 @@ import {
   View,
 }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
 import { Conversation, chatService } from "@/categories/chatService";
 import React, { useEffect, useRef, useState } from "react";
 import { ResponsiveCard, ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { Spacing, ThemeColors } from "@/constants/styles";
 
 import AnalyticsService from "@/categories/AnalyticsService";
+import { AppTextInput } from "@/components/ui/app-text-input";
 import { ChatListSkeleton } from "@/components/ChatListSkeleton";
 import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -258,7 +258,7 @@ export default function ChatScreen() {
               resizeMode="cover"
             />
           ) : (
-            <Text style={[styles.avatarText, { color: colors.textInverse }]}>
+            <Text style={[styles.avatarText, { color: '#fff' }]}>
               {initials || "?"}
             </Text>
           )}
@@ -294,7 +294,7 @@ export default function ChatScreen() {
           ]}
         >
           {isLastInGrid ? (
-            <Text style={[styles.groupAvatarCount, { color: colors.textInverse }]}>
+            <Text style={[styles.groupAvatarCount, { color: '#fff' }]}>
               +{remainingCount}
             </Text>
           ) : avatarUrl ? (
@@ -304,7 +304,7 @@ export default function ChatScreen() {
               resizeMode="cover"
             />
           ) : (
-            <Text style={[styles.groupAvatarText, { color: colors.textInverse }]}>
+            <Text style={[styles.groupAvatarText, { color: '#fff' }]}>
               {initials || "?"}
             </Text>
           )}

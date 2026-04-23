@@ -1,14 +1,15 @@
-import React, { memo, useCallback, useMemo, useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, ActivityIndicator, Modal }
+import { ActivityIndicator, FlatList, Modal, StyleSheet, Text, TouchableOpacity, View }
 from "react-native";
-import { AppTextInput } from "@/components/ui/app-text-input";
-import { useIsWeb } from "@/utils/isWeb";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Spacing, ThemeColors } from "@/constants/styles";
+
+import { AppTextInput } from "@/components/ui/app-text-input";
+import { Button } from "./ui/button";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Order } from "@/categories/api";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { Order } from "@/categories/api";
-import { Button } from "./ui/button";
 
 interface AttachOrderModalProps {
   visible: boolean;
@@ -166,7 +167,7 @@ export const AttachOrderModal = memo(
                 variant="primary"
               >
                 {attachingOrders ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
+                  <ActivityIndicator size="small" color={'#fff'} />
                 ) : (
                   <Text style={styles.addSelectedButtonText}>{t("save")}</Text>
                 )}
@@ -377,7 +378,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   addSelectedButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "#fff",
     fontWeight: "600",
     fontSize: 14,

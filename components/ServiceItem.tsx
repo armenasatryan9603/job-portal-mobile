@@ -229,8 +229,8 @@ export const ServiceItem: React.FC<ServiceItemProps> = ({
               icon={getStatusIcon(serviceStatus)}
               iconSize={10}
               backgroundColor={getStatusColor(serviceStatus)}
-              textColor={colors.textInverse}
-              iconColor={colors.textInverse}
+              textColor={'#fff'}
+              iconColor={'#fff'}
               size="sm"
               style={{ marginLeft: 4 }}
             />

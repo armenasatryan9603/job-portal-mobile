@@ -1,4 +1,3 @@
-import React, { useEffect, useRef, useMemo } from "react";
 import {
   Animated,
   PanResponder,
@@ -7,12 +6,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import React, { useEffect, useMemo, useRef } from "react";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { ThemeColors } from "@/constants/styles";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { router } from "expo-router";
 import { useChatReminder } from "@/contexts/ChatReminderContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const SWIPE_THRESHOLD = -50; // Swipe up this much to dismiss
 
@@ -109,7 +109,7 @@ export const ChatReminderToast: React.FC = () => {
                   : "bell.fill"
               }
               size={18}
-              color={colors.textInverse}
+              color={'#fff'}
             />
           </View>
           <View style={styles.textWrapper}>

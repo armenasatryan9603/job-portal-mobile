@@ -1,5 +1,4 @@
-import { ActivityIndicator, Alert, Clipboard, Platform, Share, StyleSheet, Text, TouchableOpacity, View, Modal } from "react-native";
-import { useIsWeb } from "@/utils/isWeb";
+import { ActivityIndicator, Alert, Clipboard, Modal, Platform, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import React, { useEffect, useState } from "react";
 import { ThemeColors, Typography } from "@/constants/styles";
 
@@ -9,6 +8,7 @@ import { IconSymbol } from "./ui/icon-symbol";
 import { apiService } from "@/categories/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useIsWeb } from "@/utils/isWeb";
 import { useTranslation } from "@/hooks/useTranslation";
 
 interface ReferralModalProps {
@@ -176,7 +176,7 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                   ]}
                   onPress={handleCopyCode}
                 >
-                  <IconSymbol name="doc.on.doc" size={16} color={colors.textInverse} />
+                  <IconSymbol name="doc.on.doc" size={16} color={'#fff'} />
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
@@ -188,13 +188,13 @@ export const ReferralModal: React.FC<ReferralModalProps> = ({
                 disabled={shareLoading}
               >
                 {shareLoading ? (
-                  <ActivityIndicator size="small" color={colors.textInverse} />
+                  <ActivityIndicator size="small" color={'#fff'} />
                 ) : (
                   <>
                     <IconSymbol
                       name="square.and.arrow.up"
                       size={20}
-                      color={colors.textInverse}
+                      color={'#fff'}
                     />
                     <Text style={styles.shareButtonText}>
                       {t("shareReferralLink")}
@@ -412,7 +412,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   shareButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",
@@ -448,7 +447,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   stepNumberText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 12,
     fontWeight: "600",

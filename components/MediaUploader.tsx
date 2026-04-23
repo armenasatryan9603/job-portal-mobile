@@ -416,7 +416,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
                   ]}
                   onPress={() => removeMedia(index)}
                 >
-                  <IconSymbol name="xmark" size={12} color={colors.textInverse} />
+                  <IconSymbol name="xmark" size={12} color={'#fff'} />
                 </TouchableOpacity>
 
                 {/* Banner Badge - Show on selected banner image */}

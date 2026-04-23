@@ -14,12 +14,12 @@ import { Header } from "@/components/Header";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Layout } from "@/components/Layout";
 import { NotificationDetailSkeleton } from "@/components/NotificationDetailSkeleton";
+import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 import { ThemeColors } from "@/constants/styles";
 import { formatTimestamp } from "@/utils/dateFormatting";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useTranslation } from "@/contexts/TranslationContext";
-import { ResponsiveContainer } from "@/components/ResponsiveContainer";
 
 interface NotificationDetail {
   id: string;
@@ -399,7 +399,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButtonText: {
-    // Note: Should use colors.textInverse dynamically - consider inline style
     color: "white",
     fontSize: 16,
     fontWeight: "600",

@@ -225,7 +225,6 @@ export const ThemeColors = {
     text: "#0F172A",
     textSecondary: "#475569",
     textTertiary: "#94A3B8",
-    textInverse: "#FFFFFF",
 
     // Border colors
     border: "#E2E8F0",
@@ -296,7 +295,6 @@ export const ThemeColors = {
     text: "#E5E7EB",
     textSecondary: "#CBD5E1",
     textTertiary: "#94A3B8",
-    textInverse: "#0F172A",
 
     // Border colors
     border: "#323e54",
@@ -858,7 +856,7 @@ export const createThemeText = (
       ? colors.textSecondary
       : variant === "tertiary"
       ? colors.textTertiary
-      : colors.textInverse;
+      : '#fff';
 
   return { color };
 };

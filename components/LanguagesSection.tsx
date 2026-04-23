@@ -364,7 +364,7 @@ export function LanguagesSection({
                                       styles.optionChipText,
                                       {
                                         color: isSelected
-                                          ? colors.textInverse
+                                          ? '#fff'
                                           : colors.text,
                                       },
                                     ]}
@@ -429,7 +429,7 @@ export function LanguagesSection({
                                       styles.optionChipText,
                                       {
                                         color: isSelected
-                                          ? colors.textInverse
+                                          ? '#fff'
                                           : colors.text,
                                       },
                                     ]}

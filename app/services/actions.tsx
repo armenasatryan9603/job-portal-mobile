@@ -1,11 +1,12 @@
-import React from "react";
-import { View, StyleSheet } from "react-native";
-import { router } from "expo-router";
-import { useTranslation } from "@/hooks/useTranslation";
-import { useColorScheme } from "@/hooks/use-color-scheme";
-import { ThemeColors, Spacing } from "@/constants/styles";
+import { Spacing, ThemeColors } from "@/constants/styles";
+import { StyleSheet, View } from "react-native";
+
 import { Button } from "@/components/ui/button";
+import React from "react";
 import { ResponsiveCard } from "@/components/ResponsiveContainer";
+import { router } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface ServiceActionsProps {
   isOwner: boolean;
@@ -50,7 +51,7 @@ export const ServiceActions: React.FC<ServiceActionsProps> = ({
               iconPosition="left"
               onPress={onPublish}
               backgroundColor={colors.primary}
-              textColor={colors.textInverse}
+              textColor={'#fff'}
               style={styles.primaryButton}
             />
           )}

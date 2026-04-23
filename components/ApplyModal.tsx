@@ -478,18 +478,18 @@ export const ApplyModal: React.FC<ApplyModalProps> = ({
                   disabled={loading}
                 >
                   {loading ? (
-                    <ActivityIndicator size="small" color={colors.textInverse} />
+                    <ActivityIndicator size="small" color={'#fff'} />
                   ) : (
                     <>
                       <IconSymbol
                         name="paperplane.fill"
                         size={16}
-                        color={colors.textInverse}
+                        color={'#fff'}
                       />
                       <Text
                         style={[
                           styles.submitButtonText,
-                          { color: colors.textInverse },
+                          { color: '#fff' },
                         ]}
                       >
                         {t("submitApplication")}

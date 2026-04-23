@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Category } from "@/categories/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import React from "react";
-import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type ThemeColorsType = typeof ThemeColors;
 
@@ -131,7 +131,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             title={t("retry")}
             variant="primary"
             style={styles.retryButton}
-            textColor={colors.textInverse}
+            textColor={'#fff'}
             backgroundColor={colors.primary}
           />
         </View>

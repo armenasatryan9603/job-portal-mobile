@@ -1,9 +1,11 @@
 import React, {
   createContext,
   ReactNode,
+  useCallback,
   useContext,
-  useState,
   useEffect,
+  useMemo,
+  useState,
 } from "react";
 import { chatService, Conversation } from "@/categories/chatService";
 import { useAuth } from "@/contexts/AuthContext";
@@ -74,9 +76,9 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversations, user?.id]);
 
-  // Fetch conversations
-  const refreshConversations = async () => {
-    if (!isAuthenticated || !user) {
+  // Fetch conversations (stable ref so useFocusEffect / effects don’t loop on identity change)
+  const refreshConversations = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
       setConversations([]);
       setUnreadMessagesCount(0);
       return;
@@ -157,34 +159,34 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated, user?.id, setUnreadMessagesCount]);
 
   // Update a specific conversation in the list
-  const updateConversation = (
-    conversationId: number,
-    updates: Partial<Conversation>
-  ) => {
-    setConversations((prev) => {
-      const updated = prev.map((conv) =>
-        conv.id === conversationId ? { ...conv, ...updates } : conv
-      );
+  const updateConversation = useCallback(
+    (conversationId: number, updates: Partial<Conversation>) => {
+      setConversations((prev) => {
+        const updated = prev.map((conv) =>
+          conv.id === conversationId ? { ...conv, ...updates } : conv
+        );
 
-      // Sort by updatedAt (most recent first)
-      const sorted = [...updated].sort(
-        (a, b) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      );
+        // Sort by updatedAt (most recent first)
+        const sorted = [...updated].sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        );
 
-      return sorted;
-    });
-  };
+        return sorted;
+      });
+    },
+    []
+  );
 
   // Remove a conversation from the list (when deleted)
-  const removeConversation = (conversationId: number) => {
+  const removeConversation = useCallback((conversationId: number) => {
     setConversations((prev) =>
       prev.filter((conv) => conv.id !== conversationId)
     );
-  };
+  }, []);
 
   // Fetch conversations when user is authenticated
   useEffect(() => {
@@ -194,7 +196,7 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
       setConversations([]);
       setUnreadMessagesCount(0);
     }
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, refreshConversations]);
 
   // Global subscription to catch new messages, update conversation list, and trigger notifications
   useEffect(() => {
@@ -304,16 +306,26 @@ export const ConversationsProvider: React.FC<ConversationsProviderProps> = ({
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, refreshConversations, updateConversation]);
 
-  const value: ConversationsContextType = {
-    conversations,
-    loading,
-    error,
-    refreshConversations,
-    updateConversation,
-    removeConversation,
-  };
+  const value = useMemo<ConversationsContextType>(
+    () => ({
+      conversations,
+      loading,
+      error,
+      refreshConversations,
+      updateConversation,
+      removeConversation,
+    }),
+    [
+      conversations,
+      loading,
+      error,
+      refreshConversations,
+      updateConversation,
+      removeConversation,
+    ]
+  );
 
   return (
     <ConversationsContext.Provider value={value}>

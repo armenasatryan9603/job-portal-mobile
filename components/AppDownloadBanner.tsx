@@ -90,9 +90,9 @@ export const AppDownloadBanner: React.FC = () => {
         <IconSymbol
           name={isIos ? "apple.logo" : "arrow.down.circle.fill"}
           size={14}
-          color={colors.textInverse}
+          color={'#fff'}
         />
-        <Text style={[styles.downloadBtnText, { color: colors.textInverse }]}>
+        <Text style={[styles.downloadBtnText, { color: '#fff' }]}>
           {isIos ? t("appStore", "App Store") : t("playStore", "Play Store")}
         </Text>
       </TouchableOpacity>

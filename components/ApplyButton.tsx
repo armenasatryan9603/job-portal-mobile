@@ -41,9 +41,8 @@ export const ApplyButton: React.FC<ApplyButtonProps> = ({
   const getTextColor = () => {
     switch (variant) {
       case "primary":
+        case "secondary":
         return "#fff";
-      case "secondary":
-        return colors.textInverse || "#fff";
       case "outline":
       case "ghost":
         return colors.tint;

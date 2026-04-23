@@ -376,7 +376,7 @@ export default function PaymentsScreen() {
                   <Text
                     style={[
                       styles.retryButtonText,
-                      { color: colors.textInverse },
+                      { color: '#fff' },
                     ]}
                   >
                     {t("retry")}

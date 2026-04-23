@@ -1,14 +1,15 @@
-import React from "react";
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  ViewStyle,
-  TextStyle,
   ActivityIndicator,
   StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
 } from "react-native";
+
 import { IconSymbol } from "./icon-symbol";
+import React from "react";
 import { ThemeColors } from "@/constants/styles";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
@@ -60,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
         break;
       case "secondary":
         bg = backgroundColor || colors.secondary;
-        text = textColor || colors.textInverse;
+        text = textColor || '#fff';
         border = "transparent";
         break;
       case "outline":
@@ -75,7 +76,7 @@ export const Button: React.FC<ButtonProps> = ({
         break;
       default:
         bg = backgroundColor || colors.tint;
-        text = textColor || colors.textInverse;
+        text = textColor || '#fff';
         border = "transparent";
     }
 
